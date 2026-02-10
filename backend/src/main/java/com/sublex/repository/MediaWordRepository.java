@@ -10,14 +10,18 @@ import java.util.List;
 
 @Repository
 public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
-    
-    List<MediaWord> findByMediaId(Long mediaId);
-    
-    @Query("SELECT mw FROM MediaWord mw " +
-           "WHERE mw.media.id = :mediaId " +
-           "AND mw.word.id NOT IN " +
-           "(SELECT ukw.word.id FROM UserKnownWord ukw WHERE ukw.user.id = :userId) " +
-           "ORDER BY mw.count DESC")
-    List<MediaWord> findUnknownWordsByMediaAndUser(@Param("mediaId") Long mediaId, 
-                                                     @Param("userId") Long userId);
+
+       List<MediaWord> findByMediaId(Long mediaId);
+
+       List<MediaWord> findByWordId(Long wordId);
+
+       int countByMediaId(Long mediaId);
+
+       @Query("SELECT mw FROM MediaWord mw " +
+                     "WHERE mw.media.id = :mediaId " +
+                     "AND mw.word.id NOT IN " +
+                     "(SELECT ukw.word.id FROM UserKnownWord ukw WHERE ukw.user.id = :userId) " +
+                     "ORDER BY mw.count DESC")
+       List<MediaWord> findUnknownWordsByMediaAndUser(@Param("mediaId") Long mediaId,
+                     @Param("userId") Long userId);
 }
