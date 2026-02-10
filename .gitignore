@@ -1,0 +1,58 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+**/.env
+
+# Backend
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/.apt_generated
+backend/.classpath
+backend/.factorypath
+backend/.project
+backend/.settings
+backend/.springBeans
+backend/.sts4-cache
+backend/.idea
+backend/*.iws
+backend/*.iml
+backend/*.ipr
+
+# Web
+web/node_modules/
+web/dist/
+web/build/
+web/.next/
+web/.cache/
+web/.vite/
+web/.env
+web/.env.local
+web/.env.*.local
+
+# Mobile
+mobile/node_modules/
+mobile/dist/
+mobile/.expo/
+mobile/.expo-shared/
+mobile/android/app/build/
+mobile/ios/Pods/
+mobile/.env
+mobile/.env.local
+mobile/.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Temporary files
+*.tmp
+*.temp
