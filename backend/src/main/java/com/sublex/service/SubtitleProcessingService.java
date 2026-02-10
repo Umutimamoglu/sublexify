@@ -40,17 +40,12 @@ public class SubtitleProcessingService {
             // Find or create word
             Word word = wordRepository.findByWordAndLanguage(wordText, language)
                     .orElseGet(() -> {
-                        Word newWord = new Word();
-                        newWord.setWord(wordText);
-                        newWord.setLanguage(language);
+                        Word newWord = new Word(null, wordText, language, null);
                         return wordRepository.save(newWord);
                     });
 
             // Create MediaWord association
-            MediaWord mediaWord = new MediaWord();
-            mediaWord.setMedia(media);
-            mediaWord.setWord(word);
-            mediaWord.setCount(count);
+            MediaWord mediaWord = new MediaWord(null, media, word, count);
             mediaWordRepository.save(mediaWord);
         });
     }
