@@ -1,6 +1,6 @@
 package com.sublex;
 
-import com.sublex.config.DotenvConfig;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -8,8 +8,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class SublexBackendApplication {
 
     public static void main(String[] args) {
-        // Load .env file before Spring Boot starts
-        DotenvConfig.init();
+        // Load .env file
+        Dotenv dotenv = Dotenv.configure()
+                .directory("./src/main/resources")
+                .ignoreIfMissing()
+                .load();
+
+        // Set system properties
+        dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+
         SpringApplication.run(SublexBackendApplication.class, args);
     }
 }
