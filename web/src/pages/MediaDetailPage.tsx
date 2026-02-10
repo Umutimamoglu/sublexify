@@ -5,6 +5,8 @@ import MediaHeader from '@/components/features/MediaHeader';
 import WordCard from '@/components/features/WordCard';
 import { Loader2, ArrowLeft, Filter } from 'lucide-react';
 import api from '@/services/api';
+import { cn } from '@/utils/cn';
+
 
 const MediaDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -69,40 +71,43 @@ const MediaDetailPage = () => {
         );
     }
 
-    if (!media || !wordData) return <div>Media not found</div>;
+    if (!media || !wordData) return <div className="text-center py-20 text-gray-500">Media not found</div>;
 
     return (
-        <div>
-            <Link to="/" className="inline-flex items-center text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white mb-4">
-                <ArrowLeft className="w-4 h-4 mr-1" /> Back to List
+        <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">
+            <Link to="/" className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-gray-600 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Library
             </Link>
 
             <MediaHeader media={media} />
 
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Vocabulary ({wordData.words.length})
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm sticky top-20 z-40 backdrop-blur-xl bg-opacity-80 dark:bg-opacity-80">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
+                    Vocabulary <span className="text-sm font-medium text-gray-400 ml-2">({wordData.words.length} items)</span>
                 </h2>
 
                 <button
                     onClick={() => setFilterUnknown(!filterUnknown)}
-                    className={`flex items-center px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${filterUnknown
-                            ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300'
-                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200'
-                        }`}
+                    className={cn(
+                        "flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md",
+                        filterUnknown
+                            ? "bg-blue-600 text-white shadow-blue-500/25 ring-2 ring-blue-600 ring-offset-2 dark:ring-offset-gray-900"
+                            : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    )}
                 >
-                    <Filter className="w-4 h-4 mr-2" />
-                    {filterUnknown ? 'Showing Unknown Only' : 'Filter Unknown'}
+                    <Filter className={cn("w-4 h-4 mr-2 transition-transform duration-300", filterUnknown ? "rotate-180" : "")} />
+                    {filterUnknown ? 'Showing Unknown Only' : 'Filter Unknown Words'}
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 pb-20">
                 {wordData.words.map((word) => (
-                    <WordCard
-                        key={word.id}
-                        {...word}
-                        onToggleKnown={handleToggleKnown}
-                    />
+                    <div key={word.id} className="animate-in zoom-in-50 duration-500 fill-mode-backwards" style={{ animationDelay: `${Math.min(word.id * 50, 1000)}ms` }}>
+                        <WordCard
+                            {...word}
+                            onToggleKnown={handleToggleKnown}
+                        />
+                    </div>
                 ))}
             </div>
         </div>
