@@ -3,7 +3,6 @@ import MainLayout from '@/components/layout/MainLayout';
 import HomePage from '@/pages/HomePage';
 import MediaDetailPage from '@/pages/MediaDetailPage';
 
-
 function App() {
   return (
     <BrowserRouter>

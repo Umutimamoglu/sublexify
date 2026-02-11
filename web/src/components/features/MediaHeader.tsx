@@ -1,5 +1,5 @@
 import type { Media } from '@/services/MediaService';
-import { Languages, Play, BarChart, Calendar } from 'lucide-react';
+import { Languages, BarChart3, Calendar, ExternalLink } from 'lucide-react';
 
 interface MediaHeaderProps {
     media: Media;
@@ -7,43 +7,50 @@ interface MediaHeaderProps {
 
 const MediaHeader = ({ media }: MediaHeaderProps) => {
     return (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6 mb-6 shadow-sm">
-            <div className="flex flex-col md:flex-row gap-6 items-start">
-                <div className="w-24 h-24 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-gray-700">
-                    <Play className="w-10 h-10 text-gray-400" />
+        <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-2xl p-6 sm:p-8 mb-8 relative overflow-hidden">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/3" />
+
+            <div className="relative z-10">
+                {/* Badges */}
+                <div className="flex items-center gap-2 mb-4">
+                    <span className="px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-white/15 text-white/90 backdrop-blur-sm">
+                        {media.type}
+                    </span>
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-white/10 text-white/80 backdrop-blur-sm">
+                        <Languages className="w-3.5 h-3.5" />
+                        {media.language.toUpperCase()}
+                    </span>
                 </div>
 
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 border border-blue-100 dark:border-blue-900/30">
-                            {media.type}
-                        </span>
-                        <span className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                            <Languages className="w-3 h-3 mr-1" />
-                            {media.language.toUpperCase()}
-                        </span>
-                    </div>
+                {/* Title */}
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6 leading-tight">
+                    {media.title}
+                </h1>
 
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                        {media.title}
-                    </h1>
-
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center">
-                            <BarChart className="w-4 h-4 mr-2 text-gray-400" />
-                            <span className="font-medium text-gray-900 dark:text-gray-200 mr-1">{media.totalWords}</span>
-                            <span>Words</span>
-                        </div>
-                        <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                            <span>Added recently</span>
-                        </div>
-                        {media.imdbId && (
-                            <div className="flex items-center">
-                                <span className="font-medium text-yellow-600">IMDb: {media.imdbId}</span>
-                            </div>
-                        )}
+                {/* Stats */}
+                <div className="flex flex-wrap gap-6">
+                    <div className="flex items-center gap-2 text-white/80">
+                        <BarChart3 className="w-4 h-4" />
+                        <span className="font-semibold text-white">{media.totalWords.toLocaleString()}</span>
+                        <span className="text-sm">unique words</span>
                     </div>
+                    <div className="flex items-center gap-2 text-white/80">
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-sm">Added recently</span>
+                    </div>
+                    {media.imdbId && (
+                        <a
+                            href={`https://www.imdb.com/title/${media.imdbId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-yellow-300/90 hover:text-yellow-300 text-sm font-medium transition-colors"
+                        >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            IMDb
+                        </a>
+                    )}
                 </div>
             </div>
         </div>

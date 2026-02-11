@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import MediaService, { type Media, type MediaWordsResponse } from '@/services/MediaService';
 import MediaHeader from '@/components/features/MediaHeader';
 import WordCard from '@/components/features/WordCard';
-import { Loader2, ArrowLeft, Filter } from 'lucide-react';
+import { Loader2, ArrowLeft, Filter, CheckCircle2, BookOpen } from 'lucide-react';
 import api from '@/services/api';
 import { cn } from '@/utils/cn';
 
@@ -42,14 +42,11 @@ const MediaDetailPage = () => {
     const handleToggleKnown = async (wordId: number, currentStatus: boolean) => {
         try {
             if (currentStatus) {
-                // Unmark
                 await api.delete(`/words/${wordId}/mark-known`, { params: { userId } });
             } else {
-                // Mark
                 await api.post(`/words/${wordId}/mark-known`, null, { params: { userId } });
             }
 
-            // Optimistic update
             if (wordData) {
                 setWordData({
                     ...wordData,
@@ -65,49 +62,88 @@ const MediaDetailPage = () => {
 
     if (loading && !media) {
         return (
-            <div className="flex justify-center items-center h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="flex flex-col justify-center items-center h-64 gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">Loading...</span>
             </div>
         );
     }
 
-    if (!media || !wordData) return <div className="text-center py-20 text-gray-500">Media not found</div>;
+    if (!media || !wordData) return (
+        <div className="text-center py-20 text-gray-500 dark:text-gray-400">Media not found</div>
+    );
+
+    const knownCount = wordData.words.filter(w => w.isKnown).length;
+    const totalCount = wordData.words.length;
+    const progressPercent = totalCount > 0 ? Math.round((knownCount / totalCount) * 100) : 0;
 
     return (
-        <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">
-            <Link to="/" className="inline-flex items-center px-4 py-2 mb-6 text-sm font-medium text-gray-600 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shadow-sm">
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Library
+        <div>
+            {/* Back Button */}
+            <Link
+                to="/"
+                className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" /> Back to Library
             </Link>
 
             <MediaHeader media={media} />
 
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm sticky top-20 z-40 backdrop-blur-xl bg-opacity-80 dark:bg-opacity-80">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
-                    Vocabulary <span className="text-sm font-medium text-gray-400 ml-2">({wordData.words.length} items)</span>
-                </h2>
+            {/* Progress + Filter Bar */}
+            <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-5 mb-6 sticky top-20 z-40 backdrop-blur-xl">
+                {/* Progress */}
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <BookOpen className="w-5 h-5 text-indigo-500" />
+                            Vocabulary
+                        </h2>
+                        <span className="text-sm text-gray-400 dark:text-gray-500">
+                            {totalCount} words
+                        </span>
+                    </div>
 
-                <button
-                    onClick={() => setFilterUnknown(!filterUnknown)}
-                    className={cn(
-                        "flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-md",
-                        filterUnknown
-                            ? "bg-blue-600 text-white shadow-blue-500/25 ring-2 ring-blue-600 ring-offset-2 dark:ring-offset-gray-900"
-                            : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    )}
-                >
-                    <Filter className={cn("w-4 h-4 mr-2 transition-transform duration-300", filterUnknown ? "rotate-180" : "")} />
-                    {filterUnknown ? 'Showing Unknown Only' : 'Filter Unknown Words'}
-                </button>
+                    <div className="flex items-center gap-4">
+                        <div className="hidden sm:flex items-center gap-2 text-sm">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{knownCount}</span>
+                            <span className="text-gray-400 dark:text-gray-500">known</span>
+                            <span className="text-gray-300 dark:text-gray-700">·</span>
+                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{progressPercent}%</span>
+                        </div>
+
+                        <button
+                            onClick={() => setFilterUnknown(!filterUnknown)}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                                filterUnknown
+                                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/25"
+                                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                            )}
+                        >
+                            <Filter className="w-3.5 h-3.5" />
+                            {filterUnknown ? 'Unknown Only' : 'All Words'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-700"
+                        style={{ width: `${progressPercent}%` }}
+                    />
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 pb-20">
+            {/* Word Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {wordData.words.map((word) => (
-                    <div key={word.id} className="animate-in zoom-in-50 duration-500 fill-mode-backwards" style={{ animationDelay: `${Math.min(word.id * 50, 1000)}ms` }}>
-                        <WordCard
-                            {...word}
-                            onToggleKnown={handleToggleKnown}
-                        />
-                    </div>
+                    <WordCard
+                        key={word.id}
+                        {...word}
+                        onToggleKnown={handleToggleKnown}
+                    />
                 ))}
             </div>
         </div>
