@@ -197,6 +197,89 @@ public class TmdbService {
         return Optional.empty();
     }
 
+    public List<TmdbMedia> searchSeries(String query) {
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(BASE_URL + "/search/tv")
+                .queryParam("query", query);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(readToken);
+        headers.set("accept", "application/json");
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    uriBuilder.toUriString(),
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    String.class);
+
+            if (response.getBody() != null) {
+                JsonNode root = objectMapper.readTree(response.getBody());
+                if (root.has("results")) {
+                    JsonNode results = root.get("results");
+                    List<TmdbMedia> mediaList = new java.util.ArrayList<>();
+                    if (results.isArray()) {
+                        for (JsonNode node : results) {
+                            mediaList.add(mapToTmdbMedia(node, true));
+                        }
+                    }
+                    return mediaList;
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error searching TMDB series: {}", e.getMessage());
+        }
+        return Collections.emptyList();
+    }
+
+    public Optional<TmdbSeasonDetails> getSeasonDetails(Long seriesId, int seasonNumber) {
+        String url = String.format("%s/tv/%d/season/%d", BASE_URL, seriesId, seasonNumber);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(readToken);
+        headers.set("accept", "application/json");
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    String.class);
+
+            if (response.getBody() != null) {
+                JsonNode node = objectMapper.readTree(response.getBody());
+                TmdbSeasonDetails season = new TmdbSeasonDetails();
+                season.setId(node.get("id").asLong());
+                season.setName(node.path("name").asText());
+                season.setSeasonNumber(node.path("season_number").asInt());
+                season.setOverview(node.path("overview").asText());
+                season.setPosterPath(node.path("poster_path").asText(null));
+
+                if (node.has("episodes")) {
+                    List<TmdbEpisode> episodes = new java.util.ArrayList<>();
+                    for (JsonNode epNode : node.get("episodes")) {
+                        TmdbEpisode ep = new TmdbEpisode();
+                        ep.setId(epNode.get("id").asLong());
+                        ep.setName(epNode.path("name").asText());
+                        ep.setEpisodeNumber(epNode.path("episode_number").asInt());
+                        ep.setOverview(epNode.path("overview").asText());
+                        ep.setStillPath(epNode.path("still_path").asText(null));
+                        ep.setAirDate(epNode.path("air_date").asText(null));
+                        ep.setVoteAverage(epNode.path("vote_average").asDouble());
+                        episodes.add(ep);
+                    }
+                    season.setEpisodes(episodes);
+                }
+
+                return Optional.of(season);
+            }
+        } catch (Exception e) {
+            log.error("Error fetching season details: {}", e.getMessage());
+        }
+        return Optional.empty();
+    }
+
+    // ... existing methods ...
+
     private TmdbMedia mapToTmdbMedia(JsonNode node, boolean isSeries) {
         TmdbMedia media = new TmdbMedia();
         media.setId(node.get("id").asLong());
@@ -211,8 +294,23 @@ public class TmdbService {
         if (node.has("external_ids")) {
             media.setImdbId(node.get("external_ids").path("imdb_id").asText(null));
         } else if (node.has("imdb_id")) {
-            // Sometimes it's at root level for movies
             media.setImdbId(node.path("imdb_id").asText(null));
+        }
+
+        // Extract Seasons (for series details)
+        if (isSeries && node.has("seasons")) {
+            List<TmdbSeason> seasons = new java.util.ArrayList<>();
+            for (JsonNode seasonNode : node.get("seasons")) {
+                TmdbSeason s = new TmdbSeason();
+                s.setId(seasonNode.get("id").asLong());
+                s.setName(seasonNode.path("name").asText());
+                s.setSeasonNumber(seasonNode.path("season_number").asInt());
+                s.setEpisodeCount(seasonNode.path("episode_count").asInt());
+                s.setPosterPath(seasonNode.path("poster_path").asText(null));
+                s.setAirDate(seasonNode.path("air_date").asText(null));
+                seasons.add(s);
+            }
+            media.setSeasons(seasons);
         }
 
         return media;
@@ -228,6 +326,27 @@ public class TmdbService {
         private String backdropPath;
         private String releaseDate;
         private Double voteAverage;
+        private List<TmdbSeason> seasons;
+    }
+
+    @Data
+    public static class TmdbSeason {
+        private Long id;
+        private String name;
+        private int seasonNumber;
+        private int episodeCount;
+        private String posterPath;
+        private String airDate;
+    }
+
+    @Data
+    public static class TmdbSeasonDetails {
+        private Long id;
+        private String name;
+        private int seasonNumber;
+        private String overview;
+        private String posterPath;
+        private List<TmdbEpisode> episodes;
     }
 
     @Data
@@ -235,6 +354,7 @@ public class TmdbService {
         private Long id;
         private String imdbId;
         private String name;
+        private int episodeNumber;
         private String overview;
         private String stillPath; // Image for episode
         private String airDate;

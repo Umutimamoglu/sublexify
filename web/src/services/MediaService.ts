@@ -63,17 +63,71 @@ const MediaService = {
         await api.delete(`/admin/media/${id}`);
     },
 
-    scrapeMedia: async (imdbId: string): Promise<string> => {
-        const response = await api.post<string>(`/admin/media/scrape?imdbId=${imdbId}`);
-        return response.data;
-    },
-
     scrapeEpisode: async (imdbId: string, season: number, episode: number): Promise<string> => {
         const response = await api.post<string>(`/admin/media/scrape-episode`, null, {
             params: { imdbId, season, episode }
         });
         return response.data;
     },
+
+    // TMDB Integration Methods
+    searchTmdbSeries: async (query: string): Promise<TmdbMedia[]> => {
+        const response = await api.get<TmdbMedia[]>('/admin/media/tmdb/search', {
+            params: { query }
+        });
+        return response.data;
+    },
+
+    getTmdbSeries: async (id: number): Promise<TmdbMedia> => {
+        const response = await api.get<TmdbMedia>(`/admin/media/tmdb/series/${id}`);
+        return response.data;
+    },
+
+    getTmdbSeason: async (id: number, season: number): Promise<TmdbSeasonDetails> => {
+        const response = await api.get<TmdbSeasonDetails>(`/admin/media/tmdb/series/${id}/season/${season}`);
+        return response.data;
+    },
 };
+
+export interface TmdbMedia {
+    id: number;
+    imdbId?: string;
+    title: string;
+    overview: string;
+    posterPath?: string;
+    backdropPath?: string;
+    releaseDate?: string;
+    voteAverage?: number;
+    seasons?: TmdbSeason[];
+}
+
+export interface TmdbSeason {
+    id: number;
+    name: string;
+    seasonNumber: number;
+    episodeCount: number;
+    posterPath?: string;
+    airDate?: string;
+}
+
+export interface TmdbSeasonDetails {
+    id: number;
+    name: string;
+    seasonNumber: number;
+    overview: string;
+    posterPath?: string;
+    episodes: TmdbEpisode[];
+}
+
+export interface TmdbEpisode {
+    id: number;
+    imdbId?: string;
+    name: string;
+    episodeNumber: number;
+    overview: string;
+    stillPath?: string;
+    airDate?: string;
+    voteAverage?: number;
+}
 
 export default MediaService;

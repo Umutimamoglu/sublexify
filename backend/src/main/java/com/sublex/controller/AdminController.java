@@ -175,4 +175,25 @@ public class AdminController {
         }
     }
 
+    // TMDB Proxy Endpoints for Frontend
+
+    @GetMapping("/media/tmdb/search")
+    public ResponseEntity<List<TmdbService.TmdbMedia>> searchTmdbSeries(@RequestParam String query) {
+        return ResponseEntity.ok(tmdbService.searchSeries(query));
+    }
+
+    @GetMapping("/media/tmdb/series/{id}")
+    public ResponseEntity<TmdbService.TmdbMedia> getTmdbSeries(@PathVariable Long id) {
+        return tmdbService.getMediaDetails(id, true)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/media/tmdb/series/{id}/season/{season}")
+    public ResponseEntity<TmdbService.TmdbSeasonDetails> getTmdbSeason(@PathVariable Long id,
+            @PathVariable int season) {
+        return tmdbService.getSeasonDetails(id, season)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

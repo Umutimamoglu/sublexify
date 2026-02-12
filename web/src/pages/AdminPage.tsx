@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import MediaService from '@/services/MediaService';
+import type { TmdbMedia, TmdbSeasonDetails } from '@/services/MediaService';
 
 const AdminPage = () => {
     const [files, setFiles] = useState<File[]>([]);
@@ -55,6 +56,16 @@ const AdminPage = () => {
     const [scrapeResult, setScrapeResult] = useState<string | null>(null);
     const [scrapeError, setScrapeError] = useState<string | null>(null);
 
+    // TMDB Series Scraper State
+    const [seriesQuery, setSeriesQuery] = useState('');
+    const [searchingSeries, setSearchingSeries] = useState(false);
+    const [seriesResults, setSeriesResults] = useState<TmdbMedia[]>([]);
+    const [selectedSeries, setSelectedSeries] = useState<TmdbMedia | null>(null);
+    const [selectedSeason, setSelectedSeason] = useState<TmdbSeasonDetails | null>(null);
+    const [loadingSeason, setLoadingSeason] = useState(false);
+    const [downloadingEpisode, setDownloadingEpisode] = useState<number | null>(null);
+    const [seriesMsg, setSeriesMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
     // Fetch media on mount
     useEffect(() => {
         fetchMedia();
@@ -89,6 +100,77 @@ const AdminPage = () => {
         }
     };
 
+    const handleSearchSeries = async () => {
+        if (!seriesQuery) return;
+        setSearchingSeries(true);
+        setSeriesResults([]);
+        setSelectedSeries(null);
+        setSelectedSeason(null);
+        setSeriesMsg(null);
+        try {
+            const results = await MediaService.searchTmdbSeries(seriesQuery);
+            setSeriesResults(results);
+        } catch (err) {
+            console.error(err);
+            setSeriesMsg({ type: 'error', text: 'Search failed' });
+        } finally {
+            setSearchingSeries(false);
+        }
+    };
+
+    const handleSelectSeries = async (series: TmdbMedia) => {
+        // Fetch full details including seasons
+        setSearchingSeries(true);
+        try {
+            const fullSeries = await MediaService.getTmdbSeries(series.id);
+            setSelectedSeries(fullSeries);
+            setSeriesResults([]); // Clear results to show detail view
+        } catch (err) {
+            console.error(err);
+            setSeriesMsg({ type: 'error', text: 'Failed to load series details' });
+        } finally {
+            setSearchingSeries(false);
+        }
+    };
+
+    const handleSelectSeason = async (seasonNumber: number) => {
+        if (!selectedSeries) return;
+        // Toggle off if already selected
+        if (selectedSeason?.seasonNumber === seasonNumber) {
+            setSelectedSeason(null);
+            return;
+        }
+
+        setLoadingSeason(true);
+        try {
+            const seasonDetails = await MediaService.getTmdbSeason(selectedSeries.id, seasonNumber);
+            setSelectedSeason(seasonDetails);
+        } catch (err) {
+            console.error(err);
+            setSeriesMsg({ type: 'error', text: 'Failed to load season details' });
+        } finally {
+            setLoadingSeason(false);
+        }
+    };
+
+    const handleDownloadEpisode = async (episodeId: number, season: number, episode: number) => {
+        if (!selectedSeries?.imdbId) {
+            setSeriesMsg({ type: 'error', text: 'Series is missing IMDb ID' });
+            return;
+        }
+        setDownloadingEpisode(episodeId);
+        setSeriesMsg(null);
+        try {
+            const result = await MediaService.scrapeEpisode(selectedSeries.imdbId, season, episode);
+            setSeriesMsg({ type: 'success', text: result });
+        } catch (err: any) {
+            console.error(err);
+            setSeriesMsg({ type: 'error', text: err.response?.data || 'Download failed' });
+        } finally {
+            setDownloadingEpisode(null);
+        }
+    };
+
     const handleDelete = async (id: number, title: string) => {
         if (!window.confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
             return;
@@ -107,9 +189,167 @@ const AdminPage = () => {
         <div className="max-w-4xl mx-auto">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Admin Dashboard</h1>
 
-            {/* Scraper Section */}
+            {/* TV Series Scraper Section */}
             <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Auto-Scrape from YTS</h2>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">TV Series Scraper</h2>
+
+                {/* Search Bar */}
+                <div className="flex gap-4 mb-6">
+                    <input
+                        type="text"
+                        value={seriesQuery}
+                        onChange={(e) => setSeriesQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearchSeries()}
+                        placeholder="Search for TV Series (e.g. Mr. Robot)"
+                        className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                        onClick={handleSearchSeries}
+                        disabled={searchingSeries || !seriesQuery}
+                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {searchingSeries ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                        Search
+                    </button>
+                </div>
+
+                {/* Series Results Grid */}
+                {seriesResults.length > 0 && !selectedSeries && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {seriesResults.map(series => (
+                            <button
+                                key={series.id}
+                                onClick={() => handleSelectSeries(series)}
+                                className="text-left group relative aspect-[2/3] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-indigo-500 transition-all"
+                            >
+                                {series.posterPath ? (
+                                    <img
+                                        src={`https://image.tmdb.org/t/p/w500${series.posterPath}`}
+                                        alt={series.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+                                        No Image
+                                    </div>
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-3 pt-12">
+                                    <h3 className="text-white font-medium text-sm truncate">{series.title}</h3>
+                                    <p className="text-gray-300 text-xs">{series.releaseDate?.split('-')[0]}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Selected Series View */}
+                {selectedSeries && (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <button
+                            onClick={() => setSelectedSeries(null)}
+                            className="text-sm text-gray-500 hover:text-indigo-500 mb-4 flex items-center gap-1"
+                        >
+                            ← Back to search
+                        </button>
+
+                        <div className="flex gap-6 mb-6">
+                            {selectedSeries.posterPath && (
+                                <img
+                                    src={`https://image.tmdb.org/t/p/w500${selectedSeries.posterPath}`}
+                                    alt={selectedSeries.title}
+                                    className="w-32 h-48 object-cover rounded-lg shadow-lg"
+                                />
+                            )}
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{selectedSeries.title}</h3>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border border-yellow-400/30">
+                                        IMDb: {selectedSeries.voteAverage?.toFixed(1)}
+                                    </span>
+                                    <span className="text-xs text-gray-500">{selectedSeries.releaseDate?.split('-')[0]}</span>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 md:line-clamp-5 max-w-xl">
+                                    {selectedSeries.overview}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Seasons List */}
+                        <div className="space-y-2">
+                            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Seasons</h4>
+                            {selectedSeries.seasons?.map(season => (
+                                <div key={season.id} className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                                    <button
+                                        onClick={() => handleSelectSeason(season.seasonNumber)}
+                                        className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-medium">Season {season.seasonNumber}</span>
+                                            <span className="text-sm text-gray-500">({season.episodeCount} Episodes)</span>
+                                        </div>
+                                        {selectedSeason?.seasonNumber === season.seasonNumber ?
+                                            <ChevronDown className="w-4 h-4 text-gray-400" /> :
+                                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                                        }
+                                    </button>
+
+                                    {/* Episodes List (Expanded) */}
+                                    {selectedSeason?.seasonNumber === season.seasonNumber && (
+                                        <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1e202e]">
+                                            {loadingSeason ? (
+                                                <div className="p-4 flex justify-center">
+                                                    <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+                                                </div>
+                                            ) : (
+                                                <div className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                                                    {selectedSeason.episodes.map(episode => (
+                                                        <div key={episode.id} className="p-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                                            <div className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded text-xs font-semibold text-gray-500">
+                                                                {episode.episodeNumber}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h5 className="text-sm font-medium text-gray-900 dark:text-gray-200 truncate">{episode.name}</h5>
+                                                                <p className="text-xs text-gray-500 truncate">{episode.overview}</p>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleDownloadEpisode(episode.id, season.seasonNumber, episode.episodeNumber)}
+                                                                disabled={downloadingEpisode === episode.id}
+                                                                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg transition-colors disabled:opacity-50"
+                                                            >
+                                                                {downloadingEpisode === episode.id ? (
+                                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                                ) : (
+                                                                    <Download className="w-3 h-3" />
+                                                                )}
+                                                                Download
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Status Message */}
+                {seriesMsg && (
+                    <div className={`mt-4 p-3 rounded-lg text-sm border flex items-center gap-2 ${seriesMsg.type === 'success'
+                        ? 'bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-300 border-green-100 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-300 border-red-100 dark:border-red-800'
+                        }`}>
+                        {seriesMsg.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                        {seriesMsg.text}
+                    </div>
+                )}
+            </div>
+
+            {/* Old Scraper Section */}
+            <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Manual Movie Scraper (Legacy)</h2>
                 <div className="flex gap-4">
                     <input
                         type="text"
