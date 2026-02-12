@@ -32,6 +32,7 @@ const MainLayout = () => {
 
     const navItems = [
         { name: 'Discover', path: '/', icon: Home },
+        { name: 'Lists', path: '/lists', icon: BookOpen },
         { name: 'Library', path: '/library', icon: LayoutGrid },
         { name: 'Settings', path: '/settings', icon: Settings },
     ];

@@ -5,6 +5,7 @@ import BrowsePage from '@/pages/BrowsePage';
 import SeriesDetailPage from '@/pages/SeriesDetailPage';
 import MediaDetailPage from '@/pages/MediaDetailPage';
 import AdminPage from '@/pages/AdminPage';
+import UserListsPage from '@/pages/UserListsPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="browse/:type" element={<BrowsePage />} />
           <Route path="series/:tmdbId" element={<SeriesDetailPage />} />
           <Route path="media/:id" element={<MediaDetailPage />} />
+          <Route path="lists" element={<UserListsPage />} />
           <Route path="admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
