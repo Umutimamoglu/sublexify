@@ -61,19 +61,20 @@ public class AdminController {
         Optional<TmdbService.TmdbMedia> tmdbMatch = tmdbService.searchAndMatch(info.title(), info.year(),
                 info.isSeries());
 
-        if (tmdbMatch.isPresent()) {
-            log.info("TMDB match found: {}", tmdbMatch.get());
-        } else {
-            log.warn("No TMDB match found for: {}", info.title());
-        }
-
         Media media = new Media();
         media.setTitle(info.title()); // Default title from filename
         media.setLanguage(language);
 
         if (tmdbMatch.isPresent()) {
-            TmdbService.TmdbMedia tmdb = tmdbMatch.get();
+            // Fetch full details to get IMDB ID
+            Optional<TmdbService.TmdbMedia> fullDetails = tmdbService.getMediaDetails(tmdbMatch.get().getId(),
+                    info.isSeries());
+            TmdbService.TmdbMedia tmdb = fullDetails.orElse(tmdbMatch.get());
+
+            log.info("TMDB match found: {}", tmdb);
+
             media.setTmdbId(tmdb.getId());
+            media.setImdbId(tmdb.getImdbId());
             media.setTitle(tmdb.getTitle()); // Use TMDB title
             media.setOverview(tmdb.getOverview());
             if (tmdb.getPosterPath() != null) {

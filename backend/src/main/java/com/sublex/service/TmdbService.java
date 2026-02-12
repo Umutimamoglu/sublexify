@@ -47,17 +47,20 @@ public class TmdbService {
         headers.set("accept", "application/json");
 
         try {
-            ResponseEntity<JsonNode> response = restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     uriBuilder.toUriString(),
                     HttpMethod.GET,
                     new HttpEntity<>(headers),
-                    JsonNode.class);
+                    String.class);
 
-            if (response.getBody() != null && response.getBody().has("results")) {
-                JsonNode results = response.getBody().get("results");
-                if (results.isArray() && results.size() > 0) {
-                    JsonNode firstMatch = results.get(0);
-                    return Optional.of(mapToTmdbMedia(firstMatch, isSeries));
+            if (response.getBody() != null) {
+                JsonNode root = objectMapper.readTree(response.getBody());
+                if (root.has("results")) {
+                    JsonNode results = root.get("results");
+                    if (results.isArray() && results.size() > 0) {
+                        JsonNode firstMatch = results.get(0);
+                        return Optional.of(mapToTmdbMedia(firstMatch, isSeries));
+                    }
                 }
             }
         } catch (Exception e) {
@@ -75,14 +78,14 @@ public class TmdbService {
         headers.set("accept", "application/json");
 
         try {
-            ResponseEntity<JsonNode> response = restTemplate.exchange(
+            ResponseEntity<String> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     new HttpEntity<>(headers),
-                    JsonNode.class);
+                    String.class);
 
             if (response.getBody() != null) {
-                JsonNode node = response.getBody();
+                JsonNode node = objectMapper.readTree(response.getBody());
                 TmdbEpisode ep = new TmdbEpisode();
                 ep.setName(node.path("name").asText());
                 ep.setOverview(node.path("overview").asText());
@@ -96,6 +99,31 @@ public class TmdbService {
         return Optional.empty();
     }
 
+    public Optional<TmdbMedia> getMediaDetails(Long tmdbId, boolean isSeries) {
+        String endpoint = isSeries ? "/tv/" + tmdbId : "/movie/" + tmdbId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(readToken);
+        headers.set("accept", "application/json");
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    BASE_URL + endpoint + "?append_to_response=external_ids",
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    String.class);
+
+            if (response.getBody() != null) {
+                JsonNode node = objectMapper.readTree(response.getBody());
+                return Optional.of(mapToTmdbMedia(node, isSeries));
+            }
+        } catch (Exception e) {
+            log.error("Error fetching TMDB details: {}", e.getMessage());
+        }
+
+        return Optional.empty();
+    }
+
     private TmdbMedia mapToTmdbMedia(JsonNode node, boolean isSeries) {
         TmdbMedia media = new TmdbMedia();
         media.setId(node.get("id").asLong());
@@ -105,12 +133,22 @@ public class TmdbService {
         media.setBackdropPath(node.path("backdrop_path").asText(null));
         media.setReleaseDate(node.path(isSeries ? "first_air_date" : "release_date").asText(null));
         media.setVoteAverage(node.path("vote_average").asDouble());
+
+        // Extract External IDs (IMDB)
+        if (node.has("external_ids")) {
+            media.setImdbId(node.get("external_ids").path("imdb_id").asText(null));
+        } else if (node.has("imdb_id")) {
+            // Sometimes it's at root level for movies
+            media.setImdbId(node.path("imdb_id").asText(null));
+        }
+
         return media;
     }
 
     @Data
     public static class TmdbMedia {
         private Long id;
+        private String imdbId;
         private String title;
         private String overview;
         private String posterPath;
