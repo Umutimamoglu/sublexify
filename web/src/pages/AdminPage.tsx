@@ -171,6 +171,63 @@ const AdminPage = () => {
         }
     };
 
+    const [downloadingSeason, setDownloadingSeason] = useState<number | null>(null);
+
+    const handleDownloadSeason = async (seasonNumber: number, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent toggling accordion
+        if (!selectedSeries?.imdbId) return;
+
+        // Ensure season details are loaded
+        let episodes = selectedSeason?.seasonNumber === seasonNumber ? selectedSeason.episodes : null;
+        if (!episodes) {
+            try {
+                const details = await MediaService.getTmdbSeason(selectedSeries.id, seasonNumber);
+                episodes = details.episodes;
+                // Update selection if not already
+                if (selectedSeason?.seasonNumber !== seasonNumber) {
+                    setSelectedSeason(details);
+                }
+            } catch (err) {
+                console.error(err);
+                setSeriesMsg({ type: 'error', text: 'Failed to load season for download' });
+                return;
+            }
+        }
+
+        if (!episodes || episodes.length === 0) {
+            setSeriesMsg({ type: 'error', text: 'No episodes found in season' });
+            return;
+        }
+
+        setDownloadingSeason(seasonNumber);
+        setSeriesMsg({ type: 'success', text: `Starting download for Season ${seasonNumber}...` });
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const ep of episodes) {
+            // Check cancellation or component unmount? (omitted for simplicity)
+            setDownloadingEpisode(ep.id);
+            try {
+                await MediaService.scrapeEpisode(selectedSeries.imdbId, seasonNumber, ep.episodeNumber);
+                successCount++;
+            } catch (err) {
+                console.error(`Failed to download S${seasonNumber}E${ep.episodeNumber}`, err);
+                failCount++;
+            }
+            // Small delay to be nice to the server/API
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
+        setDownloadingEpisode(null);
+        setDownloadingSeason(null);
+        setSeriesMsg({
+            type: successCount > 0 ? 'success' : 'error',
+            text: `Finished Season ${seasonNumber}. Success: ${successCount}, Failed: ${failCount}`
+        });
+        fetchMedia(); // Refresh list at the end
+    };
+
     const handleDelete = async (id: number, title: string) => {
         if (!window.confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
             return;
@@ -286,6 +343,18 @@ const AdminPage = () => {
                                         <div className="flex items-center gap-3">
                                             <span className="font-medium">Season {season.seasonNumber}</span>
                                             <span className="text-sm text-gray-500">({season.episodeCount} Episodes)</span>
+                                            <button
+                                                onClick={(e) => handleDownloadSeason(season.seasonNumber, e)}
+                                                disabled={downloadingSeason === season.seasonNumber}
+                                                className="ml-4 px-3 py-1 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
+                                            >
+                                                {downloadingSeason === season.seasonNumber ? (
+                                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                                ) : (
+                                                    <Download className="w-3 h-3" />
+                                                )}
+                                                {downloadingSeason === season.seasonNumber ? 'Downloading...' : 'Download All'}
+                                            </button>
                                         </div>
                                         {selectedSeason?.seasonNumber === season.seasonNumber ?
                                             <ChevronDown className="w-4 h-4 text-gray-400" /> :
