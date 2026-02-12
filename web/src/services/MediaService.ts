@@ -67,6 +67,13 @@ const MediaService = {
         const response = await api.post<string>(`/admin/media/scrape?imdbId=${imdbId}`);
         return response.data;
     },
+
+    scrapeEpisode: async (imdbId: string, season: number, episode: number): Promise<string> => {
+        const response = await api.post<string>(`/admin/media/scrape-episode`, null, {
+            params: { imdbId, season, episode }
+        });
+        return response.data;
+    },
 };
 
 export default MediaService;

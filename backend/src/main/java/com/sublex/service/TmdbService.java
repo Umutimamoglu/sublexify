@@ -101,8 +101,40 @@ public class TmdbService {
         return Optional.empty();
     }
 
+    public Optional<TmdbMedia> findShowByImdbId(String imdbId) {
+        String url = String.format("%s/find/%s?external_source=imdb_id", BASE_URL, imdbId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(readToken);
+        headers.set("accept", "application/json");
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    String.class);
+
+            if (response.getBody() != null) {
+                JsonNode root = objectMapper.readTree(response.getBody());
+                JsonNode tvResults = root.path("tv_results");
+                if (tvResults.isArray() && tvResults.size() > 0) {
+                    JsonNode firstMatch = tvResults.get(0);
+                    TmdbMedia media = mapToTmdbMedia(firstMatch, true);
+                    media.setImdbId(imdbId);
+                    return Optional.of(media);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error finding show by IMDB ID: {}", e.getMessage());
+        }
+
+        return Optional.empty();
+    }
+
     public Optional<TmdbEpisode> getEpisodeDetails(Long seriesId, int season, int episode) {
-        String url = String.format("%s/tv/%d/season/%d/episode/%d", BASE_URL, seriesId, season, episode);
+        String url = String.format("%s/tv/%d/season/%d/episode/%d?append_to_response=external_ids", BASE_URL, seriesId,
+                season, episode);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(readToken);
@@ -118,10 +150,20 @@ public class TmdbService {
             if (response.getBody() != null) {
                 JsonNode node = objectMapper.readTree(response.getBody());
                 TmdbEpisode ep = new TmdbEpisode();
+                ep.setId(node.get("id").asLong());
                 ep.setName(node.path("name").asText());
                 ep.setOverview(node.path("overview").asText());
                 ep.setStillPath(node.path("still_path").asText(null));
                 ep.setVoteAverage(node.path("vote_average").asDouble());
+                ep.setAirDate(node.path("air_date").asText(null));
+
+                // Extract External IDs (IMDB)
+                if (node.has("external_ids")) {
+                    ep.setImdbId(node.get("external_ids").path("imdb_id").asText(null));
+                } else if (node.has("imdb_id")) {
+                    ep.setImdbId(node.path("imdb_id").asText(null));
+                }
+
                 return Optional.of(ep);
             }
         } catch (Exception e) {
@@ -190,9 +232,12 @@ public class TmdbService {
 
     @Data
     public static class TmdbEpisode {
+        private Long id;
+        private String imdbId;
         private String name;
         private String overview;
         private String stillPath; // Image for episode
+        private String airDate;
         private Double voteAverage;
     }
 }

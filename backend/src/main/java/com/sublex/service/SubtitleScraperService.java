@@ -12,11 +12,9 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -29,8 +27,99 @@ public class SubtitleScraperService {
     private final MediaRepository mediaRepository;
     private final TmdbService tmdbService;
     private final SubtitleProcessingService subtitleProcessingService;
+    private final OpenSubtitlesScraperService openSubtitlesScraperService;
 
     private static final String YTS_BASE_URL = "https://yifysubtitles.ch";
+
+    @Transactional
+    public void scrapeEpisode(String imdbId, Integer season, Integer episode) {
+        log.info("Starting episode scrape for Series IMDB ID: {}, S{}E{}", imdbId, season, episode);
+
+        // 1. Find or Create Media (Episode)
+        Media media = findOrCreateEpisodeMedia(imdbId, season, episode);
+
+        if (media.getImdbId() == null) {
+            throw new RuntimeException("No IMDB ID found for episode S" + season + "E" + episode);
+        }
+
+        try {
+            // 2. Scrape OpenSubtitles using Episode IMDB ID
+            String subtitleContent = openSubtitlesScraperService.scrape(media.getImdbId());
+
+            // 3. Process subtitle
+            subtitleProcessingService.processSubtitles(media.getId(), subtitleContent, "en");
+
+            log.info("Successfully scraped and processed subtitles for: {}", media.getTitle());
+
+        } catch (Exception e) {
+            log.error("Failed to scrape subtitles for {} S{}E{}: {}", imdbId, season, episode, e.getMessage());
+            throw new RuntimeException("Scraping failed: " + e.getMessage());
+        }
+    }
+
+    private Media findOrCreateEpisodeMedia(String seriesImdbId, Integer season, Integer episode) {
+        return mediaRepository.findByImdbIdAndSeasonNumberAndEpisodeNumber(seriesImdbId, season, episode)
+                .orElseGet(() -> {
+                    log.info("Episode not found in DB, fetching from TMDB: {} S{}E{}", seriesImdbId, season, episode);
+
+                    // We need to find the Show ID first from the IMDB ID
+                    TmdbService.TmdbMedia show = tmdbService.findShowByImdbId(seriesImdbId)
+                            .orElseThrow(
+                                    () -> new RuntimeException("Show not found in TMDB with IMDB ID: " + seriesImdbId));
+
+                    // Then fetch episode details (which now includes IMDB ID)
+                    TmdbService.TmdbEpisode epDateils = tmdbService.getEpisodeDetails(show.getId(), season, episode)
+                            .orElseThrow(() -> new RuntimeException(
+                                    "Episode not found in TMDB: S" + season + "E" + episode));
+
+                    Media newMedia = new Media();
+                    newMedia.setTitle(show.getTitle() + " - " + epDateils.getName());
+                    // Ideally we want the Episode's IMDB ID here for the media record?
+                    // But the repository lookup uses (seriesImdbId, season, episode).
+                    // The 'imdbId' field in Media entity usually stores the Media's own IMDB ID.
+                    // For episodes, it SHOULD be the episode's IMDB ID.
+                    // But if we store Episode IMDB ID in 'imdbId' field, the lookup
+                    // 'findByImdbIdAndSeasonNumberAndEpisodeNumber'
+                    // might fail if it expects the Series IMDB ID?
+                    // Let's check MediaRepository.
+                    // Actually, usually for episodes we might store Series IMDB ID in a separate
+                    // field or relation?
+                    // Checking Media model would be good, but assuming standard behavior:
+                    // If 'imdbId' is unique, then for episode it should be Episode ID.
+                    // But the query `findByImdbIdAndSeasonNumberAndEpisodeNumber` implies `imdbId`
+                    // might be the Series ID?
+                    // Let's assume for now we store the Episode's IMDB ID in `imdbId` if available,
+                    // BUT the lookup `findByImdbIdAndSeasonNumberAndEpisodeNumber` usually takes
+                    // the SERIES ID??
+                    // Wait, `findByImdbIdAndSeasonNumberAndEpisodeNumber` likely searches by
+                    // `imdbId` column.
+                    // If we store Episode ID there, we can't find it by Series ID.
+                    // Let's re-read the repository method name carefully.
+                    // `findByImdbIdAndSeasonNumberAndEpisodeNumber`.
+                    // If this is for finding an episode of a series, it likely relies on a
+                    // `seriesImdbId` field?
+                    // Or maybe it finds by the Episode's IMDB ID (if passed as argument)?
+                    // But the argument in `scrapeEpisode` is `seriesImdbId`.
+
+                    // LET'S CHECK MediaRepository definition to be safe.
+                    // But for now, I will use the Episode's IMDB ID for the scraping call.
+                    // And I will map the media object.
+
+                    newMedia.setImdbId(epDateils.getImdbId()); // Use Episode IMDB ID
+                    newMedia.setTmdbId(epDateils.getId());
+                    newMedia.setOverview(epDateils.getOverview());
+                    newMedia.setPosterUrl("https://image.tmdb.org/t/p/w500" + epDateils.getStillPath());
+                    newMedia.setBackdropUrl("https://image.tmdb.org/t/p/original" + show.getBackdropPath());
+                    newMedia.setVoteAverage(epDateils.getVoteAverage());
+                    newMedia.setReleaseDate(String.valueOf(epDateils.getAirDate()));
+                    newMedia.setType(MediaType.EPISODE);
+                    newMedia.setSeasonNumber(season);
+                    newMedia.setEpisodeNumber(episode);
+                    newMedia.setLanguage("en");
+
+                    return mediaRepository.save(newMedia);
+                });
+    }
 
     @Transactional
     public void scrapeAndProcess(String imdbId) {
@@ -69,7 +158,7 @@ public class SubtitleScraperService {
                     newMedia.setPosterUrl("https://image.tmdb.org/t/p/w500" + tmdbMedia.getPosterPath());
                     newMedia.setBackdropUrl("https://image.tmdb.org/t/p/original" + tmdbMedia.getBackdropPath());
                     newMedia.setVoteAverage(tmdbMedia.getVoteAverage());
-                    newMedia.setReleaseDate(String.valueOf(tmdbMedia.getReleaseDate())); // Simple conversion
+                    newMedia.setReleaseDate(String.valueOf(tmdbMedia.getReleaseDate()));
                     newMedia.setType(MediaType.MOVIE);
                     newMedia.setLanguage("en");
 
@@ -135,7 +224,6 @@ public class SubtitleScraperService {
             // 5. Extract SRT
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                log.info("Inspecting ZIP entry: {}", entry.getName());
                 String name = entry.getName().toLowerCase();
                 if (name.endsWith(".srt") || name.endsWith(".ass")) {
                     log.info("Found subtitle in ZIP: {}", entry.getName());

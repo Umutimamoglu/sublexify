@@ -161,4 +161,18 @@ public class AdminController {
             return ResponseEntity.internalServerError().body("Scraping failed: " + e.getMessage());
         }
     }
+
+    @PostMapping("/media/scrape-episode")
+    public ResponseEntity<String> scrapeEpisode(@RequestParam String imdbId, @RequestParam Integer season,
+            @RequestParam Integer episode) {
+        log.info("Received request to scrape episode with IMDB ID: {}, S{}E{}", imdbId, season, episode);
+        try {
+            subtitleScraperService.scrapeEpisode(imdbId, season, episode);
+            return ResponseEntity.ok("Scraping started successfully for " + imdbId + " S" + season + "E" + episode);
+        } catch (Exception e) {
+            log.error("Scraping failed: ", e);
+            return ResponseEntity.internalServerError().body("Scraping failed: " + e.getMessage());
+        }
+    }
+
 }

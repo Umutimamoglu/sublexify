@@ -15,4 +15,7 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
     List<Media> findByType(MediaType type);
 
     java.util.Optional<Media> findByImdbId(String imdbId);
+
+    java.util.Optional<Media> findByImdbIdAndSeasonNumberAndEpisodeNumber(String imdbId, Integer seasonNumber,
+            Integer episodeNumber);
 }
