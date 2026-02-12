@@ -106,12 +106,33 @@ const BrowsePage = () => {
                     No content found.
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {filteredMedia.map((media) => (
-                        <div key={media.id} onClick={() => handleCardClick(media)} className="cursor-pointer">
-                            <MediaCard media={media} />
-                        </div>
-                    ))}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    {filteredMedia.map((media) => {
+                        let stats = undefined;
+                        let imageUrl = media.posterUrl || media.backdropUrl;
+
+                        if (type === 'series' && media.tmdbId) {
+                            // Calculate stats for this series
+                            const seriesEpisodes = mediaList.filter(m => m.tmdbId === media.tmdbId);
+                            const seasonCount = new Set(seriesEpisodes.map(m => m.seasonNumber)).size;
+                            const episodeCount = seriesEpisodes.length;
+                            stats = `${seasonCount} Season${seasonCount !== 1 ? 's' : ''} • ${episodeCount} Episode${episodeCount !== 1 ? 's' : ''}`;
+
+                            // Try to find the best image from all episodes if the current one is missing
+                            if (!imageUrl) {
+                                const episodeWithImage = seriesEpisodes.find(m => m.posterUrl || m.backdropUrl);
+                                if (episodeWithImage) {
+                                    imageUrl = episodeWithImage.posterUrl || episodeWithImage.backdropUrl;
+                                }
+                            }
+                        }
+
+                        return (
+                            <div key={media.id} onClick={() => handleCardClick(media)} className="cursor-pointer">
+                                <MediaCard media={media} imageUrl={imageUrl} stats={stats} />
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>
