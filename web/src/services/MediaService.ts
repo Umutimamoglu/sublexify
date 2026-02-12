@@ -7,6 +7,13 @@ export interface Media {
     language: string;
     imdbId?: string;
     totalWords: number;
+    overview?: string;
+    posterUrl?: string;
+    backdropUrl?: string;
+    tmdbId?: number;
+    seasonNumber?: number;
+    episodeNumber?: number;
+    voteAverage?: number;
     createdAt: string;
 }
 
@@ -35,6 +42,19 @@ const MediaService = {
     getMediaWords: async (id: number, userId?: number, onlyUnknown?: boolean): Promise<MediaWordsResponse> => {
         const response = await api.get<MediaWordsResponse>(`/media/${id}/words`, {
             params: { userId, onlyUnknown },
+        });
+        return response.data;
+    },
+
+    batchUpload: async (files: File[], language: string = 'en'): Promise<string[]> => {
+        const formData = new FormData();
+        files.forEach((file) => formData.append('files', file));
+        formData.append('language', language);
+
+        const response = await api.post<string[]>('/admin/media/batch-upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
         });
         return response.data;
     },

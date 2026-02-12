@@ -32,6 +32,27 @@ public class Media {
     @Column(nullable = false)
     private String language = "en";
 
+    @Column(columnDefinition = "TEXT")
+    private String overview;
+
+    @Column(name = "poster_url")
+    private String posterUrl;
+
+    @Column(name = "backdrop_url")
+    private String backdropUrl;
+
+    @Column(name = "tmdb_id")
+    private Long tmdbId;
+
+    @Column(name = "season_number")
+    private Integer seasonNumber;
+
+    @Column(name = "episode_number")
+    private Integer episodeNumber;
+
+    @Column(name = "vote_average")
+    private Double voteAverage;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

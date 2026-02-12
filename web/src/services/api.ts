@@ -2,15 +2,15 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    // headers: {
+    //     'Content-Type': 'application/json',
+    // },
 });
 
 // Request interceptor
 api.interceptors.request.use(
     (config) => {
-        // Auth token will be added here in Sprint 5
+        // Auth token logic removed
         return config;
     },
     (error) => {
@@ -22,10 +22,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            // Handle unauthorized access
-            console.warn('Unauthorized access');
-        }
         return Promise.reject(error);
     }
 );

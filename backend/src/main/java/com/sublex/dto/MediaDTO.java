@@ -16,5 +16,12 @@ public class MediaDTO {
     private String type;
     private String language;
     private Integer totalWords;
+    private String overview;
+    private String posterUrl;
+    private String backdropUrl;
+    private Long tmdbId;
+    private Integer seasonNumber;
+    private Integer episodeNumber;
+    private Double voteAverage;
     private LocalDateTime createdAt;
 }

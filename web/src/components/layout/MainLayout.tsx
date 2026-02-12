@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/utils/cn';
 
 const MainLayout = () => {
+
     const [isDark, setIsDark] = useState(() => {
         if (typeof window !== 'undefined') {
             return localStorage.getItem('theme') === 'dark' ||
@@ -103,6 +104,7 @@ const MainLayout = () => {
                                 <Link
                                     key={item.path}
                                     to={item.path}
+                                    onClick={() => setMobileMenuOpen(false)}
                                     className={cn(
                                         "flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
                                         isActive

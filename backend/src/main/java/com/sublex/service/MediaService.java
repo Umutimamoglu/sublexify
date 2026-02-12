@@ -95,6 +95,13 @@ public class MediaService {
         dto.setType(media.getType().toString());
         dto.setLanguage(media.getLanguage());
         dto.setTotalWords(totalWords);
+        dto.setOverview(media.getOverview());
+        dto.setPosterUrl(media.getPosterUrl());
+        dto.setBackdropUrl(media.getBackdropUrl());
+        dto.setTmdbId(media.getTmdbId());
+        dto.setSeasonNumber(media.getSeasonNumber());
+        dto.setEpisodeNumber(media.getEpisodeNumber());
+        dto.setVoteAverage(media.getVoteAverage());
         dto.setCreatedAt(media.getCreatedAt());
 
         return dto;

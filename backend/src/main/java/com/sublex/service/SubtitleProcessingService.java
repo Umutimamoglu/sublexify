@@ -8,6 +8,7 @@ import com.sublex.repository.MediaWordRepository;
 import com.sublex.repository.WordRepository;
 import com.sublex.util.SubtitleParser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SubtitleProcessingService {
 
     private final MediaRepository mediaRepository;
@@ -29,11 +31,14 @@ public class SubtitleProcessingService {
      */
     @Transactional
     public void processSubtitles(Long mediaId, String subtitleContent, String language) {
+        log.info("Processing subtitles for mediaId: {}, length: {}", mediaId, subtitleContent.length());
+
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
         // Parse subtitles and get word frequencies
         Map<String, Integer> wordFrequencies = SubtitleParser.parseSubtitles(subtitleContent);
+        log.info("Parsed {} unique words", wordFrequencies.size());
 
         // Save each word and create MediaWord association
         wordFrequencies.forEach((wordText, count) -> {
@@ -48,5 +53,7 @@ public class SubtitleProcessingService {
             MediaWord mediaWord = new MediaWord(null, media, word, count);
             mediaWordRepository.save(mediaWord);
         });
+
+        log.info("Subtitle processing completed for mediaId: {}", mediaId);
     }
 }
