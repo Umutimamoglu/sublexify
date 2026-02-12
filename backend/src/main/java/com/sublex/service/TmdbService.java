@@ -70,6 +70,37 @@ public class TmdbService {
         return Optional.empty();
     }
 
+    public Optional<TmdbMedia> findMovieByImdbId(String imdbId) {
+        String url = String.format("%s/find/%s?external_source=imdb_id", BASE_URL, imdbId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(readToken);
+        headers.set("accept", "application/json");
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    String.class);
+
+            if (response.getBody() != null) {
+                JsonNode root = objectMapper.readTree(response.getBody());
+                JsonNode movieResults = root.path("movie_results");
+                if (movieResults.isArray() && movieResults.size() > 0) {
+                    JsonNode firstMatch = movieResults.get(0);
+                    TmdbMedia media = mapToTmdbMedia(firstMatch, false);
+                    media.setImdbId(imdbId); // Ensure IMDB ID is set
+                    return Optional.of(media);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error finding movie by IMDB ID: {}", e.getMessage());
+        }
+
+        return Optional.empty();
+    }
+
     public Optional<TmdbEpisode> getEpisodeDetails(Long seriesId, int season, int episode) {
         String url = String.format("%s/tv/%d/season/%d/episode/%d", BASE_URL, seriesId, season, episode);
 

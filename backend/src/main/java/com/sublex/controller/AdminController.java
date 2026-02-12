@@ -1,10 +1,10 @@
 package com.sublex.controller;
 
 import com.sublex.model.Media;
-import com.sublex.model.Media;
 import com.sublex.repository.MediaRepository;
 import com.sublex.repository.MediaWordRepository;
 import com.sublex.service.SubtitleProcessingService;
+import com.sublex.service.SubtitleScraperService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +31,7 @@ public class AdminController {
     private final MediaWordRepository mediaWordRepository;
     private final SubtitleProcessingService subtitleProcessingService;
     private final TmdbService tmdbService;
+    private final SubtitleScraperService subtitleScraperService;
 
     // ... (other methods unchanged) ...
 
@@ -147,5 +148,17 @@ public class AdminController {
         mediaRepository.deleteById(id);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/media/scrape")
+    public ResponseEntity<String> scrapeMedia(@RequestParam String imdbId) {
+        log.info("Received request to scrape media with IMDB ID: {}", imdbId);
+        try {
+            subtitleScraperService.scrapeAndProcess(imdbId);
+            return ResponseEntity.ok("Scraping started successfully for " + imdbId);
+        } catch (Exception e) {
+            log.error("Scraping failed: ", e);
+            return ResponseEntity.internalServerError().body("Scraping failed: " + e.getMessage());
+        }
     }
 }

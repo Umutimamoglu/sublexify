@@ -53,6 +53,9 @@ public class Media {
     @Column(name = "vote_average")
     private Double voteAverage;
 
+    @Column(name = "release_date")
+    private String releaseDate;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

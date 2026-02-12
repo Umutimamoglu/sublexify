@@ -25,32 +25,34 @@ public class SubtitleParser {
 
         try (BufferedReader reader = new BufferedReader(new StringReader(subtitleContent))) {
             String line;
-            boolean isTextLine = false;
-
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
 
-                // Skip sequence numbers and timestamps
-                if (line.isEmpty()) {
-                    isTextLine = false;
+                if (line.isEmpty())
                     continue;
+
+                // Skip SRT sequence numbers and timestamps
+                if (line.matches("\\d+"))
+                    continue;
+                if (line.matches(".*-->.*"))
+                    continue;
+
+                // Skip ASS/SSA metadata lines
+                if (line.startsWith("[") || line.startsWith(";"))
+                    continue;
+                if (line.matches("(?i)^(Format|Style|ScriptType|PlayRes|Timer):.*"))
+                    continue;
+
+                // For ASS Dialogue lines, only take the text after the 9th comma
+                if (line.startsWith("Dialogue:")) {
+                    String[] parts = line.split(",", 10);
+                    if (parts.length >= 10) {
+                        line = parts[9];
+                    }
                 }
 
-                if (line.matches("\\d+")) {
-                    // Sequence number
-                    continue;
-                }
-
-                if (line.matches(".*-->.*")) {
-                    // Timestamp line
-                    isTextLine = true;
-                    continue;
-                }
-
-                if (isTextLine) {
-                    // This is subtitle text
-                    extractWords(line, wordCount);
-                }
+                // This is likely subtitle text
+                extractWords(line, wordCount);
             }
         } catch (IOException e) {
             throw new RuntimeException("Error parsing subtitles", e);

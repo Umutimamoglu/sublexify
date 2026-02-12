@@ -62,6 +62,11 @@ const MediaService = {
     deleteMedia: async (id: number): Promise<void> => {
         await api.delete(`/admin/media/${id}`);
     },
+
+    scrapeMedia: async (imdbId: string): Promise<string> => {
+        const response = await api.post<string>(`/admin/media/scrape?imdbId=${imdbId}`);
+        return response.data;
+    },
 };
 
 export default MediaService;

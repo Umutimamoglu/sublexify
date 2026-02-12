@@ -25,5 +25,7 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
        List<MediaWord> findUnknownWordsByMediaAndUser(@Param("mediaId") Long mediaId,
                      @Param("userId") Long userId);
 
+       @org.springframework.data.jpa.repository.Modifying
+       @org.springframework.transaction.annotation.Transactional
        void deleteByMediaId(Long mediaId);
 }

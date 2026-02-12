@@ -13,4 +13,6 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
     List<Media> findByLanguage(String language);
 
     List<Media> findByType(MediaType type);
+
+    java.util.Optional<Media> findByImdbId(String imdbId);
 }

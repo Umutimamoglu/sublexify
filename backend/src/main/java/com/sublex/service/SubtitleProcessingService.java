@@ -40,6 +40,10 @@ public class SubtitleProcessingService {
         Map<String, Integer> wordFrequencies = SubtitleParser.parseSubtitles(subtitleContent);
         log.info("Parsed {} unique words", wordFrequencies.size());
 
+        // Clear existing words for this media to prevent duplicate key errors
+        mediaWordRepository.deleteAllInBatch(mediaWordRepository.findByMediaId(mediaId));
+        log.info("Cleared existing words for mediaId: {}", mediaId);
+
         // Save each word and create MediaWord association
         wordFrequencies.forEach((wordText, count) -> {
             // Find or create word

@@ -49,6 +49,12 @@ const AdminPage = () => {
     const [mediaList, setMediaList] = useState<any[]>([]);
     const [loadingMedia, setLoadingMedia] = useState(false);
 
+    // Scraper State
+    const [scrapeImdbId, setScrapeImdbId] = useState('');
+    const [scraping, setScraping] = useState(false);
+    const [scrapeResult, setScrapeResult] = useState<string | null>(null);
+    const [scrapeError, setScrapeError] = useState<string | null>(null);
+
     // Fetch media on mount
     useEffect(() => {
         fetchMedia();
@@ -63,6 +69,23 @@ const AdminPage = () => {
             console.error('Failed to fetch media', err);
         } finally {
             setLoadingMedia(false);
+        }
+    };
+
+    const handleScrape = async () => {
+        if (!scrapeImdbId) return;
+        setScraping(true);
+        setScrapeResult(null);
+        setScrapeError(null);
+        try {
+            const result = await MediaService.scrapeMedia(scrapeImdbId);
+            setScrapeResult(result);
+            setScrapeImdbId('');
+            fetchMedia(); // Refresh list
+        } catch (err: any) {
+            setScrapeError(err.response?.data || 'Scraping failed');
+        } finally {
+            setScraping(false);
         }
     };
 
@@ -83,6 +106,38 @@ const AdminPage = () => {
     return (
         <div className="max-w-4xl mx-auto">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Admin Dashboard</h1>
+
+            {/* Scraper Section */}
+            <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Auto-Scrape from YTS</h2>
+                <div className="flex gap-4">
+                    <input
+                        type="text"
+                        value={scrapeImdbId}
+                        onChange={(e) => setScrapeImdbId(e.target.value)}
+                        placeholder="Enter IMDB ID (e.g. tt1431045)"
+                        className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                        onClick={handleScrape}
+                        disabled={scraping || !scrapeImdbId}
+                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {scraping && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {scraping ? 'Scraping...' : 'Scrape'}
+                    </button>
+                </div>
+                {scrapeResult && (
+                    <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-300 rounded-lg text-sm border border-green-100 dark:border-green-800">
+                        {scrapeResult}
+                    </div>
+                )}
+                {scrapeError && (
+                    <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-300 rounded-lg text-sm border border-red-100 dark:border-red-800">
+                        {scrapeError}
+                    </div>
+                )}
+            </div>
 
             <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Bulk Upload Subtitles</h2>
