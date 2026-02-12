@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -21,7 +22,17 @@ public class WordListController {
 
     @GetMapping
     public ResponseEntity<List<WordList>> getUserLists() {
-        return ResponseEntity.ok(wordListService.getUserLists(CURRENT_USER_ID));
+        List<WordList> userLists = wordListService.getUserLists(CURRENT_USER_ID);
+        WordList knownWordsList = wordListService.getKnownWordsList(CURRENT_USER_ID);
+
+        // Return explicit list to avoid modifying the immutable list if returned by
+        // repository directly (though it's usually mutable from JPA)
+        // But better safe to create a new list
+        List<WordList> allLists = new java.util.ArrayList<>();
+        allLists.add(knownWordsList);
+        allLists.addAll(userLists);
+
+        return ResponseEntity.ok(allLists);
     }
 
     @GetMapping("/{id}")

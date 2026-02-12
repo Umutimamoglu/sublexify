@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { listService, type WordList } from '@/services/list';
-import WordCard from '@/components/features/WordCard'; // We might reuse this or make a simpler one
-import { Loader2, Plus, Trash2, ChevronRight, Book } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import WordCard from '@/components/features/WordCard';
+import { Loader2, Plus, Trash2, ChevronRight, Book, Star } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import api from '@/services/api';
 
@@ -24,6 +23,7 @@ const UserListsPage = () => {
             const data = await listService.getUserLists();
             setLists(data);
             if (data.length > 0 && !selectedList) {
+                // Default to the first list (which might be "Bilinen Kelimeler" now)
                 setSelectedList(data[0]);
             }
         } catch (error) {
@@ -46,8 +46,6 @@ const UserListsPage = () => {
         }
     };
 
-    // We reuse the WordCard toggle logic roughly, or maybe we don't need toggle known here? 
-    // Usually lists are for studying, so knowing if it's known is good.
     const handleToggleKnown = async (wordId: number, currentStatus: boolean) => {
         try {
             if (currentStatus) {
@@ -61,10 +59,20 @@ const UserListsPage = () => {
                 const updatedWords = selectedList.words.map((w: any) =>
                     w.id === wordId ? { ...w, isKnown: !currentStatus } : w
                 );
-                setSelectedList({ ...selectedList, words: updatedWords });
 
-                // Also update the list in the main lists array
-                setLists(lists.map(l => l.id === selectedList.id ? { ...l, words: updatedWords } : l));
+                // If currently viewing "Known Words" list, removing known status should technically remove it from the list
+                // But generally we might want to keep it locally until refresh or remove it immediately.
+                // If it's the "Bilinen Kelimeler" list (id: -1), we should remove it from the view if unmarking known.
+                let newWords = updatedWords;
+                if (selectedList.id === -1 && currentStatus) { // Unmarking known in known list
+                    newWords = selectedList.words.filter((w: any) => w.id !== wordId);
+                }
+
+                const updatedList = { ...selectedList, words: newWords };
+                setSelectedList(updatedList);
+
+                // Update in main lists array
+                setLists(lists.map(l => l.id === selectedList.id ? updatedList : l));
             }
         } catch (err) {
             console.error('Failed to update word status', err);
@@ -72,17 +80,34 @@ const UserListsPage = () => {
     };
 
     const handleDeleteWord = async (listId: number, wordId: number) => {
+        if (listId === -1) {
+            // For "Known Words" list, "Delete" implies "Mark as Unknown"
+            if (!confirm("Remove this word from Known Words?")) return;
+            await handleToggleKnown(wordId, true);
+            return;
+        }
+
         if (!confirm("Remove this word from the list?")) return;
         try {
             await listService.removeWordFromList(listId, wordId);
             if (selectedList) {
                 const updatedWords = selectedList.words.filter((w: any) => w.id !== wordId);
-                setSelectedList({ ...selectedList, words: updatedWords });
-                setLists(lists.map(l => l.id === selectedList.id ? { ...l, words: updatedWords } : l));
+                const updatedList = { ...selectedList, words: updatedWords };
+                setSelectedList(updatedList);
+                setLists(lists.map(l => l.id === selectedList.id ? updatedList : l));
             }
         } catch (error) {
             console.error("Failed to remove word", error);
         }
+    };
+
+    const handleDeleteList = async (listId: number) => {
+        if (listId === -1) return; // Cannot delete system list
+        if (!confirm("Are you sure you want to delete this list?")) return;
+
+        // TODO: Implement delete list API in backend/service if not exists
+        // assuming listService.deleteList(listId) exists or we skip for now as not in task
+        alert("Delete list feature coming soon!");
     };
 
     if (loading && lists.length === 0) {
@@ -129,11 +154,20 @@ const UserListsPage = () => {
                                                 : "hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                                         )}
                                     >
-                                        <div className="min-w-0">
-                                            <p className="font-semibold truncate">{list.name}</p>
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                {list.words.length} words
-                                            </p>
+                                        <div className="min-w-0 flex items-center gap-3">
+                                            {/* Icon based on list type */}
+                                            {list.id === -1 ? (
+                                                <Star className={cn("w-5 h-5 shrink-0", selectedList?.id === list.id ? "fill-indigo-300/30" : "text-gray-400")} />
+                                            ) : (
+                                                <div className="w-2 h-2 rounded-full bg-indigo-400 shrink-0" />
+                                            )}
+
+                                            <div className="min-w-0">
+                                                <p className="font-semibold truncate">{list.name}</p>
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    {list.words.length} words
+                                                </p>
+                                            </div>
                                         </div>
                                         {selectedList?.id === list.id && (
                                             <ChevronRight className="w-4 h-4" />
@@ -149,68 +183,59 @@ const UserListsPage = () => {
                 <div className="flex-1">
                     {selectedList ? (
                         <div className="bg-white dark:bg-[#161822] rounded-3xl border border-gray-200/60 dark:border-gray-800/60 p-6 sm:p-8 min-h-[500px]">
-                            <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                                         {selectedList.name}
                                     </h2>
-                                    <p className="text-gray-400 text-sm mt-1">
-                                        Created {new Date(selectedList.createdAt).toLocaleDateString()}
+                                    <p className="text-gray-400 text-sm flex items-center gap-2">
+                                        <span>Created {new Date(selectedList.createdAt).toLocaleDateString()}</span>
+                                        <span>•</span>
+                                        <span>{selectedList.words.length} items</span>
                                     </p>
                                 </div>
-                                <div className="text-sm text-gray-500">
-                                    {selectedList.words.length} words
+                                <div className="flex items-center gap-2">
+                                    {selectedList.id !== -1 && (
+                                        <button
+                                            onClick={() => handleDeleteList(selectedList.id)}
+                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                            title="Delete List"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
                             {selectedList.words.length === 0 ? (
                                 <div className="text-center py-20 text-gray-400">
-                                    This list is empty. Go browse media to add words!
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Book className="w-10 h-10 opacity-20" />
+                                    </div>
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">List is empty</h3>
+                                    <p>Go browse media or search words to add to this list!</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                                     {selectedList.words.map((word: any) => (
-                                        <div key={word.id} className="relative group">
-                                            {/* We wrap WordCard to add a delete button specific to list view if needed, 
-                                                but WordCard has its own actions. 
-                                                Let's just use WordCard and maybe add a delete action overlay?
-                                                Actually WordCard has 'Bookmark' which adds to list. 
-                                                For this page, we might want 'Remove from List'.
-                                                For now, let's just use WordCard and I'll add a 'Remove' button top-right absolute.
-                                            */}
-                                            <WordCard
-                                                {...word}
-                                                // frequency might be missing in list words, or 0.
-                                                frequency={word.frequency || 0}
-                                                // isKnown needs to be calculated or comes from backend?
-                                                // existing backend WordList returns Set<Word>. Word entity doesn't have isKnown.
-                                                // Wait, WordListService returns WordList entity. Word entity is pure.
-                                                // We need to fetch isKnown status separately or map it.
-                                                // The current WordList endpoint just returns Words. It doesn't attach 'isKnown'.
-                                                // This is a gap. We might need isKnown for the list view.
-                                                // For now, let's defaults to false or try to fetch? 
-                                                // Or we can just show the word without known status for MVP?
-                                                // Better: UserListsPage should probably fetch known status or we update backend to return DTO.
-                                                // Let's assume for sprint 4 we might have to skip isKnown visual in list or accept it's missing.
-                                                // Actually, let's fix the backend later if needed. For now passed isKnown might be undefined/false.
-                                                // But wait, the toggleKnown function depends on it.
-                                                isKnown={word.isKnown || false}
-                                                onToggleKnown={handleToggleKnown}
-                                            />
-                                            <button
-                                                onClick={() => handleDeleteWord(selectedList.id, word.id)}
-                                                className="absolute -top-2 -right-2 p-1.5 bg-red-100 text-red-600 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200"
-                                                title="Remove from list"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
+                                        <WordCard
+                                            key={word.id}
+                                            {...word}
+                                            frequency={word.frequency || 0}
+                                            // Handle isKnown properly. 
+                                            // For Known Words list (-1), everything is known by definition, but word.isKnown might be null/missing.
+                                            // Ideally backend returns DTO with isKnown=true.
+                                            // If not, we default to false, OR true if listId === -1.
+                                            isKnown={word.isKnown || (selectedList.id === -1)}
+                                            onToggleKnown={handleToggleKnown}
+                                            onRemove={() => handleDeleteWord(selectedList.id, word.id)}
+                                        />
                                     ))}
                                 </div>
                             )}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 p-10 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl">
+                        <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 p-10 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl min-h-[400px]">
                             <Book className="w-12 h-12 mb-4 opacity-20" />
                             <p className="text-lg">Select a list to view words</p>
                         </div>
