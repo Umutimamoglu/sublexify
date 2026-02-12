@@ -1,7 +1,9 @@
 package com.sublex.controller;
 
 import com.sublex.model.Media;
+import com.sublex.model.Media;
 import com.sublex.repository.MediaRepository;
+import com.sublex.repository.MediaWordRepository;
 import com.sublex.service.SubtitleProcessingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -25,6 +28,7 @@ import java.util.Optional;
 public class AdminController {
 
     private final MediaRepository mediaRepository;
+    private final MediaWordRepository mediaWordRepository;
     private final SubtitleProcessingService subtitleProcessingService;
     private final TmdbService tmdbService;
 
@@ -129,5 +133,19 @@ public class AdminController {
         subtitleProcessingService.processSubtitles(media.getId(), content, language);
 
         return String.format("Processed %s as %s (ID: %d)", filename, media.getTitle(), media.getId());
+    }
+
+    @DeleteMapping("/media/{id}")
+    @Transactional
+    public ResponseEntity<Void> deleteMedia(@PathVariable Long id) {
+        log.info("Deleting media with ID: {}", id);
+
+        // Delete related MediaWords first
+        mediaWordRepository.deleteByMediaId(id);
+
+        // Delete Media
+        mediaRepository.deleteById(id);
+
+        return ResponseEntity.noContent().build();
     }
 }

@@ -24,4 +24,6 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
                      "ORDER BY mw.count DESC")
        List<MediaWord> findUnknownWordsByMediaAndUser(@Param("mediaId") Long mediaId,
                      @Param("userId") Long userId);
+
+       void deleteByMediaId(Long mediaId);
 }

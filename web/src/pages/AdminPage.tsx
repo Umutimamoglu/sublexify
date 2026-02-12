@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2 } from 'lucide-react';
 import MediaService from '@/services/MediaService';
@@ -46,6 +46,40 @@ const AdminPage = () => {
         }
     };
 
+    const [mediaList, setMediaList] = useState<any[]>([]);
+    const [loadingMedia, setLoadingMedia] = useState(false);
+
+    // Fetch media on mount
+    useEffect(() => {
+        fetchMedia();
+    }, []);
+
+    const fetchMedia = async () => {
+        setLoadingMedia(true);
+        try {
+            const data = await MediaService.getAllMedia();
+            setMediaList(data);
+        } catch (err) {
+            console.error('Failed to fetch media', err);
+        } finally {
+            setLoadingMedia(false);
+        }
+    };
+
+    const handleDelete = async (id: number, title: string) => {
+        if (!window.confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            await MediaService.deleteMedia(id);
+            setMediaList(prev => prev.filter(m => m.id !== id));
+        } catch (err) {
+            console.error('Failed to delete media', err);
+            alert('Failed to delete media');
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Admin Dashboard</h1>
@@ -60,8 +94,8 @@ const AdminPage = () => {
                 <div
                     {...getRootProps()}
                     className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${isDragActive
-                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10'
-                            : 'border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10'
+                        : 'border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'
                         }`}
                 >
                     <input {...getInputProps()} />
@@ -133,7 +167,7 @@ const AdminPage = () => {
             )}
 
             {results.length > 0 && (
-                <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6">
+                <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <CheckCircle className="w-6 h-6 text-green-500" />
                         Upload Results
@@ -141,8 +175,8 @@ const AdminPage = () => {
                     <div className="space-y-2">
                         {results.map((result, index) => (
                             <div key={index} className={`p-3 rounded-lg text-sm border ${result.startsWith('Error')
-                                    ? 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-800 text-red-700 dark:text-red-300'
-                                    : 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800 text-green-700 dark:text-green-300'
+                                ? 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-800 text-red-700 dark:text-red-300'
+                                : 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800 text-green-700 dark:text-green-300'
                                 }`}>
                                 {result}
                             </div>
@@ -150,6 +184,54 @@ const AdminPage = () => {
                     </div>
                 </div>
             )}
+
+            {/* Media List for Deletion */}
+            <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Manage Media</h2>
+                {loadingMedia ? (
+                    <div className="flex justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                    </div>
+                ) : mediaList.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">No media found.</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-700 dark:text-gray-300">
+                                <tr>
+                                    <th className="px-4 py-3 rounded-l-lg">Title</th>
+                                    <th className="px-4 py-3">Type</th>
+                                    <th className="px-4 py-3">Words</th>
+                                    <th className="px-4 py-3 rounded-r-lg text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                {mediaList.map((media) => (
+                                    <tr key={media.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                                            {media.title}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-xs font-medium">
+                                                {media.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3">{media.totalWords}</td>
+                                        <td className="px-4 py-3 text-right">
+                                            <button
+                                                onClick={() => handleDelete(media.id, media.title)}
+                                                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

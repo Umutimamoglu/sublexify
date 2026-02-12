@@ -58,6 +58,10 @@ const MediaService = {
         });
         return response.data;
     },
+
+    deleteMedia: async (id: number): Promise<void> => {
+        await api.delete(`/admin/media/${id}`);
+    },
 };
 
 export default MediaService;

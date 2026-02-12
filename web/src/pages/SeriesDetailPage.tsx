@@ -1,0 +1,141 @@
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import MediaService, { type Media } from '@/services/MediaService';
+import { Loader2, ArrowLeft, Play, Clock, Star } from 'lucide-react';
+
+const SeriesDetailPage = () => {
+    const { tmdbId } = useParams<{ tmdbId: string }>();
+    const navigate = useNavigate();
+    const [mediaList, setMediaList] = useState<Media[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedSeason, setSelectedSeason] = useState<number>(1);
+
+    useEffect(() => {
+        const fetchMedia = async () => {
+            const data = await MediaService.getAllMedia();
+            setMediaList(data);
+            setLoading(false);
+        };
+        fetchMedia();
+    }, []);
+
+    // Get all episodes for this series
+    const seriesEpisodes = useMemo(() => {
+        if (!tmdbId) return [];
+        return mediaList.filter(m => m.tmdbId === parseInt(tmdbId) && (m.type === 'EPISODE' || m.type === 'SEASON'));
+    }, [mediaList, tmdbId]);
+
+    // Metadata from the first episode found (usually easiest way without dedicated series endpoint)
+    const seriesMeta = seriesEpisodes[0];
+
+    // Get unique seasons
+    const seasons = useMemo(() => {
+        const s = new Set<number>();
+        seriesEpisodes.forEach(ep => {
+            if (ep.seasonNumber) s.add(ep.seasonNumber);
+        });
+        return Array.from(s).sort((a, b) => a - b);
+    }, [seriesEpisodes]);
+
+    // Filter current season episodes
+    const currentEpisodes = useMemo(() => {
+        return seriesEpisodes
+            .filter(ep => ep.seasonNumber === selectedSeason)
+            .sort((a, b) => (a.episodeNumber || 0) - (b.episodeNumber || 0));
+    }, [seriesEpisodes, selectedSeason]);
+
+    if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin" /></div>;
+    if (!seriesMeta) return <div className="p-10 text-center">Series not found</div>;
+
+    return (
+        <div>
+            {/* Header / Backdrop */}
+            <div className="relative w-full h-[400px] rounded-3xl overflow-hidden mb-8">
+                <div className="absolute inset-0 bg-black/40 z-10" />
+                <img
+                    src={seriesMeta.backdropUrl || seriesMeta.posterUrl}
+                    alt={seriesMeta.title}
+                    className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-0 left-0 p-8 z-20 w-full bg-gradient-to-t from-black/90 to-transparent">
+                    <button
+                        onClick={() => navigate('/browse/series')}
+                        className="mb-4 flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5" /> Back to Series
+                    </button>
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{seriesMeta.title}</h1>
+                    <div className="flex items-center gap-4 text-white/80 text-sm">
+                        <span className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" /> {seriesMeta.voteAverage?.toFixed(1)}
+                        </span>
+                        <span>{seasons.length} Seasons</span>
+                        <span>{seriesEpisodes.length} Episodes</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Overview */}
+            <div className="mb-10 max-w-4xl">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Overview</h2>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                    {seriesMeta.overview}
+                </p>
+            </div>
+
+            {/* Season Selector */}
+            <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
+                {seasons.map(season => (
+                    <button
+                        key={season}
+                        onClick={() => setSelectedSeason(season)}
+                        className={`px-6 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-colors ${selectedSeason === season
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            }`}
+                    >
+                        Season {season}
+                    </button>
+                ))}
+            </div>
+
+            {/* Episode List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentEpisodes.map(episode => (
+                    <div
+                        key={episode.id}
+                        onClick={() => navigate(`/media/${episode.id}`)}
+                        className="group flex gap-4 p-4 bg-white dark:bg-[#161822] border border-gray-200 dark:border-gray-800 rounded-2xl hover:border-indigo-500/50 dark:hover:border-indigo-500/50 transition-all cursor-pointer"
+                    >
+                        {/* Episode Thumbnail (Using still path ideally, or poster fallback) */}
+                        <div className="relative w-32 h-20 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
+                            {episode.backdropUrl ? (
+                                <img src={episode.backdropUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                    <Play className="w-8 h-8 opacity-50" />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col justify-center">
+                            <h4 className="font-semibold text-gray-900 dark:text-white group-hover:text-indigo-500 transition-colors">
+                                {episode.episodeNumber}. {episode.title}
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                {episode.overview || "No overview available."}
+                            </p>
+                            <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                                <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" /> {episode.totalWords} words
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default SeriesDetailPage;
