@@ -4,8 +4,11 @@ import com.sublex.model.Media;
 import com.sublex.repository.MediaRepository;
 import com.sublex.repository.MediaWordRepository;
 import com.sublex.repository.WordRepository;
+import com.sublex.service.EnrichmentService;
+import com.sublex.service.MediaService;
 import com.sublex.service.SubtitleProcessingService;
 import com.sublex.service.SubtitleScraperService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +38,7 @@ public class AdminController {
     private final TmdbService tmdbService;
     private final SubtitleScraperService subtitleScraperService;
     private final com.sublex.service.StandardListSeeder standardListSeeder;
+    private final EnrichmentService enrichmentService;
 
     // ... (other methods unchanged) ...
 
