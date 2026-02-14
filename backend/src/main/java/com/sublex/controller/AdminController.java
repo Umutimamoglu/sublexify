@@ -34,12 +34,25 @@ public class AdminController {
     private final SubtitleProcessingService subtitleProcessingService;
     private final TmdbService tmdbService;
     private final SubtitleScraperService subtitleScraperService;
+    private final com.sublex.service.StandardListSeeder standardListSeeder;
 
     // ... (other methods unchanged) ...
 
     @GetMapping("/stats/word-count")
     public ResponseEntity<Long> getTotalWordCount() {
         return ResponseEntity.ok(wordRepository.count());
+    }
+
+    @PostMapping("/lists/seed/defaults")
+    public ResponseEntity<String> seedDefaultLists() {
+        log.info("Request to seed default lists");
+        try {
+            String result = standardListSeeder.seedDefaults();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Failed to seed default lists", e);
+            return ResponseEntity.internalServerError().body("Failed to seed lists: " + e.getMessage());
+        }
     }
 
     /**

@@ -68,6 +68,11 @@ const MediaService = {
         return response.data;
     },
 
+    seedDefaultLists: async (): Promise<string> => {
+        const response = await api.post<string>('/admin/lists/seed/defaults');
+        return response.data;
+    },
+
     scrapeEpisode: async (imdbId: string, season: number, episode: number): Promise<string> => {
         const response = await api.post<string>(`/admin/media/scrape-episode`, null, {
             params: { imdbId, season, episode }

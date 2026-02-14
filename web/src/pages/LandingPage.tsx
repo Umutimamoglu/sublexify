@@ -42,7 +42,8 @@ const LandingPage = () => {
                 Select a category to start your immersive language learning journey with Sublex.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+            {/* Categories Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mb-20">
                 {categories.map((category) => (
                     <button
                         key={category.id}
@@ -50,7 +51,7 @@ const LandingPage = () => {
                         className="group relative flex flex-col items-center p-8 bg-white dark:bg-[#161822] border border-gray-200 dark:border-gray-800 rounded-3xl hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 text-center"
                     >
                         <div className={`p-4 rounded-2xl mb-6 ${category.color} bg-opacity-10 dark:bg-opacity-20`}>
-                            <category.icon className={`w-10 h-10 ${category.color.replace('bg-', 'text-')}`} />
+                            <CategoryIcon icon={category.icon} color={category.color} />
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                             {category.title}
@@ -58,6 +59,76 @@ const LandingPage = () => {
                         <p className="text-gray-500 dark:text-gray-400">
                             {category.description}
                         </p>
+                    </button>
+                ))}
+            </div>
+
+            {/* Featured Lists Section */}
+            <FeaturedLists />
+        </div>
+    );
+};
+
+const CategoryIcon = ({ icon: Icon, color }: { icon: any, color: string }) => (
+    <Icon className={`w-10 h-10 ${color.replace('bg-', 'text-')}`} />
+);
+
+import { useEffect, useState } from 'react';
+import WordListService, { type WordList } from '@/services/WordListService';
+import { BookOpen, ChevronRight } from 'lucide-react';
+
+const FeaturedLists = () => {
+    const navigate = useNavigate();
+    const [lists, setLists] = useState<WordList[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchLists = async () => {
+            try {
+                const data = await WordListService.getStandardLists();
+                setLists(data);
+            } catch (err) {
+                console.error('Failed to fetch standard lists', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchLists();
+    }, []);
+
+    if (loading) return null;
+    if (lists.length === 0) return null;
+
+    return (
+        <div className="w-full max-w-5xl">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-3">
+                <BookOpen className="w-6 h-6 text-indigo-500" />
+                Featured Collections
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {lists.map(list => (
+                    <button
+                        key={list.id}
+                        onClick={() => navigate(`/lists/${list.id}`)}
+                        className="group text-left bg-white dark:bg-[#161822] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all hover:shadow-lg hover:-translate-y-1"
+                    >
+                        <div className="flex items-start justify-between mb-4">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <List className="w-5 h-5" />
+                            </div>
+                            <span className="bg-gray-100 dark:bg-gray-800 text-xs font-semibold px-2.5 py-1 rounded-lg text-gray-600 dark:text-gray-300">
+                                Official
+                            </span>
+                        </div>
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">
+                            {list.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
+                            Standard vocabulary list to boost your language skills.
+                        </p>
+                        <div className="flex items-center text-indigo-600 dark:text-indigo-400 text-sm font-medium">
+                            Start Learning <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                        </div>
                     </button>
                 ))}
             </div>

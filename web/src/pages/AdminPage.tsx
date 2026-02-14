@@ -272,6 +272,39 @@ const AdminPage = () => {
                 </div>
             </div>
 
+            {/* Standard Lists Section */}
+            <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Standard Word Lists</h2>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                            Seed your database with standard vocabulary lists:
+                        </p>
+                        <ul className="text-sm text-gray-500 dark:text-gray-400 list-disc list-inside">
+                            <li>Top 500 Verbs</li>
+                            <li>Top 200 Adjectives</li>
+                            <li>Top 100 Adverbs</li>
+                            <li>Oxford 3000 (Partial)</li>
+                        </ul>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            if (!window.confirm('This will seed the database with standard lists. Continue?')) return;
+                            try {
+                                alert(await MediaService.seedDefaultLists());
+                                fetchWordCount(); // Refresh count
+                            } catch (err: any) {
+                                alert('Failed: ' + (err.response?.data || err.message));
+                            }
+                        }}
+                        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors flex items-center gap-2"
+                    >
+                        <Download className="w-4 h-4" />
+                        Seed Default Lists
+                    </button>
+                </div>
+            </div>
+
             {/* TV Series Scraper Section */}
             <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">TV Series Scraper</h2>
