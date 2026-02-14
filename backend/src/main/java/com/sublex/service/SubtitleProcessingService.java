@@ -35,6 +35,7 @@ public class SubtitleProcessingService {
      * @param mediaId         The media ID
      * @param subtitleContent The .srt file content
      */
+
     /**
      * Process subtitle file and save words to database
      *
@@ -61,28 +62,10 @@ public class SubtitleProcessingService {
         mediaWordRepository.deleteAllInBatch(mediaWordRepository.findByMediaId(mediaId));
         log.info("Cleared existing words for mediaId: {}", mediaId);
 
-        // 3. Batch Fetch Existing Words
-        java.util.List<Word> existingWords = wordRepository.findByWordInAndLanguage(wordFrequencies.keySet(), language);
-        Map<String, Word> wordMap = existingWords.stream()
-                .collect(java.util.stream.Collectors.toMap(Word::getWord, w -> w));
-
-        // 4. Identify and Batch Save New Words
-        for (String wordText : wordFrequencies.keySet()) {
-            if (!wordMap.containsKey(wordText)) {
-                // Try to insert cleanly (Thread-safe due to ON CONFLICT DO NOTHING)
-                try {
-                    wordRepository.insertIgnore(wordText, language);
-                } catch (Exception e) {
-                    log.warn("Failed to insert word '{}': {}", wordText, e.getMessage());
-                }
-            }
-        }
-
-        // Re-fetch ALL relevant words to ensure we have IDs for everything
-        // (including those just inserted by this thread or others)
-        java.util.List<Word> allRefetchedWords = wordRepository.findByWordInAndLanguage(wordFrequencies.keySet(),
-                language);
-        allRefetchedWords.forEach(w -> wordMap.put(w.getWord(), w));
+        // 3. DICTIONARY UPDATE
+        // Map<String, Word> wordMap = getOrCreateWords(wordFrequencies.keySet(),
+        // language);
+        Map<String, Word> wordMap = getOrCreateWords(wordFrequencies.keySet(), language);
 
         // 5. Create and Batch Save MediaWord Associations
         java.util.List<MediaWord> mediaWords = new java.util.ArrayList<>();
@@ -100,4 +83,28 @@ public class SubtitleProcessingService {
 
         log.info("Subtitle processing completed for mediaId: {}", mediaId);
     }
+
+    private Map<String, Word> getOrCreateWords(java.util.Set<String> words, String language) {
+        // 3.1 Batch Fetch Existing Words
+        java.util.List<Word> existingWords = wordRepository.findByWordInAndLanguage(words, language);
+        Map<String, Word> wordMap = existingWords.stream()
+                .collect(java.util.stream.Collectors.toMap(Word::getWord, w -> w));
+
+        // 3.2 Identify and Insert New Words
+        for (String wordText : words) {
+            if (!wordMap.containsKey(wordText)) {
+                // Try to insert cleanly
+                try {
+                    wordRepository.insertIgnore(wordText, language);
+                } catch (Exception e) {
+                    log.warn("Failed to insert word '{}': {}", wordText, e.getMessage());
+                }
+            }
+        }
+
+        // 3.3 Re-fetch ALL to get IDs
+        java.util.List<Word> allRefetchedWords = wordRepository.findByWordInAndLanguage(words, language);
+        return allRefetchedWords.stream().collect(java.util.stream.Collectors.toMap(Word::getWord, w -> w));
+    }
+
 }

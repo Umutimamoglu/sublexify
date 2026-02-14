@@ -67,7 +67,8 @@ public class AdminController {
         List<String> results = java.util.Arrays.stream(files)
                 .map(file -> {
                     try {
-                        log.info("Processing file: {}", file.getOriginalFilename());
+                        log.info("Processing file: {} on thread: {}", file.getOriginalFilename(),
+                                Thread.currentThread().getName());
                         String result = processUploadedFile(file, language);
                         log.info("File processed successfully: {}", result);
                         return result;
