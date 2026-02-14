@@ -16,5 +16,7 @@ public interface WordRepository extends JpaRepository<Word, Long> {
 
     List<Word> findByWordContainingAndLanguage(String word, String language);
 
+    List<Word> findByWordInAndLanguage(java.util.Collection<String> words, String language);
+
     List<Word> findByLanguage(String language, org.springframework.data.domain.Pageable pageable);
 }

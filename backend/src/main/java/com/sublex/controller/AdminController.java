@@ -3,6 +3,7 @@ package com.sublex.controller;
 import com.sublex.model.Media;
 import com.sublex.repository.MediaRepository;
 import com.sublex.repository.MediaWordRepository;
+import com.sublex.repository.WordRepository;
 import com.sublex.service.SubtitleProcessingService;
 import com.sublex.service.SubtitleScraperService;
 import lombok.RequiredArgsConstructor;
@@ -29,11 +30,17 @@ public class AdminController {
 
     private final MediaRepository mediaRepository;
     private final MediaWordRepository mediaWordRepository;
+    private final WordRepository wordRepository;
     private final SubtitleProcessingService subtitleProcessingService;
     private final TmdbService tmdbService;
     private final SubtitleScraperService subtitleScraperService;
 
     // ... (other methods unchanged) ...
+
+    @GetMapping("/stats/word-count")
+    public ResponseEntity<Long> getTotalWordCount() {
+        return ResponseEntity.ok(wordRepository.count());
+    }
 
     /**
      * Batch upload subtitles with auto-detection

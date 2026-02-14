@@ -49,6 +49,7 @@ const AdminPage = () => {
 
     const [mediaList, setMediaList] = useState<any[]>([]);
     const [loadingMedia, setLoadingMedia] = useState(false);
+    const [totalWordCount, setTotalWordCount] = useState<number | null>(null);
 
     // Scraper State
     const [scrapeImdbId, setScrapeImdbId] = useState('');
@@ -69,7 +70,17 @@ const AdminPage = () => {
     // Fetch media on mount
     useEffect(() => {
         fetchMedia();
+        fetchWordCount();
     }, []);
+
+    const fetchWordCount = async () => {
+        try {
+            const count = await MediaService.getTotalWordCount();
+            setTotalWordCount(count);
+        } catch (err) {
+            console.error('Failed to fetch word count', err);
+        }
+    };
 
     const fetchMedia = async () => {
         setLoadingMedia(true);
@@ -245,6 +256,21 @@ const AdminPage = () => {
     return (
         <div className="max-w-4xl mx-auto">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Admin Dashboard</h1>
+
+            {/* Stats Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 flex items-center gap-4">
+                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl text-indigo-600 dark:text-indigo-400">
+                        <FileText className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Total Unique Words</p>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {totalWordCount !== null ? totalWordCount.toLocaleString() : '-'}
+                        </h3>
+                    </div>
+                </div>
+            </div>
 
             {/* TV Series Scraper Section */}
             <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
