@@ -39,11 +39,13 @@ public class OpenAIService implements AIService {
                                                 Return a JSON object with:
                                                 1. 'word': the word itself.
                                                 2. 'difficulty': CEFR level (A1-C2).
-                                                3. 'meanings': Array of objects, grouped by Part of Speech. For each POS, provide the most common 1-2 meanings.
+                                                3. 'morphology': Object with 'root' (base word), 'suffixes' (list of suffixes), and 'explanation' (in Turkish).
+                                                4. 'verb_forms': If the word is a verb, provide 'v1', 'v2', 'v3', and 'ing' forms. Otherwise, return null.
+                                                5. 'meanings': Array of objects, grouped by Part of Speech. For each POS, provide the most common 1-2 meanings.
                                                    - 'pos': part of speech in English (noun, verb, adj, etc.)
                                                    - 'definition': Short, clear, and NATURAL definition IN TURKISH. Explain slang or loanword context in Turkish.
                                                    - 'example': One example sentence in English, with its COMPLETE TURKISH translation in parentheses.
-                                                4. 'phrasal_verbs': Array of 2-3 common phrasal verbs (if any).
+                                                6. 'phrasal_verbs': Array of 2-3 common phrasal verbs (if any).
                                                    - 'phrase': the phrasal verb.
                                                    - 'definition': short definition IN TURKISH.
                                                    - 'example': One example sentence in English, with its COMPLETE TURKISH translation in parentheses.
@@ -53,9 +55,11 @@ public class OpenAIService implements AIService {
                                                 - RULE: The Turkish sentence in parentheses MUST be 100%% natural Turkish.
                                                 - STRICTLY FORBIDDEN: Do not leave the target English word untranslated inside the parentheses.
                                                 - STRICTLY FORBIDDEN: Do not mix English words with Turkish suffixes (e.g., NO "shooting'i", "fess up yaptı", "fiyatlar shoot up oldu").
+                                                - NUMERICAL ACCURACY: If the word represents a number, fraction, or quantity (e.g., 'billionth', 'half'), the translation MUST be mathematically precise. 'Billionth' is 'milyarda bir', NOT 'binde bir'.
 
                                                 FEW-SHOT EXAMPLES (WRONG VS RIGHT):
                                                 - WRONG: (Dağcılar arroyo'yu takip etti.) -> RIGHT: (Dağcılar kuru dere yatağını takip etti.)
+                                                - WRONG: (Bir milyar saniyenin binde biri...) -> RIGHT: (Saniyenin milyarda biri...)
                                                 - WRONG: (Filmin shooting'i birkaç ay sürdü.) -> RIGHT: (Filmin çekimleri birkaç ay sürdü.)
                                                 - WRONG: (O, hedefe shooting yapıyordu.) -> RIGHT: (O, hedefe ateş ediyordu.)
                                                 - WRONG: (Fiyatlar shoot up oldu.) -> RIGHT: (Fiyatlar hızla yükseldi.)
@@ -64,6 +68,8 @@ public class OpenAIService implements AIService {
                                                 {
                                                   "word": "...",
                                                   "difficulty": "...",
+                                                  "morphology": { "root": "...", "suffixes": [...], "explanation": "..." },
+                                                  "verb_forms": { "v1": "...", "v2": "...", "v3": "...", "ing": "..." },
                                                   "meanings": [{ "pos": "...", "definition": "...", "example": "..." }],
                                                   "phrasal_verbs": [{ "phrase": "...", "definition": "...", "example": "..." }]
                                                 }
@@ -73,6 +79,7 @@ public class OpenAIService implements AIService {
                 try {
                         Map<String, Object> requestBody = Map.of(
                                         "model", MODEL,
+                                        "temperature", 0.3,
                                         "messages", List.of(
                                                         Map.of("role", "system", "content",
                                                                         "You are a dictionary assistant backend. You output only valid JSON."),
