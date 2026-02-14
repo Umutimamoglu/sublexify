@@ -225,4 +225,17 @@ public class AdminController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @PostMapping("/enrich-batch")
+    @Operation(summary = "Triggers AI enrichment for the next 10 pending words")
+    public ResponseEntity<String> enrichBatch() {
+        log.info("Manual request to trigger AI enrichment batch");
+        try {
+            enrichmentService.enrichPendingWords();
+            return ResponseEntity.ok("Enrichment batch completed successfully");
+        } catch (Exception e) {
+            log.error("Enrichment batch failed", e);
+            return ResponseEntity.internalServerError().body("Enrichment failed: " + e.getMessage());
+        }
+    }
 }

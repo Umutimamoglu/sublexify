@@ -35,6 +35,11 @@ public class WordListController {
         return ResponseEntity.ok(allLists);
     }
 
+    @GetMapping("/standard")
+    public ResponseEntity<List<WordList>> getStandardLists() {
+        return ResponseEntity.ok(wordListService.getStandardLists());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<WordList> getListById(@PathVariable Long id) {
         return ResponseEntity.ok(wordListService.getListById(id));

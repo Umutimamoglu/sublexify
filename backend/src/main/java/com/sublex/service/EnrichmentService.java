@@ -20,8 +20,8 @@ public class EnrichmentService {
 
     @Transactional
     public void enrichPendingWords() {
-        // Fetch a small batch to avoid timeouts
-        List<Word> pendingWords = wordRepository.findTop10ByIsEnrichedFalse();
+        // Fetch a small batch to avoid timeouts - includes NULLs
+        List<Word> pendingWords = wordRepository.findPendingEnrichment();
 
         if (pendingWords.isEmpty()) {
             log.info("No pending words to enrich.");

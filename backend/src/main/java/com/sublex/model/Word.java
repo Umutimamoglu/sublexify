@@ -34,7 +34,7 @@ public class Word {
     @Column(length = 10)
     private String difficulty; // e.g., "A1", "C2"
 
-    @Column(name = "is_enriched", nullable = false)
+    @Column(name = "is_enriched")
     private Boolean isEnriched = false;
 
     @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)

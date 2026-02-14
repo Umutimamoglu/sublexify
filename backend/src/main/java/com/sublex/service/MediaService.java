@@ -118,6 +118,10 @@ public class MediaService {
         dto.setFrequency(mediaWord.getCount());
         dto.setIsKnown(isKnown);
 
+        dto.setDefinition(mediaWord.getWord().getDefinition());
+        dto.setDifficulty(mediaWord.getWord().getDifficulty());
+        dto.setIsEnriched(mediaWord.getWord().getIsEnriched());
+
         return dto;
     }
 }

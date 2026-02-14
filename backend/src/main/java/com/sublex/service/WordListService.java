@@ -107,6 +107,11 @@ public class WordListService {
         }
 
         @Transactional(readOnly = true)
+        public List<WordList> getStandardLists() {
+                return wordListRepository.findAllByUserId(1L);
+        }
+
+        @Transactional(readOnly = true)
         public WordList getKnownWordsList(Long userId) {
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));

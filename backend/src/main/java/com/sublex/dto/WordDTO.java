@@ -13,4 +13,9 @@ public class WordDTO {
     private String language;
     private Integer frequency; // How many times in media
     private Boolean isKnown; // For authenticated users
+
+    // AI Enrichment Fields
+    private com.sublex.model.WordDefinition definition;
+    private String difficulty;
+    private Boolean isEnriched;
 }
