@@ -62,18 +62,22 @@ public class AdminController {
     public ResponseEntity<List<String>> batchUpload(@RequestParam("files") MultipartFile[] files,
             @RequestParam(defaultValue = "en") String language) {
         log.info("Batch upload request received with {} files", files.length);
-        List<String> results = new ArrayList<>();
-        for (MultipartFile file : files) {
-            try {
-                log.info("Processing file: {}", file.getOriginalFilename());
-                String result = processUploadedFile(file, language);
-                results.add(result);
-                log.info("File processed successfully: {}", result);
-            } catch (Exception e) {
-                log.error("Error processing file {}", file.getOriginalFilename(), e);
-                results.add("Error processing " + file.getOriginalFilename() + ": " + e.getMessage());
-            }
-        }
+
+        // Process files in parallel
+        List<String> results = java.util.Arrays.stream(files)
+                .map(file -> {
+                    try {
+                        log.info("Processing file: {}", file.getOriginalFilename());
+                        String result = processUploadedFile(file, language);
+                        log.info("File processed successfully: {}", result);
+                        return result;
+                    } catch (Exception e) {
+                        log.error("Error processing file {}", file.getOriginalFilename(), e);
+                        return "Error processing " + file.getOriginalFilename() + ": " + e.getMessage();
+                    }
+                })
+                .collect(java.util.stream.Collectors.toList());
+
         return ResponseEntity.ok(results);
     }
 

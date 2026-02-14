@@ -29,6 +29,18 @@ public class SubtitleProcessingService {
      * @param mediaId         The media ID
      * @param subtitleContent The .srt file content
      */
+    /**
+     * Process subtitle file and save words to database
+     *
+     * @param mediaId         The media ID
+     * @param subtitleContent The .srt file content
+     */
+    /**
+     * Process subtitle file and save words to database
+     *
+     * @param mediaId         The media ID
+     * @param subtitleContent The .srt file content
+     */
     @Transactional
     public void processSubtitles(Long mediaId, String subtitleContent, String language) {
         log.info("Processing subtitles for mediaId: {}, length: {}", mediaId, subtitleContent.length());
@@ -55,18 +67,22 @@ public class SubtitleProcessingService {
                 .collect(java.util.stream.Collectors.toMap(Word::getWord, w -> w));
 
         // 4. Identify and Batch Save New Words
-        java.util.List<Word> newWords = new java.util.ArrayList<>();
         for (String wordText : wordFrequencies.keySet()) {
             if (!wordMap.containsKey(wordText)) {
-                newWords.add(new Word(null, wordText, language, null));
+                // Try to insert cleanly (Thread-safe due to ON CONFLICT DO NOTHING)
+                try {
+                    wordRepository.insertIgnore(wordText, language);
+                } catch (Exception e) {
+                    log.warn("Failed to insert word '{}': {}", wordText, e.getMessage());
+                }
             }
         }
 
-        if (!newWords.isEmpty()) {
-            log.info("Saving {} new words...", newWords.size());
-            java.util.List<Word> savedNewWords = wordRepository.saveAll(newWords);
-            savedNewWords.forEach(w -> wordMap.put(w.getWord(), w));
-        }
+        // Re-fetch ALL relevant words to ensure we have IDs for everything
+        // (including those just inserted by this thread or others)
+        java.util.List<Word> allRefetchedWords = wordRepository.findByWordInAndLanguage(wordFrequencies.keySet(),
+                language);
+        allRefetchedWords.forEach(w -> wordMap.put(w.getWord(), w));
 
         // 5. Create and Batch Save MediaWord Associations
         java.util.List<MediaWord> mediaWords = new java.util.ArrayList<>();

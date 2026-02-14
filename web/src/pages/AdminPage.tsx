@@ -7,6 +7,7 @@ import type { TmdbMedia, TmdbSeasonDetails } from '@/services/MediaService';
 const AdminPage = () => {
     const [files, setFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<string | null>(null);
     const [results, setResults] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
 
@@ -14,6 +15,7 @@ const AdminPage = () => {
         setFiles(prev => [...prev, ...acceptedFiles]);
         setError(null);
         setResults([]);
+        setUploadProgress(null);
     }, []);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -34,16 +36,20 @@ const AdminPage = () => {
         setUploading(true);
         setError(null);
         setResults([]);
+        setUploadProgress(`Uploading and processing ${files.length} files...`);
 
         try {
+            // Send all files in one go. Backend handles parallelism.
             const response = await MediaService.batchUpload(files);
             setResults(response);
             setFiles([]); // Clear queue on success
+            setUploadProgress(null);
         } catch (err: any) {
             setError(err.response?.data || 'Failed to upload files');
             console.error(err);
         } finally {
             setUploading(false);
+            setUploadProgress(null);
         }
     };
 
@@ -253,8 +259,34 @@ const AdminPage = () => {
         }
     };
 
+    // Grouping Logic
+    const movies = mediaList.filter(m => m.type === 'MOVIE');
+    const episodes = mediaList.filter(m => m.type === 'EPISODE');
+
+    // Group episodes by Series Name
+    const seriesGroups: { [key: string]: typeof episodes } = {};
+
+    episodes.forEach(ep => {
+        // Try to extract series name
+        let seriesName = 'Unknown Series';
+
+        // Strategy 1: If title has " - ", assume first part is series name
+        const parts = ep.title.split(' - ');
+        if (parts.length > 1) {
+            seriesName = parts[0].trim();
+        } else if (ep.title.includes('Season') || ep.title.includes('Episode')) {
+            // Fallback for simple names, maybe just group as "Other Episodes"
+            seriesName = 'Uncategorized Episodes';
+        }
+
+        if (!seriesGroups[seriesName]) {
+            seriesGroups[seriesName] = [];
+        }
+        seriesGroups[seriesName].push(ep);
+    });
+
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto pb-20">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Admin Dashboard</h1>
 
             {/* Stats Section */}
@@ -536,7 +568,10 @@ const AdminPage = () => {
                 {/* File List */}
                 {files.length > 0 && (
                     <div className="mt-6 space-y-3">
-                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Selected Files ({files.length})</h3>
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Selected Files ({files.length})</h3>
+                        </div>
+
                         <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
                             {files.map((file, index) => (
                                 <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
@@ -555,7 +590,10 @@ const AdminPage = () => {
                             ))}
                         </div>
 
-                        <div className="pt-4 flex justify-end">
+                        <div className="pt-4 flex justify-between items-center">
+                            <span className="text-sm text-indigo-600 dark:text-indigo-400 font-medium animate-pulse">
+                                {uploadProgress}
+                            </span>
                             <button
                                 onClick={handleUpload}
                                 disabled={uploading}
@@ -608,53 +646,112 @@ const AdminPage = () => {
                 </div>
             )}
 
-            {/* Media List for Deletion */}
-            <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Manage Media</h2>
+            {/* Managed Media List (Refactored) */}
+            <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Media</h2>
+
                 {loadingMedia ? (
                     <div className="flex justify-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
                     </div>
-                ) : mediaList.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4">No media found.</p>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-gray-500 dark:text-gray-400">
-                            <thead className="bg-gray-50 dark:bg-gray-800/50 text-xs uppercase text-gray-700 dark:text-gray-300">
-                                <tr>
-                                    <th className="px-4 py-3 rounded-l-lg">Title</th>
-                                    <th className="px-4 py-3">Type</th>
-                                    <th className="px-4 py-3">Words</th>
-                                    <th className="px-4 py-3 rounded-r-lg text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {mediaList.map((media) => (
-                                    <tr key={media.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                                            {media.title}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-xs font-medium">
-                                                {media.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">{media.totalWords}</td>
-                                        <td className="px-4 py-3 text-right">
-                                            <button
-                                                onClick={() => handleDelete(media.id, media.title)}
-                                                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                            >
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <>
+                        {/* Movies Section */}
+                        {movies.length > 0 && (
+                            <MediaGroup
+                                title="Movies"
+                                count={movies.length}
+                                items={movies}
+                                onDelete={handleDelete}
+                            />
+                        )}
+
+                        {/* Series Sections */}
+                        {Object.entries(seriesGroups).map(([seriesName, epList]) => (
+                            <MediaGroup
+                                key={seriesName}
+                                title={seriesName}
+                                count={epList.length}
+                                items={epList}
+                                onDelete={handleDelete}
+                                isSeries={true}
+                            />
+                        ))}
+
+                        {mediaList.length === 0 && (
+                            <p className="text-gray-500 text-center py-4">No media found.</p>
+                        )}
+                    </>
                 )}
             </div>
+        </div>
+    );
+};
+
+// Helper Component for Media Groups (Accordion)
+const MediaGroup = ({ title, count, items, onDelete, isSeries = false }: {
+    title: string,
+    count: number,
+    items: any[],
+    onDelete: (id: number, title: string) => void,
+    isSeries?: boolean
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl overflow-hidden">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between p-6 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors text-left"
+            >
+                <div className="flex items-center gap-3">
+                    {isSeries ? (
+                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                            <FileText className="w-5 h-5" />
+                        </div>
+                    ) : (
+                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
+                            <FileText className="w-5 h-5" />
+                        </div>
+                    )}
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-lg">{title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {count} {isSeries ? (count === 1 ? 'Episode' : 'Episodes') : (count === 1 ? 'Movie' : 'Movies')}
+                        </p>
+                    </div>
+                </div>
+                {isOpen ? (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                ) : (
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                )}
+            </button>
+
+            {isOpen && (
+                <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-[#1e202e]/50">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {items.map(media => (
+                            <div key={media.id} className="p-4 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                                <div className="flex-1 min-w-0 pr-4">
+                                    <h5 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                        {isSeries ? media.title.split(' - ').slice(1).join(' - ') || media.title : media.title}
+                                    </h5>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        {media.totalWords} Words
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => onDelete(media.id, media.title)}
+                                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium px-3 py-1.5 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
