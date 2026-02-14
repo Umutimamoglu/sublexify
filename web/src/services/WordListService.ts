@@ -1,10 +1,27 @@
 import api from './api';
 
+export interface WordDefinition {
+    word: string;
+    difficulty: string;
+    meanings: {
+        pos: string;
+        definition: string;
+        example: string;
+    }[];
+    phrasal_verbs: {
+        phrase: string;
+        definition: string;
+        example: string;
+    }[];
+}
+
 export interface Word {
     id: number;
     word: string;
     language: string;
-    definition?: string;
+    definition?: WordDefinition;
+    difficulty?: string;
+    isEnriched?: boolean;
 }
 
 export interface WordList {

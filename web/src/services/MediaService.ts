@@ -1,4 +1,5 @@
 import api from './api';
+import { Word } from './WordListService';
 
 export interface Media {
     id: number;
@@ -20,12 +21,10 @@ export interface Media {
 export interface MediaWordsResponse {
     mediaId: number;
     totalWords: number;
-    words: {
-        id: number;
-        word: string;
+    words: (Word & {
         frequency: number;
         isKnown: boolean;
-    }[];
+    })[];
 }
 
 const MediaService = {
