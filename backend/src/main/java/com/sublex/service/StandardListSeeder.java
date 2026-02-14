@@ -83,7 +83,10 @@ public class StandardListSeeder {
             java.util.List<Word> newWords = new java.util.ArrayList<>();
             for (String wordText : wordsToSeed) {
                 if (!existingWordTexts.contains(wordText)) {
-                    newWords.add(new Word(null, wordText, "en", null));
+                    newWords.add(Word.builder()
+                            .word(wordText)
+                            .language("en")
+                            .build());
                 }
             }
 

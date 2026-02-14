@@ -69,7 +69,10 @@ public class SubtitleProcessingService {
                 java.util.List<Word> newWords = new java.util.ArrayList<>();
                 for (String wordText : wordFrequencies.keySet()) {
                     if (!currentMap.containsKey(wordText)) {
-                        newWords.add(new Word(null, wordText, language, null));
+                        newWords.add(Word.builder()
+                                .word(wordText)
+                                .language(language)
+                                .build());
                     }
                 }
 

@@ -8,13 +8,16 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+import lombok.Builder;
+
 @Entity
 @Table(name = "word", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"word", "language"})
+        @UniqueConstraint(columnNames = { "word", "language" })
 })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Word {
 
     @Id
@@ -26,6 +29,17 @@ public class Word {
 
     @Column(nullable = false)
     private String language = "en";
+
+    // AI Enrichment Fields
+    @Column(length = 10)
+    private String difficulty; // e.g., "A1", "C2"
+
+    @Column(name = "is_enriched", nullable = false)
+    private Boolean isEnriched = false;
+
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private WordDefinition definition;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
