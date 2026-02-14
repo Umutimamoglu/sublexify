@@ -23,7 +23,7 @@ public interface WordRepository extends JpaRepository<Word, Long> {
 
     @Modifying
     @org.springframework.transaction.annotation.Transactional
-    @Query(value = "INSERT INTO word (word, language, created_at) VALUES (:word, :language, CURRENT_TIMESTAMP) ON CONFLICT (word, language) DO NOTHING", nativeQuery = true)
+    @Query(value = "INSERT INTO word (word, language, created_at) SELECT :word, :language, CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM word WHERE word = :word AND language = :language)", nativeQuery = true)
     void insertIgnore(@Param("word") String word, @Param("language") String language);
 
     List<Word> findByLanguage(String language, org.springframework.data.domain.Pageable pageable);
