@@ -40,6 +40,7 @@ public class AdminController {
     private final com.sublex.service.StandardListSeeder standardListSeeder;
     private final EnrichmentService enrichmentService;
     private final com.sublex.service.AuditService auditService;
+    private final com.sublex.service.SpecialistService specialistService;
 
     // ... (other methods unchanged) ...
 
@@ -259,12 +260,21 @@ public class AdminController {
         return ResponseEntity.ok(wordRepository.findDistinctEnrichedDates(language));
     }
 
+    @PostMapping("/specialist-fix")
+    public ResponseEntity<String> triggerSpecialistFix(
+            @RequestParam(defaultValue = "en") String language,
+            @RequestParam(defaultValue = "10") int limit) {
+        specialistService.fixFlaggedWords(language, limit);
+        return ResponseEntity.ok("Specialist correction loop triggered for " + limit + " words.");
+    }
+
     @GetMapping("/words/enriched")
     public ResponseEntity<org.springframework.data.domain.Page<com.sublex.model.Word>> getEnrichedWords(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "en") String language,
-            @RequestParam(defaultValue = "false") boolean needsReEnrichment) {
+            @RequestParam(defaultValue = "false") boolean needsReEnrichment,
+            @RequestParam(defaultValue = "false") boolean isVerified) {
 
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
                 org.springframework.data.domain.Sort.by("id").descending());
@@ -273,6 +283,10 @@ public class AdminController {
             return ResponseEntity
                     .ok(wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language, pageable));
         }
+        if (isVerified) {
+            return ResponseEntity
+                    .ok(wordRepository.findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(language, pageable));
+        }
         return ResponseEntity.ok(wordRepository.findByLanguageAndIsEnrichedTrue(language, pageable));
     }
 
@@ -280,12 +294,15 @@ public class AdminController {
     public ResponseEntity<List<com.sublex.model.Word>> downloadEnrichedWords(
             @RequestParam(defaultValue = "en") String language,
             @RequestParam(required = false) java.time.LocalDate date,
-            @RequestParam(defaultValue = "false") boolean needsReEnrichment) {
+            @RequestParam(defaultValue = "false") boolean needsReEnrichment,
+            @RequestParam(defaultValue = "false") boolean isVerified) {
 
         List<com.sublex.model.Word> words;
 
         if (needsReEnrichment) {
             words = wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language);
+        } else if (isVerified) {
+            words = wordRepository.findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(language);
         } else if (date != null) {
             java.time.LocalDateTime start = date.atStartOfDay();
             java.time.LocalDateTime end = date.atTime(java.time.LocalTime.MAX);

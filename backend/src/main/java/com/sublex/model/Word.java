@@ -47,6 +47,12 @@ public class Word {
     @Column(name = "needs_re_enrichment")
     private Boolean needsReEnrichment = false;
 
+    @Column(name = "is_verified")
+    private Boolean isVerified = false;
+
+    @Column(name = "audit_notes", columnDefinition = "text")
+    private String auditNotes;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

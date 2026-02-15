@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,71 +46,123 @@ public class AuditService {
         try {
             log.info("Auditing batch of {} words...", batch.size());
 
+            // Veriyi hazırlarken gereksiz alanları atıyoruz (token tasarrufu)
             List<Map<String, Object>> auditInput = batch.stream()
+                    .filter(w -> w.getDefinition() != null)
                     .map(w -> Map.of(
                             "id", w.getId(),
                             "word", w.getWord(),
-                            "difficulty", w.getDifficulty(),
-                            "definition", w.getDefinition()))
+                            "morphology", w.getDefinition().getMorphology(), // Morfoloji kontrolü için şart
+                            "meanings", w.getDefinition().getMeanings() // Anlam kontrolü için şart
+                    ))
                     .collect(Collectors.toList());
+
+            if (auditInput.isEmpty())
+                return;
 
             String inputJson = objectMapper.writeValueAsString(auditInput);
 
+            // GÜÇLENDİRİLMİŞ PROMPT
             String prompt = String.format(
                     """
-                            You are 'The Sheriff', a high-capacity Linguistic Auditor.
-                            Review the following English-to-Turkish word enrichments for accuracy, naturalness, and quality.
+                            You are 'The Sheriff', a strict Linguistic Auditor for an English-Turkish Dictionary.
+                            Your job is to REJECT any entry that violates the following strict laws.
 
-                            AUDIT RULES:
-                            1. MATHEMATICAL ACCURACY: Numbers/Fractions (e.g., 'billionth') must be precise Turkish equivalents.
-                            2. TURKISH NATURALNESS: Parenthesized translations in examples MUST be 100%% natural Turkish.
-                            3. NO LOANWORD MIXING: No mixing languages (e.g., avoid "shooting'i", "fess up yaptı").
-                            4. DEFINITION SIMPLICITY: Definitions must be simple and suitable for students.
+                            ### THE LAWS (REJECTION CRITERIA):
+                            1. **MORPHOLOGY LAW**: The 'morphology' field MUST analyze the ENGLISH root.
+                               - REJECT IF: Root is Turkish (e.g., word:'husband', root:'eş').
+                               - REJECT IF: Root implies a Turkish translation logic.
 
-                            INPUT DATA (JSON):
+                            2. **TRANSLATION LAW**: The 'example' sentence in Turkish MUST be natural and fluent.
+                               - REJECT IF: It sounds like a robot/machine translation.
+                               - REJECT IF: It uses English grammar order in Turkish.
+
+                            3. **FALSE FRIEND LAW**:
+                               - REJECT IF: The definition is for a Turkish word that looks like the English word (e.g., 'bide' -> 'bi de', 'hockey' -> 'hokey').
+
+                            4. **DATA INTEGRITY**:
+                               - REJECT IF: The definition does not match the word provided.
+
+                            ### INPUT DATA (JSON):
                             %s
 
-                            RETURN JSON:
-                            Return a list of IDs for words that FAIL the audit, with a short 'reason' in Turkish.
-                            Structure: { "audit_results": [ { "id": 123, "fail": true, "reason": "..." } ] }
-                            If all pass, return exactly: { "audit_results": [] }
+                            ### OUTPUT FORMAT:
+                            Return a JSON object containing a list of FAILED items only.
+                            If an item is correct, DO NOT include it in the list.
+
+                            Format:
+                            {
+                              "audit_results": [
+                                { "id": 123, "fail": true, "reason": "Morphology analyzes Turkish root instead of English." },
+                                { "id": 456, "fail": true, "reason": "Example sentence is unnatural/machine translated." }
+                              ]
+                            }
                             """,
                     inputJson);
 
             String response = geminiService.generateContent(prompt);
-            log.debug("Sheriff raw response: {}", response);
 
-            if (response == null || response.trim().isEmpty()) {
-                log.error("Sheriff returned an empty response for this batch.");
+            if (response == null || response.isEmpty()) {
+                log.error("Sheriff (Gemini) returned empty response. Skipping batch to prevent false approvals.");
                 return;
             }
 
-            Map<String, Object> responseMap = objectMapper.readValue(response, new TypeReference<>() {
+            // JSON Temizleme
+            String cleanJson = cleanJsonFromMarkdown(response);
+
+            Map<String, Object> responseMap = objectMapper.readValue(cleanJson, new TypeReference<>() {
             });
             List<Map<String, Object>> results = (List<Map<String, Object>>) responseMap.get("audit_results");
 
-            if (results == null || results.isEmpty()) {
-                log.info("Sheriff approved all words in this batch.");
-                return;
-            }
+            if (results == null)
+                results = Collections.emptyList();
 
-            for (Map<String, Object> result : results) {
-                if (Boolean.TRUE.equals(result.get("fail"))) {
-                    Long id = Long.valueOf(result.get("id").toString());
-                    String reason = (String) result.get("reason");
+            // MANTIK DÜZELTME: Listeyi Map'e çeviriyoruz (ID -> Reason)
+            Map<Long, String> failureMap = results.stream()
+                    .filter(r -> r != null && Boolean.TRUE.equals(r.get("fail")) && r.get("id") != null)
+                    .collect(Collectors.toMap(
+                            r -> Long.valueOf(r.get("id").toString()),
+                            r -> r.get("reason") != null ? (String) r.get("reason") : "Hatalı tespit edildi.",
+                            (existing, replacement) -> existing));
 
-                    wordRepository.findById(id).ifPresent(word -> {
-                        log.warn("Sheriff REJECTED word '{}': {}", word.getWord(), reason);
-                        word.setNeedsReEnrichment(true);
-                        wordRepository.save(word);
-                    });
+            for (Word word : batch) {
+                if (failureMap.containsKey(word.getId())) {
+                    String reason = failureMap.get(word.getId());
+                    log.warn("Sheriff REJECTED word '{}': {}", word.getWord(), reason);
+
+                    word.setNeedsReEnrichment(true);
+                    word.setIsVerified(false);
+                    word.setAuditNotes(reason);
+                } else {
+                    log.info("Sheriff APPROVED word '{}'", word.getWord());
+
+                    word.setIsVerified(true);
+                    word.setNeedsReEnrichment(false);
+                    word.setAuditNotes(null);
                 }
+                wordRepository.save(word);
             }
 
-            log.info("Batch audit complete. Marked {} words for re-enrichment.", results.size());
+            log.info("Batch audit complete. Rejected: {}, Approved: {}", failureMap.size(),
+                    batch.size() - failureMap.size());
 
         } catch (Exception e) {
             log.error("Failed to process Sheriff audit batch", e);
         }
+    }
+
+    private String cleanJsonFromMarkdown(String response) {
+        if (response == null)
+            return "{}";
+        String content = response.trim();
+        if (content.startsWith("```json")) {
+            content = content.substring(7);
+        } else if (content.startsWith("```")) {
+            content = content.substring(3);
+        }
+        if (content.endsWith("```")) {
+            content = content.substring(0, content.length() - 3);
+        }
+        return content.trim();
     }
 }

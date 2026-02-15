@@ -1,6 +1,5 @@
 package com.sublex.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sublex.model.WordDefinition;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +60,7 @@ public class OpenAIService implements AIService {
                                                 FEW-SHOT EXAMPLES (WRONG VS RIGHT):
                                                 - WRONG: (Dağcılar arroyo'yu takip etti.) -> RIGHT: (Dağcılar kuru dere yatağını takip etti.)
                                                 - WRONG: (Bir milyar saniyenin binde biri...) -> RIGHT: (Saniyenin milyarda biri...)
-                                                - WRONG: (Filmin shooting'i birkaç ay sürdü.) -> RIGHT: (Filmin çekimleri birkaç ay sürdü.)
+                                                - WRONG: (Filmin shooting'i several ay sürdü.) -> RIGHT: (Filmin çekimleri birkaç ay sürdü.)
                                                 - WRONG: (O, hedefe shooting yapıyordu.) -> RIGHT: (O, hedefe ateş ediyordu.)
                                                 - WRONG: (Fiyatlar shoot up oldu.) -> RIGHT: (Fiyatlar hızla yükseldi.)
 
@@ -95,7 +94,6 @@ public class OpenAIService implements AIService {
                                         .retrieve()
                                         .body(String.class);
 
-                        // Parse response to get choices[0].message.content
                         Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
                         List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
                         Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");

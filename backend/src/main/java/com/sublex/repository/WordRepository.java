@@ -35,7 +35,13 @@ public interface WordRepository extends JpaRepository<Word, Long> {
                         String language,
                         org.springframework.data.domain.Pageable pageable);
 
+        org.springframework.data.domain.Page<Word> findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(
+                        String language,
+                        org.springframework.data.domain.Pageable pageable);
+
         List<Word> findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(String language);
+
+        List<Word> findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(String language);
 
         List<Word> findByLanguageAndIsEnrichedTrue(String language);
 
@@ -45,6 +51,6 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         List<Word> findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(String language, java.time.LocalDateTime start,
                         java.time.LocalDateTime end);
 
-        @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND (w.needsReEnrichment = false OR w.needsReEnrichment IS NULL) ORDER BY w.enrichedAt DESC LIMIT :limit")
+        @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND (w.needsReEnrichment = false OR w.needsReEnrichment IS NULL) AND (w.isVerified = false OR w.isVerified IS NULL) ORDER BY w.enrichedAt ASC LIMIT :limit")
         List<Word> findTopEnrichedWords(@Param("limit") int limit);
 }

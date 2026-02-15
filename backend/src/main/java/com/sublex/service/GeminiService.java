@@ -22,14 +22,14 @@ public class GeminiService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestClient restClient = RestClient.create();
 
-    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
+    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=";
 
     public String generateContent(String prompt) {
         if (apiKey == null || apiKey.isEmpty()) {
             log.error("GEMINI_API_KEY is missing from environment!");
             return null;
         }
-        log.info("Calling Gemini API with model: gemini-2.5-flash (Key length: {})", apiKey.length());
+        log.info("Calling Gemini API with model: gemini-3-flash-preview (Key length: {})", apiKey.length());
 
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
@@ -71,7 +71,7 @@ public class GeminiService {
             return (String) parts.get(0).get("text");
 
         } catch (Exception e) {
-            log.error("Gemini API call failed. Model: gemini-2.5-flash. Error: {}", e.getMessage(), e);
+            log.error("Gemini API call failed. Model: gemini-3-flash-preview. Error: {}", e.getMessage(), e);
             return null;
         }
     }
