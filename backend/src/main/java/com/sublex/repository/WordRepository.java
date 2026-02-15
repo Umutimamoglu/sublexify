@@ -30,4 +30,6 @@ public interface WordRepository extends JpaRepository<Word, Long> {
 
     org.springframework.data.domain.Page<Word> findByLanguageAndIsEnrichedTrue(String language,
             org.springframework.data.domain.Pageable pageable);
+
+    List<Word> findByLanguageAndIsEnrichedTrue(String language);
 }

@@ -304,13 +304,25 @@ const AdminPage = () => {
                 </div>
             </div>
 
-            {/* Enriched Words Library Section */}
             <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <FileText className="w-5 h-5 text-indigo-500" />
                         Enriched Words Library
                     </h2>
+                    <button
+                        onClick={async () => {
+                            try {
+                                await MediaService.downloadEnrichedWords();
+                            } catch (err) {
+                                alert('Failed to download enriched words');
+                            }
+                        }}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors flex items-center gap-2 text-sm"
+                    >
+                        <Download className="w-4 h-4" />
+                        Download JSON
+                    </button>
                 </div>
 
                 <EnrichedWordsTable />

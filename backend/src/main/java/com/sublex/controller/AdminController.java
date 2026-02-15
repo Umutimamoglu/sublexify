@@ -249,4 +249,17 @@ public class AdminController {
                 org.springframework.data.domain.Sort.by("id").descending());
         return ResponseEntity.ok(wordRepository.findByLanguageAndIsEnrichedTrue(language, pageable));
     }
+
+    @GetMapping("/words/enriched/download")
+    public ResponseEntity<List<com.sublex.model.Word>> downloadEnrichedWords(
+            @RequestParam(defaultValue = "en") String language) {
+
+        List<com.sublex.model.Word> words = wordRepository.findByLanguageAndIsEnrichedTrue(language);
+
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"enriched_" + language + ".json\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body(words);
+    }
 }

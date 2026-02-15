@@ -109,6 +109,21 @@ const MediaService = {
         });
         return response.data;
     },
+
+    downloadEnrichedWords: async (): Promise<void> => {
+        const response = await api.get<Blob>('/admin/words/enriched/download', {
+            responseType: 'blob'
+        });
+
+        // Create a link element, hide it, click it, and remove it
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'enriched_words.json');
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+    }
 };
 
 export interface Page<T> {

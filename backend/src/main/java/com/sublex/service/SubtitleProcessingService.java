@@ -40,7 +40,19 @@ public class SubtitleProcessingService {
 
         // 1. Parse subtitles and get word frequencies
         Map<String, Integer> wordFrequencies = SubtitleParser.parseSubtitles(subtitleContent);
-        log.info("Parsed {} unique words", wordFrequencies.size());
+
+        // Filter out short words not in whitelist
+        java.util.Set<String> shortWordWhitelist = java.util.Set.of(
+                "a", "i", "am", "an", "as", "at", "be", "by", "do", "go", "he", "hi", "if", "in", "is", "it",
+                "me", "my", "no", "of", "oh", "on", "or", "ox", "so", "to", "up", "us", "we",
+                "ah", "eh", "ha", "ho", "ow", "ya", "yo");
+
+        wordFrequencies.entrySet().removeIf(entry -> {
+            String w = entry.getKey().toLowerCase();
+            return w.length() <= 2 && !shortWordWhitelist.contains(w);
+        });
+
+        log.info("Parsed {} unique words (after filtering short words)", wordFrequencies.size());
 
         if (wordFrequencies.isEmpty()) {
             log.warn("No words found in subtitles for mediaId: {}", mediaId);
