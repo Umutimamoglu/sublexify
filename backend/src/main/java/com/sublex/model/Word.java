@@ -41,6 +41,9 @@ public class Word {
     @Column(columnDefinition = "jsonb")
     private WordDefinition definition;
 
+    @Column(name = "enriched_at")
+    private LocalDateTime enrichedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

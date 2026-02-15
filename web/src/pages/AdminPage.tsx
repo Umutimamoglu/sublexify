@@ -88,6 +88,14 @@ const AdminPage = () => {
         }
     };
 
+    // Date Filtering State
+    const [availableDates, setAvailableDates] = useState<string[]>([]);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+    useEffect(() => {
+        MediaService.getEnrichedDates().then(setAvailableDates).catch(console.error);
+    }, []);
+
     const fetchMedia = async () => {
         setLoadingMedia(true);
         try {
@@ -310,19 +318,34 @@ const AdminPage = () => {
                         <FileText className="w-5 h-5 text-indigo-500" />
                         Enriched Words Library
                     </h2>
-                    <button
-                        onClick={async () => {
-                            try {
-                                await MediaService.downloadEnrichedWords();
-                            } catch (err) {
-                                alert('Failed to download enriched words');
-                            }
-                        }}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors flex items-center gap-2 text-sm"
-                    >
-                        <Download className="w-4 h-4" />
-                        Download JSON
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <select
+                                className="appearance-none bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-2 pl-4 pr-10 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer text-sm"
+                                onChange={(e) => setSelectedDate(e.target.value || null)}
+                                value={selectedDate || ''}
+                            >
+                                <option value="">All Dates</option>
+                                {availableDates.map(date => (
+                                    <option key={date} value={date}>{date}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        </div>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    await MediaService.downloadEnrichedWords(selectedDate || undefined);
+                                } catch (err) {
+                                    alert('Failed to download enriched words');
+                                }
+                            }}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors flex items-center gap-2 text-sm"
+                        >
+                            <Download className="w-4 h-4" />
+                            Download JSON
+                        </button>
+                    </div>
                 </div>
 
                 <EnrichedWordsTable />

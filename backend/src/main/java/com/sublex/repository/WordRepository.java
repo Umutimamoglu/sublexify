@@ -32,4 +32,10 @@ public interface WordRepository extends JpaRepository<Word, Long> {
             org.springframework.data.domain.Pageable pageable);
 
     List<Word> findByLanguageAndIsEnrichedTrue(String language);
+
+    @Query(value = "SELECT DISTINCT CAST(DATE(enriched_at) AS VARCHAR) FROM word WHERE language = :language AND is_enriched = true AND enriched_at IS NOT NULL ORDER BY 1 DESC", nativeQuery = true)
+    List<String> findDistinctEnrichedDates(@Param("language") String language);
+
+    List<Word> findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(String language, java.time.LocalDateTime start,
+            java.time.LocalDateTime end);
 }

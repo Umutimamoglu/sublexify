@@ -103,6 +103,13 @@ const MediaService = {
         const response = await api.get<TmdbSeasonDetails>(`/admin/media/tmdb/series/${id}/season/${season}`);
         return response.data;
     },
+    getEnrichedDates: async (language: string = 'en'): Promise<string[]> => {
+        const response = await api.get<string[]>('/admin/words/enriched/dates', {
+            params: { language }
+        });
+        return response.data;
+    },
+
     getEnrichedWords: async (page: number = 0, size: number = 20): Promise<Page<Word>> => {
         const response = await api.get<Page<Word>>('/admin/words/enriched', {
             params: { page, size }
@@ -110,16 +117,17 @@ const MediaService = {
         return response.data;
     },
 
-    downloadEnrichedWords: async (): Promise<void> => {
+    downloadEnrichedWords: async (date?: string): Promise<void> => {
         const response = await api.get<Blob>('/admin/words/enriched/download', {
-            responseType: 'blob'
+            responseType: 'blob',
+            params: { date }
         });
 
         // Create a link element, hide it, click it, and remove it
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', 'enriched_words.json');
+        link.setAttribute('download', `enriched_words${date ? '_' + date : ''}.json`);
         document.body.appendChild(link);
         link.click();
         link.parentNode?.removeChild(link);

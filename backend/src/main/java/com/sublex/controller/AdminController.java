@@ -239,6 +239,12 @@ public class AdminController {
         }
     }
 
+    @GetMapping("/words/enriched/dates")
+    public ResponseEntity<List<String>> getEnrichedDates(
+            @RequestParam(defaultValue = "en") String language) {
+        return ResponseEntity.ok(wordRepository.findDistinctEnrichedDates(language));
+    }
+
     @GetMapping("/words/enriched")
     public ResponseEntity<org.springframework.data.domain.Page<com.sublex.model.Word>> getEnrichedWords(
             @RequestParam(defaultValue = "0") int page,
@@ -252,13 +258,24 @@ public class AdminController {
 
     @GetMapping("/words/enriched/download")
     public ResponseEntity<List<com.sublex.model.Word>> downloadEnrichedWords(
-            @RequestParam(defaultValue = "en") String language) {
+            @RequestParam(defaultValue = "en") String language,
+            @RequestParam(required = false) java.time.LocalDate date) {
 
-        List<com.sublex.model.Word> words = wordRepository.findByLanguageAndIsEnrichedTrue(language);
+        List<com.sublex.model.Word> words;
+
+        if (date != null) {
+            java.time.LocalDateTime start = date.atStartOfDay();
+            java.time.LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
+            words = wordRepository.findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(language, start, end);
+        } else {
+            words = wordRepository.findByLanguageAndIsEnrichedTrue(language);
+        }
+
+        String filename = "enriched_" + language + (date != null ? "_" + date : "") + ".json";
 
         return ResponseEntity.ok()
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"enriched_" + language + ".json\"")
+                        "attachment; filename=\"" + filename + "\"")
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .body(words);
     }
