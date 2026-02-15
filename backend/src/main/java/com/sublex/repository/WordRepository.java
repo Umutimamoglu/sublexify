@@ -31,6 +31,12 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         org.springframework.data.domain.Page<Word> findByLanguageAndIsEnrichedTrue(String language,
                         org.springframework.data.domain.Pageable pageable);
 
+        org.springframework.data.domain.Page<Word> findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(
+                        String language,
+                        org.springframework.data.domain.Pageable pageable);
+
+        List<Word> findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(String language);
+
         List<Word> findByLanguageAndIsEnrichedTrue(String language);
 
         @Query(value = "SELECT DISTINCT CAST(DATE(enriched_at) AS VARCHAR) FROM word WHERE language = :language AND is_enriched = true AND enriched_at IS NOT NULL ORDER BY 1 DESC", nativeQuery = true)
@@ -38,4 +44,7 @@ public interface WordRepository extends JpaRepository<Word, Long> {
 
         List<Word> findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(String language, java.time.LocalDateTime start,
                         java.time.LocalDateTime end);
+
+        @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND (w.needsReEnrichment = false OR w.needsReEnrichment IS NULL) ORDER BY w.enrichedAt DESC LIMIT :limit")
+        List<Word> findTopEnrichedWords(@Param("limit") int limit);
 }

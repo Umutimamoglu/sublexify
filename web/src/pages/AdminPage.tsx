@@ -91,6 +91,7 @@ const AdminPage = () => {
     // Date Filtering State
     const [availableDates, setAvailableDates] = useState<string[]>([]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [filterFlagged, setFilterFlagged] = useState(false);
 
     useEffect(() => {
         MediaService.getEnrichedDates().then(setAvailableDates).catch(console.error);
@@ -319,11 +320,23 @@ const AdminPage = () => {
                         Enriched Words Library
                     </h2>
                     <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                checked={filterFlagged}
+                                onChange={(e) => setFilterFlagged(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-indigo-500 transition-colors">
+                                Re-enrichment pending
+                            </span>
+                        </label>
                         <div className="relative">
                             <select
-                                className="appearance-none bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-2 pl-4 pr-10 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer text-sm"
+                                className="appearance-none bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-2 pl-4 pr-10 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer text-sm disabled:opacity-50"
                                 onChange={(e) => setSelectedDate(e.target.value || null)}
                                 value={selectedDate || ''}
+                                disabled={filterFlagged}
                             >
                                 <option value="">All Dates</option>
                                 {availableDates.map(date => (
@@ -335,7 +348,7 @@ const AdminPage = () => {
                         <button
                             onClick={async () => {
                                 try {
-                                    await MediaService.downloadEnrichedWords(selectedDate || undefined);
+                                    await MediaService.downloadEnrichedWords(selectedDate || undefined, filterFlagged);
                                 } catch (err) {
                                     alert('Failed to download enriched words');
                                 }
@@ -348,7 +361,7 @@ const AdminPage = () => {
                     </div>
                 </div>
 
-                <EnrichedWordsTable />
+                <EnrichedWordsTable filterFlagged={filterFlagged} />
             </div>
 
             {/* Standard Lists Section */}
@@ -806,7 +819,7 @@ const MediaGroup = ({ title, count, items, onDelete, isSeries = false }: {
 export default AdminPage;
 
 // Helper Component for Enriched Words Table
-const EnrichedWordsTable = () => {
+const EnrichedWordsTable = ({ filterFlagged = false }) => {
     const [words, setWords] = useState<any[]>([]);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
@@ -816,7 +829,7 @@ const EnrichedWordsTable = () => {
     const fetchWords = useCallback(async (pageIndex: number) => {
         setLoading(true);
         try {
-            const data = await MediaService.getEnrichedWords(pageIndex, 10);
+            const data = await MediaService.getEnrichedWords(pageIndex, 10, filterFlagged);
             setWords(data.content);
             setTotalPages(data.totalPages);
             setPage(data.number);
@@ -825,7 +838,7 @@ const EnrichedWordsTable = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [filterFlagged]);
 
     useEffect(() => {
         fetchWords(0);

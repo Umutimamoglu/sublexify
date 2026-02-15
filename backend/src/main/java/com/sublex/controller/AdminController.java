@@ -39,6 +39,7 @@ public class AdminController {
     private final SubtitleScraperService subtitleScraperService;
     private final com.sublex.service.StandardListSeeder standardListSeeder;
     private final EnrichmentService enrichmentService;
+    private final com.sublex.service.AuditService auditService;
 
     // ... (other methods unchanged) ...
 
@@ -227,7 +228,7 @@ public class AdminController {
     }
 
     @PostMapping("/enrich-batch")
-    @Operation(summary = "Triggers AI enrichment for the next 10 pending words")
+    @Operation(summary = "Triggers AI enrichment for the next batch of pending words")
     public ResponseEntity<String> enrichBatch() {
         log.info("Manual request to trigger AI enrichment batch");
         try {
@@ -236,6 +237,19 @@ public class AdminController {
         } catch (Exception e) {
             log.error("Enrichment batch failed", e);
             return ResponseEntity.internalServerError().body("Enrichment failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/audit-batch")
+    @Operation(summary = "Triggers the Sheriff (Gemini 1.5 Pro) to audit recently enriched words")
+    public ResponseEntity<String> auditBatch(@RequestParam(defaultValue = "50") int size) {
+        log.info("Manual request to trigger Sheriff audit for last {} words", size);
+        try {
+            auditService.auditRecentWords(size);
+            return ResponseEntity.ok("Audit batch completed successfully");
+        } catch (Exception e) {
+            log.error("Audit batch failed", e);
+            return ResponseEntity.internalServerError().body("Audit failed: " + e.getMessage());
         }
     }
 
@@ -249,21 +263,30 @@ public class AdminController {
     public ResponseEntity<org.springframework.data.domain.Page<com.sublex.model.Word>> getEnrichedWords(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "en") String language) {
+            @RequestParam(defaultValue = "en") String language,
+            @RequestParam(defaultValue = "false") boolean needsReEnrichment) {
 
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
                 org.springframework.data.domain.Sort.by("id").descending());
+
+        if (needsReEnrichment) {
+            return ResponseEntity
+                    .ok(wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language, pageable));
+        }
         return ResponseEntity.ok(wordRepository.findByLanguageAndIsEnrichedTrue(language, pageable));
     }
 
     @GetMapping("/words/enriched/download")
     public ResponseEntity<List<com.sublex.model.Word>> downloadEnrichedWords(
             @RequestParam(defaultValue = "en") String language,
-            @RequestParam(required = false) java.time.LocalDate date) {
+            @RequestParam(required = false) java.time.LocalDate date,
+            @RequestParam(defaultValue = "false") boolean needsReEnrichment) {
 
         List<com.sublex.model.Word> words;
 
-        if (date != null) {
+        if (needsReEnrichment) {
+            words = wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language);
+        } else if (date != null) {
             java.time.LocalDateTime start = date.atStartOfDay();
             java.time.LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
             words = wordRepository.findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(language, start, end);
@@ -271,7 +294,8 @@ public class AdminController {
             words = wordRepository.findByLanguageAndIsEnrichedTrue(language);
         }
 
-        String filename = "enriched_" + language + (date != null ? "_" + date : "") + ".json";
+        String filename = "enriched_" + language + (needsReEnrichment ? "_flagged" : "")
+                + (date != null ? "_" + date : "") + ".json";
 
         return ResponseEntity.ok()
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,

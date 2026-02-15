@@ -44,6 +44,9 @@ public class Word {
     @Column(name = "enriched_at")
     private LocalDateTime enrichedAt;
 
+    @Column(name = "needs_re_enrichment")
+    private Boolean needsReEnrichment = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

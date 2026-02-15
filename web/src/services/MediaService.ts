@@ -110,24 +110,24 @@ const MediaService = {
         return response.data;
     },
 
-    getEnrichedWords: async (page: number = 0, size: number = 20): Promise<Page<Word>> => {
+    getEnrichedWords: async (page: number = 0, size: number = 20, needsReEnrichment: boolean = false): Promise<Page<Word>> => {
         const response = await api.get<Page<Word>>('/admin/words/enriched', {
-            params: { page, size }
+            params: { page, size, needsReEnrichment }
         });
         return response.data;
     },
 
-    downloadEnrichedWords: async (date?: string): Promise<void> => {
+    downloadEnrichedWords: async (date?: string, needsReEnrichment: boolean = false): Promise<void> => {
         const response = await api.get<Blob>('/admin/words/enriched/download', {
             responseType: 'blob',
-            params: { date }
+            params: { date, needsReEnrichment }
         });
 
         // Create a link element, hide it, click it, and remove it
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `enriched_words${date ? '_' + date : ''}.json`);
+        link.setAttribute('download', `enriched_words${needsReEnrichment ? '_flagged' : ''}${date ? '_' + date : ''}.json`);
         document.body.appendChild(link);
         link.click();
         link.parentNode?.removeChild(link);

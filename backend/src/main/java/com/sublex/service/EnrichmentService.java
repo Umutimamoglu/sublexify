@@ -88,6 +88,7 @@ public class EnrichmentService {
             word.setDefinition(definition);
             word.setDifficulty(definition.getDifficulty());
             word.setIsEnriched(true);
+            word.setNeedsReEnrichment(false);
             word.setEnrichedAt(LocalDateTime.now());
             log.debug("Enriched '{}' ({})", word.getWord(), word.getDifficulty());
         } else {
