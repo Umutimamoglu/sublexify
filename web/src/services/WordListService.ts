@@ -13,6 +13,11 @@ export interface WordDefinition {
         definition: string;
         example: string;
     }[];
+    morphology?: {
+        root: string;
+        suffixes: string[];
+        explanation: string;
+    };
 }
 
 export interface Word {
