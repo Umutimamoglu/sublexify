@@ -238,4 +238,15 @@ public class AdminController {
             return ResponseEntity.internalServerError().body("Enrichment failed: " + e.getMessage());
         }
     }
+
+    @GetMapping("/words/enriched")
+    public ResponseEntity<org.springframework.data.domain.Page<com.sublex.model.Word>> getEnrichedWords(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "en") String language) {
+
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
+                org.springframework.data.domain.Sort.by("id").descending());
+        return ResponseEntity.ok(wordRepository.findByLanguageAndIsEnrichedTrue(language, pageable));
+    }
 }

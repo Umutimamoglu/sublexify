@@ -56,6 +56,7 @@ public class OpenAIService implements AIService {
                                                 - STRICTLY FORBIDDEN: Do not leave the target English word untranslated inside the parentheses.
                                                 - STRICTLY FORBIDDEN: Do not mix English words with Turkish suffixes (e.g., NO "shooting'i", "fess up yaptı", "fiyatlar shoot up oldu").
                                                 - NUMERICAL ACCURACY: If the word represents a number, fraction, or quantity (e.g., 'billionth', 'half'), the translation MUST be mathematically precise. 'Billionth' is 'milyarda bir', NOT 'binde bir'.
+                                                - DEFINITIONS MUST BE SIMPLE: Use concrete, everyday Turkish words suitable for a primary school student. Avoid abstract or philosophical terms like 'fenomen', 'kavram', 'tezahür'.
 
                                                 FEW-SHOT EXAMPLES (WRONG VS RIGHT):
                                                 - WRONG: (Dağcılar arroyo'yu takip etti.) -> RIGHT: (Dağcılar kuru dere yatağını takip etti.)
@@ -79,7 +80,7 @@ public class OpenAIService implements AIService {
                 try {
                         Map<String, Object> requestBody = Map.of(
                                         "model", MODEL,
-                                        "temperature", 0.3,
+                                        "temperature", 0.2,
                                         "messages", List.of(
                                                         Map.of("role", "system", "content",
                                                                         "You are a dictionary assistant backend. You output only valid JSON."),

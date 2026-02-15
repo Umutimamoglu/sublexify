@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import MediaService from '@/services/MediaService';
@@ -302,6 +302,18 @@ const AdminPage = () => {
                         </h3>
                     </div>
                 </div>
+            </div>
+
+            {/* Enriched Words Library Section */}
+            <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-indigo-500" />
+                        Enriched Words Library
+                    </h2>
+                </div>
+
+                <EnrichedWordsTable />
             </div>
 
             {/* Standard Lists Section */}
@@ -757,3 +769,131 @@ const MediaGroup = ({ title, count, items, onDelete, isSeries = false }: {
 };
 
 export default AdminPage;
+
+// Helper Component for Enriched Words Table
+const EnrichedWordsTable = () => {
+    const [words, setWords] = useState<any[]>([]);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [expandedWord, setExpandedWord] = useState<number | null>(null);
+
+    const fetchWords = useCallback(async (pageIndex: number) => {
+        setLoading(true);
+        try {
+            const data = await MediaService.getEnrichedWords(pageIndex, 10);
+            setWords(data.content);
+            setTotalPages(data.totalPages);
+            setPage(data.number);
+        } catch (err) {
+            console.error('Failed to fetch words', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchWords(0);
+    }, [fetchWords]);
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 0 && newPage < totalPages) {
+            fetchWords(newPage);
+        }
+    };
+
+    if (loading && words.length === 0) {
+        return <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-500" /></div>;
+    }
+
+    return (
+        <div>
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-medium">
+                        <tr>
+                            <th className="px-4 py-3">Word</th>
+                            <th className="px-4 py-3">Level</th>
+                            <th className="px-4 py-3">Definition (TR)</th>
+                            <th className="px-4 py-3 w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {words.map((word) => {
+                            let def = null;
+                            try {
+                                if (typeof word.definition === 'string') {
+                                    def = JSON.parse(word.definition);
+                                } else {
+                                    def = word.definition;
+                                }
+                            } catch (e) {
+                                console.error("Error parsing definition", e);
+                            }
+
+                            const firstMeaning = def?.meanings?.[0];
+                            const summary = firstMeaning ? `(${firstMeaning.pos}) ${firstMeaning.definition}` : '-';
+
+                            return (
+                                <React.Fragment key={word.id}>
+                                    <tr
+                                        onClick={() => setExpandedWord(expandedWord === word.id ? null : word.id)}
+                                        className="hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                                    >
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{word.word}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${word.difficulty === 'A1' || word.difficulty === 'A2' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                word.difficulty === 'B1' || word.difficulty === 'B2' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                }`}>
+                                                {word.difficulty || '?'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 truncate max-w-xs" title={summary}>
+                                            {summary}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {expandedWord === word.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        </td>
+                                    </tr>
+                                    {expandedWord === word.id && (
+                                        <tr className="bg-gray-50/50 dark:bg-gray-800/20">
+                                            <td colSpan={4} className="px-4 py-4">
+                                                <pre className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-mono bg-white dark:bg-[#1e202e] p-3 rounded-lg border border-gray-200 dark:border-gray-800">
+                                                    {def ? JSON.stringify(def, null, 2) : 'No definition data'}
+                                                </pre>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between mt-4">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                    Page {page + 1} of {totalPages}
+                </span>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => handlePageChange(page - 1)}
+                        disabled={page === 0 || loading}
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    >
+                        Previous
+                    </button>
+                    <button
+                        onClick={() => handlePageChange(page + 1)}
+                        disabled={page >= totalPages - 1 || loading}
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};

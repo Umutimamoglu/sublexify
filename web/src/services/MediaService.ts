@@ -79,6 +79,13 @@ const MediaService = {
         return response.data;
     },
 
+    scrapeMedia: async (imdbId: string): Promise<string> => {
+        const response = await api.post<string>(`/admin/media/scrape`, null, {
+            params: { imdbId }
+        });
+        return response.data;
+    },
+
     // TMDB Integration Methods
     searchTmdbSeries: async (query: string): Promise<TmdbMedia[]> => {
         const response = await api.get<TmdbMedia[]>('/admin/media/tmdb/search', {
@@ -96,7 +103,24 @@ const MediaService = {
         const response = await api.get<TmdbSeasonDetails>(`/admin/media/tmdb/series/${id}/season/${season}`);
         return response.data;
     },
+    getEnrichedWords: async (page: number = 0, size: number = 20): Promise<Page<Word>> => {
+        const response = await api.get<Page<Word>>('/admin/words/enriched', {
+            params: { page, size }
+        });
+        return response.data;
+    },
 };
+
+export interface Page<T> {
+    content: T[];
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    number: number;
+    first: boolean;
+    last: boolean;
+    empty: boolean;
+}
 
 export interface TmdbMedia {
     id: number;
