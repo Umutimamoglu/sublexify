@@ -3,8 +3,10 @@ package com.sublex.model;
 import lombok.Data;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WordDefinition {
     private String word;
     private String difficulty;
@@ -12,8 +14,6 @@ public class WordDefinition {
 
     @JsonProperty("phrasal_verbs")
     private List<PhrasalVerb> phrasalVerbs;
-
-    private Morphology morphology;
 
     @JsonProperty("verb_forms")
     private VerbForms verbForms;
@@ -30,13 +30,6 @@ public class WordDefinition {
         private String phrase;
         private String definition;
         private String example;
-    }
-
-    @Data
-    public static class Morphology {
-        private String root;
-        private List<String> suffixes;
-        private String explanation;
     }
 
     @Data

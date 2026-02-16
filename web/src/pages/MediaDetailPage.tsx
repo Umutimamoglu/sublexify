@@ -14,6 +14,7 @@ const MediaDetailPage = () => {
     const [wordData, setWordData] = useState<MediaWordsResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [filterUnknown, setFilterUnknown] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(50);
 
     // Mock userId for now (Sprint 4)
     const userId = 1;
@@ -136,9 +137,10 @@ const MediaDetailPage = () => {
                 </div>
             </div>
 
+
             {/* Word Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {wordData.words.map((word) => (
+                {wordData.words.slice(0, visibleCount).map((word) => (
                     <WordCard
                         key={word.id}
                         {...word}
@@ -146,6 +148,18 @@ const MediaDetailPage = () => {
                     />
                 ))}
             </div>
+
+            {/* Load More */}
+            {visibleCount < wordData.words.length && (
+                <div className="mt-8 flex justify-center">
+                    <button
+                        onClick={() => setVisibleCount(prev => prev + 100)}
+                        className="px-8 py-3 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm"
+                    >
+                        Load More Words ({wordData.words.length - visibleCount} remaining)
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

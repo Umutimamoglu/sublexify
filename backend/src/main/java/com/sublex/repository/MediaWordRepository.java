@@ -11,6 +11,7 @@ import java.util.List;
 @Repository
 public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
 
+       @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "word" })
        List<MediaWord> findByMediaId(Long mediaId);
 
        List<MediaWord> findByWordId(Long wordId);

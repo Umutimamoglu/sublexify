@@ -214,16 +214,6 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                             </div>
                                         </div>
                                     )}
-
-                                    {/* Morphology */}
-                                    {definition.morphology && (
-                                        <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                <span className="font-semibold text-gray-700 dark:text-gray-300">Origin: </span>
-                                                {definition.morphology.explanation}
-                                            </div>
-                                        </div>
-                                    )}
                                 </>
                             ) : (
                                 <div className="flex items-center justify-center h-full text-center p-4 text-gray-400 text-sm">

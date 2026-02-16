@@ -38,13 +38,12 @@ public class OpenAIService implements AIService {
                                                 Return a JSON object with:
                                                 1. 'word': the word itself.
                                                 2. 'difficulty': CEFR level (A1-C2).
-                                                3. 'morphology': Object with 'root' (base word), 'suffixes' (list of suffixes), and 'explanation' (in Turkish).
-                                                4. 'verb_forms': If the word is a verb, provide 'v1', 'v2', 'v3', and 'ing' forms. Otherwise, return null.
-                                                5. 'meanings': Array of objects, grouped by Part of Speech. For each POS, provide the most common 1-2 meanings.
+                                                3. 'verb_forms': If the word is a verb, provide 'v1', 'v2', 'v3', and 'ing' forms. Otherwise, return null.
+                                                4. 'meanings': Array of objects, grouped by Part of Speech. For each POS, provide the most common 1-2 meanings.
                                                    - 'pos': part of speech in English (noun, verb, adj, etc.)
                                                    - 'definition': Short, clear, and NATURAL definition IN TURKISH. Explain slang or loanword context in Turkish.
                                                    - 'example': One example sentence in English, with its COMPLETE TURKISH translation in parentheses.
-                                                6. 'phrasal_verbs': Array of 2-3 common phrasal verbs (if any).
+                                                5. 'phrasal_verbs': Array of 2-3 common phrasal verbs (if any).
                                                    - 'phrase': the phrasal verb.
                                                    - 'definition': short definition IN TURKISH.
                                                    - 'example': One example sentence in English, with its COMPLETE TURKISH translation in parentheses.
@@ -68,7 +67,6 @@ public class OpenAIService implements AIService {
                                                 {
                                                   "word": "...",
                                                   "difficulty": "...",
-                                                  "morphology": { "root": "...", "suffixes": [...], "explanation": "..." },
                                                   "verb_forms": { "v1": "...", "v2": "...", "v3": "...", "ing": "..." },
                                                   "meanings": [{ "pos": "...", "definition": "...", "example": "..." }],
                                                   "phrasal_verbs": [{ "phrase": "...", "definition": "...", "example": "..." }]

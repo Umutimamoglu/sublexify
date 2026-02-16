@@ -35,18 +35,12 @@ public class AnthropicService {
                 Your task is to correct erroneous data entries based on Audit Notes.
 
                 ### CRITICAL RULES
-                1. **MORPHOLOGY IS ENGLISH-ONLY**:
-                   - You must analyze the morphology of the **ENGLISH** source word.
-                   - NEVER analyze the Turkish translation.
-                   - Example Error: word="husband", root="eş" (WRONG).
-                   - Example Correct: word="husband", root="husband" (Old Norse: húsbóndi).
-
-                2. **FALSE FRIENDS & HALLUCINATIONS**:
+                1. **FALSE FRIENDS & HALLUCINATIONS**:
                    - Verify the word exists in the Oxford/Cambridge English Dictionary.
                    - If the input is "bide", define the English verb (to wait), NOT the Turkish slang "bi de".
                    - If the input is "balls", define it technically or anatomically, avoid vulgar slang unless marked as idiom.
 
-                3. **NATURAL TURKISH TRANSLATION**:
+                2. **NATURAL TURKISH TRANSLATION**:
                    - Definitions must sound like a TDK dictionary entry, not a machine translation.
                    - Avoid passive voice oddities like "yapılan kişidir". Use direct definitions.
                    - Example sentences must be natural. Avoid "Tom went to the school" (Tom okula gitti). Use context: "The little boy didn't want to go to school." (Küçük çocuk okula gitmek istemiyordu.)
@@ -57,11 +51,6 @@ public class AnthropicService {
                 {
                   "word": "illustration",
                   "difficulty": "B2",
-                  "morphology": {
-                    "root": "illustrate",
-                    "suffixes": ["-ion"],
-                    "explanation": "Derived from the Latin 'illustrare' (to light up), combined with the noun-forming suffix '-ion'."
-                  },
                   "meanings": [{
                     "definition": "Bir metni açıklamak veya süslemek amacıyla kullanılan resim, çizim.",
                     "example": "The book has beautiful illustrations of birds. (Kitapta kuşlara ait güzel çizimler var.)",
@@ -73,11 +62,6 @@ public class AnthropicService {
                 {
                   "word": "unforgettable",
                   "difficulty": "B1",
-                  "morphology": {
-                    "root": "forget",
-                    "suffixes": ["un-", "-able"],
-                    "explanation": "Root 'forget' combined with negative prefix 'un-' and adjective suffix '-able'."
-                  },
                    "meanings": [{
                     "definition": "Akıldan çıkmayan, unutulması mümkün olmayan.",
                     "example": "The trip to Paris was an unforgettable experience. (Paris gezisi unutulmaz bir deneyimdi.)",
@@ -101,8 +85,7 @@ public class AnthropicService {
                         INSTRUCTIONS:
                         1. Read the rejection reason carefully.
                         2. If the rejection says "Natural translation needed", rewrite the Turkish parts completely.
-                        3. If the rejection says "Morphology error", re-analyze the ENGLISH root.
-                        4. Ensure the output is valid JSON matching the schema in the examples.
+                        3. Ensure the output is valid JSON matching the schema in the examples.
                         """,
                 word, auditNotes);
 

@@ -52,7 +52,6 @@ public class AuditService {
                     .map(w -> Map.of(
                             "id", w.getId(),
                             "word", w.getWord(),
-                            "morphology", w.getDefinition().getMorphology(), // Morfoloji kontrolü için şart
                             "meanings", w.getDefinition().getMeanings() // Anlam kontrolü için şart
                     ))
                     .collect(Collectors.toList());
@@ -69,18 +68,14 @@ public class AuditService {
                             Your job is to REJECT any entry that violates the following strict laws.
 
                             ### THE LAWS (REJECTION CRITERIA):
-                            1. **MORPHOLOGY LAW**: The 'morphology' field MUST analyze the ENGLISH root.
-                               - REJECT IF: Root is Turkish (e.g., word:'husband', root:'eş').
-                               - REJECT IF: Root implies a Turkish translation logic.
-
-                            2. **TRANSLATION LAW**: The 'example' sentence in Turkish MUST be natural and fluent.
+                            1. **TRANSLATION LAW**: The 'example' sentence in Turkish MUST be natural and fluent.
                                - REJECT IF: It sounds like a robot/machine translation.
-                               - REJECT IF: It uses English grammar order in Turkish.
+                               - REJECT IF: It uses English grammar order in Turkish (e.g., 'Dağcılar takip etti dere yatağını' vs 'Dağcılar dere yatağını takip etti').
 
-                            3. **FALSE FRIEND LAW**:
+                            2. **FALSE FRIEND LAW**:
                                - REJECT IF: The definition is for a Turkish word that looks like the English word (e.g., 'bide' -> 'bi de', 'hockey' -> 'hokey').
 
-                            4. **DATA INTEGRITY**:
+                            3. **DATA INTEGRITY**:
                                - REJECT IF: The definition does not match the word provided.
 
                             ### INPUT DATA (JSON):
@@ -93,8 +88,7 @@ public class AuditService {
                             Format:
                             {
                               "audit_results": [
-                                { "id": 123, "fail": true, "reason": "Morphology analyzes Turkish root instead of English." },
-                                { "id": 456, "fail": true, "reason": "Example sentence is unnatural/machine translated." }
+                                { "id": 123, "fail": true, "reason": "Example sentence is unnatural/machine translated." }
                               ]
                             }
                             """,
