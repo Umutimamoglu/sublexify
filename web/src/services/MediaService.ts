@@ -110,9 +110,9 @@ const MediaService = {
         return response.data;
     },
 
-    getEnrichedWords: async (page: number = 0, size: number = 20, needsReEnrichment: boolean = false, isVerified: boolean = false): Promise<Page<Word>> => {
+    getEnrichedWords: async (page: number = 0, size: number = 20, needsReEnrichment: boolean = false, isVerified: boolean = false, date?: string): Promise<Page<Word>> => {
         const response = await api.get<Page<Word>>('/admin/words/enriched', {
-            params: { page, size, needsReEnrichment, isVerified }
+            params: { page, size, needsReEnrichment, isVerified, date }
         });
         return response.data;
     },

@@ -31,7 +31,9 @@ public class EnrichmentService {
             return;
         }
 
-        log.info("Starting parallel enrichment for {} words (Semaphore limit: 5)...", pendingWords.size());
+        LocalDateTime batchTime = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        log.info("Starting parallel enrichment for {} words at {} (Semaphore limit: 5)...", pendingWords.size(),
+                batchTime);
         long startTime = System.currentTimeMillis();
 
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -40,7 +42,7 @@ public class EnrichmentService {
                     try {
                         semaphore.acquire();
                         try {
-                            processWord(word);
+                            processWord(word, batchTime);
                         } finally {
                             semaphore.release();
                         }
@@ -61,7 +63,7 @@ public class EnrichmentService {
         log.info("Parallel enrichment completed in {}ms.", duration);
     }
 
-    private void processWord(Word word) {
+    private void processWord(Word word, LocalDateTime enrichedAt) {
         // Simple retry logic (max 3 attempts)
         int attempts = 0;
         WordDefinition definition = null;
@@ -89,7 +91,7 @@ public class EnrichmentService {
             word.setDifficulty(definition.getDifficulty());
             word.setIsEnriched(true);
             word.setNeedsReEnrichment(false);
-            word.setEnrichedAt(LocalDateTime.now());
+            word.setEnrichedAt(enrichedAt);
             log.debug("Enriched '{}' ({})", word.getWord(), word.getDifficulty());
         } else {
             log.error("Failed to enrich word '{}' after 3 attempts.", word.getWord());

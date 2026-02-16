@@ -273,6 +273,7 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "en") String language,
+            @RequestParam(required = false) String date,
             @RequestParam(defaultValue = "false") boolean needsReEnrichment,
             @RequestParam(defaultValue = "false") boolean isVerified) {
 
@@ -287,13 +288,16 @@ public class AdminController {
             return ResponseEntity
                     .ok(wordRepository.findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(language, pageable));
         }
+        if (date != null && !date.isEmpty()) {
+            return ResponseEntity.ok(wordRepository.findByLanguageAndEnrichedAtPrecision(language, date, pageable));
+        }
         return ResponseEntity.ok(wordRepository.findByLanguageAndIsEnrichedTrue(language, pageable));
     }
 
     @GetMapping("/words/enriched/download")
     public ResponseEntity<List<com.sublex.model.Word>> downloadEnrichedWords(
             @RequestParam(defaultValue = "en") String language,
-            @RequestParam(required = false) java.time.LocalDate date,
+            @RequestParam(required = false) String date,
             @RequestParam(defaultValue = "false") boolean needsReEnrichment,
             @RequestParam(defaultValue = "false") boolean isVerified) {
 
@@ -303,10 +307,17 @@ public class AdminController {
             words = wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language);
         } else if (isVerified) {
             words = wordRepository.findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(language);
-        } else if (date != null) {
-            java.time.LocalDateTime start = date.atStartOfDay();
-            java.time.LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
-            words = wordRepository.findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(language, start, end);
+        } else if (date != null && !date.isEmpty()) {
+            if (date.length() > 10) {
+                // High precision (YYYY-MM-DD HH:mm)
+                words = wordRepository.findByLanguageAndEnrichedAtPrecision(language, date);
+            } else {
+                // Just date (YYYY-MM-DD)
+                java.time.LocalDate localDate = java.time.LocalDate.parse(date);
+                java.time.LocalDateTime start = localDate.atStartOfDay();
+                java.time.LocalDateTime end = localDate.atTime(java.time.LocalTime.MAX);
+                words = wordRepository.findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(language, start, end);
+            }
         } else {
             words = wordRepository.findByLanguageAndIsEnrichedTrue(language);
         }

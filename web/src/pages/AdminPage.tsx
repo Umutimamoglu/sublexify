@@ -94,6 +94,21 @@ const AdminPage = () => {
     const [filterFlagged, setFilterFlagged] = useState(false);
     const [filterVerified, setFilterVerified] = useState(false);
 
+    const formatDate = (dateStr: string) => {
+        if (!dateStr) return 'All Dates';
+        try {
+            const date = new Date(dateStr.replace(' ', 'T'));
+            return date.toLocaleDateString('tr-TR', {
+                day: 'numeric',
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
     useEffect(() => {
         MediaService.getEnrichedDates().then(setAvailableDates).catch(console.error);
     }, []);
@@ -352,7 +367,7 @@ const AdminPage = () => {
                             >
                                 <option value="">All Dates</option>
                                 {availableDates.map(date => (
-                                    <option key={date} value={date}>{date}</option>
+                                    <option key={date} value={date}>{formatDate(date)}</option>
                                 ))}
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -373,7 +388,11 @@ const AdminPage = () => {
                     </div>
                 </div>
 
-                <EnrichedWordsTable filterFlagged={filterFlagged} filterVerified={filterVerified} />
+                <EnrichedWordsTable
+                    filterFlagged={filterFlagged}
+                    filterVerified={filterVerified}
+                    selectedDate={selectedDate}
+                />
             </div>
 
             {/* Standard Lists Section */}
@@ -831,7 +850,11 @@ const MediaGroup = ({ title, count, items, onDelete, isSeries = false }: {
 export default AdminPage;
 
 // Helper Component for Enriched Words Table
-const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false }) => {
+const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, selectedDate = null }: {
+    filterFlagged?: boolean,
+    filterVerified?: boolean,
+    selectedDate?: string | null
+}) => {
     const [words, setWords] = useState<any[]>([]);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
@@ -841,7 +864,13 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false }) =
     const fetchWords = useCallback(async (pageIndex: number) => {
         setLoading(true);
         try {
-            const data = await MediaService.getEnrichedWords(pageIndex, 10, filterFlagged, filterVerified);
+            const data = await MediaService.getEnrichedWords(
+                pageIndex,
+                10,
+                filterFlagged,
+                filterVerified,
+                selectedDate || undefined
+            );
             setWords(data.content);
             setTotalPages(data.totalPages);
             setPage(data.number);
@@ -850,7 +879,7 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false }) =
         } finally {
             setLoading(false);
         }
-    }, [filterFlagged, filterVerified]);
+    }, [filterFlagged, filterVerified, selectedDate]);
 
     useEffect(() => {
         fetchWords(0);

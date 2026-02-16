@@ -45,8 +45,17 @@ public interface WordRepository extends JpaRepository<Word, Long> {
 
         List<Word> findByLanguageAndIsEnrichedTrue(String language);
 
-        @Query(value = "SELECT DISTINCT CAST(DATE(enriched_at) AS VARCHAR) FROM word WHERE language = :language AND is_enriched = true AND enriched_at IS NOT NULL ORDER BY 1 DESC", nativeQuery = true)
+        @Query(value = "SELECT DISTINCT TO_CHAR(enriched_at, 'YYYY-MM-DD HH24:MI') FROM word WHERE language = :language AND is_enriched = true AND enriched_at IS NOT NULL ORDER BY 1 DESC", nativeQuery = true)
         List<String> findDistinctEnrichedDates(@Param("language") String language);
+
+        @Query("SELECT w FROM Word w WHERE w.language = :language AND w.isEnriched = true AND TO_CHAR(w.enrichedAt, 'YYYY-MM-DD HH24:MI') = :dateTime")
+        org.springframework.data.domain.Page<Word> findByLanguageAndEnrichedAtPrecision(
+                        @Param("language") String language, @Param("dateTime") String dateTime,
+                        org.springframework.data.domain.Pageable pageable);
+
+        @Query("SELECT w FROM Word w WHERE w.language = :language AND w.isEnriched = true AND TO_CHAR(w.enrichedAt, 'YYYY-MM-DD HH24:MI') = :dateTime")
+        List<Word> findByLanguageAndEnrichedAtPrecision(@Param("language") String language,
+                        @Param("dateTime") String dateTime);
 
         List<Word> findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(String language, java.time.LocalDateTime start,
                         java.time.LocalDateTime end);
