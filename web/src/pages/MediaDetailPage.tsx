@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import MediaService, { type Media, type MediaWordsResponse } from '@/services/MediaService';
 import MediaHeader from '@/components/features/MediaHeader';
 import WordCard from '@/components/features/WordCard';
-import { Loader2, ArrowLeft, Filter, CheckCircle2, BookOpen } from 'lucide-react';
+import { Loader2, ArrowLeft, Filter, CheckCircle2, BookOpen, Download } from 'lucide-react';
 import api from '@/services/api';
 import { cn } from '@/utils/cn';
 
@@ -112,6 +112,24 @@ const MediaDetailPage = () => {
                             <span className="text-gray-300 dark:text-gray-700">·</span>
                             <span className="font-semibold text-indigo-600 dark:text-indigo-400">{progressPercent}%</span>
                         </div>
+
+                        <button
+                            onClick={() => media && MediaService.downloadMediaWords(media.id, userId, filterUnknown)}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-xl text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all"
+                            title="Download vocabulary list as .json"
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            Download Words
+                        </button>
+
+                        <button
+                            onClick={() => media && MediaService.downloadSubtitles(media.id)}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all"
+                            title="Download original subtitles as .txt"
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            Subtitles
+                        </button>
 
                         <button
                             onClick={() => setFilterUnknown(!filterUnknown)}

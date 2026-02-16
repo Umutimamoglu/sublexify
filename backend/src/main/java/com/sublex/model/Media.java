@@ -56,6 +56,9 @@ public class Media {
     @Column(name = "release_date")
     private String releaseDate;
 
+    @Column(columnDefinition = "TEXT")
+    private String subtitleContent;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

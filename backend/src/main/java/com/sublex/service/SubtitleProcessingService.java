@@ -59,7 +59,11 @@ public class SubtitleProcessingService {
             return;
         }
 
-        // 2. Clear existing words for this media
+        // 2. Save subtitle content to media
+        media.setSubtitleContent(subtitleContent);
+        mediaRepository.save(media);
+
+        // 3. Clear existing words for this media
         mediaWordRepository.deleteAllInBatch(mediaWordRepository.findByMediaId(mediaId));
         log.info("Cleared existing words for mediaId: {}", mediaId);
 

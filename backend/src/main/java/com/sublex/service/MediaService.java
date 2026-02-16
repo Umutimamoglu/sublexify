@@ -124,4 +124,13 @@ public class MediaService {
 
         return dto;
     }
+
+    /**
+     * Get subtitle content for a specific media
+     */
+    public String getSubtitleContent(Long id) {
+        Media media = mediaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Media not found: " + id));
+        return media.getSubtitleContent();
+    }
 }

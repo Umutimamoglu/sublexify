@@ -49,4 +49,59 @@ public class MediaController {
 
         return ResponseEntity.ok(mediaService.getMediaWords(id, userId, onlyUnknown != null && onlyUnknown));
     }
+
+    /**
+     * GET /api/media/{id}/download-subtitles
+     * Download subtitles as a .txt file
+     */
+    @GetMapping("/{id}/download-subtitles")
+    public ResponseEntity<byte[]> downloadSubtitles(@PathVariable Long id) {
+        MediaDTO media = mediaService.getMediaById(id);
+        String content = mediaService.getSubtitleContent(id);
+
+        if (content == null || content.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        byte[] data = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        String filename = media.getTitle().replaceAll("[^a-zA-Z0-9.-]", "_") + ".txt";
+
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + filename + "\"")
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE,
+                        org.springframework.http.MediaType.TEXT_PLAIN_VALUE)
+                .body(data);
+    }
+
+    /**
+     * GET /api/media/{id}/words/download
+     * Download media words as a .json file
+     */
+    @GetMapping("/{id}/words/download")
+    public ResponseEntity<byte[]> downloadMediaWords(
+            @PathVariable Long id,
+            @RequestParam(required = false) Boolean onlyUnknown,
+            @RequestParam(required = false) Long userId) {
+
+        MediaDTO media = mediaService.getMediaById(id);
+        MediaWordsResponseDTO wordsResponse = mediaService.getMediaWords(id, userId,
+                onlyUnknown != null && onlyUnknown);
+
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            byte[] data = mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(wordsResponse);
+
+            String filename = media.getTitle().replaceAll("[^a-zA-Z0-9.-]", "_") + "_vocabulary.json";
+
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + filename + "\"")
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE,
+                            org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
+                    .body(data);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

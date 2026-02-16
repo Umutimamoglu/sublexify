@@ -132,6 +132,37 @@ const MediaService = {
         document.body.appendChild(link);
         link.click();
         link.parentNode?.removeChild(link);
+    },
+
+    downloadMediaWords: async (id: number, userId?: number, onlyUnknown?: boolean): Promise<void> => {
+        const response = await api.get<Blob>(`/media/${id}/words/download`, {
+            responseType: 'blob',
+            params: { userId, onlyUnknown }
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `vocabulary_${id}.json`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+    },
+
+    downloadSubtitles: async (id: number): Promise<void> => {
+        const response = await api.get<Blob>(`/media/${id}/download-subtitles`, {
+            responseType: 'blob',
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+
+        // Extract filename from content-disposition if possible, otherwise use a default
+        link.setAttribute('download', `subtitles_${id}.txt`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
     }
 };
 
