@@ -24,7 +24,7 @@ public class AnthropicService {
     private final RestClient restClient = RestClient.create();
 
     private static final String ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-    private static final String CLAUDE_MODEL = "claude-3-haiku-20240307";
+    private static final String CLAUDE_MODEL = "claude-3-5-haiku-20241022";
 
     public WordDefinition fixWord(String word, String auditNotes) {
         log.info("Claude Specialist fixing word: '{}' because: {}", word, auditNotes);
