@@ -60,10 +60,20 @@ public class SubtitleParser {
                 if (line.contains("::::::"))
                     continue; // Özel reklam ayraçları
 
-                // ASS/SSA metadata temizliği
-                if (line.startsWith("[") || line.startsWith(";"))
+                // ASS/SSA metadata temizliği (Geliştirilmiş)
+                if (line.startsWith("[") && line.endsWith("]")) {
+                    // Sadece [Events] bölümündeki satırları ciddiye al (Diyaloglar orada olur)
+                    // Ancak şimdilik tüm bölümleri tarayıp Dialogue: ile başlayanları alacak
+                    // şekilde kalsın.
+                    // Sadece Bracket satırının kendisini atla.
                     continue;
-                if (line.matches("(?i)^(Format|Style|ScriptType|PlayRes|Timer|Title|Original Script):.*"))
+                }
+                if (line.startsWith(";"))
+                    continue;
+
+                // Daha kapsamlı teknik alan filtresi
+                if (line.matches(
+                        "(?i)^(Format|Style|ScriptType|PlayRes|Timer|Title|Original Script|Original Translation|Original Editing|Original Timing|Synch Point|Script Updated By|Update Details|Collisions|PlayDepth|Timer|ScaledBorderAndShadow):.*"))
                     continue;
 
                 // ASS Dialogue satırları için (Text kısmını al)
@@ -71,6 +81,8 @@ public class SubtitleParser {
                     String[] parts = line.split(",", 10);
                     if (parts.length >= 10) {
                         line = parts[9];
+                    } else {
+                        continue; // Hatalı dialogue satırı
                     }
                 }
 

@@ -194,15 +194,30 @@ public class AdminController {
     }
 
     @PostMapping("/media/scrape-episode")
+    @Operation(summary = "Triggers subtitle scraping for an episode via Scraper")
     public ResponseEntity<String> scrapeEpisode(@RequestParam String imdbId, @RequestParam Integer season,
             @RequestParam Integer episode) {
-        log.info("Received request to scrape episode with IMDB ID: {}, S{}E{}", imdbId, season, episode);
+        log.info("Manual request to scrape subtitles for episode: {} S{}E{}", imdbId, season, episode);
         try {
             subtitleScraperService.scrapeEpisode(imdbId, season, episode);
             return ResponseEntity.ok("Scraping started successfully for " + imdbId + " S" + season + "E" + episode);
         } catch (Exception e) {
-            log.error("Scraping failed: ", e);
+            log.error("Scraping failed for {} S{}E{}", imdbId, season, episode, e);
             return ResponseEntity.internalServerError().body("Scraping failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/scrape-episode-api")
+    @Operation(summary = "Triggers subtitle scraping for an episode via Official API")
+    public ResponseEntity<String> scrapeEpisodeApi(@RequestParam String imdbId, @RequestParam Integer season,
+            @RequestParam Integer episode) {
+        log.info("Manual request to scrape subtitles via OFFICIAL API for: {} S{}E{}", imdbId, season, episode);
+        try {
+            subtitleScraperService.scrapeEpisodeWithApi(imdbId, season, episode);
+            return ResponseEntity.ok("Official API Scraping completed for " + imdbId + " S" + season + "E" + episode);
+        } catch (Exception e) {
+            log.error("API Scraping failed for {} S{}E{}", imdbId, season, episode, e);
+            return ResponseEntity.internalServerError().body("API Scraping failed: " + e.getMessage());
         }
     }
 

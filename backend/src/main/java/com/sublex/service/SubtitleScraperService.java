@@ -28,8 +28,43 @@ public class SubtitleScraperService {
     private final TmdbService tmdbService;
     private final SubtitleProcessingService subtitleProcessingService;
     private final OpenSubtitlesScraperService openSubtitlesScraperService;
+    private final OpenSubtitlesApiService openSubtitlesApiService;
 
     private static final String YTS_BASE_URL = "https://yifysubtitles.ch";
+
+    @Transactional
+    public void scrapeEpisodeWithApi(String seriesImdbId, Integer season, Integer episode) {
+        log.info("Starting OFFICIAL API episode scrape for Series IMDB ID: {}, S{}E{}", seriesImdbId, season, episode);
+
+        TmdbService.TmdbMedia show = tmdbService.findShowByImdbId(seriesImdbId)
+                .orElseThrow(() -> new RuntimeException("Show not found in TMDB with IMDB ID: " + seriesImdbId));
+
+        TmdbService.TmdbEpisode epDetails = tmdbService.getEpisodeDetails(show.getId(), season, episode)
+                .orElseThrow(() -> new RuntimeException("Episode not found in TMDB: S" + season + "E" + episode));
+
+        String episodeImdbId = epDetails.getImdbId();
+        if (episodeImdbId == null) {
+            throw new RuntimeException("No IMDB ID found for episode S" + season + "E" + episode);
+        }
+
+        Media media = findOrCreateEpisodeMedia(seriesImdbId, season, episode, show, epDetails);
+
+        try {
+            // Use the Official API
+            String subtitleContent = openSubtitlesApiService.fetchSubtitles(episodeImdbId, "episode");
+
+            if (subtitleContent == null) {
+                throw new RuntimeException("Official API returned no subtitles for " + episodeImdbId);
+            }
+
+            subtitleProcessingService.processSubtitles(media.getId(), subtitleContent, "en");
+            log.info("Successfully scraped via API and processed subtitles for: {}", media.getTitle());
+
+        } catch (Exception e) {
+            log.error("Official API scrape failed for {} S{}E{}: {}", seriesImdbId, season, episode, e.getMessage());
+            throw new RuntimeException("API Scraping failed: " + e.getMessage());
+        }
+    }
 
     @Transactional
     public void scrapeEpisode(String seriesImdbId, Integer season, Integer episode) {
@@ -54,13 +89,13 @@ public class SubtitleScraperService {
         Media media = findOrCreateEpisodeMedia(seriesImdbId, season, episode, show, epDetails);
 
         try {
-            // 3. Scrape OpenSubtitles using EPISODE IMDB ID
+            // 3. Scrape OpenSubtitles using EPISODE IMDB ID (Legacy Scraper Only)
             String subtitleContent = openSubtitlesScraperService.scrape(episodeImdbId);
 
             // 4. Process subtitle
             subtitleProcessingService.processSubtitles(media.getId(), subtitleContent, "en");
 
-            log.info("Successfully scraped and processed subtitles for: {}", media.getTitle());
+            log.info("Successfully scraped and processed subtitles (Scraper) for: {}", media.getTitle());
 
         } catch (Exception e) {
             log.error("Failed to scrape subtitles for {} S{}E{}: {}", seriesImdbId, season, episode, e.getMessage());

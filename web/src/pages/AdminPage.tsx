@@ -72,6 +72,7 @@ const AdminPage = () => {
     const [loadingSeason, setLoadingSeason] = useState(false);
     const [downloadingEpisode, setDownloadingEpisode] = useState<number | null>(null);
     const [seriesMsg, setSeriesMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [useOfficialApi, setUseOfficialApi] = useState(true);
 
     // Fetch media on mount
     useEffect(() => {
@@ -203,7 +204,9 @@ const AdminPage = () => {
         setDownloadingEpisode(episodeId);
         setSeriesMsg(null);
         try {
-            const result = await MediaService.scrapeEpisode(selectedSeries.imdbId, season, episode);
+            const result = useOfficialApi
+                ? await MediaService.scrapeEpisodeApi(selectedSeries.imdbId, season, episode)
+                : await MediaService.scrapeEpisode(selectedSeries.imdbId, season, episode);
             setSeriesMsg({ type: 'success', text: result });
         } catch (err: any) {
             console.error(err);
@@ -242,22 +245,25 @@ const AdminPage = () => {
         }
 
         setDownloadingSeason(seasonNumber);
-        setSeriesMsg({ type: 'success', text: `Starting download for Season ${seasonNumber}...` });
+        setSeriesMsg({ type: 'success', text: `Starting download for Season ${seasonNumber} using ${useOfficialApi ? 'Official API' : 'Scraper'}...` });
 
         let successCount = 0;
         let failCount = 0;
 
         for (const ep of episodes) {
-            // Check cancellation or component unmount? (omitted for simplicity)
             setDownloadingEpisode(ep.id);
             try {
-                await MediaService.scrapeEpisode(selectedSeries.imdbId, seasonNumber, ep.episodeNumber);
+                if (useOfficialApi) {
+                    await MediaService.scrapeEpisodeApi(selectedSeries.imdbId, seasonNumber, ep.episodeNumber);
+                } else {
+                    await MediaService.scrapeEpisode(selectedSeries.imdbId, seasonNumber, ep.episodeNumber);
+                }
                 successCount++;
             } catch (err) {
                 console.error(`Failed to download S${seasonNumber}E${ep.episodeNumber}`, err);
                 failCount++;
             }
-            // Small delay to be nice to the server/API
+            // Small delay
             await new Promise(r => setTimeout(r, 1000));
         }
 
@@ -430,7 +436,28 @@ const AdminPage = () => {
 
             {/* TV Series Scraper Section */}
             <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">TV Series Scraper</h2>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">TV Series Scraper</h2>
+
+                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <button
+                            onClick={() => setUseOfficialApi(true)}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${useOfficialApi
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        >
+                            OpenSubtitles API
+                        </button>
+                        <button
+                            onClick={() => setUseOfficialApi(false)}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${!useOfficialApi
+                                ? 'bg-amber-600 text-white shadow-md'
+                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        >
+                            Legacy Scraper
+                        </button>
+                    </div>
+                </div>
 
                 {/* Search Bar */}
                 <div className="flex gap-4 mb-6">
