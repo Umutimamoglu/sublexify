@@ -90,6 +90,10 @@ public class SubtitleParser {
         // 2. ASS süslü parantezlerini temizle ({\an8} gibi)
         line = BRACKET_CONTENT_PATTERN.matcher(line).replaceAll("");
 
+        // GÜNCELLEME 4: ASS formatına özel \N (Yeni satır) ve ters slash temizliği
+        // Bu karakterler temizlenmezse "nWord" şeklinde hatalı kelimeler oluşur.
+        line = line.replace("\\N", " ").replace("\\n", " ").replace("\\", " ");
+
         // GÜNCELLEME 3: Akıllı tırnakları düz tırnağa çeviriyoruz (Standardizasyon)
         // Veritabanında hem "don't" hem "don’t" olmasın, hepsi "don't" olsun.
         line = line.replace('’', '\'');

@@ -71,7 +71,7 @@ public class GeminiService {
             return (String) parts.get(0).get("text");
 
         } catch (Exception e) {
-            log.error("Gemini API call failed. Model: gemini-3-flash-preview. Error: {}", e.getMessage(), e);
+            log.error("Gemini API call failed. Model: gemini-2.5-flash. Error: {}", e.getMessage(), e);
             return null;
         }
     }
