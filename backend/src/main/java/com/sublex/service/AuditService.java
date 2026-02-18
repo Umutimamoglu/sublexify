@@ -88,37 +88,41 @@ public class AuditService {
             String inputJson = objectMapper.writeValueAsString(auditInput);
             String prompt = String.format(
                     """
-                            You are the Sheriff. A strict Dictionary Auditor and Chief Editor for an English-to-Turkish dictionary project called 'Sublex'.
-                            Your job is to REJECT any entry that sounds unnatural, translated by a machine, or linguistically incorrect.
+                            You are the Sheriff. A ruthless Dictionary Auditor for an English-to-Turkish dictionary.
 
-                            ### THE LAWS (REJECTION CRITERIA):
-                            1. **TRANSLATION LAW**: The 'example' sentence in Turkish MUST be natural and fluent.
-                               - REJECT IF: It sounds like a robot/machine translation.
-                               - REJECT IF: It uses English grammar order in Turkish (e.g., 'Dağcılar takip etti dere yatağını' vs 'Dağcılar dere yatağını takip etti').
+                            YOUR GOAL: Analyze the provided list of words one by one. You must provide a VERDICT for EVERY single word.
 
-                            2. **FALSE FRIEND LAW**:
-                               - REJECT IF: The definition is for a Turkish word that looks like the English word (e.g., 'bide' -> 'bi de', 'hockey' -> 'hokey').
+                            ### THE LAWS (STRICT CRITERIA):
+                            1. **ROOT MISMATCH (CRITICAL)**:
+                               - Check 'phrasal_verbs'. Do they belong to the root word?
+                               - Example FAILURE: Word is 'fast', but phrasal verb is 'fasten up' (Root mismatch: fast != fasten).
+                               - Example FAILURE: Word is 'staying' (gerund), but phrasal verb is 'stay up' (base form). Ideally, the headword should be base form.
+
+                            2. **HALLUCINATION LAW**:
+                               - Do the phrasal verbs actually exist in standard English? (e.g., 'post out' is suspicious).
 
                             3. **DATA INTEGRITY**:
-                               - REJECT IF: The definition does not match the word provided.
+                               - Does the definition match the headword? (e.g., Word 'wouldn' defined as 'wouldn't').
+                               - Are there grammar errors in English examples? (e.g., 'She gave him a thank').
 
-                            4. **HALLUCINATION LAW**:
-                               - REJECT IF: The definition contains 'phrasal_verbs' that do not exist or are forced (e.g., 'tea' -> 'tea off', 'murder' -> 'murder up').
-                               - REJECT IF: The phrasal verb spelling does not match the root word (e.g., 'tea' vs 'tee').
+                            4. **TRANSLATION QUALITY**:
+                               - Is the Turkish example natural? (e.g., 'Ekmek rulosu' is bad translation for 'bread roll', use 'sandviç ekmeği').
 
-                            ### INPUT DATA (JSON):
+                            ### INPUT DATA:
                             %s
 
-                            ### OUTPUT FORMAT:
-                            Return a JSON object containing a list of FAILED items only.
-                            If an item is correct, DO NOT include it in the list.
+                            ### OUTPUT FORMAT (JSON ONLY):
+                            You must return a list of objects for ALL items.
 
-                            Format:
-                            {
-                              "audit_results": [
-                                { "id": 123, "fail": true, "reason": "Example sentence is unnatural/machine translated." }
-                              ]
-                            }
+                            [
+                              {
+                                "id": 123,
+                                "word": "example",
+                                "verdict": "REJECT", // or "APPROVE"
+                                "reasoning": "The phrasal verb 'example up' does not exist." // Required if REJECT
+                              },
+                              ...
+                            ]
                             """,
                     inputJson);
 
@@ -131,39 +135,52 @@ public class AuditService {
 
             // 3. Response İşleme (Robust Parsing)
             String cleanJson = cleanJsonFromMarkdown(response);
-            Map<String, Object> responseMap = objectMapper.readValue(cleanJson, new TypeReference<>() {
-            });
-            List<Map<String, Object>> results = (List<Map<String, Object>>) responseMap.get("audit_results");
 
-            // Failure Map Oluşturma (NPE Safe)
+            // Artık direkt List<Map> bekliyoruz, kök obje içinde değil.
+            List<Map<String, Object>> results = objectMapper.readValue(cleanJson,
+                    new TypeReference<List<Map<String, Object>>>() {
+                    });
+
             Map<Long, String> failureMap = new HashMap<>();
+            List<Long> approvedIds = new ArrayList<>();
+
             if (results != null) {
                 for (Map<String, Object> r : results) {
-                    if (Boolean.TRUE.equals(r.get("fail"))) {
-                        Object idObj = r.get("id");
-                        if (idObj != null) {
-                            failureMap.put(Long.valueOf(idObj.toString()),
-                                    (String) r.getOrDefault("reason", "Hatalı tespit edildi."));
-                        }
+                    Object idObj = r.get("id");
+                    if (idObj == null)
+                        continue;
+
+                    Long id = Long.valueOf(idObj.toString());
+                    String verdict = (String) r.getOrDefault("verdict", "REJECT"); // Güvenli taraf: Belirsizse Reddet
+
+                    if ("REJECT".equalsIgnoreCase(verdict)) {
+                        String reasoning = (String) r.getOrDefault("reasoning", "Unspecified violation.");
+                        failureMap.put(id, reasoning);
+                    } else {
+                        approvedIds.add(id);
                     }
                 }
             }
 
-            // 4. Durum Güncelleme (Sadece Gemini'ye gidenler için)
+            // 4. Durum Güncelleme
             for (Word word : validWordsForGemini) {
                 if (failureMap.containsKey(word.getId())) {
                     String reason = failureMap.get(word.getId());
-                    log.warn("Sheriff REJECTED word '{}': {}", word.getWord(), reason);
+                    log.warn("Sheriff REJECTED word '{}' (ID: {}): {}", word.getWord(), word.getId(), reason);
 
                     word.setNeedsReEnrichment(true);
                     word.setIsVerified(false);
                     word.setAuditNotes(reason);
-                } else {
+                } else if (approvedIds.contains(word.getId())) {
                     log.info("Sheriff APPROVED word '{}'", word.getWord());
 
                     word.setIsVerified(true);
                     word.setNeedsReEnrichment(false);
-                    word.setAuditNotes(null);
+                    word.setAuditNotes(null); // Varsa eski notları temizle
+                } else {
+                    // Model bu ID'yi unuttuysa, güvenlik gereği REDDET veya tekrar sıraya al
+                    log.error("Sheriff forgot to audit word '{}'. Marking as suspicious.", word.getWord());
+                    word.setNeedsReEnrichment(true); // Tekrar denensin
                 }
             }
 
