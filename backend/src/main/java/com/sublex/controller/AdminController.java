@@ -293,7 +293,7 @@ public class AdminController {
     public ResponseEntity<String> triggerSpecialistFix(
             @RequestParam(defaultValue = "en") String language,
             @RequestParam(defaultValue = "10") int limit) {
-        specialistService.fixFlaggedWords(language, limit);
+        specialistService.fixFlaggedWords(language, limit, java.time.LocalDateTime.now());
         return ResponseEntity.ok("Specialist correction loop triggered for " + limit + " words.");
     }
 

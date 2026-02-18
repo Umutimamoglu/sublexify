@@ -24,116 +24,127 @@ public class AnthropicService {
     private final RestClient restClient = RestClient.create();
 
     private static final String ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-    private static final String CLAUDE_MODEL = "claude-haiku-4-5";
+    private static final String CLAUDE_MODEL = "claude-sonnet-4-6";
 
     public WordDefinition fixWord(String word, String auditNotes) {
         log.info("Claude Specialist fixing word: '{}' because: {}", word, auditNotes);
 
-        // SYSTEM PROMPT: Kurallar + ÖRNEKLER (Few-Shot)
+        // SYSTEM PROMPT: Kurallar + ÖRNEKLER (Few-Shot) - ENHANCED FOR LINGUISTIC RIGOR
+        // & ROBUSTNESS
         String systemPrompt = """
-                You are a strict Lead Lexicographer and QA Specialist for an English-to-Turkish dictionary.
-                Your task is to correct erroneous data entries based on Audit Notes.
+                You are a meticulous Senior Lexicographer and Turkish Language Expert.
+                Your mission is to fix rejected dictionary entries with 100% linguistic accuracy.
 
-                ### CRITICAL RULES
-                1. **FALSE FRIENDS & HALLUCINATIONS**:
-                   - Verify the word exists in the Oxford/Cambridge English Dictionary.
-                   - If the input is "bide", define the English verb (to wait), NOT the Turkish slang "bi de".
-                   - If the input is "balls", define it technically or anatomically, avoid vulgar slang unless marked as idiom.
+                ### MANDATORY QUALITY CONTROLS:
+                1. **NATURE & SCIENCE (The "Swift" Rule)**:
+                   - Before defining animals/plants, verify their exact Turkish name.
+                   - Example: 'Swift' is 'Ebabil' or 'Sağan', NEVER 'Çakır'.
+                2. **SPELLING & TYPOS**:
+                   - Perform a character-by-character check.
+                   - Avoid double consonants where not required (e.g., use 'devretti', NOT 'devrettti').
+                   - Ensure Turkish characters (ı, i, ğ, ü, ş, ö) are used correctly (e.g., NOT 'tatılı').
+                3. **NATURAL COLLOCATIONS (The "Scratch" Rule)**:
+                   - Do not use robot-speak like 'çizik yaptı'. Use natural verbs: 'tırmaladı', 'çizdi', 'hasar verdi'.
+                   - Avoid ending definitions with "...yapılan şeydir/kişidir". Use direct, dictionary-style nouns/verbs.
+                4. **SUFFIX INTEGRITY**:
+                   - When translating example sentences, check the noun cases (Ablative -den, Dative -e, etc.).
+                   - 'Left the room' -> 'OdadAN ayrıldı' (Correct case suffix).
+                5. **PHRASAL VERB RULES (STRICT)**:
+                   - Do NOT invent phrasal verbs that don't exist (e.g., 'need up', 'fasten up').
+                   - If unsure whether a phrasal verb exists, omit it entirely.
+                   - Only include phrasal verbs you are 100% certain exist in standard English dictionaries.
 
-                2. **NATURAL TURKISH TRANSLATION**:
-                   - Definitions must sound like a TDK dictionary entry, not a machine translation.
-                   - Avoid passive voice oddities like "yapılan kişidir". Use direct definitions.
-                   - Example sentences must be natural. Avoid "Tom went to the school" (Tom okula gitti). Use context: "The little boy didn't want to go to school." (Küçük çocuk okula gitmek istemiyordu.)
-
-                ### REFERENCE EXAMPLES (FOLLOW THIS PATTERN)
-
-                Input Word: "illustration"
-                {
-                  "word": "illustration",
-                  "difficulty": "B2",
-                  "meanings": [{
-                    "definition": "Bir metni açıklamak veya süslemek amacıyla kullanılan resim, çizim.",
-                    "example": "The book has beautiful illustrations of birds. (Kitapta kuşlara ait güzel çizimler var.)",
-                    "pos": "noun"
-                  }]
-                }
-
-                Input Word: "unforgettable"
-                {
-                  "word": "unforgettable",
-                  "difficulty": "B1",
-                   "meanings": [{
-                    "definition": "Akıldan çıkmayan, unutulması mümkün olmayan.",
-                    "example": "The trip to Paris was an unforgettable experience. (Paris gezisi unutulmaz bir deneyimdi.)",
-                    "pos": "adjective"
-                  }]
-                }
-
-                ### YOUR TASK
-                Fix the user provided word strictly following the Audit Note.
-                Return ONLY the valid JSON object. Do not include markdown formatting like ```json.
+                ### JSON STRUCTURE
+                Return ONLY a single valid JSON object. No conversational filler.
+                Ensure 'difficulty' matches the context of the word's usage.
                 """;
 
-        // USER PROMPT: Denetçi notunu vurgula
+        // USER PROMPT: Denetçi notunu vurgula - ENHANCED FOR CONTEXTUAL REJECTION
         String userPrompt = String.format(
                 """
-                        Here is the REJECTED entry that needs fixing.
+                        STRICT RECTIFICATION REQUIRED:
 
-                        TARGET WORD: "%s"
-                        AUDIT REJECTION REASON: "%s"
+                        1. REJECTED WORD: "%s"
+                        2. REJECTION REASON: "%s"
 
-                        INSTRUCTIONS:
-                        1. Read the rejection reason carefully.
-                        2. If the rejection says "Natural translation needed", rewrite the Turkish parts completely.
-                        3. Ensure the output is valid JSON matching the schema in the examples.
+                        ACTION PLAN:
+                        - If the reason is 'Typo', perform a spelling audit.
+                        - If the reason is 'Natural translation', replace robotic phrasing with idiomatic Turkish.
+                        - If the reason is 'Inaccurate definition', re-research the word domain (e.g., tech, nature).
+
+                        Provide the corrected JSON now:
                         """,
                 word, auditNotes);
 
-        try {
-            Map<String, Object> requestBody = Map.of(
-                    "model", CLAUDE_MODEL,
-                    "max_tokens", 2048,
-                    "system", systemPrompt,
-                    "messages", List.of(
-                            Map.of("role", "user", "content", userPrompt)));
+        // CACHING ENABLED: System prompt sent as structured object
+        List<Map<String, Object>> systemMessage = List.of(
+                Map.of(
+                        "type", "text",
+                        "text", systemPrompt,
+                        "cache_control", Map.of("type", "ephemeral")));
 
-            String response = restClient.post()
-                    .uri(ANTHROPIC_URL)
-                    .header("x-api-key", apiKey)
-                    .header("anthropic-version", "2023-06-01")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestBody)
-                    .retrieve()
-                    .body(String.class);
+        Map<String, Object> requestBody = Map.of(
+                "model", CLAUDE_MODEL,
+                "max_tokens", 2048,
+                "system", systemMessage,
+                "messages", List.of(
+                        Map.of("role", "user", "content", userPrompt)));
 
-            Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
-            List<Map<String, Object>> contentList = (List<Map<String, Object>>) responseMap.get("content");
-            String content = (String) contentList.get(0).get("text");
+        // RETRY MECHANISM (3 Attempts)
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                String response = restClient.post()
+                        .uri(ANTHROPIC_URL)
+                        .header("x-api-key", apiKey)
+                        .header("anthropic-version", "2023-06-01")
+                        .header("anthropic-beta", "prompt-caching-2024-07-31") // Caching Header
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(requestBody)
+                        .retrieve()
+                        .body(String.class);
 
-            log.info("Claude raw response for {}: {}", word, content);
+                Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
+                List<Map<String, Object>> contentList = (List<Map<String, Object>>) responseMap.get("content");
+                String content = (String) contentList.get(0).get("text");
 
-            String jsonContent = content;
-            if (content.contains("```json")) {
-                jsonContent = content.substring(content.indexOf("```json") + 7);
-                if (jsonContent.contains("```")) {
-                    jsonContent = jsonContent.substring(0, jsonContent.lastIndexOf("```"));
+                log.info("Claude raw response for {} (Attempt {}): {}", word, attempt, content);
+
+                String jsonContent = content;
+                if (content.contains("```json")) {
+                    jsonContent = content.substring(content.indexOf("```json") + 7);
+                    if (jsonContent.contains("```")) {
+                        jsonContent = jsonContent.substring(0, jsonContent.lastIndexOf("```"));
+                    }
+                } else if (content.contains("```")) {
+                    jsonContent = content.substring(content.indexOf("```") + 3);
+                    if (jsonContent.contains("```")) {
+                        jsonContent = jsonContent.substring(0, jsonContent.lastIndexOf("```"));
+                    }
                 }
-            } else if (content.contains("```")) {
-                jsonContent = content.substring(content.indexOf("```") + 3);
-                if (jsonContent.contains("```")) {
-                    jsonContent = jsonContent.substring(0, jsonContent.lastIndexOf("```"));
+                jsonContent = jsonContent.trim();
+
+                WordDefinition result = objectMapper.readValue(jsonContent, WordDefinition.class);
+
+                // VALIDATION: Null Meanings Check
+                if (result.getMeanings() == null || result.getMeanings().isEmpty()) {
+                    log.warn("Specialist returned null/empty meanings for word: {} (Attempt {})", word, attempt);
+                    continue; // Retry
+                }
+
+                return result;
+
+            } catch (org.springframework.web.client.HttpClientErrorException e) {
+                log.error("Anthropic API Error ({}): {}", e.getStatusCode(), e.getResponseBodyAsString());
+                return null;
+            } catch (Exception e) {
+                log.warn("Claude Specialist failed to fix word: {} (Attempt {}). Error: {}", word, attempt,
+                        e.getMessage());
+                if (attempt == 3) {
+                    log.error("Final attempt failed for word: {}", word, e);
+                    return null;
                 }
             }
-            jsonContent = jsonContent.trim();
-
-            return objectMapper.readValue(jsonContent, WordDefinition.class);
-
-        } catch (org.springframework.web.client.HttpClientErrorException e) {
-            log.error("Anthropic API Error ({}): {}", e.getStatusCode(), e.getResponseBodyAsString());
-            return null;
-        } catch (Exception e) {
-            log.error("Claude Specialist failed to fix word: {}", word, e);
-            return null;
         }
+        return null;
     }
 }

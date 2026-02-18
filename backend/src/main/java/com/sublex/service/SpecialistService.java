@@ -18,8 +18,8 @@ public class SpecialistService {
     private final WordRepository wordRepository;
     private final AnthropicService anthropicService;
 
-    @Transactional
-    public void fixFlaggedWords(String language, int limit) {
+    // @Transactional removed to prevent connection holding during HTTP calls
+    public void fixFlaggedWords(String language, int limit, java.time.LocalDateTime batchTime) {
         List<Word> flaggedWords = wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language);
 
         if (flaggedWords.isEmpty()) {
@@ -32,11 +32,11 @@ public class SpecialistService {
 
         for (int i = 0; i < count; i++) {
             Word word = flaggedWords.get(i);
-            fixSingleWord(word);
+            fixSingleWord(word, batchTime);
         }
     }
 
-    private void fixSingleWord(Word word) {
+    private void fixSingleWord(Word word, java.time.LocalDateTime batchTime) {
         try {
             log.info("Specialist fixing word '{}'. Reason: {}", word.getWord(), word.getAuditNotes());
 
@@ -46,7 +46,7 @@ public class SpecialistService {
                 word.setDefinition(fixedDefinition);
                 word.setIsVerified(true);
                 word.setNeedsReEnrichment(false);
-                word.setEnrichedAt(java.time.LocalDateTime.now());
+                word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
                 word.setAuditNotes("Fixed by Specialist (Claude 4.5)");
                 wordRepository.save(word);
                 log.info("Specialist successfully fixed word '{}'", word.getWord());

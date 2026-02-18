@@ -7,10 +7,10 @@ import com.sublex.repository.WordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -57,26 +57,39 @@ public class AuditService {
         try {
             log.info("Auditing batch of {} words...", batch.size());
 
-            // Veriyi hazırlarken gereksiz alanları atıyoruz (token tasarrufu)
-            List<Map<String, Object>> auditInput = batch.stream()
-                    .filter(w -> w.getDefinition() != null)
-                    .map(w -> Map.of(
+            // 1. Filtreleme: Tanımı olmayanları ayır (Silent Approval Fix)
+            List<Map<String, Object>> auditInput = new ArrayList<>();
+            List<Word> validWordsForGemini = new ArrayList<>();
+
+            for (Word w : batch) {
+                if (w.getDefinition() != null && w.getDefinition().getMeanings() != null) {
+                    auditInput.add(Map.of(
                             "id", w.getId(),
                             "word", w.getWord(),
-                            "meanings", w.getDefinition().getMeanings() // Anlam kontrolü için şart
-                    ))
-                    .collect(Collectors.toList());
+                            "meanings", w.getDefinition().getMeanings(),
+                            "phrasal_verbs",
+                            w.getDefinition().getPhrasalVerbs() != null ? w.getDefinition().getPhrasalVerbs()
+                                    : List.of()));
+                    validWordsForGemini.add(w);
+                } else {
+                    // Tanımı olmayanları direkt reddet
+                    w.setNeedsReEnrichment(true);
+                    w.setIsVerified(false);
+                    w.setAuditNotes("Definition or meanings missing (Pre-Audit check).");
+                }
+            }
 
-            if (auditInput.isEmpty())
+            if (auditInput.isEmpty()) {
+                wordRepository.saveAll(batch); // Sadece reddedilenler varsa kaydet
                 return;
+            }
 
+            // 2. Gemini Çağrısı
             String inputJson = objectMapper.writeValueAsString(auditInput);
-
-            // GÜÇLENDİRİLMİŞ PROMPT
             String prompt = String.format(
                     """
-                            You are 'The Sheriff', a strict Linguistic Auditor for an English-Turkish Dictionary.
-                            Your job is to REJECT any entry that violates the following strict laws.
+                            You are the Sheriff. A strict Dictionary Auditor and Chief Editor for an English-to-Turkish dictionary project called 'Sublex'.
+                            Your job is to REJECT any entry that sounds unnatural, translated by a machine, or linguistically incorrect.
 
                             ### THE LAWS (REJECTION CRITERIA):
                             1. **TRANSLATION LAW**: The 'example' sentence in Turkish MUST be natural and fluent.
@@ -88,6 +101,10 @@ public class AuditService {
 
                             3. **DATA INTEGRITY**:
                                - REJECT IF: The definition does not match the word provided.
+
+                            4. **HALLUCINATION LAW**:
+                               - REJECT IF: The definition contains 'phrasal_verbs' that do not exist or are forced (e.g., 'tea' -> 'tea off', 'murder' -> 'murder up').
+                               - REJECT IF: The phrasal verb spelling does not match the root word (e.g., 'tea' vs 'tee').
 
                             ### INPUT DATA (JSON):
                             %s
@@ -112,25 +129,28 @@ public class AuditService {
                 return;
             }
 
-            // JSON Temizleme
+            // 3. Response İşleme (Robust Parsing)
             String cleanJson = cleanJsonFromMarkdown(response);
-
             Map<String, Object> responseMap = objectMapper.readValue(cleanJson, new TypeReference<>() {
             });
             List<Map<String, Object>> results = (List<Map<String, Object>>) responseMap.get("audit_results");
 
-            if (results == null)
-                results = Collections.emptyList();
+            // Failure Map Oluşturma (NPE Safe)
+            Map<Long, String> failureMap = new HashMap<>();
+            if (results != null) {
+                for (Map<String, Object> r : results) {
+                    if (Boolean.TRUE.equals(r.get("fail"))) {
+                        Object idObj = r.get("id");
+                        if (idObj != null) {
+                            failureMap.put(Long.valueOf(idObj.toString()),
+                                    (String) r.getOrDefault("reason", "Hatalı tespit edildi."));
+                        }
+                    }
+                }
+            }
 
-            // MANTIK DÜZELTME: Listeyi Map'e çeviriyoruz (ID -> Reason)
-            Map<Long, String> failureMap = results.stream()
-                    .filter(r -> r != null && Boolean.TRUE.equals(r.get("fail")) && r.get("id") != null)
-                    .collect(Collectors.toMap(
-                            r -> Long.valueOf(r.get("id").toString()),
-                            r -> r.get("reason") != null ? (String) r.get("reason") : "Hatalı tespit edildi.",
-                            (existing, replacement) -> existing));
-
-            for (Word word : batch) {
+            // 4. Durum Güncelleme (Sadece Gemini'ye gidenler için)
+            for (Word word : validWordsForGemini) {
                 if (failureMap.containsKey(word.getId())) {
                     String reason = failureMap.get(word.getId());
                     log.warn("Sheriff REJECTED word '{}': {}", word.getWord(), reason);
@@ -145,11 +165,15 @@ public class AuditService {
                     word.setNeedsReEnrichment(false);
                     word.setAuditNotes(null);
                 }
-                wordRepository.save(word);
             }
 
-            log.info("Batch audit complete. Rejected: {}, Approved: {}", failureMap.size(),
-                    batch.size() - failureMap.size());
+            // 5. Toplu Kayıt (DB Connection Friendly)
+            // Tüm batch'i (hem pre-audit reddedilenleri hem de audit sonucu
+            // güncellenenleri) tek seferde kaydet
+            wordRepository.saveAll(batch);
+
+            log.info("Batch audit complete. Verified: {}, Rejected: {}",
+                    validWordsForGemini.size() - failureMap.size(), failureMap.size());
 
         } catch (Exception e) {
             log.error("Failed to process Sheriff audit batch", e);
@@ -159,15 +183,12 @@ public class AuditService {
     private String cleanJsonFromMarkdown(String response) {
         if (response == null)
             return "{}";
-        String content = response.trim();
-        if (content.startsWith("```json")) {
-            content = content.substring(7);
-        } else if (content.startsWith("```")) {
-            content = content.substring(3);
+        int firstBrace = response.indexOf("{");
+        int lastBrace = response.lastIndexOf("}");
+
+        if (firstBrace != -1 && lastBrace != -1) {
+            return response.substring(firstBrace, lastBrace + 1);
         }
-        if (content.endsWith("```")) {
-            content = content.substring(0, content.length() - 3);
-        }
-        return content.trim();
+        return response.trim(); // Fallback
     }
 }

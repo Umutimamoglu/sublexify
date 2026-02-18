@@ -164,7 +164,7 @@ public class PipelineService {
         updateStep(PipelineStatus.Step.SPECIALIST);
 
         try {
-            specialistService.fixFlaggedWords("en", actualSize);
+            specialistService.fixFlaggedWords("en", actualSize, batchTime);
         } catch (Exception e) {
             log.error("Specialist fix failed: {}", e.getMessage());
             addFailure("SPECIALIST", "BATCH", e.getMessage());
@@ -212,8 +212,8 @@ public class PipelineService {
                                 word.setDefinition(verdict);
                                 word.setDifficulty(verdict.getDifficulty());
                                 word.setJudgeStatus("APPROVED");
-                                word.setJudgeApprovedAt(LocalDateTime.now());
-                                word.setEnrichedAt(LocalDateTime.now());
+                                word.setJudgeApprovedAt(batchTime);
+                                word.setEnrichedAt(batchTime);
                                 wordRepository.save(word);
                                 log.info("Judge verdict auto-applied for '{}'", word.getWord());
                             } else {
