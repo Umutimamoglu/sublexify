@@ -106,9 +106,19 @@ public class SubtitleParser {
         // Bu karakterler temizlenmezse "nWord" şeklinde hatalı kelimeler oluşur.
         line = line.replace("\\N", " ").replace("\\n", " ").replace("\\", " ");
 
-        // GÜNCELLEME 3: Akıllı tırnakları düz tırnağa çeviriyoruz (Standardizasyon)
-        // Veritabanında hem "don't" hem "don’t" olmasın, hepsi "don't" olsun.
-        line = line.replace('’', '\'');
+        // GÜNCELLEME 3: Kesme işareti (') içeren kelimeleri köklerine ayır (Naive
+        // Stemming)
+        // Örnek: "we'd" -> "we", "don't" -> "don", "john's" -> "john"
+        // NOT: "o'connor" gibi özel isimler "o" olarak kalabilir, bu basit bir
+        // çözümdür.
+        // Daha karmaşık NLP (Lemmatization) gerekirse StanfordNLP/OpenNLP entegre
+        // edilmeli.
+        if (line.contains("'") || line.contains("’")) {
+            line = line.replace("’", "'"); // Önce standartlaştır
+            // Regex: Kelime içindeki kesme işareti ve sonrasındaki harfleri sil
+            // Ancak bu global replace değil, kelime bazlı olmalı.
+            // Bu yüzden loop içinde yapmak daha güvenli.
+        }
 
         // Locale.ENGLISH kullanımı Türkçe sunucularda "I" -> "i" dönüşümü için kritik.
         line = line.toLowerCase(Locale.ENGLISH);
@@ -117,8 +127,16 @@ public class SubtitleParser {
         while (matcher.find()) {
             String word = matcher.group();
 
-            // Tek başına kalan tire veya kesme işaretlerini filtrele (Nadir hatalar için)
-            if (word.length() <= 1 && !Character.isLetter(word.charAt(0))) {
+            // GÜNCELLEME: Kesme işareti varsa, sadece öncesini al ("we'd" -> "we")
+            if (word.contains("'") || word.contains("’")) {
+                word = word.split("['’]")[0];
+            }
+
+            if (word.isEmpty())
+                continue;
+
+            // Tek harfli kelime kontrolü: Sadece "a" ve "i" kabul edilir.
+            if (word.length() == 1 && !word.equals("a") && !word.equals("i")) {
                 continue;
             }
 
