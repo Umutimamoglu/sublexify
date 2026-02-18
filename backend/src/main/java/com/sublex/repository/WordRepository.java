@@ -21,8 +21,11 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         @Query(value = "INSERT INTO word (word, language, created_at) VALUES (:word, :language, NOW()) ON CONFLICT (word, language) DO NOTHING", nativeQuery = true)
         void insertIgnore(@Param("word") String word, @Param("language") String language);
 
-        @Query("SELECT w FROM Word w WHERE w.isEnriched = false OR w.isEnriched IS NULL ORDER BY w.id ASC LIMIT 50")
+        @Query("SELECT w FROM Word w WHERE (w.isEnriched = false OR w.isEnriched IS NULL) ORDER BY w.id ASC LIMIT 50")
         List<Word> findPendingEnrichment();
+
+        @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND (mw.word.isEnriched = false OR mw.word.isEnriched IS NULL) ORDER BY mw.word.id ASC LIMIT 50")
+        List<Word> findPendingEnrichmentByMediaId(@Param("mediaId") Long mediaId);
 
         List<Word> findByWordInAndLanguage(java.util.Collection<String> words, String language);
 

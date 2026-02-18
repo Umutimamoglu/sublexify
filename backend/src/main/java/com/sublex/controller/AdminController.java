@@ -256,6 +256,19 @@ public class AdminController {
         }
     }
 
+    @PostMapping("/media/{id}/enrich")
+    @Operation(summary = "Triggers AI enrichment for a specific media's pending words")
+    public ResponseEntity<String> enrichMediaBatch(@PathVariable Long id) {
+        log.info("Manual request to trigger AI enrichment for media: {}", id);
+        try {
+            enrichmentService.enrichWordsForMedia(id);
+            return ResponseEntity.ok("Enrichment for media " + id + " completed successfully");
+        } catch (Exception e) {
+            log.error("Enrichment for media {} failed", id, e);
+            return ResponseEntity.internalServerError().body("Enrichment failed: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/audit-batch")
     @Operation(summary = "Triggers the Sheriff (Gemini 1.5 Pro) to audit recently enriched words")
     public ResponseEntity<String> auditBatch(@RequestParam(defaultValue = "50") int size) {

@@ -25,9 +25,21 @@ public class EnrichmentService {
     @Transactional
     public void enrichPendingWords() {
         List<Word> pendingWords = wordRepository.findPendingEnrichment();
+        enrichList(pendingWords);
+    }
 
+    @Transactional
+    public void enrichWordsForMedia(Long mediaId) {
+        List<Word> pendingWords = wordRepository.findPendingEnrichmentByMediaId(mediaId);
         if (pendingWords.isEmpty()) {
-            log.info("No pending words to enrich.");
+            log.info("No pending words for media ID: {}", mediaId);
+            return;
+        }
+        enrichList(pendingWords);
+    }
+
+    private void enrichList(List<Word> pendingWords) {
+        if (pendingWords.isEmpty()) {
             return;
         }
 
