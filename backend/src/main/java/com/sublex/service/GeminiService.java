@@ -20,16 +20,21 @@ public class GeminiService {
     private String apiKey;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient = RestClient.builder()
+            .requestFactory(new org.springframework.http.client.JdkClientHttpRequestFactory(
+                    java.net.http.HttpClient.newBuilder()
+                            .connectTimeout(java.time.Duration.ofSeconds(10))
+                            .build()))
+            .build();
 
-    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=";
+    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro:generateContent?key=";
 
     public String generateContent(String prompt) {
         if (apiKey == null || apiKey.isEmpty()) {
             log.error("GEMINI_API_KEY is missing from environment!");
             return null;
         }
-        log.info("Calling Gemini API with model: gemini-3.0-flash (Key length: {})", apiKey.length());
+        log.info("Calling Gemini API with model: gemini-3.0-pro (Key length: {})", apiKey.length());
 
         Map<String, Object> requestBody = Map.of(
                 "contents", List.of(
@@ -71,7 +76,7 @@ public class GeminiService {
             return (String) parts.get(0).get("text");
 
         } catch (Exception e) {
-            log.error("Gemini API call failed. Model: gemini-3.0-flash. Error: {}", e.getMessage(), e);
+            log.error("Gemini API call failed. Model: gemini-3.0-pro. Error: {}", e.getMessage(), e);
             return null;
         }
     }

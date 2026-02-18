@@ -33,7 +33,7 @@ public class AuditService {
             return;
         }
 
-        log.info("Sheriff (Gemini Flash) auditing {} words in PARALLEL batches...", allWordsToAudit.size());
+        log.info("Sheriff (Gemini 3.0 Pro) auditing {} words in PARALLEL batches...", allWordsToAudit.size());
 
         int batchSize = 10;
         List<List<Word>> batches = new ArrayList<>();
@@ -199,13 +199,45 @@ public class AuditService {
 
     private String cleanJsonFromMarkdown(String response) {
         if (response == null)
-            return "{}";
-        int firstBrace = response.indexOf("{");
-        int lastBrace = response.lastIndexOf("}");
+            return "[]";
+        String content = response.trim();
 
-        if (firstBrace != -1 && lastBrace != -1) {
-            return response.substring(firstBrace, lastBrace + 1);
+        // Remove markdown code blocks if present
+        if (content.contains("```json")) {
+            content = content.substring(content.indexOf("```json") + 7);
+            if (content.contains("```")) {
+                content = content.substring(0, content.lastIndexOf("```"));
+            }
+        } else if (content.contains("```")) {
+            content = content.substring(content.indexOf("```") + 3);
+            if (content.contains("```")) {
+                content = content.substring(0, content.lastIndexOf("```"));
+            }
         }
-        return response.trim(); // Fallback
+
+        content = content.trim();
+
+        // Find the actual JSON start (either [ or {)
+        int firstBracket = content.indexOf("[");
+        int firstBrace = content.indexOf("{");
+        int start = -1;
+
+        if (firstBracket != -1 && (firstBrace == -1 || firstBracket < firstBrace)) {
+            start = firstBracket;
+        } else {
+            start = firstBrace;
+        }
+
+        if (start == -1)
+            return content;
+
+        int lastBracket = content.lastIndexOf("]");
+        int lastBrace = content.lastIndexOf("}");
+        int end = Math.max(lastBracket, lastBrace);
+
+        if (end == -1)
+            return content.substring(start);
+
+        return content.substring(start, end + 1);
     }
 }

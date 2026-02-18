@@ -6,8 +6,8 @@ import type { PipelineStatus, FailedWord } from '@/services/MediaService';
 const STEP_LABELS: Record<string, string> = {
     IDLE: '⏸ Idle',
     WORKER: '🔧 Worker (GPT-4.1-mini)',
-    SHERIFF: '🤠 Sheriff (Gemini 2.5 Flash)',
-    SPECIALIST: '🔬 Specialist (Claude 4.5 Haiku)',
+    SHERIFF: '🤠 Sheriff (Gemini 3.0 Pro)',
+    SPECIALIST: '🔬 Specialist (Claude 3.5 Sonnet)',
     JUDGE: '⚖️ Judge (GPT-5-mini)',
     COMPLETE: '✅ Complete',
     FAILED: '❌ Failed',

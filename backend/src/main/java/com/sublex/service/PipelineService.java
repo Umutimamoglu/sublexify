@@ -140,8 +140,8 @@ public class PipelineService {
         currentStatus.set(status);
         log.info("WORKER complete in {}ms. {} words enriched.", workerTime, actualSize);
 
-        // ======= STEP 2: SHERIFF (Gemini 2.5 Flash) =======
-        log.info("=== PIPELINE STEP 2: SHERIFF (Gemini 2.5 Flash) ===");
+        // ======= STEP 2: SHERIFF (Gemini 3.0 Pro) =======
+        log.info("=== PIPELINE STEP 2: SHERIFF (Gemini 3.0 Pro) ===");
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.SHERIFF);
 
@@ -158,8 +158,8 @@ public class PipelineService {
         currentStatus.set(status);
         log.info("SHERIFF complete in {}ms.", sheriffTime);
 
-        // ======= STEP 3: SPECIALIST (Claude 4.5 Haiku) =======
-        log.info("=== PIPELINE STEP 3: SPECIALIST (Claude 4.5 Haiku) ===");
+        // ======= STEP 3: SPECIALIST (Claude) =======
+        log.info("=== PIPELINE STEP 3: SPECIALIST (Claude) ===");
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.SPECIALIST);
 
