@@ -118,36 +118,36 @@ const MediaService = {
         return response.data;
     },
 
-    getGravityApprovedDates: async (language: string = 'en'): Promise<string[]> => {
+    getJudgeApprovedDates: async (language: string = 'en'): Promise<string[]> => {
         const response = await api.get<string[]>('/admin/words/enriched/approval-dates', {
             params: { language }
         });
         return response.data;
     },
 
-    getEnrichedWords: async (page: number = 0, size: number = 20, needsReEnrichment: boolean = false, isVerified: boolean = false, isGravityApproved: boolean = false, date?: string): Promise<Page<Word>> => {
+    getEnrichedWords: async (page: number = 0, size: number = 20, needsReEnrichment: boolean = false, isVerified: boolean = false, isJudgeApproved: boolean = false, date?: string): Promise<Page<Word>> => {
         const response = await api.get<Page<Word>>('/admin/words/enriched', {
-            params: { page, size, needsReEnrichment, isVerified, isGravityApproved, date }
+            params: { page, size, needsReEnrichment, isVerified, isJudgeApproved, date }
         });
         return response.data;
     },
 
-    gravityApproveBatch: async (wordIds: number[]): Promise<string> => {
+    judgeApproveBatch: async (wordIds: number[]): Promise<string> => {
         const response = await api.post<string>('/admin/approve-batch', wordIds);
         return response.data;
     },
 
-    downloadEnrichedWords: async (date?: string, needsReEnrichment: boolean = false, isVerified: boolean = false, isGravityApproved: boolean = false): Promise<void> => {
+    downloadEnrichedWords: async (date?: string, needsReEnrichment: boolean = false, isVerified: boolean = false, isJudgeApproved: boolean = false): Promise<void> => {
         const response = await api.get<Blob>('/admin/words/enriched/download', {
             responseType: 'blob',
-            params: { date, needsReEnrichment, isVerified, isGravityApproved }
+            params: { date, needsReEnrichment, isVerified, isJudgeApproved }
         });
 
         // Create a link element, hide it, click it, and remove it
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-        const filename = needsReEnrichment ? 'enriched_words_flagged' : (isGravityApproved ? 'enriched_words_gravity' : (isVerified ? 'enriched_words_verified' : 'enriched_words'));
+        const filename = needsReEnrichment ? 'enriched_words_flagged' : (isJudgeApproved ? 'enriched_words_judge_approved' : (isVerified ? 'enriched_words_verified' : 'enriched_words'));
         link.setAttribute('download', `${filename}${date ? '_' + date : ''}.json`);
         document.body.appendChild(link);
         link.click();
@@ -238,4 +238,60 @@ export interface TmdbEpisode {
     voteAverage?: number;
 }
 
+// ============ PIPELINE TYPES ============
+
+export interface FailedWord {
+    word: string;
+    step: string;
+    error: string;
+}
+
+export interface PipelineStatus {
+    currentStep: 'IDLE' | 'WORKER' | 'SHERIFF' | 'SPECIALIST' | 'JUDGE' | 'COMPLETE' | 'FAILED';
+    totalWords: number;
+    processedWords: number;
+    progressPercent: number;
+    failedWords: FailedWord[];
+    stepTimings: Record<string, number>;
+    judgeQueueSize: number;
+    startedAt: string | null;
+    completedAt: string | null;
+    running: boolean;
+}
+
+// ============ PIPELINE API ============
+
+const PipelineAPI = {
+    start: async (size: number): Promise<string> => {
+        const response = await api.post(`/admin/pipeline/start?size=${size}`);
+        return response.data;
+    },
+
+    getStatus: async (): Promise<PipelineStatus> => {
+        const response = await api.get('/admin/pipeline/status');
+        return response.data;
+    },
+
+    getFailures: async (): Promise<FailedWord[]> => {
+        const response = await api.get('/admin/pipeline/failures');
+        return response.data;
+    },
+
+    getJudgePending: async (): Promise<any[]> => {
+        const response = await api.get('/admin/words/judge-pending');
+        return response.data;
+    },
+
+    approveJudge: async (wordId: number): Promise<string> => {
+        const response = await api.post(`/admin/words/judge-approve?wordId=${wordId}`);
+        return response.data;
+    },
+
+    rejectJudge: async (wordId: number): Promise<string> => {
+        const response = await api.post(`/admin/words/judge-reject?wordId=${wordId}`);
+        return response.data;
+    },
+};
+
+export { PipelineAPI };
 export default MediaService;

@@ -9,9 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,7 +25,6 @@ public class AuditService {
     private final GeminiService geminiService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Transactional
     public void auditRecentWords(int totalLimit) {
         List<Word> allWordsToAudit = wordRepository.findTopEnrichedWords(totalLimit);
 
@@ -32,14 +33,24 @@ public class AuditService {
             return;
         }
 
-        log.info("Sheriff (Gemini Flash) auditing {} words in batches...", allWordsToAudit.size());
+        log.info("Sheriff (Gemini Flash) auditing {} words in PARALLEL batches...", allWordsToAudit.size());
 
         int batchSize = 10;
+        List<List<Word>> batches = new ArrayList<>();
         for (int i = 0; i < allWordsToAudit.size(); i += batchSize) {
             int end = Math.min(i + batchSize, allWordsToAudit.size());
-            List<Word> batch = allWordsToAudit.subList(i, end);
-            auditBatch(batch);
+            batches.add(new ArrayList<>(allWordsToAudit.subList(i, end)));
         }
+
+        log.info("Sheriff splitting into {} parallel batches.", batches.size());
+
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (List<Word> batch : batches) {
+                executor.submit(() -> auditBatch(batch));
+            }
+        }
+
+        log.info("Sheriff parallel audit complete.");
     }
 
     private void auditBatch(List<Word> batch) {

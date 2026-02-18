@@ -3,6 +3,8 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import MediaService from '@/services/MediaService';
 import type { TmdbMedia, TmdbSeasonDetails } from '@/services/MediaService';
+import PipelineControlPanel from '@/components/PipelineControlPanel';
+import JudgeReviewPanel from '@/components/JudgeReviewPanel';
 
 const AdminPage = () => {
     const [files, setFiles] = useState<File[]>([]);
@@ -94,7 +96,7 @@ const AdminPage = () => {
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [filterFlagged, setFilterFlagged] = useState(false);
     const [filterVerified, setFilterVerified] = useState(false);
-    const [filterGravityApproved, setFilterGravityApproved] = useState(false);
+    const [filterJudgeApproved, setFilterJudgeApproved] = useState(false);
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return 'All Dates';
@@ -112,17 +114,17 @@ const AdminPage = () => {
     };
 
     useEffect(() => {
-        if (filterGravityApproved) {
-            MediaService.getGravityApprovedDates().then(setAvailableDates).catch(console.error);
+        if (filterJudgeApproved) {
+            MediaService.getJudgeApprovedDates().then(setAvailableDates).catch(console.error);
         } else {
             MediaService.getEnrichedDates().then(setAvailableDates).catch(console.error);
         }
-    }, [filterGravityApproved]);
+    }, [filterJudgeApproved]);
 
     useEffect(() => {
         // Reset date selection when filter mode changes
         setSelectedDate(null);
-    }, [filterGravityApproved, filterFlagged, filterVerified]);
+    }, [filterJudgeApproved, filterFlagged, filterVerified]);
 
     const fetchMedia = async () => {
         setLoadingMedia(true);
@@ -330,6 +332,12 @@ const AdminPage = () => {
         <div className="max-w-4xl mx-auto pb-20">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Admin Dashboard</h1>
 
+            {/* Pipeline Control Panel */}
+            <PipelineControlPanel />
+
+            {/* Judge Review Panel */}
+            <JudgeReviewPanel />
+
             {/* Stats Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 flex items-center gap-4">
@@ -377,12 +385,12 @@ const AdminPage = () => {
                         <label className="flex items-center gap-2 cursor-pointer group">
                             <input
                                 type="checkbox"
-                                checked={filterGravityApproved}
-                                onChange={(e) => setFilterGravityApproved(e.target.checked)}
+                                checked={filterJudgeApproved}
+                                onChange={(e) => setFilterJudgeApproved(e.target.checked)}
                                 className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                             />
                             <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-amber-500 transition-colors">
-                                Gravity Approved
+                                Judge Approved
                             </span>
                         </label>
                         <div className="relative">
@@ -402,7 +410,7 @@ const AdminPage = () => {
                         <button
                             onClick={async () => {
                                 try {
-                                    await MediaService.downloadEnrichedWords(selectedDate || undefined, filterFlagged, filterVerified, filterGravityApproved);
+                                    await MediaService.downloadEnrichedWords(selectedDate || undefined, filterFlagged, filterVerified, filterJudgeApproved);
                                 } catch (err) {
                                     alert('Failed to download enriched words');
                                 }
@@ -418,7 +426,7 @@ const AdminPage = () => {
                 <EnrichedWordsTable
                     filterFlagged={filterFlagged}
                     filterVerified={filterVerified}
-                    filterGravityApproved={filterGravityApproved}
+                    filterJudgeApproved={filterJudgeApproved}
                     selectedDate={selectedDate}
                 />
             </div>
@@ -899,10 +907,10 @@ const MediaGroup = ({ title, count, items, onDelete, isSeries = false }: {
 export default AdminPage;
 
 // Helper Component for Enriched Words Table
-const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, filterGravityApproved = false, selectedDate = null }: {
+const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, filterJudgeApproved = false, selectedDate = null }: {
     filterFlagged?: boolean,
     filterVerified?: boolean,
-    filterGravityApproved?: boolean,
+    filterJudgeApproved?: boolean,
     selectedDate?: string | null
 }) => {
     const [words, setWords] = useState<any[]>([]);
@@ -919,7 +927,7 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, fil
                 10,
                 filterFlagged,
                 filterVerified,
-                filterGravityApproved,
+                filterJudgeApproved,
                 selectedDate || undefined
             );
             setWords(data.content);
@@ -930,7 +938,7 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, fil
         } finally {
             setLoading(false);
         }
-    }, [filterFlagged, filterVerified, filterGravityApproved, selectedDate]);
+    }, [filterFlagged, filterVerified, filterJudgeApproved, selectedDate]);
 
     useEffect(() => {
         fetchWords(0);
@@ -982,8 +990,8 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, fil
                                     >
                                         <td className="px-4 py-3 font-medium text-gray-900 dark:text-white flex items-center gap-2">
                                             {word.word}
-                                            {word.isGravityApproved && (
-                                                <div className="p-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full" title="Gravity Approved">
+                                            {word.judgeStatus === 'APPROVED' && (
+                                                <div className="p-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full" title="Judge Approved">
                                                     <CheckCircle className="w-3.5 h-3.5" />
                                                 </div>
                                             )}
@@ -1042,14 +1050,14 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, fil
                 </div>
             </div>
 
-            {/* Gravity Approve All Button */}
-            {!filterGravityApproved && words.length > 0 && (
+            {/* Judge Approve All Button */}
+            {!filterJudgeApproved && words.length > 0 && (
                 <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end">
                     <button
                         onClick={async () => {
-                            if (!window.confirm(`Mark these ${words.length} words as Gravity Approved?`)) return;
+                            if (!window.confirm(`Mark these ${words.length} words as Judge Approved?`)) return;
                             try {
-                                await MediaService.gravityApproveBatch(words.map(w => w.id));
+                                await MediaService.judgeApproveBatch(words.map(w => w.id));
                                 fetchWords(page);
                                 alert('Words approved successfully!');
                             } catch (err) {
@@ -1059,7 +1067,7 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, fil
                         className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-900/20 flex items-center gap-2"
                     >
                         <CheckCircle className="w-5 h-5" />
-                        Gravity Approve This Page
+                        Judge Approve This Page
                     </button>
                 </div>
             )}

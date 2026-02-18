@@ -42,15 +42,16 @@ public interface WordRepository extends JpaRepository<Word, Long> {
                         String language,
                         org.springframework.data.domain.Pageable pageable);
 
-        org.springframework.data.domain.Page<Word> findByLanguageAndIsEnrichedTrueAndIsGravityApprovedTrue(
+        org.springframework.data.domain.Page<Word> findByLanguageAndIsEnrichedTrueAndJudgeStatus(
                         String language,
+                        String judgeStatus,
                         org.springframework.data.domain.Pageable pageable);
 
         List<Word> findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(String language);
 
         List<Word> findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(String language);
 
-        List<Word> findByLanguageAndIsEnrichedTrueAndIsGravityApprovedTrue(String language);
+        List<Word> findByLanguageAndIsEnrichedTrueAndJudgeStatus(String language, String judgeStatus);
 
         List<Word> findByLanguageAndIsEnrichedTrue(String language);
 
@@ -69,18 +70,26 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         List<Word> findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(String language, java.time.LocalDateTime start,
                         java.time.LocalDateTime end);
 
-        @Query(value = "SELECT DISTINCT TO_CHAR(gravity_approved_at, 'YYYY-MM-DD HH24:MI') FROM word WHERE language = :language AND is_gravity_approved = true AND gravity_approved_at IS NOT NULL ORDER BY 1 DESC", nativeQuery = true)
-        List<String> findDistinctGravityApprovedDates(@Param("language") String language);
+        @Query(value = "SELECT DISTINCT TO_CHAR(judge_approved_at, 'YYYY-MM-DD HH24:MI') FROM word WHERE language = :language AND judge_status = 'APPROVED' AND judge_approved_at IS NOT NULL ORDER BY 1 DESC", nativeQuery = true)
+        List<String> findDistinctJudgeApprovedDates(@Param("language") String language);
 
-        @Query("SELECT w FROM Word w WHERE w.language = :language AND w.isGravityApproved = true AND TO_CHAR(w.gravityApprovedAt, 'YYYY-MM-DD HH24:MI') = :dateTime")
-        org.springframework.data.domain.Page<Word> findByLanguageAndIsGravityApprovedTrueAndGravityApprovedAtPrecision(
+        @Query("SELECT w FROM Word w WHERE w.language = :language AND w.judgeStatus = 'APPROVED' AND TO_CHAR(w.judgeApprovedAt, 'YYYY-MM-DD HH24:MI') = :dateTime")
+        org.springframework.data.domain.Page<Word> findByLanguageAndJudgeApprovedAtPrecision(
                         @Param("language") String language, @Param("dateTime") String dateTime,
                         org.springframework.data.domain.Pageable pageable);
 
-        @Query("SELECT w FROM Word w WHERE w.language = :language AND w.isGravityApproved = true AND TO_CHAR(w.gravityApprovedAt, 'YYYY-MM-DD HH24:MI') = :dateTime")
-        List<Word> findByLanguageAndIsGravityApprovedTrueAndGravityApprovedAtPrecision(
-                        @Param("language") String language, @Param("dateTime") String dateTime);
+        @Query("SELECT w FROM Word w WHERE w.language = :language AND w.judgeStatus = 'APPROVED' AND TO_CHAR(w.judgeApprovedAt, 'YYYY-MM-DD HH24:MI') = :dateTime")
+        List<Word> findByLanguageAndJudgeApprovedAtPrecision(@Param("language") String language,
+                        @Param("dateTime") String dateTime);
 
         @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND (w.needsReEnrichment = false OR w.needsReEnrichment IS NULL) AND (w.isVerified = false OR w.isVerified IS NULL) ORDER BY w.enrichedAt ASC LIMIT :limit")
         List<Word> findTopEnrichedWords(@Param("limit") int limit);
+
+        @Query("SELECT w FROM Word w WHERE (w.isEnriched = false OR w.isEnriched IS NULL) ORDER BY w.id ASC LIMIT :limit")
+        List<Word> findPendingEnrichmentWithLimit(@Param("limit") int limit);
+
+        List<Word> findByJudgeStatus(String judgeStatus);
+
+        @Query("SELECT COUNT(w) FROM Word w WHERE w.judgeStatus = 'PENDING_REVIEW'")
+        int countJudgePending();
 }

@@ -41,6 +41,7 @@ public class AdminController {
     private final EnrichmentService enrichmentService;
     private final com.sublex.service.AuditService auditService;
     private final com.sublex.service.SpecialistService specialistService;
+    private final com.sublex.service.PipelineService pipelineService;
 
     // ... (other methods unchanged) ...
 
@@ -304,7 +305,7 @@ public class AdminController {
             @RequestParam(required = false) String date,
             @RequestParam(defaultValue = "false") boolean needsReEnrichment,
             @RequestParam(defaultValue = "false") boolean isVerified,
-            @RequestParam(defaultValue = "false") boolean isGravityApproved) {
+            @RequestParam(defaultValue = "false") boolean isJudgeApproved) {
 
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
                 org.springframework.data.domain.Sort.by("id").descending());
@@ -313,14 +314,13 @@ public class AdminController {
             return ResponseEntity
                     .ok(wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language, pageable));
         }
-        if (isGravityApproved) {
+        if (isJudgeApproved) {
             if (date != null && !date.isEmpty()) {
                 return ResponseEntity.ok(wordRepository
-                        .findByLanguageAndIsGravityApprovedTrueAndGravityApprovedAtPrecision(language, date,
-                                pageable));
+                        .findByLanguageAndJudgeApprovedAtPrecision(language, date, pageable));
             }
             return ResponseEntity
-                    .ok(wordRepository.findByLanguageAndIsEnrichedTrueAndIsGravityApprovedTrue(language, pageable));
+                    .ok(wordRepository.findByLanguageAndIsEnrichedTrueAndJudgeStatus(language, "APPROVED", pageable));
         }
         if (isVerified) {
             return ResponseEntity
@@ -333,8 +333,8 @@ public class AdminController {
     }
 
     @GetMapping("/words/enriched/approval-dates")
-    public ResponseEntity<List<String>> getGravityApprovedDates(@RequestParam(defaultValue = "en") String language) {
-        return ResponseEntity.ok(wordRepository.findDistinctGravityApprovedDates(language));
+    public ResponseEntity<List<String>> getJudgeApprovedDates(@RequestParam(defaultValue = "en") String language) {
+        return ResponseEntity.ok(wordRepository.findDistinctJudgeApprovedDates(language));
     }
 
     @GetMapping("/words/enriched/download")
@@ -343,27 +343,24 @@ public class AdminController {
             @RequestParam(defaultValue = "false") String date,
             @RequestParam(defaultValue = "false") boolean needsReEnrichment,
             @RequestParam(defaultValue = "false") boolean isVerified,
-            @RequestParam(defaultValue = "false") boolean isGravityApproved) {
+            @RequestParam(defaultValue = "false") boolean isJudgeApproved) {
 
         List<com.sublex.model.Word> words;
 
         if (needsReEnrichment) {
             words = wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language);
-        } else if (isGravityApproved) {
+        } else if (isJudgeApproved) {
             if (date != null && !date.isEmpty() && !date.equals("false")) {
-                words = wordRepository.findByLanguageAndIsGravityApprovedTrueAndGravityApprovedAtPrecision(language,
-                        date);
+                words = wordRepository.findByLanguageAndJudgeApprovedAtPrecision(language, date);
             } else {
-                words = wordRepository.findByLanguageAndIsEnrichedTrueAndIsGravityApprovedTrue(language);
+                words = wordRepository.findByLanguageAndIsEnrichedTrueAndJudgeStatus(language, "APPROVED");
             }
         } else if (isVerified) {
             words = wordRepository.findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(language);
         } else if (date != null && !date.isEmpty() && !date.equals("false")) {
             if (date.length() > 10) {
-                // High precision (YYYY-MM-DD HH:mm)
                 words = wordRepository.findByLanguageAndEnrichedAtPrecision(language, date);
             } else {
-                // Just date (YYYY-MM-DD)
                 java.time.LocalDate localDate = java.time.LocalDate.parse(date);
                 java.time.LocalDateTime start = localDate.atStartOfDay();
                 java.time.LocalDateTime end = localDate.atTime(java.time.LocalTime.MAX);
@@ -384,15 +381,58 @@ public class AdminController {
     }
 
     @PostMapping("/approve-batch")
-    @Operation(summary = "Marks a batch of words as Gravity Approved")
+    @Operation(summary = "Marks a batch of words as Judge Approved")
     public ResponseEntity<String> approveBatch(@RequestBody List<Long> wordIds) {
-        log.info("Request to gravity approve batch of {} words", wordIds.size());
+        log.info("Request to judge-approve batch of {} words", wordIds.size());
         List<com.sublex.model.Word> words = wordRepository.findAllById(wordIds);
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
         words.forEach(w -> {
-            w.setIsGravityApproved(true);
-            w.setGravityApprovedAt(java.time.LocalDateTime.now());
+            w.setJudgeStatus("APPROVED");
+            w.setJudgeApprovedAt(now);
         });
         wordRepository.saveAll(words);
-        return ResponseEntity.ok("Successfully gravity approved " + words.size() + " words.");
+        return ResponseEntity.ok("Successfully judge-approved " + words.size() + " words.");
+    }
+
+    // ============ PIPELINE ENDPOINTS ============
+
+    @PostMapping("/pipeline/start")
+    @Operation(summary = "Starts the full 4-step enrichment pipeline")
+    public ResponseEntity<String> startPipeline(@RequestParam(defaultValue = "100") int size) {
+        log.info("Starting enrichment pipeline for {} words", size);
+        pipelineService.startPipeline(size);
+        return ResponseEntity.accepted().body("Pipeline started for " + size + " words.");
+    }
+
+    @GetMapping("/pipeline/status")
+    @Operation(summary = "Returns the current pipeline progress")
+    public ResponseEntity<com.sublex.dto.PipelineStatus> getPipelineStatus() {
+        return ResponseEntity.ok(pipelineService.getStatus());
+    }
+
+    @GetMapping("/pipeline/failures")
+    @Operation(summary = "Returns list of failed words from pipeline run")
+    public ResponseEntity<java.util.List<com.sublex.dto.PipelineStatus.FailedWord>> getPipelineFailures() {
+        return ResponseEntity.ok(pipelineService.getStatus().getFailedWords());
+    }
+
+    @GetMapping("/words/judge-pending")
+    @Operation(summary = "Returns words pending Judge review")
+    public ResponseEntity<java.util.List<com.sublex.model.Word>> getJudgePendingWords() {
+        return ResponseEntity.ok(wordRepository.findByJudgeStatus("PENDING_REVIEW"));
+    }
+
+    @PostMapping("/words/judge-approve")
+    @Operation(summary = "Approves a Judge verdict for a word")
+    public ResponseEntity<String> approveJudgeVerdict(@RequestParam Long wordId) {
+        pipelineService.approveJudgeVerdict(wordId);
+        return ResponseEntity.ok("Judge verdict approved for word ID: " + wordId);
+    }
+
+    @PostMapping("/words/judge-reject")
+    @Operation(summary = "Rejects a Judge verdict for a word")
+    public ResponseEntity<String> rejectJudgeVerdict(@RequestParam Long wordId) {
+        pipelineService.rejectJudgeVerdict(wordId);
+        return ResponseEntity.ok("Judge verdict rejected for word ID: " + wordId);
     }
 }

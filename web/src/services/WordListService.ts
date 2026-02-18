@@ -29,7 +29,8 @@ export interface Word {
     difficulty?: string;
     isEnriched?: boolean;
     isVerified?: boolean;
-    isGravityApproved?: boolean;
+    judgeStatus?: string;
+    judgeApprovedAt?: string;
 }
 
 export interface WordList {

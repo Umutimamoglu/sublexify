@@ -50,14 +50,18 @@ public class Word {
     @Column(name = "is_verified")
     private Boolean isVerified = false;
 
-    @Column(name = "is_gravity_approved")
-    private Boolean isGravityApproved = false;
-
-    @Column(name = "gravity_approved_at")
-    private LocalDateTime gravityApprovedAt;
+    @Column(name = "judge_approved_at")
+    private LocalDateTime judgeApprovedAt;
 
     @Column(name = "audit_notes", columnDefinition = "text")
     private String auditNotes;
+
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "judge_verdict", columnDefinition = "jsonb")
+    private WordDefinition judgeVerdict;
+
+    @Column(name = "judge_status", length = 20)
+    private String judgeStatus; // null, PENDING_REVIEW, APPROVED, REJECTED
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
