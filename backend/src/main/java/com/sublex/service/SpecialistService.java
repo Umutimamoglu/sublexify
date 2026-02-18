@@ -47,7 +47,7 @@ public class SpecialistService {
                 word.setIsVerified(true);
                 word.setNeedsReEnrichment(false);
                 word.setEnrichedAt(java.time.LocalDateTime.now());
-                word.setAuditNotes("Fixed by Specialist (Claude 3.5)");
+                word.setAuditNotes("Fixed by Specialist (Claude 4.5)");
                 wordRepository.save(word);
                 log.info("Specialist successfully fixed word '{}'", word.getWord());
             } else {

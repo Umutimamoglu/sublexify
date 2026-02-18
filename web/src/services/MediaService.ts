@@ -117,24 +117,36 @@ const MediaService = {
         return response.data;
     },
 
-    getEnrichedWords: async (page: number = 0, size: number = 20, needsReEnrichment: boolean = false, isVerified: boolean = false, date?: string): Promise<Page<Word>> => {
-        const response = await api.get<Page<Word>>('/admin/words/enriched', {
-            params: { page, size, needsReEnrichment, isVerified, date }
+    getGravityApprovedDates: async (language: string = 'en'): Promise<string[]> => {
+        const response = await api.get<string[]>('/admin/words/enriched/approval-dates', {
+            params: { language }
         });
         return response.data;
     },
 
-    downloadEnrichedWords: async (date?: string, needsReEnrichment: boolean = false, isVerified: boolean = false): Promise<void> => {
+    getEnrichedWords: async (page: number = 0, size: number = 20, needsReEnrichment: boolean = false, isVerified: boolean = false, isGravityApproved: boolean = false, date?: string): Promise<Page<Word>> => {
+        const response = await api.get<Page<Word>>('/admin/words/enriched', {
+            params: { page, size, needsReEnrichment, isVerified, isGravityApproved, date }
+        });
+        return response.data;
+    },
+
+    gravityApproveBatch: async (wordIds: number[]): Promise<string> => {
+        const response = await api.post<string>('/admin/approve-batch', wordIds);
+        return response.data;
+    },
+
+    downloadEnrichedWords: async (date?: string, needsReEnrichment: boolean = false, isVerified: boolean = false, isGravityApproved: boolean = false): Promise<void> => {
         const response = await api.get<Blob>('/admin/words/enriched/download', {
             responseType: 'blob',
-            params: { date, needsReEnrichment, isVerified }
+            params: { date, needsReEnrichment, isVerified, isGravityApproved }
         });
 
         // Create a link element, hide it, click it, and remove it
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-        const filename = needsReEnrichment ? 'enriched_words_flagged' : (isVerified ? 'enriched_words_verified' : 'enriched_words');
+        const filename = needsReEnrichment ? 'enriched_words_flagged' : (isGravityApproved ? 'enriched_words_gravity' : (isVerified ? 'enriched_words_verified' : 'enriched_words'));
         link.setAttribute('download', `${filename}${date ? '_' + date : ''}.json`);
         document.body.appendChild(link);
         link.click();

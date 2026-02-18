@@ -50,6 +50,12 @@ public class Word {
     @Column(name = "is_verified")
     private Boolean isVerified = false;
 
+    @Column(name = "is_gravity_approved")
+    private Boolean isGravityApproved = false;
+
+    @Column(name = "gravity_approved_at")
+    private LocalDateTime gravityApprovedAt;
+
     @Column(name = "audit_notes", columnDefinition = "text")
     private String auditNotes;
 

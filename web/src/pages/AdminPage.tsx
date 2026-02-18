@@ -94,6 +94,7 @@ const AdminPage = () => {
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [filterFlagged, setFilterFlagged] = useState(false);
     const [filterVerified, setFilterVerified] = useState(false);
+    const [filterGravityApproved, setFilterGravityApproved] = useState(false);
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return 'All Dates';
@@ -111,8 +112,17 @@ const AdminPage = () => {
     };
 
     useEffect(() => {
-        MediaService.getEnrichedDates().then(setAvailableDates).catch(console.error);
-    }, []);
+        if (filterGravityApproved) {
+            MediaService.getGravityApprovedDates().then(setAvailableDates).catch(console.error);
+        } else {
+            MediaService.getEnrichedDates().then(setAvailableDates).catch(console.error);
+        }
+    }, [filterGravityApproved]);
+
+    useEffect(() => {
+        // Reset date selection when filter mode changes
+        setSelectedDate(null);
+    }, [filterGravityApproved, filterFlagged, filterVerified]);
 
     const fetchMedia = async () => {
         setLoadingMedia(true);
@@ -364,6 +374,17 @@ const AdminPage = () => {
                                 Only Verified
                             </span>
                         </label>
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                checked={filterGravityApproved}
+                                onChange={(e) => setFilterGravityApproved(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-amber-500 transition-colors">
+                                Gravity Approved
+                            </span>
+                        </label>
                         <div className="relative">
                             <select
                                 className="appearance-none bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 py-2 pl-4 pr-10 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer text-sm disabled:opacity-50"
@@ -381,7 +402,7 @@ const AdminPage = () => {
                         <button
                             onClick={async () => {
                                 try {
-                                    await MediaService.downloadEnrichedWords(selectedDate || undefined, filterFlagged, filterVerified);
+                                    await MediaService.downloadEnrichedWords(selectedDate || undefined, filterFlagged, filterVerified, filterGravityApproved);
                                 } catch (err) {
                                     alert('Failed to download enriched words');
                                 }
@@ -397,6 +418,7 @@ const AdminPage = () => {
                 <EnrichedWordsTable
                     filterFlagged={filterFlagged}
                     filterVerified={filterVerified}
+                    filterGravityApproved={filterGravityApproved}
                     selectedDate={selectedDate}
                 />
             </div>
@@ -877,9 +899,10 @@ const MediaGroup = ({ title, count, items, onDelete, isSeries = false }: {
 export default AdminPage;
 
 // Helper Component for Enriched Words Table
-const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, selectedDate = null }: {
+const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, filterGravityApproved = false, selectedDate = null }: {
     filterFlagged?: boolean,
     filterVerified?: boolean,
+    filterGravityApproved?: boolean,
     selectedDate?: string | null
 }) => {
     const [words, setWords] = useState<any[]>([]);
@@ -896,6 +919,7 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, sel
                 10,
                 filterFlagged,
                 filterVerified,
+                filterGravityApproved,
                 selectedDate || undefined
             );
             setWords(data.content);
@@ -906,7 +930,7 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, sel
         } finally {
             setLoading(false);
         }
-    }, [filterFlagged, filterVerified, selectedDate]);
+    }, [filterFlagged, filterVerified, filterGravityApproved, selectedDate]);
 
     useEffect(() => {
         fetchWords(0);
@@ -956,7 +980,14 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, sel
                                         onClick={() => setExpandedWord(expandedWord === word.id ? null : word.id)}
                                         className="hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
                                     >
-                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{word.word}</td>
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                            {word.word}
+                                            {word.isGravityApproved && (
+                                                <div className="p-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full" title="Gravity Approved">
+                                                    <CheckCircle className="w-3.5 h-3.5" />
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="px-4 py-3">
                                             <span className={`px-2 py-0.5 rounded text-xs font-bold ${word.difficulty === 'A1' || word.difficulty === 'A2' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                                                 word.difficulty === 'B1' || word.difficulty === 'B2' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
@@ -1010,6 +1041,28 @@ const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, sel
                     </button>
                 </div>
             </div>
+
+            {/* Gravity Approve All Button */}
+            {!filterGravityApproved && words.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                    <button
+                        onClick={async () => {
+                            if (!window.confirm(`Mark these ${words.length} words as Gravity Approved?`)) return;
+                            try {
+                                await MediaService.gravityApproveBatch(words.map(w => w.id));
+                                fetchWords(page);
+                                alert('Words approved successfully!');
+                            } catch (err) {
+                                alert('Failed to approve words');
+                            }
+                        }}
+                        className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-900/20 flex items-center gap-2"
+                    >
+                        <CheckCircle className="w-5 h-5" />
+                        Gravity Approve This Page
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

@@ -39,9 +39,15 @@ public interface WordRepository extends JpaRepository<Word, Long> {
                         String language,
                         org.springframework.data.domain.Pageable pageable);
 
+        org.springframework.data.domain.Page<Word> findByLanguageAndIsEnrichedTrueAndIsGravityApprovedTrue(
+                        String language,
+                        org.springframework.data.domain.Pageable pageable);
+
         List<Word> findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(String language);
 
         List<Word> findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(String language);
+
+        List<Word> findByLanguageAndIsEnrichedTrueAndIsGravityApprovedTrue(String language);
 
         List<Word> findByLanguageAndIsEnrichedTrue(String language);
 
@@ -59,6 +65,18 @@ public interface WordRepository extends JpaRepository<Word, Long> {
 
         List<Word> findByLanguageAndIsEnrichedTrueAndEnrichedAtBetween(String language, java.time.LocalDateTime start,
                         java.time.LocalDateTime end);
+
+        @Query(value = "SELECT DISTINCT TO_CHAR(gravity_approved_at, 'YYYY-MM-DD HH24:MI') FROM word WHERE language = :language AND is_gravity_approved = true AND gravity_approved_at IS NOT NULL ORDER BY 1 DESC", nativeQuery = true)
+        List<String> findDistinctGravityApprovedDates(@Param("language") String language);
+
+        @Query("SELECT w FROM Word w WHERE w.language = :language AND w.isGravityApproved = true AND TO_CHAR(w.gravityApprovedAt, 'YYYY-MM-DD HH24:MI') = :dateTime")
+        org.springframework.data.domain.Page<Word> findByLanguageAndIsGravityApprovedTrueAndGravityApprovedAtPrecision(
+                        @Param("language") String language, @Param("dateTime") String dateTime,
+                        org.springframework.data.domain.Pageable pageable);
+
+        @Query("SELECT w FROM Word w WHERE w.language = :language AND w.isGravityApproved = true AND TO_CHAR(w.gravityApprovedAt, 'YYYY-MM-DD HH24:MI') = :dateTime")
+        List<Word> findByLanguageAndIsGravityApprovedTrueAndGravityApprovedAtPrecision(
+                        @Param("language") String language, @Param("dateTime") String dateTime);
 
         @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND (w.needsReEnrichment = false OR w.needsReEnrichment IS NULL) AND (w.isVerified = false OR w.isVerified IS NULL) ORDER BY w.enrichedAt ASC LIMIT :limit")
         List<Word> findTopEnrichedWords(@Param("limit") int limit);

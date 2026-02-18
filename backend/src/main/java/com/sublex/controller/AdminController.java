@@ -290,7 +290,8 @@ public class AdminController {
             @RequestParam(defaultValue = "en") String language,
             @RequestParam(required = false) String date,
             @RequestParam(defaultValue = "false") boolean needsReEnrichment,
-            @RequestParam(defaultValue = "false") boolean isVerified) {
+            @RequestParam(defaultValue = "false") boolean isVerified,
+            @RequestParam(defaultValue = "false") boolean isGravityApproved) {
 
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
                 org.springframework.data.domain.Sort.by("id").descending());
@@ -298,6 +299,15 @@ public class AdminController {
         if (needsReEnrichment) {
             return ResponseEntity
                     .ok(wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language, pageable));
+        }
+        if (isGravityApproved) {
+            if (date != null && !date.isEmpty()) {
+                return ResponseEntity.ok(wordRepository
+                        .findByLanguageAndIsGravityApprovedTrueAndGravityApprovedAtPrecision(language, date,
+                                pageable));
+            }
+            return ResponseEntity
+                    .ok(wordRepository.findByLanguageAndIsEnrichedTrueAndIsGravityApprovedTrue(language, pageable));
         }
         if (isVerified) {
             return ResponseEntity
@@ -309,20 +319,33 @@ public class AdminController {
         return ResponseEntity.ok(wordRepository.findByLanguageAndIsEnrichedTrue(language, pageable));
     }
 
+    @GetMapping("/words/enriched/approval-dates")
+    public ResponseEntity<List<String>> getGravityApprovedDates(@RequestParam(defaultValue = "en") String language) {
+        return ResponseEntity.ok(wordRepository.findDistinctGravityApprovedDates(language));
+    }
+
     @GetMapping("/words/enriched/download")
     public ResponseEntity<List<com.sublex.model.Word>> downloadEnrichedWords(
             @RequestParam(defaultValue = "en") String language,
-            @RequestParam(required = false) String date,
+            @RequestParam(defaultValue = "false") String date,
             @RequestParam(defaultValue = "false") boolean needsReEnrichment,
-            @RequestParam(defaultValue = "false") boolean isVerified) {
+            @RequestParam(defaultValue = "false") boolean isVerified,
+            @RequestParam(defaultValue = "false") boolean isGravityApproved) {
 
         List<com.sublex.model.Word> words;
 
         if (needsReEnrichment) {
             words = wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language);
+        } else if (isGravityApproved) {
+            if (date != null && !date.isEmpty() && !date.equals("false")) {
+                words = wordRepository.findByLanguageAndIsGravityApprovedTrueAndGravityApprovedAtPrecision(language,
+                        date);
+            } else {
+                words = wordRepository.findByLanguageAndIsEnrichedTrueAndIsGravityApprovedTrue(language);
+            }
         } else if (isVerified) {
             words = wordRepository.findByLanguageAndIsEnrichedTrueAndIsVerifiedTrue(language);
-        } else if (date != null && !date.isEmpty()) {
+        } else if (date != null && !date.isEmpty() && !date.equals("false")) {
             if (date.length() > 10) {
                 // High precision (YYYY-MM-DD HH:mm)
                 words = wordRepository.findByLanguageAndEnrichedAtPrecision(language, date);
@@ -345,5 +368,18 @@ public class AdminController {
                         "attachment; filename=\"" + filename + "\"")
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .body(words);
+    }
+
+    @PostMapping("/approve-batch")
+    @Operation(summary = "Marks a batch of words as Gravity Approved")
+    public ResponseEntity<String> approveBatch(@RequestBody List<Long> wordIds) {
+        log.info("Request to gravity approve batch of {} words", wordIds.size());
+        List<com.sublex.model.Word> words = wordRepository.findAllById(wordIds);
+        words.forEach(w -> {
+            w.setIsGravityApproved(true);
+            w.setGravityApprovedAt(java.time.LocalDateTime.now());
+        });
+        wordRepository.saveAll(words);
+        return ResponseEntity.ok("Successfully gravity approved " + words.size() + " words.");
     }
 }

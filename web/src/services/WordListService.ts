@@ -22,6 +22,8 @@ export interface Word {
     definition?: WordDefinition;
     difficulty?: string;
     isEnriched?: boolean;
+    isVerified?: boolean;
+    isGravityApproved?: boolean;
 }
 
 export interface WordList {
