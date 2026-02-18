@@ -14,4 +14,5 @@ public class MediaWordsResponseDTO {
     private List<WordDTO> words;
     private Integer totalWords;
     private Integer unknownWords; // For authenticated users
+    private java.util.Map<String, Long> levelCounts;
 }

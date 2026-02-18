@@ -73,11 +73,17 @@ public class MediaService {
                 ? (int) words.stream().filter(w -> !w.getIsKnown()).count()
                 : 0;
 
+        // Calculate level counts
+        java.util.Map<String, Long> levelCounts = words.stream()
+                .filter(w -> w.getDifficulty() != null)
+                .collect(Collectors.groupingBy(WordDTO::getDifficulty, Collectors.counting()));
+
         MediaWordsResponseDTO response = new MediaWordsResponseDTO();
         response.setMedia(convertToDTO(media));
         response.setWords(words);
         response.setTotalWords(totalWords);
         response.setUnknownWords(unknownWords);
+        response.setLevelCounts(levelCounts);
 
         return response;
     }

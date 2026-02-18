@@ -13,6 +13,12 @@ export interface WordDefinition {
         definition: string;
         example: string;
     }[];
+    verb_forms?: {
+        v1: string;
+        v2: string;
+        v3: string;
+        ing: string;
+    };
 }
 
 export interface Word {
@@ -64,6 +70,11 @@ const WordListService = {
 
     deleteList: async (id: number): Promise<void> => {
         await api.delete(`/lists/${id}`);
+    },
+
+    generateUnknownWordsList: async (mediaId: number): Promise<WordList> => {
+        const response = await api.post<WordList>('/lists/generate/unknown', null, { params: { mediaId } });
+        return response.data;
     }
 };
 

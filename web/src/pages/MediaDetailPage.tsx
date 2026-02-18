@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import MediaService, { type Media, type MediaWordsResponse } from '@/services/MediaService';
 import MediaHeader from '@/components/features/MediaHeader';
 import WordCard from '@/components/features/WordCard';
-import { Loader2, ArrowLeft, Filter, CheckCircle2, BookOpen, Download } from 'lucide-react';
+import WordListService from '@/services/WordListService';
+import { Loader2, ArrowLeft, Filter, CheckCircle2, BookOpen, Download, Wand2, Check } from 'lucide-react';
 import api from '@/services/api';
 import { cn } from '@/utils/cn';
 
@@ -15,6 +16,9 @@ const MediaDetailPage = () => {
     const [loading, setLoading] = useState(true);
     const [filterUnknown, setFilterUnknown] = useState(false);
     const [visibleCount, setVisibleCount] = useState(50);
+    const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
+    const [isGeneratingList, setIsGeneratingList] = useState(false);
+    const [isGenerationSuccess, setIsGenerationSuccess] = useState(false);
 
     // Mock userId for now (Sprint 4)
     const userId = 1;
@@ -58,6 +62,22 @@ const MediaDetailPage = () => {
             }
         } catch (err) {
             console.error('Failed to update word status', err);
+        }
+    };
+
+    const handleGenerateList = async () => {
+        if (!id || isGeneratingList) return;
+
+        setIsGeneratingList(true);
+        try {
+            await WordListService.generateUnknownWordsList(Number(id));
+            setIsGenerationSuccess(true);
+            setTimeout(() => setIsGenerationSuccess(false), 3000);
+        } catch (error) {
+            console.error('Failed to generate list:', error);
+            alert('Liste oluşturulamadı. Lütfen tekrar deneyin.');
+        } finally {
+            setIsGeneratingList(false);
         }
     };
 
@@ -114,36 +134,86 @@ const MediaDetailPage = () => {
                         </div>
 
                         <button
-                            onClick={() => media && MediaService.downloadMediaWords(media.id, userId, filterUnknown)}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-xl text-sm font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all"
-                            title="Download vocabulary list as .json"
-                        >
-                            <Download className="w-3.5 h-3.5" />
-                            Download Words
-                        </button>
-
-                        <button
-                            onClick={() => media && MediaService.downloadSubtitles(media.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all"
-                            title="Download original subtitles as .txt"
-                        >
-                            <Download className="w-3.5 h-3.5" />
-                            Subtitles
-                        </button>
-
-                        <button
                             onClick={() => setFilterUnknown(!filterUnknown)}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all mr-2",
                                 filterUnknown
                                     ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/25"
                                     : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                             )}
                         >
                             <Filter className="w-3.5 h-3.5" />
-                            {filterUnknown ? 'Unknown Only' : 'All Words'}
+                            {filterUnknown ? 'Unknown only' : 'All status'}
+                        </button>
+
+                        <button
+                            onClick={handleGenerateList}
+                            disabled={isGeneratingList || isGenerationSuccess}
+                            className={cn(
+                                "hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border shadow-sm",
+                                isGenerationSuccess
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+                                    : "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 shadow-indigo-500/5 text-indigo-600"
+                            )}
+                        >
+                            {isGeneratingList ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : isGenerationSuccess ? (
+                                <Check className="w-4 h-4" />
+                            ) : (
+                                <Wand2 className="w-4 h-4" />
+                            )}
+                            {isGeneratingList ? 'Lise Hazırlanıyor...' : isGenerationSuccess ? 'Liste Hazır!' : 'Bilinmeyenlerden Liste Oluştur'}
                         </button>
                     </div>
+                </div>
+
+                {/* Level Filters */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                    {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((level) => {
+                        const count = wordData.levelCounts[level] || 0;
+                        const isSelected = selectedLevels.includes(level);
+
+                        return (
+                            <button
+                                key={level}
+                                onClick={() => {
+                                    if (isSelected) {
+                                        setSelectedLevels(selectedLevels.filter(l => l !== level));
+                                    } else {
+                                        setSelectedLevels([...selectedLevels, level]);
+                                    }
+                                }}
+                                className={cn(
+                                    "px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-2 border",
+                                    isSelected
+                                        ? level.startsWith('A')
+                                            ? "bg-green-500 text-white border-green-600 shadow-sm" :
+                                            level.startsWith('B')
+                                                ? "bg-blue-500 text-white border-blue-600 shadow-sm" :
+                                                "bg-purple-500 text-white border-purple-600 shadow-sm"
+                                        : "bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-600 border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700"
+                                )}
+                            >
+                                {level}
+                                <span className={cn(
+                                    "px-1.5 py-0.5 rounded-md text-[10px]",
+                                    isSelected ? "bg-white/20 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                                )}>
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    })}
+
+                    {selectedLevels.length > 0 && (
+                        <button
+                            onClick={() => setSelectedLevels([])}
+                            className="text-xs text-gray-400 hover:text-indigo-500 transition-colors ml-2"
+                        >
+                            Clear levels
+                        </button>
+                    )}
                 </div>
 
                 {/* Progress Bar */}
@@ -158,13 +228,16 @@ const MediaDetailPage = () => {
 
             {/* Word Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {wordData.words.slice(0, visibleCount).map((word) => (
-                    <WordCard
-                        key={word.id}
-                        {...word}
-                        onToggleKnown={handleToggleKnown}
-                    />
-                ))}
+                {wordData.words
+                    .filter(w => selectedLevels.length === 0 || (w.difficulty && selectedLevels.includes(w.difficulty)))
+                    .slice(0, visibleCount)
+                    .map((word) => (
+                        <WordCard
+                            key={word.id}
+                            {...word}
+                            onToggleKnown={handleToggleKnown}
+                        />
+                    ))}
             </div>
 
             {/* Load More */}

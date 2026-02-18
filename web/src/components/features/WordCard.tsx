@@ -88,24 +88,41 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                             ? "border-emerald-200/50 dark:border-emerald-500/20 shadow-emerald-500/5"
                             : "border-gray-200/60 dark:border-gray-800/60 hover:shadow-lg hover:border-indigo-200 dark:hover:border-indigo-500/30"
                     )}>
-                        <div className="absolute top-4 right-4 flex flex-col gap-2">
-                            {/* Difficulty Badge */}
-                            {difficulty && (
-                                <span className={cn(
-                                    "px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border",
-                                    ["A1", "A2"].includes(difficulty) ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20" :
-                                        ["B1", "B2"].includes(difficulty) ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20" :
-                                            "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20"
-                                )}>
-                                    {difficulty}
-                                </span>
-                            )}
-                            {/* Known Status Icon */}
-                            {isKnown && (
-                                <div className="p-1.5 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-                                    <CheckCircle2 className="w-4 h-4" />
+                        <div className="absolute top-4 right-4 flex items-start gap-2">
+                            {/* Known Status Icon & Toggle for Front */}
+                            <div className="flex flex-col gap-2 items-end">
+                                {difficulty && (
+                                    <span className={cn(
+                                        "px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border",
+                                        ["A1", "A2"].includes(difficulty) ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20" :
+                                            ["B1", "B2"].includes(difficulty) ? "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20" :
+                                                "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20"
+                                    )}>
+                                        {difficulty}
+                                    </span>
+                                )}
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={(e) => handleAction(e, () => onToggleKnown(id, isKnown))}
+                                        className={cn(
+                                            "p-1.5 rounded-lg transition-colors border",
+                                            isKnown
+                                                ? "text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30"
+                                                : "text-gray-400 bg-gray-50 border-gray-100 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 dark:bg-gray-800/50 dark:border-gray-700 dark:hover:bg-emerald-500/10 dark:hover:border-emerald-500/30"
+                                        )}
+                                        title={isKnown ? "Mark Unknown" : "Mark Known"}
+                                    >
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => handleAction(e, () => setShowListModal(true))}
+                                        className="p-1.5 rounded-lg text-gray-400 bg-gray-50 border border-gray-100 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 dark:bg-gray-800/50 dark:border-gray-700 dark:hover:bg-indigo-500/10 dark:hover:border-indigo-500/30 transition-colors"
+                                        title="Add to List"
+                                    >
+                                        <Bookmark className="w-4 h-4" />
+                                    </button>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         <div className="flex-1 flex flex-col items-center justify-center gap-4">
@@ -200,15 +217,42 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                         </div>
                                     ))}
 
+                                    {/* Verb Forms */}
+                                    {definition.verb_forms && (
+                                        <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                                            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">Verb Forms</h4>
+                                            <div className="grid grid-cols-4 gap-1.5">
+                                                {[
+                                                    { label: 'V1', val: definition.verb_forms.v1 },
+                                                    { label: 'V2', val: definition.verb_forms.v2 },
+                                                    { label: 'V3', val: definition.verb_forms.v3 },
+                                                    { label: 'ING', val: definition.verb_forms.ing }
+                                                ].map((form, i) => (
+                                                    <div key={i} className="flex flex-col items-center p-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+                                                        <span className="text-[8px] font-bold text-indigo-400 dark:text-indigo-500 uppercase leading-none mb-1">{form.label}</span>
+                                                        <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 leading-none">{form.val}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Phrasal Verbs */}
                                     {definition.phrasal_verbs && definition.phrasal_verbs.length > 0 && (
                                         <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
-                                            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">Phrases</h4>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">Phrases</h4>
+                                            </div>
                                             <div className="space-y-2">
                                                 {definition.phrasal_verbs.slice(0, 2).map((pv, idx) => (
-                                                    <div key={idx} className="text-xs bg-gray-50 dark:bg-gray-800/50 p-2 rounded text-left">
-                                                        <div className="font-semibold text-indigo-600 dark:text-indigo-400">{pv.phrase}</div>
-                                                        <div className="text-gray-600 dark:text-gray-300">{pv.definition}</div>
+                                                    <div key={idx} className="text-xs bg-gray-50 dark:bg-gray-800/50 p-2 rounded-xl text-left border border-gray-100 dark:border-gray-800">
+                                                        <div className="font-bold text-indigo-600 dark:text-indigo-400 mb-0.5">{pv.phrase}</div>
+                                                        <div className="text-gray-700 dark:text-gray-300 mb-1.5 leading-snug">{pv.definition}</div>
+                                                        {pv.example && (
+                                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 italic pl-2 border-l border-indigo-200 dark:border-indigo-500/30 py-0.5">
+                                                                "{pv.example}"
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>

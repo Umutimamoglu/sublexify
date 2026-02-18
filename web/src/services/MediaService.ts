@@ -25,6 +25,7 @@ export interface MediaWordsResponse {
         frequency: number;
         isKnown: boolean;
     })[];
+    levelCounts: Record<string, number>;
 }
 
 const MediaService = {
