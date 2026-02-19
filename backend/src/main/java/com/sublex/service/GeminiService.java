@@ -36,9 +36,9 @@ public class GeminiService implements AIService {
     // User requested "3 pro" i.e., gemini-3-pro-preview for Sheriff
     // For Pipeline, "3 flash" likely refers to gemini-2.0-flash as it is the
     // current flash preview/model
-    public static final String SHERIFF_MODEL = "gemini-2.5-pro";
-    public static final String PIPELINE_MODEL = "gemini-2.5-flash";
-    public static final String SPECIALIST_MODEL = "gemini-2.5-pro";
+    public static final String SHERIFF_MODEL = "gemini-2.0-flash";
+    public static final String PIPELINE_MODEL = "gemini-2.0-flash";
+    public static final String SPECIALIST_MODEL = "gemini-2.0-flash";
     private static final String DEFAULT_MODEL = PIPELINE_MODEL;
 
     public List<com.sublex.dto.WordAnalysisResultDTO> analyzeWordsWithContext(
@@ -110,10 +110,13 @@ public class GeminiService implements AIService {
                 ));
 
         try {
+            String jsonBody = objectMapper.writeValueAsString(requestBody);
+            log.info("DEBUG GEMINI REQUEST BODY: {}", jsonBody);
+
             String response = restClient.post()
                     .uri(GEMINI_BASE_URL + model + ":generateContent?key=" + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestBody)
+                    .body(jsonBody)
                     .retrieve()
                     .body(String.class);
 
@@ -121,7 +124,7 @@ public class GeminiService implements AIService {
                 log.error("Gemini returned null response body");
                 return null;
             }
-            log.debug("Gemini response: {}", response);
+            log.info("DEBUG RAW GEMINI RESPONSE: {}", response);
 
             Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
             List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseMap.get("candidates");
@@ -138,7 +141,9 @@ public class GeminiService implements AIService {
             if (parts == null || parts.isEmpty())
                 return null;
 
-            return (String) parts.get(0).get("text");
+            String rawText = (String) parts.get(0).get("text");
+            System.out.println("DEBUG RAW GEMINI RESPONSE: " + rawText);
+            return rawText;
 
         } catch (Exception e) {
             log.error("Gemini API call failed. Model: {}. Error: {}", model, e.getMessage(), e);
@@ -209,13 +214,17 @@ public class GeminiService implements AIService {
         for (int attempt = 1; attempt <= 3; attempt++) {
             try {
                 String response = generateContent(systemPrompt + "\n\n" + userPrompt, PIPELINE_MODEL);
-                if (response == null)
+                if (response == null) {
+                    Thread.sleep(2000);
                     continue;
+                }
 
                 String cleanResponse = response.replace("```json", "").replace("```", "").trim();
+                log.info("Gemini Worker raw response for batch: {}", cleanResponse);
                 List<WordDefinition> definitions = objectMapper.readValue(cleanResponse,
                         new com.fasterxml.jackson.core.type.TypeReference<List<WordDefinition>>() {
                         });
+                log.info("Gemini Worker parsed {} definitions", definitions.size());
 
                 Map<String, WordDefinition> result = new HashMap<>();
                 for (int i = 0; i < Math.min(words.size(), definitions.size()); i++) {

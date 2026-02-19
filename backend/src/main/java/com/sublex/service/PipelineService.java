@@ -130,17 +130,37 @@ public class PipelineService {
                     try {
                         workerSemaphore.acquire();
                         try {
+                            log.info("Worker batch processing: {} words", batch.size());
                             Map<String, WordDefinition> batchedResults = aiService.enrichWordsBatch(batch);
+                            log.info("Worker batch results: {} definitions returned", batchedResults.size());
 
                             for (Word word : batch) {
                                 WordDefinition def = batchedResults.get(word.getWord());
                                 if (def != null) {
-                                    word.setWord(def.getWord()); // Update to root from definition
+                                    String rootWordName = def.getWord();
+                                    if (rootWordName != null && !word.getWord().equalsIgnoreCase(rootWordName)) {
+                                        // Potential rename, check for conflict
+                                        java.util.Optional<Word> existingRoot = wordRepository.findByWordAndLanguage(
+                                                rootWordName,
+                                                word.getLanguage());
+                                        if (existingRoot.isPresent()
+                                                && !existingRoot.get().getId().equals(word.getId())) {
+                                            log.info(
+                                                    "Root word '{}' already exists (ID: {}). Linking instead of renaming.",
+                                                    rootWordName, existingRoot.get().getId());
+                                            word.setRootWord(existingRoot.get());
+                                            // Keep original word string to avoid duplicate key violation
+                                        } else {
+                                            word.setWord(rootWordName);
+                                        }
+                                    }
                                     word.setDefinition(def);
                                     word.setDifficulty(def.getDifficulty());
                                     word.setIsEnriched(true);
                                     word.setNeedsReEnrichment(false);
                                     word.setEnrichedAt(batchTime);
+                                } else {
+                                    log.warn("Worker returned NULL definition for word: {}", word.getWord());
                                 }
                             }
                         } finally {

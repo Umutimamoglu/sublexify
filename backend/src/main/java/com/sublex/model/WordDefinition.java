@@ -28,6 +28,7 @@ public class WordDefinition {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PhrasalVerb {
         private String phrase;
         private String definition;
@@ -35,6 +36,7 @@ public class WordDefinition {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class VerbForms {
         private String v1;
         private String v2;
