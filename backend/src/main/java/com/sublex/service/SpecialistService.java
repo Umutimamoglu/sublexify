@@ -57,7 +57,7 @@ public class SpecialistService {
                 word.setIsVerified(true);
                 word.setNeedsReEnrichment(false);
                 word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
-                word.setAuditNotes("Fixed by Specialist (Gemini 1.5 Pro)");
+                word.setAuditNotes("Fixed by Specialist (Gemini 3 Pro)");
                 wordRepository.save(word);
                 log.info("Specialist successfully fixed word '{}'", word.getWord());
             } else {
