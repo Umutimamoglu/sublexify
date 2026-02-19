@@ -32,7 +32,7 @@ public class OpenAIService implements AIService {
 
                         Return a JSON object with:
                         1. 'word': the word itself.
-                        2. 'difficulty': CEFR level (A1-C2).
+                        2. 'difficulty': CEFR level (A1-C2). Use the provided level EXACTLY.
                         3. 'verb_forms': If the word is a verb, provide 'v1', 'v2', 'v3', and 'ing' forms. Otherwise, return null.
                         4. 'meanings': Array of objects, grouped by Part of Speech. For each POS, provide the most common 1-2 meanings.
                            - 'pos': part of speech in English (noun, verb, adj, etc.)
@@ -69,11 +69,12 @@ public class OpenAIService implements AIService {
                         """;
 
         @Override
-        public WordDefinition enrichWord(String word) {
-                log.info("Enriching word via OpenAI: {}", word);
+        public WordDefinition enrichWord(String word, String difficulty) {
+                log.info("Enriching word via OpenAI: {} (Difficulty: {})", word, difficulty);
 
-                String userPrompt = String.format("Analyze the English word or term '%s'. Return the JSON response.",
-                                word);
+                String userPrompt = String.format(
+                                "Analyze the English word or term '%s'. Its difficulty level is already determined as: %s. Return the JSON response matching the required structure.",
+                                word, difficulty);
 
                 try {
                         Map<String, Object> requestBody = Map.of(

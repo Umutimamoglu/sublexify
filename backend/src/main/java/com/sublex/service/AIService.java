@@ -9,5 +9,5 @@ public interface AIService {
      * @param word The word to enrich
      * @return WordDefinition object or null if failed
      */
-    WordDefinition enrichWord(String word);
+    WordDefinition enrichWord(String word, String difficulty);
 }

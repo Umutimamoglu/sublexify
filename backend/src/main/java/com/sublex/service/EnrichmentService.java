@@ -82,7 +82,7 @@ public class EnrichmentService {
 
         while (attempts < 3) {
             try {
-                definition = aiService.enrichWord(word.getWord());
+                definition = aiService.enrichWord(word.getWord(), word.getDifficulty());
                 if (definition != null)
                     break;
             } catch (Exception e) {

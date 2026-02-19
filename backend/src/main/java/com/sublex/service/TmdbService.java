@@ -198,7 +198,16 @@ public class TmdbService {
     }
 
     public List<TmdbMedia> searchSeries(String query) {
-        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(BASE_URL + "/search/tv")
+        return searchMedia(query, true);
+    }
+
+    public List<TmdbMedia> searchMovies(String query) {
+        return searchMedia(query, false);
+    }
+
+    private List<TmdbMedia> searchMedia(String query, boolean isSeries) {
+        String endpoint = isSeries ? "/search/tv" : "/search/movie";
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(BASE_URL + endpoint)
                 .queryParam("query", query);
 
         HttpHeaders headers = new HttpHeaders();
@@ -219,14 +228,14 @@ public class TmdbService {
                     List<TmdbMedia> mediaList = new java.util.ArrayList<>();
                     if (results.isArray()) {
                         for (JsonNode node : results) {
-                            mediaList.add(mapToTmdbMedia(node, true));
+                            mediaList.add(mapToTmdbMedia(node, isSeries));
                         }
                     }
                     return mediaList;
                 }
             }
         } catch (Exception e) {
-            log.error("Error searching TMDB series: {}", e.getMessage());
+            log.error("Error searching TMDB {}: {}", isSeries ? "series" : "movies", e.getMessage());
         }
         return Collections.emptyList();
     }

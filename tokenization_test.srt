@@ -1,0 +1,15 @@
+1
+00:00:01,000 --> 00:00:04,000
+I don't know what to do.
+
+2
+00:00:05,000 --> 00:00:08,000
+It is a long-term plan.
+
+3
+00:00:09,000 --> 00:00:12,000
+Let's go to the café over there.
+
+4
+00:00:13,000 --> 00:00:16,000
+Jean-Luc is my friend.

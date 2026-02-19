@@ -112,7 +112,7 @@ public class PipelineService {
                     try {
                         workerSemaphore.acquire();
                         try {
-                            WordDefinition def = aiService.enrichWord(word.getWord());
+                            WordDefinition def = aiService.enrichWord(word.getWord(), word.getDifficulty());
                             if (def != null) {
                                 word.setDefinition(def);
                                 word.setDifficulty(def.getDifficulty());
