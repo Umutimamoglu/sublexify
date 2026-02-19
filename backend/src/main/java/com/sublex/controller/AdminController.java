@@ -63,6 +63,15 @@ public class AdminController {
         return ResponseEntity.ok("All words and media-word associations deleted.");
     }
 
+    @PostMapping("/words/clear-translations")
+    @Transactional
+    @Operation(summary = "Clears translations (definition, enriched status) but keeps analysis (difficulty, root)")
+    public ResponseEntity<String> clearTranslations(@RequestParam(defaultValue = "en") String language) {
+        log.warn("Request to CLEAR TRANSLATIONS for language: {}", language);
+        wordRepository.clearAllTranslations(language);
+        return ResponseEntity.ok("Translations cleared for " + language + ". Analysis data preserved.");
+    }
+
     @DeleteMapping("/system/reset")
     @Transactional
     @Operation(summary = "FULL RESET: Deletes Media, Words, and Associations")
@@ -88,6 +97,30 @@ public class AdminController {
         } catch (Exception e) {
             log.error("Failed to seed default lists", e);
             return ResponseEntity.internalServerError().body("Failed to seed lists: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/lists/seed/oxford")
+    public ResponseEntity<String> seedOxfordList() {
+        log.info("Request to seed Oxford 5000 list");
+        try {
+            String result = standardListSeeder.seedOxfordList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Failed to seed Oxford list", e);
+            return ResponseEntity.internalServerError().body("Failed to seed Oxford list: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/lists/filter-coca")
+    public ResponseEntity<String> filterCocaList() {
+        log.info("Request to filter COCA 20k list");
+        try {
+            String result = standardListSeeder.filterCocaList();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Failed to filter COCA list", e);
+            return ResponseEntity.internalServerError().body("Failed to filter COCA list: " + e.getMessage());
         }
     }
 

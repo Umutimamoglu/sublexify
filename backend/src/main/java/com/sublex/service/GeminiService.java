@@ -36,9 +36,9 @@ public class GeminiService implements AIService {
     // User requested "3 pro" i.e., gemini-3-pro-preview for Sheriff
     // For Pipeline, "3 flash" likely refers to gemini-2.0-flash as it is the
     // current flash preview/model
-    public static final String SHERIFF_MODEL = "gemini-2.0-flash";
-    public static final String PIPELINE_MODEL = "gemini-2.0-flash";
-    public static final String SPECIALIST_MODEL = "gemini-2.0-flash";
+    public static final String SHERIFF_MODEL = "gemini-2.5-flash";
+    public static final String PIPELINE_MODEL = "gemini-2.5-pro";
+    public static final String SPECIALIST_MODEL = "gemini-2.5-pro";
     private static final String DEFAULT_MODEL = PIPELINE_MODEL;
 
     public List<com.sublex.dto.WordAnalysisResultDTO> analyzeWordsWithContext(

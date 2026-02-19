@@ -3,6 +3,7 @@ package com.sublex.repository;
 import com.sublex.model.Word;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -103,4 +104,8 @@ public interface WordRepository extends JpaRepository<Word, Long> {
 
         @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND mw.word.isEnriched = true AND mw.word.needsReEnrichment = true ORDER BY mw.word.id ASC")
         List<Word> findByMediaIdAndNeedsReEnrichmentTrue(@Param("mediaId") Long mediaId);
+
+        @Modifying
+        @Query("UPDATE Word w SET w.definition = NULL, w.isEnriched = false, w.enrichedAt = NULL, w.judgeVerdict = NULL, w.judgeStatus = NULL, w.judgeApprovedAt = NULL, w.auditNotes = NULL WHERE w.language = :language")
+        void clearAllTranslations(@Param("language") String language);
 }

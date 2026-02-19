@@ -2,8 +2,9 @@ package com.sublex.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Value;
+import lombok.With;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -11,9 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Data
-@Builder
-@NoArgsConstructor
+@Value
+@With
+@Builder(toBuilder = true)
+@Jacksonized
 @AllArgsConstructor
 public class PipelineStatus {
 
@@ -22,30 +24,29 @@ public class PipelineStatus {
     }
 
     @Builder.Default
-    private Step currentStep = Step.IDLE;
+    Step currentStep = Step.IDLE;
 
-    private int totalWords;
-    private int processedWords;
-    private int progressPercent;
-
-    @Builder.Default
-    private List<FailedWord> failedWords = new ArrayList<>();
+    int totalWords;
+    int processedWords;
+    int progressPercent;
 
     @Builder.Default
-    private Map<String, Long> stepTimings = new HashMap<>();
+    List<FailedWord> failedWords = new ArrayList<>();
 
-    private int judgeQueueSize;
-    private LocalDateTime startedAt;
-    private LocalDateTime completedAt;
-    private boolean running;
+    @Builder.Default
+    Map<String, Long> stepTimings = new HashMap<>();
 
-    @Data
+    int judgeQueueSize;
+    LocalDateTime startedAt;
+    LocalDateTime completedAt;
+    boolean running;
+
+    @Value
     @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
+    @Jacksonized
     public static class FailedWord {
-        private String word;
-        private String step;
-        private String error;
+        String word;
+        String step;
+        String error;
     }
 }

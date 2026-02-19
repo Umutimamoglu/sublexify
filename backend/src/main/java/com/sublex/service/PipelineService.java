@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class PipelineService {
 
     private final WordRepository wordRepository;
-    private final AIService aiService;
+    private final OpenAIService openAIService;
     private final AuditService auditService;
     private final SpecialistService specialistService;
     private final JudgeService judgeService;
@@ -74,11 +74,11 @@ public class PipelineService {
                 runPipeline(batchSize, mediaId);
             } catch (Exception e) {
                 log.error("Pipeline failed with error: {}", e.getMessage(), e);
-                PipelineStatus failed = currentStatus.get();
-                failed.setCurrentStep(PipelineStatus.Step.FAILED);
-                failed.setRunning(false);
-                failed.setCompletedAt(LocalDateTime.now());
-                currentStatus.set(failed);
+                currentStatus.updateAndGet(s -> s.toBuilder()
+                        .currentStep(PipelineStatus.Step.FAILED)
+                        .running(false)
+                        .completedAt(LocalDateTime.now())
+                        .build());
             }
         });
     }
@@ -87,7 +87,7 @@ public class PipelineService {
         long pipelineStart = System.currentTimeMillis();
 
         // ======= STEP 1: WORKER (GPT-4.1-mini) =======
-        log.info("=== PIPELINE STEP 1: WORKER (GPT-4.1-mini) ===");
+        log.info("=== PIPELINE STEP 1: WORKER (GPT-4.1-mini) via OpenAIService ===");
         long stepStart = System.currentTimeMillis();
 
         List<Word> words = (mediaId == null)
@@ -95,16 +95,15 @@ public class PipelineService {
                 : wordRepository.findPendingEnrichmentByMediaId(mediaId);
         int actualSize = words.size();
 
-        PipelineStatus status = currentStatus.get();
-        status.setTotalWords(actualSize);
-        currentStatus.set(status);
+        currentStatus.updateAndGet(s -> s.withTotalWords(actualSize));
 
         if (words.isEmpty()) {
             log.info("No pending words to enrich. Pipeline complete.");
-            status.setCurrentStep(PipelineStatus.Step.COMPLETE);
-            status.setRunning(false);
-            status.setCompletedAt(LocalDateTime.now());
-            currentStatus.set(status);
+            currentStatus.updateAndGet(s -> s.toBuilder()
+                    .currentStep(PipelineStatus.Step.COMPLETE)
+                    .running(false)
+                    .completedAt(LocalDateTime.now())
+                    .build());
             return;
         }
 
@@ -112,7 +111,6 @@ public class PipelineService {
         AtomicInteger workerDone = new AtomicInteger(0);
 
         // ======= STEP 1: WORKER (Batch Enrichment) =======
-        log.info("=== PIPELINE STEP 1: WORKER (Gemini 2.5 Flash - Batch) ===");
         updateStep(PipelineStatus.Step.WORKER);
 
         int workerBatchSize = 25;
@@ -131,7 +129,7 @@ public class PipelineService {
                         workerSemaphore.acquire();
                         try {
                             log.info("Worker batch processing: {} words", batch.size());
-                            Map<String, WordDefinition> batchedResults = aiService.enrichWordsBatch(batch);
+                            Map<String, WordDefinition> batchedResults = openAIService.enrichWordsBatch(batch);
                             log.info("Worker batch results: {} definitions returned", batchedResults.size());
 
                             for (Word word : batch) {
@@ -170,6 +168,7 @@ public class PipelineService {
                         log.error("Batch worker failed: {}", e.getMessage());
                     }
                     int done = workerDone.addAndGet(batch.size());
+
                     updateProgress(PipelineStatus.Step.WORKER, done, actualSize);
                 });
             }
@@ -177,14 +176,17 @@ public class PipelineService {
         wordRepository.saveAll(words);
 
         long workerTime = System.currentTimeMillis() - stepStart;
-        status = currentStatus.get();
-        status.getStepTimings().put("WORKER", workerTime);
-        currentStatus.set(status);
+        currentStatus.updateAndGet(s -> {
+            Map<String, Long> timings = new HashMap<>(s.getStepTimings());
+            timings.put("WORKER", workerTime);
+            return s.withStepTimings(timings);
+        });
         log.info("WORKER complete in {}ms. {} words enriched.", workerTime, actualSize);
 
         // ======= STEP 2: SHERIFF (Gemini 2.5 Pro) =======
         log.info("=== PIPELINE STEP 2: SHERIFF (Gemini 2.5 Pro) ===");
         stepStart = System.currentTimeMillis();
+
         updateStep(PipelineStatus.Step.SHERIFF);
 
         try {
@@ -195,9 +197,11 @@ public class PipelineService {
         }
 
         long sheriffTime = System.currentTimeMillis() - stepStart;
-        status = currentStatus.get();
-        status.getStepTimings().put("SHERIFF", sheriffTime);
-        currentStatus.set(status);
+        currentStatus.updateAndGet(s -> {
+            Map<String, Long> timings = new HashMap<>(s.getStepTimings());
+            timings.put("SHERIFF", sheriffTime);
+            return s.withStepTimings(timings);
+        });
         log.info("SHERIFF complete in {}ms.", sheriffTime);
 
         // ======= STEP 3: SPECIALIST (Gemini 2.5 Pro) =======
@@ -209,11 +213,11 @@ public class PipelineService {
         int specialistTotal = flaggedWords.size();
         log.info("Gemini Specialist fixing {} words in PARALLEL...", specialistTotal);
 
-        status = currentStatus.get();
-        status.setTotalWords(specialistTotal); // Update total words for this step
-        status.setProcessedWords(0);
-        status.setProgressPercent(0);
-        currentStatus.set(status);
+        currentStatus.updateAndGet(s -> s.toBuilder()
+                .totalWords(specialistTotal)
+                .processedWords(0)
+                .progressPercent(0)
+                .build());
 
         AtomicInteger specialistDone = new AtomicInteger(0);
 
@@ -247,9 +251,11 @@ public class PipelineService {
         }
 
         long specialistTime = System.currentTimeMillis() - stepStart;
-        status = currentStatus.get();
-        status.getStepTimings().put("SPECIALIST", specialistTime);
-        currentStatus.set(status);
+        currentStatus.updateAndGet(s -> {
+            Map<String, Long> timings = new HashMap<>(s.getStepTimings());
+            timings.put("SPECIALIST", specialistTime);
+            return s.withStepTimings(timings);
+        });
         log.info("SPECIALIST complete in {}ms.", specialistTime);
 
         // ======= STEP 4: JUDGE (GPT-5-mini) — C1/C2 only =======
@@ -257,8 +263,14 @@ public class PipelineService {
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.JUDGE);
 
+        // CRITICAL FIX: Re-fetch words from DB to get fresh state (Specialist/Sheriff
+        // updates)
+        List<Word> freshWords = (mediaId == null)
+                ? wordRepository.findTopEnrichedWords(batchSize * 2) // Safety buffer
+                : wordRepository.findTopEnrichedWordsByMediaId(mediaId, batchSize * 2);
+
         // Find all C1/C2 words from this batch
-        List<Word> judgeQueue = words.stream()
+        List<Word> judgeQueue = freshWords.stream()
                 .filter(w -> w.getIsEnriched() != null && w.getIsEnriched())
                 .filter(w -> {
                     String diff = w.getDifficulty();
@@ -266,9 +278,7 @@ public class PipelineService {
                 })
                 .toList();
 
-        status = currentStatus.get();
-        status.setJudgeQueueSize(judgeQueue.size());
-        currentStatus.set(status);
+        currentStatus.updateAndGet(s -> s.withJudgeQueueSize(judgeQueue.size()));
 
         log.info("Judge queue: {} C1/C2 words to evaluate.", judgeQueue.size());
 
@@ -309,47 +319,54 @@ public class PipelineService {
         }
 
         long judgeTime = System.currentTimeMillis() - stepStart;
-        status = currentStatus.get();
-        status.getStepTimings().put("JUDGE", judgeTime);
-        currentStatus.set(status);
+        currentStatus.updateAndGet(s -> {
+            Map<String, Long> timings = new HashMap<>(s.getStepTimings());
+            timings.put("JUDGE", judgeTime);
+            return s.withStepTimings(timings);
+        });
         log.info("JUDGE complete in {}ms.", judgeTime);
 
         // ======= COMPLETE =======
         long totalTime = System.currentTimeMillis() - pipelineStart;
-        status = currentStatus.get();
-        status.setCurrentStep(PipelineStatus.Step.COMPLETE);
-        status.setRunning(false);
-        status.setCompletedAt(LocalDateTime.now());
-        status.setProgressPercent(100);
-        status.getStepTimings().put("TOTAL", totalTime);
-        currentStatus.set(status);
+        currentStatus.updateAndGet(s -> {
+            Map<String, Long> timings = new HashMap<>(s.getStepTimings());
+            timings.put("TOTAL", totalTime);
+            return s.toBuilder()
+                    .currentStep(PipelineStatus.Step.COMPLETE)
+                    .running(false)
+                    .completedAt(LocalDateTime.now())
+                    .progressPercent(100)
+                    .stepTimings(timings)
+                    .build();
+        });
 
+        PipelineStatus finalStatus = currentStatus.get();
         log.info("=== PIPELINE COMPLETE === Total time: {}ms. Failed: {} words.",
-                totalTime, status.getFailedWords().size());
+                totalTime, finalStatus.getFailedWords().size());
     }
 
     private void updateProgress(PipelineStatus.Step step, int done, int total) {
-        PipelineStatus status = currentStatus.get();
-        status.setCurrentStep(step);
-        status.setProcessedWords(done);
-        status.setProgressPercent(total > 0 ? (done * 100) / total : 0);
-        currentStatus.set(status);
+        currentStatus.updateAndGet(status -> status.toBuilder()
+                .currentStep(step)
+                .processedWords(done)
+                .progressPercent(total > 0 ? (done * 100) / total : 0)
+                .build());
     }
 
     private void updateStep(PipelineStatus.Step step) {
-        PipelineStatus status = currentStatus.get();
-        status.setCurrentStep(step);
-        currentStatus.set(status);
+        currentStatus.updateAndGet(status -> status.withCurrentStep(step));
     }
 
-    private synchronized void addFailure(String step, String word, String error) {
-        PipelineStatus status = currentStatus.get();
-        status.getFailedWords().add(PipelineStatus.FailedWord.builder()
-                .step(step)
-                .word(word)
-                .error(error)
-                .build());
-        currentStatus.set(status);
+    private void addFailure(String step, String word, String error) {
+        currentStatus.updateAndGet(status -> {
+            var newFailures = new ArrayList<>(status.getFailedWords());
+            newFailures.add(PipelineStatus.FailedWord.builder()
+                    .step(step)
+                    .word(word)
+                    .error(error)
+                    .build());
+            return status.toBuilder().failedWords(newFailures).build();
+        });
     }
 
     /**
