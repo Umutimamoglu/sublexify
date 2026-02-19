@@ -10,7 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,6 +30,7 @@ public class PipelineService {
     private final AuditService auditService;
     private final SpecialistService specialistService;
     private final JudgeService judgeService;
+    private final GeminiService geminiService;
 
     private final AtomicReference<PipelineStatus> currentStatus = new AtomicReference<>(
             PipelineStatus.builder().currentStep(PipelineStatus.Step.IDLE).build());
@@ -106,32 +111,45 @@ public class PipelineService {
         LocalDateTime batchTime = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
         AtomicInteger workerDone = new AtomicInteger(0);
 
+        // ======= STEP 1: WORKER (Batch Enrichment) =======
+        log.info("=== PIPELINE STEP 1: WORKER (Gemini 2.5 Flash - Batch) ===");
+        updateStep(PipelineStatus.Step.WORKER);
+
+        int workerBatchSize = 25;
+        List<List<Word>> workerBatches = new ArrayList<>();
+        for (int i = 0; i < words.size(); i += workerBatchSize) {
+            int end = Math.min(i + workerBatchSize, words.size());
+            workerBatches.add(new ArrayList<>(words.subList(i, end)));
+        }
+
+        log.info("Worker splitting into {} parallel batches of {} words.", workerBatches.size(), workerBatchSize);
+
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            for (Word word : words) {
+            for (List<Word> batch : workerBatches) {
                 executor.submit(() -> {
                     try {
                         workerSemaphore.acquire();
                         try {
-                            WordDefinition def = aiService.enrichWord(word.getWord(), word.getDifficulty());
-                            if (def != null) {
-                                word.setDefinition(def);
-                                word.setDifficulty(def.getDifficulty());
-                                word.setIsEnriched(true);
-                                word.setNeedsReEnrichment(false);
-                                word.setEnrichedAt(batchTime);
-                                log.debug("Worker enriched '{}' ({})", word.getWord(), word.getDifficulty());
-                            } else {
-                                log.error("Worker returned null for '{}'", word.getWord());
-                                addFailure("WORKER", word.getWord(), "AI returned null definition");
+                            Map<String, WordDefinition> batchedResults = aiService.enrichWordsBatch(batch);
+
+                            for (Word word : batch) {
+                                WordDefinition def = batchedResults.get(word.getWord());
+                                if (def != null) {
+                                    word.setWord(def.getWord()); // Update to root from definition
+                                    word.setDefinition(def);
+                                    word.setDifficulty(def.getDifficulty());
+                                    word.setIsEnriched(true);
+                                    word.setNeedsReEnrichment(false);
+                                    word.setEnrichedAt(batchTime);
+                                }
                             }
                         } finally {
                             workerSemaphore.release();
                         }
                     } catch (Exception e) {
-                        log.error("Worker failed for '{}': {}", word.getWord(), e.getMessage());
-                        addFailure("WORKER", word.getWord(), e.getMessage());
+                        log.error("Batch worker failed: {}", e.getMessage());
                     }
-                    int done = workerDone.incrementAndGet();
+                    int done = workerDone.addAndGet(batch.size());
                     updateProgress(PipelineStatus.Step.WORKER, done, actualSize);
                 });
             }
@@ -144,8 +162,8 @@ public class PipelineService {
         currentStatus.set(status);
         log.info("WORKER complete in {}ms. {} words enriched.", workerTime, actualSize);
 
-        // ======= STEP 2: SHERIFF (Gemini 3.0 Pro) =======
-        log.info("=== PIPELINE STEP 2: SHERIFF (Gemini 3.0 Pro) ===");
+        // ======= STEP 2: SHERIFF (Gemini 2.5 Pro) =======
+        log.info("=== PIPELINE STEP 2: SHERIFF (Gemini 2.5 Pro) ===");
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.SHERIFF);
 
@@ -162,14 +180,14 @@ public class PipelineService {
         currentStatus.set(status);
         log.info("SHERIFF complete in {}ms.", sheriffTime);
 
-        // ======= STEP 3: SPECIALIST (Claude) =======
-        log.info("=== PIPELINE STEP 3: SPECIALIST (Claude) ===");
+        // ======= STEP 3: SPECIALIST (Gemini 2.5 Pro) =======
+        log.info("=== PIPELINE STEP 3: SPECIALIST (Gemini 2.5 Pro) ===");
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.SPECIALIST);
 
         List<Word> flaggedWords = specialistService.getFlaggedWords("en", mediaId);
         int specialistTotal = flaggedWords.size();
-        log.info("Claude Specialist fixing {} words in PARALLEL...", specialistTotal);
+        log.info("Gemini Specialist fixing {} words in PARALLEL...", specialistTotal);
 
         status = currentStatus.get();
         status.setTotalWords(specialistTotal); // Update total words for this step
@@ -179,21 +197,30 @@ public class PipelineService {
 
         AtomicInteger specialistDone = new AtomicInteger(0);
 
+        int specialistBatchSize = 5;
+        List<List<Word>> specialistBatches = new ArrayList<>();
+        for (int i = 0; i < flaggedWords.size(); i += specialistBatchSize) {
+            int end = Math.min(i + specialistBatchSize, flaggedWords.size());
+            specialistBatches.add(new ArrayList<>(flaggedWords.subList(i, end)));
+        }
+
+        log.info("Specialist splitting into {} parallel batches of {} words.", specialistBatches.size(),
+                specialistBatchSize);
+
         try (var specialistExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
-            for (Word word : flaggedWords) {
+            for (List<Word> batch : specialistBatches) {
                 specialistExecutor.submit(() -> {
                     try {
                         specialistSemaphore.acquire();
                         try {
-                            specialistService.fixSingleWord(word, batchTime);
+                            specialistService.fixWordsBatch(batch, batchTime);
                         } finally {
                             specialistSemaphore.release();
                         }
                     } catch (Exception e) {
-                        log.error("Specialist failed for '{}': {}", word.getWord(), e.getMessage());
-                        addFailure("SPECIALIST", word.getWord(), e.getMessage());
+                        log.error("Specialist batch failed: {}", e.getMessage());
                     }
-                    int done = specialistDone.incrementAndGet();
+                    int done = specialistDone.addAndGet(batch.size());
                     updateProgress(PipelineStatus.Step.SPECIALIST, done, specialistTotal);
                 });
             }

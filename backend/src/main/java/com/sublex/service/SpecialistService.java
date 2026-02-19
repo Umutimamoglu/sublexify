@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.List;
 
 @Service
@@ -46,6 +47,41 @@ public class SpecialistService {
         }
     }
 
+    public void fixWordsBatch(List<Word> batch, java.time.LocalDateTime batchTime) {
+        if (batch == null || batch.isEmpty())
+            return;
+
+        try {
+            log.info("Specialist fixing batch of {} words...", batch.size());
+            Map<String, WordDefinition> fixedDefinitions = geminiService.fixWordsBatch(batch);
+
+            for (Word word : batch) {
+                WordDefinition fixedDefinition = fixedDefinitions.get(word.getWord());
+                if (fixedDefinition != null) {
+                    // Update word with fixed definition
+                    word.setDefinition(fixedDefinition);
+
+                    // If the root was changed (e.g., plurals), update the word headword itself!
+                    if (!fixedDefinition.getWord().equalsIgnoreCase(word.getWord())) {
+                        log.info("Specialist root correction: '{}' -> '{}'", word.getWord(), fixedDefinition.getWord());
+                        word.setWord(fixedDefinition.getWord());
+                    }
+
+                    word.setIsVerified(true);
+                    word.setNeedsReEnrichment(false);
+                    word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
+                    word.setAuditNotes("Fixed by Specialist (Gemini 2.5 Pro) - Batch processed");
+                    wordRepository.save(word);
+                    log.info("Specialist successfully fixed word '{}'", word.getWord());
+                } else {
+                    log.error("Specialist failed to return a valid definition for '{}' in batch", word.getWord());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error during specialist batch fix", e);
+        }
+    }
+
     public void fixSingleWord(Word word, java.time.LocalDateTime batchTime) {
         try {
             log.info("Specialist fixing word '{}'. Reason: {}", word.getWord(), word.getAuditNotes());
@@ -57,7 +93,7 @@ public class SpecialistService {
                 word.setIsVerified(true);
                 word.setNeedsReEnrichment(false);
                 word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
-                word.setAuditNotes("Fixed by Specialist (Gemini 3 Pro)");
+                word.setAuditNotes("Fixed by Specialist (Gemini 2.5 Pro)");
                 wordRepository.save(word);
                 log.info("Specialist successfully fixed word '{}'", word.getWord());
             } else {

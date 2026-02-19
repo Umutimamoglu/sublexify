@@ -1,6 +1,7 @@
 package com.sublex.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sublex.model.Word;
 import com.sublex.model.WordDefinition;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -104,5 +106,15 @@ public class OpenAIService implements AIService {
                         log.error("Failed to enrich word: {}", word, e);
                         return null;
                 }
+        }
+
+        @Override
+        public Map<String, WordDefinition> enrichWordsBatch(List<Word> words) {
+                // Simple sequential implementation for OpenAI as fallback
+                Map<String, WordDefinition> results = new HashMap<>();
+                for (Word word : words) {
+                        results.put(word.getWord(), enrichWord(word.getWord(), word.getDifficulty()));
+                }
+                return results;
         }
 }

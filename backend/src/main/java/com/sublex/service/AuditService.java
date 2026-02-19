@@ -43,7 +43,7 @@ public class AuditService {
                 allWordsToAudit.size(),
                 mediaId);
 
-        int batchSize = 10;
+        int batchSize = 25;
         List<List<Word>> batches = new ArrayList<>();
         for (int i = 0; i < allWordsToAudit.size(); i += batchSize) {
             int end = Math.min(i + batchSize, allWordsToAudit.size());
