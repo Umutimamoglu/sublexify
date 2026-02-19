@@ -33,6 +33,7 @@ public class GeminiService {
     // current flash preview/model
     public static final String SHERIFF_MODEL = "gemini-3-pro-preview";
     public static final String PIPELINE_MODEL = "gemini-2.5-flash";
+    public static final String SPECIALIST_MODEL = "gemini-3-pro-preview";
     private static final String DEFAULT_MODEL = PIPELINE_MODEL;
 
     public List<com.sublex.dto.WordAnalysisResultDTO> analyzeWordsWithContext(
@@ -138,5 +139,100 @@ public class GeminiService {
             log.error("Gemini API call failed. Model: {}. Error: {}", model, e.getMessage(), e);
             return null;
         }
+    }
+
+    public com.sublex.model.WordDefinition fixWord(String word, String auditNotes) {
+        log.info("Gemini Specialist fixing word: '{}' because: {}", word, auditNotes);
+
+        String systemPrompt = """
+                You are a meticulous Senior Lexicographer and Turkish Language Expert.
+                Your mission is to fix rejected dictionary entries with 100% linguistic accuracy.
+
+                ### MANDATORY QUALITY CONTROLS:
+                1. **NATURE & SCIENCE (The "Swift" Rule)**:
+                   - Before defining animals/plants, verify their exact Turkish name.
+                   - Example: 'Swift' is 'Ebabil' or 'Sağan', NEVER 'Çakır'.
+                2. **SPELLING & TYPOS**:
+                   - Perform a character-by-character check.
+                   - Avoid double consonants where not required (e.g., use 'devretti', NOT 'devrettti').
+                   - Ensure Turkish characters (ı, i, ğ, ü, ş, ö) are used correctly (e.g., NOT 'tatılı').
+                3. **NATURAL COLLOCATIONS (The "Scratch" Rule)**:
+                   - Do not use robot-speak like 'çizik yaptı'. Use natural verbs: 'tırmaladı', 'çizdi', 'hasar verdi'.
+                   - Avoid ending definitions with "...yapılan şeydir/kişidir". Use direct, dictionary-style nouns/verbs.
+                4. **SUFFIX INTEGRITY**:
+                   - When translating example sentences, check the noun cases (Ablative -den, Dative -e, etc.).
+                   - 'Left the room' -> 'OdadAN ayrıldı' (Correct case suffix).
+                5. **PHRASAL VERB RULES (STRICT)**:
+                   - Do NOT invent phrasal verbs that don't exist (e.g., 'need up', 'fasten up').
+                   - If unsure whether a phrasal verb exists, omit it entirely.
+                   - Only include phrasal verbs you are 100% certain exist in standard English dictionaries.
+
+                ### JSON STRUCTURE (STRICTLY FOLLOW THIS FORMAT):
+                {
+                  "word": "example",
+                  "difficulty": "B2",
+                  "meanings": [
+                    {
+                      "pos": "verb",
+                      "definition": "To show something.",
+                      "example": "He exemplified the behavior."
+                    }
+                  ],
+                  "phrasal_verbs": [
+                    {
+                      "phrase": "example out",
+                      "definition": "To remove by example.",
+                      "example": "She exampled him out."
+                    }
+                  ],
+                  "verb_forms": {
+                    "v1": "example",
+                    "v2": "exampled",
+                    "v3": "exampled",
+                    "ing": "exampling"
+                  }
+                }
+
+                Return ONLY a single valid JSON object. No conversational filler.
+                """;
+
+        String userPrompt = String.format(
+                """
+                        STRICT RECTIFICATION REQUIRED:
+
+                        1. REJECTED WORD: "%s"
+                        2. REJECTION REASON: "%s"
+
+                        ACTION PLAN:
+                        - If the reason is 'Typo', perform a spelling audit.
+                        - If the reason is 'Natural translation', replace robotic phrasing with idiomatic Turkish.
+                        - If the reason is 'Inaccurate definition', re-research the word domain (e.g., tech, nature).
+
+                        Provide the corrected JSON now:
+                        """,
+                word, auditNotes);
+
+        String fullPrompt = systemPrompt + "\n\n" + userPrompt;
+
+        // RETRY MECHANISM (3 Attempts)
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                String response = generateContent(fullPrompt, SPECIALIST_MODEL);
+                if (response == null)
+                    continue;
+
+                log.info("Gemini Specialist response for {} (Attempt {}): {}", word, attempt, response);
+
+                return objectMapper.readValue(response, com.sublex.model.WordDefinition.class);
+
+            } catch (Exception e) {
+                log.warn("Gemini Specialist failed to fix word: {} (Attempt {}). Error: {}", word, attempt,
+                        e.getMessage());
+                if (attempt == 3) {
+                    log.error("Final Gemini attempt failed for word: {}", word, e);
+                }
+            }
+        }
+        return null;
     }
 }

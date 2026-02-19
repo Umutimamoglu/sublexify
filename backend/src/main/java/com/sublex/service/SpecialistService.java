@@ -16,7 +16,7 @@ import java.util.List;
 public class SpecialistService {
 
     private final WordRepository wordRepository;
-    private final AnthropicService anthropicService;
+    private final GeminiService geminiService;
 
     // @Transactional removed to prevent connection holding during HTTP calls
     public void fixFlaggedWords(String language, int limit, java.time.LocalDateTime batchTime) {
@@ -38,7 +38,7 @@ public class SpecialistService {
         }
 
         int count = Math.min(flaggedWords.size(), limit);
-        log.info("Claude Specialist fixing {} words...", count);
+        log.info("Gemini Specialist fixing {} words...", count);
 
         for (int i = 0; i < count; i++) {
             Word word = flaggedWords.get(i);
@@ -50,14 +50,14 @@ public class SpecialistService {
         try {
             log.info("Specialist fixing word '{}'. Reason: {}", word.getWord(), word.getAuditNotes());
 
-            WordDefinition fixedDefinition = anthropicService.fixWord(word.getWord(), word.getAuditNotes());
+            WordDefinition fixedDefinition = geminiService.fixWord(word.getWord(), word.getAuditNotes());
 
             if (fixedDefinition != null) {
                 word.setDefinition(fixedDefinition);
                 word.setIsVerified(true);
                 word.setNeedsReEnrichment(false);
                 word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
-                word.setAuditNotes("Fixed by Specialist (Claude 4.5)");
+                word.setAuditNotes("Fixed by Specialist (Gemini 1.5 Pro)");
                 wordRepository.save(word);
                 log.info("Specialist successfully fixed word '{}'", word.getWord());
             } else {
