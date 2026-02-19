@@ -404,6 +404,15 @@ public class AdminController {
         return ResponseEntity.accepted().body("Pipeline started for " + size + " words.");
     }
 
+    @PostMapping("/media/{id}/pipeline/start")
+    @Operation(summary = "Starts the full 4-step enrichment pipeline for a specific media")
+    public ResponseEntity<String> startMediaPipeline(@PathVariable Long id,
+            @RequestParam(defaultValue = "100") int size) {
+        log.info("Starting enrichment pipeline for media ID: {} ({} words)", id, size);
+        pipelineService.startPipeline(size, id);
+        return ResponseEntity.accepted().body("Pipeline started for media " + id + ".");
+    }
+
     @GetMapping("/pipeline/status")
     @Operation(summary = "Returns the current pipeline progress")
     public ResponseEntity<com.sublex.dto.PipelineStatus> getPipelineStatus() {

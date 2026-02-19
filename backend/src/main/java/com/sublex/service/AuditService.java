@@ -26,14 +26,22 @@ public class AuditService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public void auditRecentWords(int totalLimit) {
-        List<Word> allWordsToAudit = wordRepository.findTopEnrichedWords(totalLimit);
+        auditRecentWords(totalLimit, null);
+    }
+
+    public void auditRecentWords(int totalLimit, Long mediaId) {
+        List<Word> allWordsToAudit = (mediaId == null)
+                ? wordRepository.findTopEnrichedWords(totalLimit)
+                : wordRepository.findTopEnrichedWordsByMediaId(mediaId, totalLimit);
 
         if (allWordsToAudit.isEmpty()) {
-            log.info("No words to audit.");
+            log.info("No words to audit for mediaId: {}.", mediaId);
             return;
         }
 
-        log.info("Sheriff (Gemini 3.0 Pro) auditing {} words in PARALLEL batches...", allWordsToAudit.size());
+        log.info("Sheriff (Gemini 3.0 Pro) auditing {} words in PARALLEL batches (Media ID: {})...",
+                allWordsToAudit.size(),
+                mediaId);
 
         int batchSize = 10;
         List<List<Word>> batches = new ArrayList<>();

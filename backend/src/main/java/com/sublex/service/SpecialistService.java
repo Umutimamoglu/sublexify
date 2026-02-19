@@ -20,7 +20,17 @@ public class SpecialistService {
 
     // @Transactional removed to prevent connection holding during HTTP calls
     public void fixFlaggedWords(String language, int limit, java.time.LocalDateTime batchTime) {
-        List<Word> flaggedWords = wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language);
+        fixFlaggedWords(language, limit, batchTime, null);
+    }
+
+    public List<Word> getFlaggedWords(String language, Long mediaId) {
+        return (mediaId == null)
+                ? wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language)
+                : wordRepository.findByMediaIdAndNeedsReEnrichmentTrue(mediaId);
+    }
+
+    public void fixFlaggedWords(String language, int limit, java.time.LocalDateTime batchTime, Long mediaId) {
+        List<Word> flaggedWords = getFlaggedWords(language, mediaId);
 
         if (flaggedWords.isEmpty()) {
             log.info("No words flagging for specialist fix.");
@@ -36,7 +46,7 @@ public class SpecialistService {
         }
     }
 
-    private void fixSingleWord(Word word, java.time.LocalDateTime batchTime) {
+    public void fixSingleWord(Word word, java.time.LocalDateTime batchTime) {
         try {
             log.info("Specialist fixing word '{}'. Reason: {}", word.getWord(), word.getAuditNotes());
 

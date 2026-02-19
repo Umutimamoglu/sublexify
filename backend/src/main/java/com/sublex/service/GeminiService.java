@@ -27,7 +27,7 @@ public class GeminiService {
                             .build()))
             .build();
 
-    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-pro:generateContent?key=";
+    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=";
 
     public String generateContent(String prompt) {
         if (apiKey == null || apiKey.isEmpty()) {

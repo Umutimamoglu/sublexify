@@ -21,7 +21,12 @@ public class AnthropicService {
     private String apiKey;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient = RestClient.builder()
+            .requestFactory(new org.springframework.http.client.JdkClientHttpRequestFactory(
+                    java.net.http.HttpClient.newBuilder()
+                            .connectTimeout(java.time.Duration.ofSeconds(10))
+                            .build()))
+            .build();
 
     private static final String ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
     private static final String CLAUDE_MODEL = "claude-sonnet-4-6";
@@ -54,7 +59,32 @@ public class AnthropicService {
                    - If unsure whether a phrasal verb exists, omit it entirely.
                    - Only include phrasal verbs you are 100% certain exist in standard English dictionaries.
 
-                ### JSON STRUCTURE
+                ### JSON STRUCTURE (STRICTLY FOLLOW THIS FORMAT):
+                {
+                  "word": "example",
+                  "difficulty": "B2",
+                  "meanings": [
+                    {
+                      "pos": "verb",  // MUST be 'pos', not 'type' or 'partOfSpeech'
+                      "definition": "To show something.",
+                      "example": "He exemplified the behavior."
+                    }
+                  ],
+                  "phrasal_verbs": [
+                    {
+                      "phrase": "example out",
+                      "definition": "To remove by example.",
+                      "example": "She exampled him out."
+                    }
+                  ],
+                  "verb_forms": {
+                    "v1": "example",
+                    "v2": "exampled",
+                    "v3": "exampled",
+                    "ing": "exampling"
+                  }
+                }
+
                 Return ONLY a single valid JSON object. No conversational filler.
                 Ensure 'difficulty' matches the context of the word's usage.
                 """;

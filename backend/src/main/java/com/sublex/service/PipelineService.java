@@ -31,6 +31,7 @@ public class PipelineService {
             PipelineStatus.builder().currentStep(PipelineStatus.Step.IDLE).build());
 
     private final Semaphore workerSemaphore = new Semaphore(10);
+    private final Semaphore specialistSemaphore = new Semaphore(5);
     private final Semaphore judgeSemaphore = new Semaphore(5);
 
     /**
@@ -40,10 +41,11 @@ public class PipelineService {
         return currentStatus.get();
     }
 
-    /**
-     * Starts the full 4-step pipeline asynchronously.
-     */
     public void startPipeline(int batchSize) {
+        startPipeline(batchSize, null);
+    }
+
+    public void startPipeline(int batchSize, Long mediaId) {
         PipelineStatus status = currentStatus.get();
         if (status.isRunning()) {
             log.warn("Pipeline already running. Ignoring start request.");
@@ -64,7 +66,7 @@ public class PipelineService {
         // Run the pipeline in a separate thread
         Thread.startVirtualThread(() -> {
             try {
-                runPipeline(batchSize);
+                runPipeline(batchSize, mediaId);
             } catch (Exception e) {
                 log.error("Pipeline failed with error: {}", e.getMessage(), e);
                 PipelineStatus failed = currentStatus.get();
@@ -76,14 +78,16 @@ public class PipelineService {
         });
     }
 
-    private void runPipeline(int batchSize) {
+    private void runPipeline(int batchSize, Long mediaId) {
         long pipelineStart = System.currentTimeMillis();
 
         // ======= STEP 1: WORKER (GPT-4.1-mini) =======
         log.info("=== PIPELINE STEP 1: WORKER (GPT-4.1-mini) ===");
         long stepStart = System.currentTimeMillis();
 
-        List<Word> words = wordRepository.findPendingEnrichmentWithLimit(batchSize);
+        List<Word> words = (mediaId == null)
+                ? wordRepository.findPendingEnrichmentWithLimit(batchSize)
+                : wordRepository.findPendingEnrichmentByMediaId(mediaId);
         int actualSize = words.size();
 
         PipelineStatus status = currentStatus.get();
@@ -146,7 +150,7 @@ public class PipelineService {
         updateStep(PipelineStatus.Step.SHERIFF);
 
         try {
-            auditService.auditRecentWords(actualSize);
+            auditService.auditRecentWords(actualSize, mediaId);
         } catch (Exception e) {
             log.error("Sheriff audit failed: {}", e.getMessage());
             addFailure("SHERIFF", "BATCH", e.getMessage());
@@ -163,11 +167,36 @@ public class PipelineService {
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.SPECIALIST);
 
-        try {
-            specialistService.fixFlaggedWords("en", actualSize, batchTime);
-        } catch (Exception e) {
-            log.error("Specialist fix failed: {}", e.getMessage());
-            addFailure("SPECIALIST", "BATCH", e.getMessage());
+        List<Word> flaggedWords = specialistService.getFlaggedWords("en", mediaId);
+        int specialistTotal = flaggedWords.size();
+        log.info("Claude Specialist fixing {} words in PARALLEL...", specialistTotal);
+
+        status = currentStatus.get();
+        status.setTotalWords(specialistTotal); // Update total words for this step
+        status.setProcessedWords(0);
+        status.setProgressPercent(0);
+        currentStatus.set(status);
+
+        AtomicInteger specialistDone = new AtomicInteger(0);
+
+        try (var specialistExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (Word word : flaggedWords) {
+                specialistExecutor.submit(() -> {
+                    try {
+                        specialistSemaphore.acquire();
+                        try {
+                            specialistService.fixSingleWord(word, batchTime);
+                        } finally {
+                            specialistSemaphore.release();
+                        }
+                    } catch (Exception e) {
+                        log.error("Specialist failed for '{}': {}", word.getWord(), e.getMessage());
+                        addFailure("SPECIALIST", word.getWord(), e.getMessage());
+                    }
+                    int done = specialistDone.incrementAndGet();
+                    updateProgress(PipelineStatus.Step.SPECIALIST, done, specialistTotal);
+                });
+            }
         }
 
         long specialistTime = System.currentTimeMillis() - stepStart;

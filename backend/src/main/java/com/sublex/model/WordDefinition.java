@@ -19,7 +19,9 @@ public class WordDefinition {
     private VerbForms verbForms;
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Meaning {
+        @com.fasterxml.jackson.annotation.JsonAlias({ "partOfSpeech", "type" })
         private String pos;
         private String definition;
         private String example;
