@@ -39,7 +39,7 @@ public class AuditService {
             return;
         }
 
-        log.info("Sheriff (Gemini 3.0 Pro Preview) auditing {} words in PARALLEL batches (Media ID: {})...",
+        log.info("Sheriff (Gemini 2.5 Flash) auditing {} words in PARALLEL batches (Media ID: {})...",
                 allWordsToAudit.size(),
                 mediaId);
 
@@ -77,7 +77,10 @@ public class AuditService {
                             "meanings", w.getDefinition().getMeanings(),
                             "phrasal_verbs",
                             w.getDefinition().getPhrasalVerbs() != null ? w.getDefinition().getPhrasalVerbs()
-                                    : List.of()));
+                                    : List.of(),
+                            "verb_forms",
+                            w.getDefinition().getVerbForms() != null ? w.getDefinition().getVerbForms()
+                                    : Map.of()));
                     validWordsForGemini.add(w);
                 } else {
                     // Tanımı olmayanları direkt reddet
@@ -96,40 +99,50 @@ public class AuditService {
             String inputJson = objectMapper.writeValueAsString(auditInput);
             String prompt = String.format(
                     """
-                            You are the Sheriff. A ruthless Dictionary Auditor for an English-to-Turkish dictionary.
+                            You are the Sheriff. A ruthless, zero-tolerance Dictionary Auditor for an English-to-Turkish dictionary.
 
-                            YOUR GOAL: Analyze the provided list of words one by one. You must provide a VERDICT for EVERY single word.
+                            YOUR GOAL: Analyze the provided list of words one by one. You MUST provide a VERDICT for EVERY SINGLE WORD in the input array. If you receive 25 words, you MUST return exactly 25 JSON objects. Do not skip any!
 
-                            ### THE LAWS (STRICT CRITERIA):
+                            ### THE LAWS (STRICT CRITERIA - ZERO TOLERANCE):
                             1. **ROOT MISMATCH (CRITICAL)**:
                                - Check 'phrasal_verbs'. Do they belong to the root word?
-                               - Example FAILURE: Word is 'fast', but phrasal verb is 'fasten up' (Root mismatch: fast != fasten).
-                               - Example FAILURE: Word is 'staying' (gerund), but phrasal verb is 'stay up' (base form). Ideally, the headword should be base form.
+                               - Example FAILURE: Word is 'fast', but phrasal verb is 'fasten up' (Root mismatch). REJECT.
+                               - Example FAILURE: Word is 'staying' (gerund), but phrasal verb is 'stay up'. REJECT.
 
                             2. **HALLUCINATION LAW**:
-                               - Do the phrasal verbs actually exist in standard English? (e.g., 'post out' is suspicious).
+                               - Do the phrasal verbs actually exist in standard English? (e.g., 'post out' is suspicious). REJECT if fake.
 
-                            3. **DATA INTEGRITY**:
-                               - Does the definition match the headword? (e.g., Word 'wouldn' defined as 'wouldn't').
-                               - Are there grammar errors in English examples? (e.g., 'She gave him a thank').
+                            3. **DATA INTEGRITY & COMPLETENESS**:
+                               - Does the definition match the headword?
+                               - Are any essential fields missing, empty, or null in meanings or examples? REJECT if incomplete.
+                               - Are there grammar errors in English examples? (e.g., 'She gave him a thank'). REJECT.
 
                             4. **TRANSLATION QUALITY**:
-                               - Is the Turkish example natural? (e.g., 'Ekmek rulosu' is bad translation for 'bread roll', use 'sandviç ekmeği').
+                               - Is the Turkish translation natural and accurate? (e.g., 'Ekmek rulosu' is bad for 'bread roll', use 'sandviç ekmeği'). REJECT if robotic or incorrect.
+
+                            5. **VERB FORMS INTEGRITY (CRITICAL)**:
+                               - If ANY meaning of the word has "pos": "verb", the 'verb_forms' object MUST contain valid, non-null values for 'v1', 'v2', 'v3', and 'ing'.
+                               - Example FAILURE: Word is 'merge' (verb) but verb_forms are null/empty. REJECT.
+                               - Example FAILURE: Word is 'pace' (verb) but verb_forms show 'pacing' for all forms. REJECT.
+
+                            6. **PART OF SPEECH (POS) STANDARDIZATION (CRITICAL)**:
+                               - The 'pos' value MUST be fully written out.
+                               - Allowed values: "noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "determiner", "number".
+                               - Example FAILURE: "pos": "adj" (Must be "adjective"). REJECT.
+                               - Example FAILURE: "pos": "numeral" (Must be "number"). REJECT.
 
                             ### INPUT DATA:
                             %s
 
                             ### OUTPUT FORMAT (JSON ONLY):
-                            You must return a list of objects for ALL items.
-
+                            You MUST return ONLY a valid JSON array of objects. No markdown, no explanations outside JSON.
                             [
                               {
                                 "id": 123,
                                 "word": "example",
                                 "verdict": "REJECT", // or "APPROVE"
-                                "reasoning": "The phrasal verb 'example up' does not exist." // Required if REJECT
-                              },
-                              ...
+                                "reasoning": "The 'pos' is written as 'adj' instead of 'adjective'." // Provide clear reason if REJECT. Leave empty or "Looks good" if APPROVE.
+                              }
                             ]
                             """,
                     inputJson);
@@ -144,7 +157,6 @@ public class AuditService {
             // 3. Response İşleme (Robust Parsing)
             String cleanJson = cleanJsonFromMarkdown(response);
 
-            // Artık direkt List<Map> bekliyoruz, kök obje içinde değil.
             List<Map<String, Object>> results = objectMapper.readValue(cleanJson,
                     new TypeReference<List<Map<String, Object>>>() {
                     });
@@ -159,7 +171,7 @@ public class AuditService {
                         continue;
 
                     Long id = Long.valueOf(idObj.toString());
-                    String verdict = (String) r.getOrDefault("verdict", "REJECT"); // Güvenli taraf: Belirsizse Reddet
+                    String verdict = (String) r.getOrDefault("verdict", "REJECT");
 
                     if ("REJECT".equalsIgnoreCase(verdict)) {
                         String reasoning = (String) r.getOrDefault("reasoning", "Unspecified violation.");
@@ -184,17 +196,14 @@ public class AuditService {
 
                     word.setIsVerified(true);
                     word.setNeedsReEnrichment(false);
-                    word.setAuditNotes(null); // Varsa eski notları temizle
+                    word.setAuditNotes(null);
                 } else {
-                    // Model bu ID'yi unuttuysa, güvenlik gereği REDDET veya tekrar sıraya al
                     log.error("Sheriff forgot to audit word '{}'. Marking as suspicious.", word.getWord());
-                    word.setNeedsReEnrichment(true); // Tekrar denensin
+                    word.setNeedsReEnrichment(true);
                 }
             }
 
-            // 5. Toplu Kayıt (DB Connection Friendly)
-            // Tüm batch'i (hem pre-audit reddedilenleri hem de audit sonucu
-            // güncellenenleri) tek seferde kaydet
+            // 5. Toplu Kayıt
             wordRepository.saveAll(batch);
 
             log.info("Batch audit complete. Verified: {}, Rejected: {}",
@@ -210,7 +219,6 @@ public class AuditService {
             return "[]";
         String content = response.trim();
 
-        // Remove markdown code blocks if present
         if (content.contains("```json")) {
             content = content.substring(content.indexOf("```json") + 7);
             if (content.contains("```")) {
@@ -225,7 +233,6 @@ public class AuditService {
 
         content = content.trim();
 
-        // Find the actual JSON start (either [ or {)
         int firstBracket = content.indexOf("[");
         int firstBrace = content.indexOf("{");
         int start = -1;

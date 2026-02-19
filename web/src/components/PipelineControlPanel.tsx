@@ -100,6 +100,23 @@ const PipelineControlPanel: React.FC = () => {
                     )}
                     {status?.running ? 'Running...' : 'Start Pipeline'}
                 </button>
+
+                <button
+                    onClick={async () => {
+                        if (!window.confirm('This will fix ALL flagged words in the database in parallel. Continue?')) return;
+                        try {
+                            const res = await PipelineAPI.triggerGlobalSpecialistFix();
+                            alert(res);
+                        } catch (err: any) {
+                            alert('Failed to start global fix: ' + (err.response?.data || err.message));
+                        }
+                    }}
+                    disabled={status?.running}
+                    className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 ml-auto"
+                >
+                    <CheckCircle className="w-4 h-4" />
+                    Global Specialist Fix
+                </button>
             </div>
 
             {/* Progress */}

@@ -387,6 +387,23 @@ public class AdminController {
         return ResponseEntity.ok("Specialist correction loop triggered for " + limit + " words.");
     }
 
+    @PostMapping("/pipeline/specialist-global-fix")
+    @Operation(summary = "Fixes ALL flagged words in the DB in parallel (ignoring media)")
+    public ResponseEntity<String> triggerGlobalSpecialistFix(
+            @RequestParam(defaultValue = "en") String language) {
+        log.info("Triggering Global Specialist Fix for language: {}", language);
+        // We run this in a background thread or virtual thread to avoid blocking the
+        // request
+        java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor().submit(() -> {
+            try {
+                specialistService.fixAllFlaggedWords(language);
+            } catch (Exception e) {
+                log.error("Global Specialist Fix job failed", e);
+            }
+        });
+        return ResponseEntity.accepted().body("Global Specialist Fix started for all flagged words.");
+    }
+
     @GetMapping("/words/enriched")
     public ResponseEntity<org.springframework.data.domain.Page<com.sublex.model.Word>> getEnrichedWords(
             @RequestParam(defaultValue = "0") int page,
@@ -492,6 +509,14 @@ public class AdminController {
         log.info("Starting enrichment pipeline for {} words", size);
         pipelineService.startPipeline(size);
         return ResponseEntity.accepted().body("Pipeline started for " + size + " words.");
+    }
+
+    @PostMapping("/pipeline/trusted-enrichment")
+    @Operation(summary = "Enriches words from trusted lists (Oxford) without changing difficulty")
+    public ResponseEntity<String> startTrustedEnrichment(@RequestParam(defaultValue = "1000") int size) {
+        log.info("Starting trusted enrichment for {} words", size);
+        pipelineService.startTrustedEnrichment(size);
+        return ResponseEntity.accepted().body("Trusted enrichment pipeline started for " + size + " words.");
     }
 
     @PostMapping("/media/{id}/pipeline/start")

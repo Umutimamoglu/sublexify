@@ -13,6 +13,8 @@ import org.springframework.web.client.RestClient;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +28,7 @@ public class OpenAIService implements AIService {
         private final RestClient restClient = RestClient.create();
 
         private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-        private static final String MODEL = "gpt-4.1-mini";
+        private static final String MODEL = "gpt-5-mini";
 
         // CACHING OPTIMIZATION: Static System Instructions for Prefix Caching
         private static final String SYSTEM_INSTRUCTIONS = """
@@ -37,7 +39,7 @@ public class OpenAIService implements AIService {
                         2. 'difficulty': CEFR level (A1-C2). Use the provided level EXACTLY.
                         3. 'verb_forms': If the word is a verb, provide 'v1', 'v2', 'v3', and 'ing' forms. Otherwise, return null.
                         4. 'meanings': Array of objects, grouped by Part of Speech. For each POS, provide the most common 1-2 meanings.
-                           - 'pos': part of speech in English (noun, verb, adj, etc.)
+                           - 'pos': part of speech in English (noun, verb, adjective, adverb, number, etc.)
                            - 'definition': Short, clear, and NATURAL definition IN TURKISH. Explain slang or loanword context in Turkish.
                            - 'example': One example sentence in English, with its COMPLETE TURKISH translation in parentheses.
                         5. 'phrasal_verbs': Array of common phrasal verbs. return an empty array [] if none exist. Do NOT force or invent phrasal verbs for words like 'tea' or 'ketchup'.
@@ -81,7 +83,6 @@ public class OpenAIService implements AIService {
                 try {
                         Map<String, Object> requestBody = Map.of(
                                         "model", MODEL,
-                                        "temperature", 0.2,
                                         "messages", List.of(
                                                         Map.of("role", "system", "content", SYSTEM_INSTRUCTIONS),
                                                         Map.of("role", "user", "content", userPrompt)),
@@ -109,11 +110,65 @@ public class OpenAIService implements AIService {
         }
 
         @Override
+        public WordDefinition enrichTrustedWord(String word, String difficulty) {
+                log.info("Trusted enrichment for Oxford word: {} ({})", word, difficulty);
+
+                String userPrompt = String.format(
+                                "The English word is '%s'. " +
+                                                "Its CEFR level is EXACTLY '%s' (Oxford verified - DO NOT change it). "
+                                                +
+                                                "DO NOT re-evaluate the level. DO NOT change the root word. " +
+                                                "ONLY provide a natural Turkish definition and one example sentence. " +
+                                                "Return JSON matching the required structure.",
+                                word, difficulty);
+
+                try {
+                        Map<String, Object> requestBody = Map.of(
+                                        "model", MODEL,
+                                        "messages", List.of(
+                                                        Map.of("role", "system", "content", SYSTEM_INSTRUCTIONS),
+                                                        Map.of("role", "user", "content", userPrompt)),
+                                        "response_format", Map.of("type", "json_object"));
+
+                        String response = restClient.post()
+                                        .uri(OPENAI_URL)
+                                        .header("Authorization", "Bearer " + apiKey)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .body(requestBody)
+                                        .retrieve()
+                                        .body(String.class);
+
+                        Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
+                        List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+                        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                        String content = (String) message.get("content");
+
+                        WordDefinition def = objectMapper.readValue(content, WordDefinition.class);
+
+                        // Oxford seviyesini zorla — AI değiştirmiş olsa bile geri yaz
+                        def.setDifficulty(difficulty);
+
+                        return def;
+
+                } catch (Exception e) {
+                        log.error("Trusted enrichment failed for word: {}", word, e);
+                        return null;
+                }
+        }
+
+        @Override
         public Map<String, WordDefinition> enrichWordsBatch(List<Word> words) {
-                // Simple sequential implementation for OpenAI as fallback
-                Map<String, WordDefinition> results = new HashMap<>();
-                for (Word word : words) {
-                        results.put(word.getWord(), enrichWord(word.getWord(), word.getDifficulty()));
+                Map<String, WordDefinition> results = new ConcurrentHashMap<>();
+
+                try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                        for (Word word : words) {
+                                executor.submit(() -> {
+                                        WordDefinition def = enrichWord(word.getWord(), word.getDifficulty());
+                                        if (def != null) {
+                                                results.put(word.getWord(), def);
+                                        }
+                                });
+                        }
                 }
                 return results;
         }

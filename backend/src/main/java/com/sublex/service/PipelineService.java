@@ -72,8 +72,27 @@ public class PipelineService {
         Thread.startVirtualThread(() -> {
             try {
                 runPipeline(batchSize, mediaId);
+
             } catch (Exception e) {
                 log.error("Pipeline failed with error: {}", e.getMessage(), e);
+                currentStatus.updateAndGet(s -> s.toBuilder()
+                        .currentStep(PipelineStatus.Step.FAILED)
+                        .running(false)
+                        .completedAt(LocalDateTime.now())
+                        .build());
+            }
+        });
+    }
+
+    public void startTrustedEnrichment(int batchSize) {
+        if (currentStatus.get().isRunning()) {
+            throw new RuntimeException("Pipeline is already running");
+        }
+        Thread.startVirtualThread(() -> {
+            try {
+                runTrustedEnrichment(batchSize);
+            } catch (Exception e) {
+                log.error("Trusted enrichment failed: {}", e.getMessage(), e);
                 currentStatus.updateAndGet(s -> s.toBuilder()
                         .currentStep(PipelineStatus.Step.FAILED)
                         .running(false)
@@ -91,8 +110,10 @@ public class PipelineService {
         long stepStart = System.currentTimeMillis();
 
         List<Word> words = (mediaId == null)
-                ? wordRepository.findPendingEnrichmentWithLimit(batchSize)
-                : wordRepository.findPendingEnrichmentByMediaId(mediaId);
+                ? wordRepository
+                        .findPendingEnrichmentWithLimit(org.springframework.data.domain.PageRequest.of(0, batchSize))
+                : wordRepository.findPendingEnrichmentByMediaId(mediaId,
+                        org.springframework.data.domain.PageRequest.of(0, batchSize));
         int actualSize = words.size();
 
         currentStatus.updateAndGet(s -> s.withTotalWords(actualSize));
@@ -396,5 +417,89 @@ public class PipelineService {
         word.setJudgeVerdict(null);
         wordRepository.save(word);
         log.info("Judge verdict REJECTED for '{}'", word.getWord());
+    }
+
+    private void runTrustedEnrichment(int batchSize) {
+        long pipelineStart = System.currentTimeMillis();
+        log.info("=== STARTING TRUSTED ENRICHMENT (Oxford) ===");
+
+        List<Word> words = wordRepository
+                .findPendingTrustedEnrichment(org.springframework.data.domain.PageRequest.of(0, batchSize));
+        int total = words.size();
+
+        if (words.isEmpty()) {
+            log.info("No words found for trusted enrichment.");
+            currentStatus.updateAndGet(s -> s.toBuilder()
+                    .currentStep(PipelineStatus.Step.COMPLETE)
+                    .running(false)
+                    .build());
+            return;
+        }
+
+        currentStatus.set(PipelineStatus.builder()
+                .running(true)
+                .totalWords(total)
+                .processedWords(0)
+                .currentStep(PipelineStatus.Step.TRUSTED_ENRICHMENT)
+                .startedAt(LocalDateTime.now())
+                .build());
+
+        LocalDateTime batchTime = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        AtomicInteger doneCount = new AtomicInteger(0);
+
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (Word word : words) {
+                executor.submit(() -> {
+                    try {
+                        workerSemaphore.acquire();
+                        try {
+                            WordDefinition def = openAIService.enrichTrustedWord(word.getWord(), word.getDifficulty());
+                            if (def != null) {
+                                word.setDefinition(def);
+                                word.setDifficulty(def.getDifficulty());
+                                word.setIsEnriched(true);
+                                word.setEnrichedAt(batchTime);
+                                word.setAuditNotes("Trusted Enrichment (Oxford)");
+
+                                // ======= AD-HOC JUDGE STEP FOR C1/C2 OXFORD WORDS =======
+                                if ("C1".equalsIgnoreCase(word.getDifficulty())
+                                        || "C2".equalsIgnoreCase(word.getDifficulty())) {
+                                    log.info("Applying Judge to high-level Oxford word: {}", word.getWord());
+                                    WordDefinition judgeDef = judgeService.judgeWord(word.getWord(),
+                                            word.getDefinition());
+                                    if (judgeDef != null) {
+                                        // Oxford olduğu için Judge sonucunu doğrudan 'APPROVED' olarak kabul edebiliriz
+                                        // veya 'PENDING_REVIEW' yapabiliriz. Plan gereği Judge üzerinden geçsin.
+                                        word.setJudgeVerdict(judgeDef);
+                                        word.setJudgeStatus("PENDING_REVIEW");
+                                    }
+                                } else {
+                                    word.setIsVerified(true); // A1-B2 ise doğrudan verified say
+                                }
+
+                                wordRepository.save(word);
+                            }
+                        } finally {
+                            workerSemaphore.release();
+                        }
+                    } catch (Exception e) {
+                        log.error("Trusted enrichment failed for '{}': {}", word.getWord(), e.getMessage());
+                        addFailure("TRUSTED_ENRICHMENT", word.getWord(), e.getMessage());
+                    }
+                    int done = doneCount.incrementAndGet();
+                    updateProgress(PipelineStatus.Step.TRUSTED_ENRICHMENT, done, total);
+                });
+            }
+        }
+
+        long totalTime = System.currentTimeMillis() - pipelineStart;
+        currentStatus.updateAndGet(s -> s.toBuilder()
+                .currentStep(PipelineStatus.Step.COMPLETE)
+                .running(false)
+                .completedAt(LocalDateTime.now())
+                .progressPercent(100)
+                .build());
+
+        log.info("=== TRUSTED ENRICHMENT COMPLETE === Total time: {}ms", totalTime);
     }
 }

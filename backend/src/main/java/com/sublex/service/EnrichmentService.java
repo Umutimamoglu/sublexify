@@ -30,7 +30,8 @@ public class EnrichmentService {
 
     @Transactional
     public void enrichWordsForMedia(Long mediaId) {
-        List<Word> pendingWords = wordRepository.findPendingEnrichmentByMediaId(mediaId);
+        List<Word> pendingWords = wordRepository.findPendingEnrichmentByMediaId(mediaId,
+                org.springframework.data.domain.PageRequest.of(0, 50));
         if (pendingWords.isEmpty()) {
             log.info("No pending words for media ID: {}", mediaId);
             return;

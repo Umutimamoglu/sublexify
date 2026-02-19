@@ -18,6 +18,7 @@ public class SpecialistService {
 
     private final WordRepository wordRepository;
     private final GeminiService geminiService;
+    private final JudgeService judgeService;
 
     // @Transactional removed to prevent connection holding during HTTP calls
     public void fixFlaggedWords(String language, int limit, java.time.LocalDateTime batchTime) {
@@ -39,12 +40,43 @@ public class SpecialistService {
         }
 
         int count = Math.min(flaggedWords.size(), limit);
-        log.info("Gemini Specialist fixing {} words...", count);
+        log.info("Gemini Specialist fixing {} words on thread {}...", count, Thread.currentThread().getName());
 
         for (int i = 0; i < count; i++) {
             Word word = flaggedWords.get(i);
             fixSingleWord(word, batchTime);
         }
+    }
+
+    /**
+     * Fixes ALL flagged words in a language using Virtual Threads and batching.
+     * This ignores media constraints and is ideal for global cleanup.
+     */
+    public void fixAllFlaggedWords(String language) {
+        List<Word> allFlagged = wordRepository.findByLanguageAndIsEnrichedTrueAndNeedsReEnrichmentTrue(language);
+
+        if (allFlagged.isEmpty()) {
+            log.info("No flagged words found for global specialist fix.");
+            return;
+        }
+
+        log.info("Global Specialist Fix: Found {} flagged words. Processing in parallel batches...", allFlagged.size());
+
+        int batchSize = 20;
+        java.time.LocalDateTime batchTime = java.time.LocalDateTime.now();
+        List<List<Word>> batches = new java.util.ArrayList<>();
+        for (int i = 0; i < allFlagged.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, allFlagged.size());
+            batches.add(new java.util.ArrayList<>(allFlagged.subList(i, end)));
+        }
+
+        try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            for (List<Word> batch : batches) {
+                executor.submit(() -> fixWordsBatch(batch, batchTime));
+            }
+        }
+
+        log.info("Global Specialist Fix completed for {} words.", allFlagged.size());
     }
 
     public void fixWordsBatch(List<Word> batch, java.time.LocalDateTime batchTime) {
@@ -56,23 +88,10 @@ public class SpecialistService {
             Map<String, WordDefinition> fixedDefinitions = geminiService.fixWordsBatch(batch);
 
             for (Word word : batch) {
-                WordDefinition fixedDefinition = fixedDefinitions.get(word.getWord());
-                if (fixedDefinition != null) {
-                    // Update word with fixed definition
-                    word.setDefinition(fixedDefinition);
-
-                    // If the root was changed (e.g., plurals), update the word headword itself!
-                    if (!fixedDefinition.getWord().equalsIgnoreCase(word.getWord())) {
-                        log.info("Specialist root correction: '{}' -> '{}'", word.getWord(), fixedDefinition.getWord());
-                        word.setWord(fixedDefinition.getWord());
-                    }
-
-                    word.setIsVerified(true);
-                    word.setNeedsReEnrichment(false);
-                    word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
-                    word.setAuditNotes("Fixed by Specialist (Gemini 2.5 Pro) - Batch processed");
+                WordDefinition fixedDef = fixedDefinitions.get(word.getWord());
+                if (fixedDef != null) {
+                    applySpecialistFix(word, fixedDef, batchTime);
                     wordRepository.save(word);
-                    log.info("Specialist successfully fixed word '{}'", word.getWord());
                 } else {
                     log.error("Specialist failed to return a valid definition for '{}' in batch", word.getWord());
                 }
@@ -85,22 +104,67 @@ public class SpecialistService {
     public void fixSingleWord(Word word, java.time.LocalDateTime batchTime) {
         try {
             log.info("Specialist fixing word '{}'. Reason: {}", word.getWord(), word.getAuditNotes());
+            WordDefinition fixedDef = geminiService.fixWord(word.getWord(), word.getAuditNotes());
 
-            WordDefinition fixedDefinition = geminiService.fixWord(word.getWord(), word.getAuditNotes());
-
-            if (fixedDefinition != null) {
-                word.setDefinition(fixedDefinition);
-                word.setIsVerified(true);
-                word.setNeedsReEnrichment(false);
-                word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
-                word.setAuditNotes("Fixed by Specialist (Gemini 2.5 Pro)");
+            if (fixedDef != null) {
+                applySpecialistFix(word, fixedDef, batchTime);
                 wordRepository.save(word);
-                log.info("Specialist successfully fixed word '{}'", word.getWord());
             } else {
                 log.error("Specialist failed to return a valid definition for '{}'", word.getWord());
             }
         } catch (Exception e) {
             log.error("Error during specialist fix for word '{}'", word.getWord(), e);
+        }
+    }
+
+    private void applySpecialistFix(Word word, WordDefinition fixedDef, java.time.LocalDateTime batchTime) {
+        word.setDefinition(fixedDef);
+
+        // Protect existing difficulty: Only update if null (e.g., from Oxford or manual
+        // verified state)
+        if (word.getDifficulty() == null) {
+            word.setDifficulty(fixedDef.getDifficulty());
+        }
+
+        // Root Correction Logic (to avoid Unique Constraint violations)
+        String rootWordName = fixedDef.getWord();
+        if (rootWordName != null && !word.getWord().equalsIgnoreCase(rootWordName)) {
+            log.info("Specialist root correction: '{}' -> '{}'", word.getWord(), rootWordName);
+            java.util.Optional<Word> existingRoot = wordRepository.findByWordAndLanguage(rootWordName,
+                    word.getLanguage());
+
+            if (existingRoot.isPresent() && !existingRoot.get().getId().equals(word.getId())) {
+                log.info("Root word '{}' already exists (ID: {}). Linking instead of renaming.",
+                        rootWordName, existingRoot.get().getId());
+                word.setRootWord(existingRoot.get());
+                // DON'T rename word.word to avoid duplicate key error
+            } else {
+                word.setWord(rootWordName);
+            }
+        }
+
+        log.info("BEFORE Specialist flag update for '{}': needs_re_enrichment={}, is_verified={}",
+                word.getWord(), word.getNeedsReEnrichment(), word.getIsVerified());
+        word.setIsVerified(true);
+        word.setNeedsReEnrichment(false);
+        word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
+        word.setAuditNotes("Fixed by Specialist (Gemini 2.5 Pro)");
+        log.info("AFTER Specialist flag update for '{}': needs_re_enrichment={}, is_verified={}",
+                word.getWord(), word.getNeedsReEnrichment(), word.getIsVerified());
+
+        // ======= AD-HOC JUDGE STEP FOR C1/C2 WORDS =======
+        String difficulty = word.getDifficulty();
+        if ("C1".equalsIgnoreCase(difficulty) || "C2".equalsIgnoreCase(difficulty)) {
+            log.info("Applying Judge evaluation for high-level Specialist fix: {}", word.getWord());
+            com.sublex.model.WordDefinition judgeVerdict = judgeService.judgeWord(word.getWord(), word.getDefinition());
+            if (judgeVerdict != null) {
+                word.setDefinition(judgeVerdict);
+                word.setDifficulty(judgeVerdict.getDifficulty());
+                word.setJudgeVerdict(judgeVerdict);
+                word.setJudgeStatus("APPROVED");
+                word.setJudgeApprovedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
+                log.info("Judge verdict applied for '{}'", word.getWord());
+            }
         }
     }
 }

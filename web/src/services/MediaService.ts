@@ -305,6 +305,11 @@ const PipelineAPI = {
         const response = await api.post(`/admin/words/judge-reject?wordId=${wordId}`);
         return response.data;
     },
+
+    triggerGlobalSpecialistFix: async (language: string = 'en'): Promise<string> => {
+        const response = await api.post(`/admin/pipeline/specialist-global-fix?language=${language}`);
+        return response.data;
+    },
 };
 
 export { PipelineAPI };

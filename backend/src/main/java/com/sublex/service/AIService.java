@@ -15,6 +15,16 @@ public interface AIService {
     WordDefinition enrichWord(String word, String difficulty);
 
     /**
+     * Enriches a word while strictly respecting the provided difficulty level.
+     * Useful for trusted lists like Oxford.
+     * 
+     * @param word       The word to enrich
+     * @param difficulty The trusted difficulty level
+     * @return WordDefinition object or null if failed
+     */
+    WordDefinition enrichTrustedWord(String word, String difficulty);
+
+    /**
      * Enriches a list of words in a single batch.
      * 
      * @param words List of Word objects to enrich

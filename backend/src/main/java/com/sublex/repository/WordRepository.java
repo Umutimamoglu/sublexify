@@ -28,8 +28,9 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         @Query("SELECT w FROM Word w WHERE (w.isEnriched = false OR w.isEnriched IS NULL) ORDER BY w.id ASC LIMIT 50")
         List<Word> findPendingEnrichment();
 
-        @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND (mw.word.isEnriched = false OR mw.word.isEnriched IS NULL) ORDER BY mw.word.id ASC LIMIT 50")
-        List<Word> findPendingEnrichmentByMediaId(@Param("mediaId") Long mediaId);
+        @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND (mw.word.isEnriched = false OR mw.word.isEnriched IS NULL) ORDER BY mw.word.id ASC")
+        List<Word> findPendingEnrichmentByMediaId(@Param("mediaId") Long mediaId,
+                        org.springframework.data.domain.Pageable pageable);
 
         List<Word> findByWordInAndLanguage(java.util.Collection<String> words, String language);
 
@@ -89,8 +90,11 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND (w.needsReEnrichment = false OR w.needsReEnrichment IS NULL) AND (w.isVerified = false OR w.isVerified IS NULL) ORDER BY w.enrichedAt ASC LIMIT :limit")
         List<Word> findTopEnrichedWords(@Param("limit") int limit);
 
-        @Query("SELECT w FROM Word w WHERE (w.isEnriched = false OR w.isEnriched IS NULL) ORDER BY w.id ASC LIMIT :limit")
-        List<Word> findPendingEnrichmentWithLimit(@Param("limit") int limit);
+        @Query("SELECT w FROM Word w WHERE (w.isEnriched = false OR w.isEnriched IS NULL) ORDER BY w.id ASC")
+        List<Word> findPendingEnrichmentWithLimit(org.springframework.data.domain.Pageable pageable);
+
+        @Query("SELECT w FROM Word w WHERE (w.isEnriched = false OR w.isEnriched IS NULL) AND w.difficulty IS NOT NULL ORDER BY w.id ASC")
+        List<Word> findPendingTrustedEnrichment(org.springframework.data.domain.Pageable pageable);
 
         List<Word> findByJudgeStatus(String judgeStatus);
 
