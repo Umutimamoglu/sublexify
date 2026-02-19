@@ -12,29 +12,39 @@ import java.util.regex.Pattern;
  */
 public class SubtitleParser {
 
-    // GÜNCELLEME 1: Regex artık Akıllı Tırnak (\u2019 -> ’) işaretini de
-    // destekliyor.
-    // ['’\-] -> Düz tırnak, Kıvrık tırnak veya Tire
+    private static final Pattern URL_PATTERN = Pattern.compile("www\\.|http:|https:|\\.com|\\.net|\\.org",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]+>");
+    private static final Pattern BRACKET_CONTENT_PATTERN = Pattern.compile("\\{[^}]*\\}");
+    // GÜNCELLEME 1: Regex artık Unicode karakterleri (\p{L}), tire ve kesme
+    // işaretlerini destekler.
+    // Örn: "café", "long-term", "don't" tek token olarak yakalanır.
     private static final Pattern WORD_PATTERN = Pattern.compile("[\\p{L}]+(?:['’\\-][\\p{L}]+)*");
 
-    private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]+>");
-    private static final Pattern BRACKET_CONTENT_PATTERN = Pattern.compile("\\{[^}]+\\}");
+    /**
+     * Data holder for word analysis
+     */
+    public static class WordData {
+        public int count;
+        public String context;
 
-    // GÜNCELLEME 2: Daha agresif bir URL/Reklam filtresi
-    private static final Pattern URL_PATTERN = Pattern
-            .compile("(?i).*(www\\.|http|\\.com|\\.net|\\.org|\\.co\\b|\\.uk\\b).*");
+        public WordData(int count, String context) {
+            this.count = count;
+            this.context = context;
+        }
+    }
 
     /**
-     * Parse subtitle text and extract all words
+     * Parse subtitle text and extract all words with their context
      * 
      * @param subtitleContent The raw .srt file content
-     * @return Map of words to their occurrence count
+     * @return Map of words to their data (count and first context)
      */
-    public static Map<String, Integer> parseSubtitles(String subtitleContent) {
-        Map<String, Integer> wordCount = new HashMap<>();
+    public static Map<String, WordData> parseSubtitles(String subtitleContent) {
+        Map<String, WordData> wordMap = new HashMap<>();
 
         if (subtitleContent == null || subtitleContent.isEmpty()) {
-            return wordCount;
+            return wordMap;
         }
 
         try (BufferedReader reader = new BufferedReader(new StringReader(subtitleContent))) {
@@ -42,32 +52,17 @@ public class SubtitleParser {
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
 
-                if (line.isEmpty())
-                    continue;
-
-                // Sayısal indexleri atla (sadece rakamdan oluşan satırlar)
-                if (line.matches("\\d+"))
-                    continue;
-
-                // Zaman damgalarını atla
-                if (line.contains("-->"))
+                if (line.isEmpty() || line.matches("\\d+") || line.contains("-->"))
                     continue;
 
                 // GÜNCELLEME 2: Reklam içeren satırları Regex ile kökten temizle (hiqve.com
                 // vb.)
-                if (URL_PATTERN.matcher(line).find())
+                if (URL_PATTERN.matcher(line).find() || line.contains("::::::"))
                     continue;
-                if (line.contains("::::::"))
-                    continue; // Özel reklam ayraçları
 
                 // ASS/SSA metadata temizliği (Geliştirilmiş)
-                if (line.startsWith("[") && line.endsWith("]")) {
-                    // Sadece [Events] bölümündeki satırları ciddiye al (Diyaloglar orada olur)
-                    // Ancak şimdilik tüm bölümleri tarayıp Dialogue: ile başlayanları alacak
-                    // şekilde kalsın.
-                    // Sadece Bracket satırının kendisini atla.
+                if (line.startsWith("[") && line.endsWith("]"))
                     continue;
-                }
                 if (line.startsWith(";"))
                     continue;
 
@@ -86,51 +81,49 @@ public class SubtitleParser {
                     }
                 }
 
-                extractWords(line, wordCount);
+                extractWords(line, wordMap);
             }
         } catch (IOException e) {
             throw new RuntimeException("Error parsing subtitles", e);
         }
 
-        return wordCount;
+        return wordMap;
     }
 
-    private static void extractWords(String line, Map<String, Integer> wordCount) {
+    private static void extractWords(String line, Map<String, WordData> wordMap) {
         // 1. HTML taglerini temizle (<i>, <b> vs.)
-        line = HTML_TAG_PATTERN.matcher(line).replaceAll(" ");
+        String cleanLine = HTML_TAG_PATTERN.matcher(line).replaceAll(" ");
 
         // 2. ASS süslü parantezlerini temizle ({\an8} gibi)
-        line = BRACKET_CONTENT_PATTERN.matcher(line).replaceAll("");
+        cleanLine = BRACKET_CONTENT_PATTERN.matcher(cleanLine).replaceAll("");
 
         // GÜNCELLEME 4: ASS formatına özel \N (Yeni satır) ve ters slash temizliği
-        // Bu karakterler temizlenmezse "nWord" şeklinde hatalı kelimeler oluşur.
-        line = line.replace("\\N", " ").replace("\\n", " ").replace("\\", " ");
+        cleanLine = cleanLine.replace("\\N", " ").replace("\\n", " ").replace("\\", " ");
+
+        // Context cümlesi olarak temizlenmiş satırı sakla
+        String contextSentence = cleanLine.trim();
+        if (contextSentence.isEmpty())
+            return;
+
+        // Kelime ayıklama işlemi
+        String processingLine = cleanLine;
 
         // GÜNCELLEME 3: Kesme işareti (') içeren kelimeleri köklerine ayır (Naive
-        // Stemming)
-        // Örnek: "we'd" -> "we", "don't" -> "don", "john's" -> "john"
-        // NOT: "o'connor" gibi özel isimler "o" olarak kalabilir, bu basit bir
-        // çözümdür.
-        // Daha karmaşık NLP (Lemmatization) gerekirse StanfordNLP/OpenNLP entegre
-        // edilmeli.
-        if (line.contains("'") || line.contains("’")) {
-            line = line.replace("’", "'"); // Önce standartlaştır
-            // Regex: Kelime içindeki kesme işareti ve sonrasındaki harfleri sil
-            // Ancak bu global replace değil, kelime bazlı olmalı.
-            // Bu yüzden loop içinde yapmak daha güvenli.
+        // Stemming) - KALDIRILDI: Artık regex ile butun olarak alıyoruz.
+        if (processingLine.contains("'") || processingLine.contains("’")) {
+            processingLine = processingLine.replace("’", "'");
         }
 
         // Locale.ENGLISH kullanımı Türkçe sunucularda "I" -> "i" dönüşümü için kritik.
-        line = line.toLowerCase(Locale.ENGLISH);
+        processingLine = processingLine.toLowerCase(Locale.ENGLISH);
 
-        Matcher matcher = WORD_PATTERN.matcher(line);
+        Matcher matcher = WORD_PATTERN.matcher(processingLine);
         while (matcher.find()) {
             String word = matcher.group();
 
-            // GÜNCELLEME: Kesme işareti varsa, sadece öncesini al ("we'd" -> "we")
-            if (word.contains("'") || word.contains("’")) {
-                word = word.split("['’]")[0];
-            }
+            // GÜNCELLEME: Manuel split işlemi KALDIRILDI.
+            // word = word.split("['’]")[0]; satırı silindi. "don't" artık "don't" olarak
+            // kalır.
 
             if (word.isEmpty())
                 continue;
@@ -140,7 +133,13 @@ public class SubtitleParser {
                 continue;
             }
 
-            wordCount.put(word, wordCount.getOrDefault(word, 0) + 1);
+            // WordData güncelleme
+            if (wordMap.containsKey(word)) {
+                wordMap.get(word).count++;
+                // Context zaten varsa ilkini koruyoruz, değiştirmiyoruz
+            } else {
+                wordMap.put(word, new WordData(1, contextSentence));
+            }
         }
     }
 }

@@ -42,8 +42,37 @@ public class AdminController {
     private final com.sublex.service.AuditService auditService;
     private final com.sublex.service.SpecialistService specialistService;
     private final com.sublex.service.PipelineService pipelineService;
+    private final com.sublex.service.WordAnalysisService wordAnalysisService;
 
     // ... (other methods unchanged) ...
+
+    @PostMapping("/word-analysis/trigger")
+    @Operation(summary = "Triggers async word analysis job manually")
+    public ResponseEntity<String> triggerWordAnalysis() {
+        wordAnalysisService.triggerAnalysis();
+        return ResponseEntity.ok("Word analysis triggered.");
+    }
+
+    @DeleteMapping("/words/all")
+    @Transactional
+    @Operation(summary = "Deletes all words and media-word associations (Keeps Media)")
+    public ResponseEntity<String> deleteAllWords() {
+        log.warn("Request to delete ALL words received.");
+        mediaWordRepository.deleteAll();
+        wordRepository.deleteAll();
+        return ResponseEntity.ok("All words and media-word associations deleted.");
+    }
+
+    @DeleteMapping("/system/reset")
+    @Transactional
+    @Operation(summary = "FULL RESET: Deletes Media, Words, and Associations")
+    public ResponseEntity<String> fullSystemReset() {
+        log.warn("Request to FULL SYSTEM RESET received.");
+        mediaWordRepository.deleteAll();
+        wordRepository.deleteAll();
+        mediaRepository.deleteAll();
+        return ResponseEntity.ok("FULL SYSTEM RESET COMPLETED. All Media and Words deleted.");
+    }
 
     @GetMapping("/stats/word-count")
     public ResponseEntity<Long> getTotalWordCount() {

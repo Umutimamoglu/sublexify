@@ -63,6 +63,25 @@ public class Word {
     @Column(name = "judge_status", length = 20)
     private String judgeStatus; // null, PENDING_REVIEW, APPROVED, REJECTED
 
+    // Async Pipeline Fields
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "root_word_id")
+    private Word rootWord;
+
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private String status = "PENDING"; // PENDING, PROCESSED, FAILED
+
+    @Column(name = "retry_count")
+    @Builder.Default
+    private Integer retryCount = 0;
+
+    @Column(name = "is_proper_noun")
+    private Boolean isProperNoun;
+
+    @Column(name = "context_sentence", columnDefinition = "text")
+    private String contextSentence;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

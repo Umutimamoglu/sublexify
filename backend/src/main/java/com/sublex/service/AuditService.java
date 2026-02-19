@@ -39,7 +39,7 @@ public class AuditService {
             return;
         }
 
-        log.info("Sheriff (Gemini 3.0 Pro) auditing {} words in PARALLEL batches (Media ID: {})...",
+        log.info("Sheriff (Gemini 3.0 Pro Preview) auditing {} words in PARALLEL batches (Media ID: {})...",
                 allWordsToAudit.size(),
                 mediaId);
 
@@ -134,7 +134,7 @@ public class AuditService {
                             """,
                     inputJson);
 
-            String response = geminiService.generateContent(prompt);
+            String response = geminiService.generateContent(prompt, GeminiService.SHERIFF_MODEL);
 
             if (response == null || response.isEmpty()) {
                 log.error("Sheriff (Gemini) returned empty response. Skipping batch to prevent false approvals.");

@@ -38,8 +38,9 @@ public class SubtitleProcessingService {
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
-        // 1. Parse subtitles and get word frequencies
-        Map<String, Integer> wordFrequencies = SubtitleParser.parseSubtitles(subtitleContent);
+        // 1. Parse subtitles and get word data (counts + context)
+        // Returns Map<String, WordData>
+        Map<String, SubtitleParser.WordData> wordDataMap = SubtitleParser.parseSubtitles(subtitleContent);
 
         // Filter out short words not in whitelist
         java.util.Set<String> shortWordWhitelist = java.util.Set.of(
@@ -47,14 +48,14 @@ public class SubtitleProcessingService {
                 "me", "my", "no", "of", "oh", "on", "or", "ox", "so", "to", "up", "us", "we",
                 "ah", "eh", "ha", "ho", "ow", "ya", "yo");
 
-        wordFrequencies.entrySet().removeIf(entry -> {
+        wordDataMap.entrySet().removeIf(entry -> {
             String w = entry.getKey().toLowerCase();
             return w.length() <= 2 && !shortWordWhitelist.contains(w);
         });
 
-        log.info("Parsed {} unique words (after filtering short words)", wordFrequencies.size());
+        log.info("Parsed {} unique words (after filtering short words)", wordDataMap.size());
 
-        if (wordFrequencies.isEmpty()) {
+        if (wordDataMap.isEmpty()) {
             log.warn("No words found in subtitles for mediaId: {}", mediaId);
             return;
         }
@@ -68,26 +69,26 @@ public class SubtitleProcessingService {
         log.info("Cleared existing words for mediaId: {}", mediaId);
 
         // 3. DICTIONARY UPDATE (SYNCHRONIZED & TRANSACTIONAL)
-        // We lock this section to ensure only one thread checks/inserts words at a
-        // time.
-        // We use transactionTemplate to ensure the commit happens BEFORE the lock is
-        // released.
         Map<String, Word> wordMap;
         synchronized (DICTIONARY_LOCK) {
             wordMap = transactionTemplate.execute(status -> {
                 // 3.1 Batch Fetch Existing Words
-                java.util.List<Word> existingWords = wordRepository.findByWordInAndLanguage(wordFrequencies.keySet(),
+                java.util.List<Word> existingWords = wordRepository.findByWordInAndLanguage(wordDataMap.keySet(),
                         language);
                 Map<String, Word> currentMap = existingWords.stream()
                         .collect(java.util.stream.Collectors.toMap(Word::getWord, w -> w));
 
                 // 3.2 Identify and Batch Save New Words
                 java.util.List<Word> newWords = new java.util.ArrayList<>();
-                for (String wordText : wordFrequencies.keySet()) {
+                for (Map.Entry<String, SubtitleParser.WordData> entry : wordDataMap.entrySet()) {
+                    String wordText = entry.getKey();
                     if (!currentMap.containsKey(wordText)) {
+                        SubtitleParser.WordData data = entry.getValue();
                         newWords.add(Word.builder()
                                 .word(wordText)
                                 .language(language)
+                                .status("PENDING") // Mark for async analysis
+                                .contextSentence(data.context) // Save the context!
                                 .build());
                     }
                 }
@@ -104,12 +105,11 @@ public class SubtitleProcessingService {
         }
 
         // 4. Create and Batch Save MediaWord Associations
-        // This does not need to be synchronized as it affects only this specific Media
         java.util.List<MediaWord> mediaWords = new java.util.ArrayList<>();
-        for (Map.Entry<String, Integer> entry : wordFrequencies.entrySet()) {
+        for (Map.Entry<String, SubtitleParser.WordData> entry : wordDataMap.entrySet()) {
             Word word = wordMap.get(entry.getKey());
             if (word != null) {
-                mediaWords.add(new MediaWord(null, media, word, entry.getValue()));
+                mediaWords.add(new MediaWord(null, media, word, entry.getValue().count));
             }
         }
 

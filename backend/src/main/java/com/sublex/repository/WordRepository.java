@@ -14,6 +14,9 @@ public interface WordRepository extends JpaRepository<Word, Long> {
 
         Optional<Word> findByWordAndLanguage(String word, String language);
 
+        @Query("SELECT w FROM Word w WHERE w.status = 'PENDING' OR (w.status = 'FAILED' AND w.retryCount < 3)")
+        List<Word> findWordsForAnalysis(org.springframework.data.domain.Pageable pageable);
+
         boolean existsByWordAndLanguage(String word, String language);
 
         List<Word> findByWordContainingAndLanguage(String word, String language);
