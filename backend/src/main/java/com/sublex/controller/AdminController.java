@@ -251,11 +251,39 @@ public class AdminController {
         }
     }
 
+    @PostMapping("/scrape-movie-api")
+    @Operation(summary = "Triggers subtitle scraping for a movie via Official API")
+    public ResponseEntity<String> scrapeMovieApi(
+            @RequestParam(required = false) String imdbId,
+            @RequestParam(required = false) Long tmdbId) {
+        log.info("Manual request to scrape subtitles via OFFICIAL API for movie. IMDB ID: {}, TMDB ID: {}", imdbId,
+                tmdbId);
+        try {
+            if (tmdbId != null) {
+                subtitleScraperService.scrapeMovieWithApi(tmdbId);
+                return ResponseEntity.ok("Official API Scraping completed for movie TMDB ID: " + tmdbId);
+            } else if (imdbId != null && !imdbId.isEmpty()) {
+                subtitleScraperService.scrapeMovieWithApi(imdbId);
+                return ResponseEntity.ok("Official API Scraping completed for movie IMDB ID: " + imdbId);
+            } else {
+                return ResponseEntity.badRequest().body("Either imdbId or tmdbId must be provided");
+            }
+        } catch (Exception e) {
+            log.error("API Scraping failed for movie. IMDB ID: {}, TMDB ID: {}", imdbId, tmdbId, e);
+            return ResponseEntity.internalServerError().body("API Scraping failed: " + e.getMessage());
+        }
+    }
+
     // TMDB Proxy Endpoints for Frontend
 
     @GetMapping("/media/tmdb/search")
     public ResponseEntity<List<TmdbService.TmdbMedia>> searchTmdbSeries(@RequestParam String query) {
         return ResponseEntity.ok(tmdbService.searchSeries(query));
+    }
+
+    @GetMapping("/media/tmdb/movie/search")
+    public ResponseEntity<List<TmdbService.TmdbMedia>> searchTmdbMovies(@RequestParam String query) {
+        return ResponseEntity.ok(tmdbService.searchMovies(query));
     }
 
     @GetMapping("/media/tmdb/series/{id}")

@@ -33,8 +33,52 @@ public class SubtitleScraperService {
     private static final String YTS_BASE_URL = "https://yifysubtitles.ch";
 
     @Transactional
+    public void scrapeMovieWithApi(Long tmdbId) {
+        log.info("Starting OFFICIAL API movie scrape for TMDB ID: {}", tmdbId);
+
+        TmdbService.TmdbMedia movie = tmdbService.getMediaDetails(tmdbId, false)
+                .orElseThrow(() -> new RuntimeException("Movie not found in TMDB with TMDB ID: " + tmdbId));
+
+        String imdbId = movie.getImdbId();
+        if (imdbId == null) {
+            throw new RuntimeException("No IMDB ID found for movie TMDB ID: " + tmdbId);
+        }
+
+        Media media = findOrCreateMediaByTmdbId(tmdbId, movie);
+        scrapeMovieInternal(imdbId, media);
+    }
+
+    @Transactional
+    public void scrapeMovieWithApi(String imdbId) {
+        log.info("Starting OFFICIAL API movie scrape for IMDB ID: {}", imdbId);
+
+        TmdbService.TmdbMedia movie = tmdbService.findMovieByImdbId(imdbId)
+                .orElseThrow(() -> new RuntimeException("Movie not found in TMDB with IMDB ID: " + imdbId));
+
+        Media media = findOrCreateMedia(imdbId);
+        scrapeMovieInternal(imdbId, media);
+    }
+
+    private void scrapeMovieInternal(String imdbId, Media media) {
+        try {
+            String subtitleContent = openSubtitlesApiService.fetchSubtitles(imdbId, "movie");
+
+            if (subtitleContent == null) {
+                throw new RuntimeException("Official API returned no subtitles for movie IMDB ID: " + imdbId);
+            }
+
+            subtitleProcessingService.processSubtitles(media.getId(), subtitleContent, "en");
+            log.info("Successfully scraped via API and processed subtitles for movie: {}", media.getTitle());
+
+        } catch (Exception e) {
+            log.error("Official API scrape failed for movie IMDB ID {}: {}", imdbId, e.getMessage());
+            throw new RuntimeException("API Scraping failed: " + e.getMessage());
+        }
+    }
+
+    @Transactional
     public void scrapeEpisodeWithApi(String seriesImdbId, Integer season, Integer episode) {
-        log.info("Starting OFFICIAL API episode scrape for Series IMDB ID: {}, S{}E{}", seriesImdbId, season, episode);
+        log.info("Starting OFFICIAL API episode scrape for: {} S{}E{}", seriesImdbId, season, episode);
 
         TmdbService.TmdbMedia show = tmdbService.findShowByImdbId(seriesImdbId)
                 .orElseThrow(() -> new RuntimeException("Show not found in TMDB with IMDB ID: " + seriesImdbId));
@@ -50,18 +94,14 @@ public class SubtitleScraperService {
         Media media = findOrCreateEpisodeMedia(seriesImdbId, season, episode, show, epDetails);
 
         try {
-            // Use the Official API
             String subtitleContent = openSubtitlesApiService.fetchSubtitles(episodeImdbId, "episode");
-
             if (subtitleContent == null) {
-                throw new RuntimeException("Official API returned no subtitles for " + episodeImdbId);
+                throw new RuntimeException("Official API returned no subtitles for episode IMDB ID: " + episodeImdbId);
             }
-
             subtitleProcessingService.processSubtitles(media.getId(), subtitleContent, "en");
-            log.info("Successfully scraped via API and processed subtitles for: {}", media.getTitle());
-
+            log.info("Successfully scraped via API and processed subtitles for episode: {}", media.getTitle());
         } catch (Exception e) {
-            log.error("Official API scrape failed for {} S{}E{}: {}", seriesImdbId, season, episode, e.getMessage());
+            log.error("Official API scrape failed for episode {}: {}", episodeImdbId, e.getMessage());
             throw new RuntimeException("API Scraping failed: " + e.getMessage());
         }
     }
@@ -147,6 +187,27 @@ public class SubtitleScraperService {
             log.error("Failed to scrape subtitles for {}: {}", imdbId, e.getMessage());
             throw new RuntimeException("Scraping failed: " + e.getMessage());
         }
+    }
+
+    private Media findOrCreateMediaByTmdbId(Long tmdbId, TmdbService.TmdbMedia tmdbMedia) {
+        return mediaRepository.findByTmdbId(tmdbId)
+                .orElseGet(() -> {
+                    log.info("Media not found in DB, using TMDB data: {}", tmdbId);
+
+                    Media newMedia = new Media();
+                    newMedia.setTitle(tmdbMedia.getTitle());
+                    newMedia.setImdbId(tmdbMedia.getImdbId());
+                    newMedia.setTmdbId(tmdbId);
+                    newMedia.setOverview(tmdbMedia.getOverview());
+                    newMedia.setPosterUrl("https://image.tmdb.org/t/p/w500" + tmdbMedia.getPosterPath());
+                    newMedia.setBackdropUrl("https://image.tmdb.org/t/p/original" + tmdbMedia.getBackdropPath());
+                    newMedia.setVoteAverage(tmdbMedia.getVoteAverage());
+                    newMedia.setReleaseDate(String.valueOf(tmdbMedia.getReleaseDate()));
+                    newMedia.setType(MediaType.MOVIE);
+                    newMedia.setLanguage("en");
+
+                    return mediaRepository.save(newMedia);
+                });
     }
 
     private Media findOrCreateMedia(String imdbId) {

@@ -87,6 +87,13 @@ const MediaService = {
         return response.data;
     },
 
+    scrapeMovieApi: async (tmdbId?: number, imdbId?: string): Promise<string> => {
+        const response = await api.post<string>(`/admin/scrape-movie-api`, null, {
+            params: { tmdbId, imdbId }
+        });
+        return response.data;
+    },
+
     scrapeMedia: async (imdbId: string): Promise<string> => {
         const response = await api.post<string>(`/admin/media/scrape`, null, {
             params: { imdbId }
@@ -97,6 +104,13 @@ const MediaService = {
     // TMDB Integration Methods
     searchTmdbSeries: async (query: string): Promise<TmdbMedia[]> => {
         const response = await api.get<TmdbMedia[]>('/admin/media/tmdb/search', {
+            params: { query }
+        });
+        return response.data;
+    },
+
+    searchTmdbMovies: async (query: string): Promise<TmdbMedia[]> => {
+        const response = await api.get<TmdbMedia[]>('/admin/media/tmdb/movie/search', {
             params: { query }
         });
         return response.data;

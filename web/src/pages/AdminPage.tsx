@@ -76,6 +76,13 @@ const AdminPage = () => {
     const [seriesMsg, setSeriesMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [useOfficialApi, setUseOfficialApi] = useState(true);
 
+    // TMDB Movie Scraper State
+    const [movieQuery, setMovieQuery] = useState('');
+    const [searchingMovie, setSearchingMovie] = useState(false);
+    const [movieResults, setMovieResults] = useState<TmdbMedia[]>([]);
+    const [movieMsg, setMovieMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [scrapingMovie, setScrapingMovie] = useState<number | null>(null);
+
     // Fetch media on mount
     useEffect(() => {
         fetchMedia();
@@ -170,6 +177,37 @@ const AdminPage = () => {
             setSeriesMsg({ type: 'error', text: 'Search failed' });
         } finally {
             setSearchingSeries(false);
+        }
+    };
+
+    const handleSearchMovie = async () => {
+        if (!movieQuery) return;
+        setSearchingMovie(true);
+        setMovieResults([]);
+        setMovieMsg(null);
+        try {
+            const results = await MediaService.searchTmdbMovies(movieQuery);
+            setMovieResults(results);
+        } catch (err) {
+            console.error(err);
+            setMovieMsg({ type: 'error', text: 'Movie search failed' });
+        } finally {
+            setSearchingMovie(false);
+        }
+    };
+
+    const handleScrapeMovie = async (tmdbId: number, imdbId?: string) => {
+        setScrapingMovie(tmdbId);
+        setMovieMsg(null);
+        try {
+            const result = await MediaService.scrapeMovieApi(tmdbId, imdbId);
+            setMovieMsg({ type: 'success', text: result });
+            fetchMedia();
+        } catch (err: any) {
+            console.error(err);
+            setMovieMsg({ type: 'error', text: err.response?.data || 'Movie scrape failed' });
+        } finally {
+            setScrapingMovie(null);
         }
     };
 
@@ -651,6 +689,86 @@ const AdminPage = () => {
                         }`}>
                         {seriesMsg.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                         {seriesMsg.text}
+                    </div>
+                )}
+            </div>
+
+            {/* Movie Scraper Section (Official API) */}
+            <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Movie Scraper (Official API)</h2>
+                </div>
+
+                {/* Search Bar */}
+                <div className="flex gap-4 mb-6">
+                    <input
+                        type="text"
+                        value={movieQuery}
+                        onChange={(e) => setMovieQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearchMovie()}
+                        placeholder="Search for Movie (e.g. Inception)"
+                        className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <button
+                        onClick={handleSearchMovie}
+                        disabled={searchingMovie || !movieQuery}
+                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {searchingMovie ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                        Search
+                    </button>
+                </div>
+
+                {/* Movie Results Grid */}
+                {movieResults.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {movieResults.map(movie => (
+                            <div
+                                key={movie.id}
+                                className="group relative aspect-[2/3] rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-emerald-500 transition-all bg-gray-900"
+                            >
+                                {movie.posterPath ? (
+                                    <img
+                                        src={`https://image.tmdb.org/t/p/w500${movie.posterPath}`}
+                                        alt={movie.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-60 group-hover:opacity-40"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-800">
+                                        No Image
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 p-3 flex flex-col justify-between">
+                                    <div>
+                                        <h3 className="text-white font-bold text-sm leading-tight mb-1">{movie.title}</h3>
+                                        <p className="text-gray-300 text-xs">{movie.releaseDate?.split('-')[0]}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleScrapeMovie(movie.id, movie.imdbId)}
+                                        disabled={scrapingMovie === movie.id}
+                                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {scrapingMovie === movie.id ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Download className="w-3 h-3" />
+                                        )}
+                                        {scrapingMovie === movie.id ? 'Downloading...' : 'Download Subtitles'}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Status Message */}
+                {movieMsg && (
+                    <div className={`mt-4 p-3 rounded-lg text-sm border flex items-center gap-2 ${movieMsg.type === 'success'
+                        ? 'bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-300 border-green-100 dark:border-green-800'
+                        : 'bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-300 border-red-100 dark:border-red-800'
+                        }`}>
+                        {movieMsg.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                        {movieMsg.text}
                     </div>
                 )}
             </div>
