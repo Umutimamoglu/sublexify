@@ -187,6 +187,9 @@ public class GeminiService implements AIService {
                    - Every English 'example' MUST include its Turkish translation in parentheses.
                 2. **LEMMA (ROOT) IDENTIFICATION**:
                    - Always use the base root form (lemma) of the word.
+                3. **NO NULL LISTS (CRITICAL)**:
+                   - If there are no `phrasal_verbs` or `meanings` to add, you MUST return an empty list `[]`.
+                   - Do NOT use `null` for list fields.
 
                 ### JSON STRUCTURE:
                 Return a JSON array of objects:
@@ -260,13 +263,22 @@ public class GeminiService implements AIService {
         String systemPrompt = """
                 You are a meticulous Senior Lexicographer and Turkish Language Expert.
                 Your mission is to fix rejected dictionary entries with 100% linguistic accuracy.
-
                 ### MANDATORY QUALITY CONTROLS:
                 1. **TURKISH TRANSLATION IS STRICTLY REQUIRED**:
                    - Every 'definition' MUST be written in fluent Turkish.
                    - Every English 'example' MUST include its Turkish translation in parentheses.
                 2. **ROOT MATCHING (CRITICAL)**:
                    - If the rejection reason is 'Root mismatch', you MUST change the "word" field in the JSON to the correct base root. Do not define the past tense or plural form!
+                3. **SEMANTIC UNIQUENESS (CRITICAL)**:
+                   - Do NOT provide redundant or near-identical meanings. If a word primarily has one meaning, provide ONLY ONE.
+                4. **NO NESTED LISTS (CRITICAL)**:
+                   - Each 'definition' must be a SINGLE string. Do NOT use numbered lists (e.g., "1) ... 2) ...") inside a definition string. Use separate objects in the 'meanings' array instead.
+                5. **STRICT VERB FORM KEYS (CRITICAL)**:
+                   - You MUST use keys `v1`, `v2`, `v3`, and `ing` for the `verb_forms` object.
+                   - Do NOT use `present`, `past`, `participle`. Use `v1`, `v2`, `v3`, `ing`.
+                6. **NO NULL LISTS (CRITICAL)**:
+                   - If there are no `phrasal_verbs` or `meanings` to add, you MUST return an empty list `[]`.
+                   - Do NOT use `null` for list fields.
 
                 ### JSON STRUCTURE (STRICTLY FOLLOW THIS FORMAT):
                 Return a JSON array of objects, each corresponding to one of the requested words:
@@ -281,8 +293,19 @@ public class GeminiService implements AIService {
                         "example": "He exemplified the behavior. (O, bu davranışı örnekledi.)"
                       }
                     ],
-                    "phrasal_verbs": [],
-                    "verb_forms": null
+                    "phrasal_verbs": [
+                      {
+                        "phrase": "exemplify by",
+                        "definition": "Bir şey ile örneklendirmek.",
+                        "example": "He exemplified the rule by giving an example. (Bir örnek vererek kuralı temellendirdi.)"
+                      }
+                    ],
+                    "verb_forms": {
+                      "v1": "exemplify",
+                      "v2": "exemplified",
+                      "v3": "exemplified",
+                      "ing": "exemplifying"
+                    }
                   }
                 ]
                 Return ONLY the JSON array. No conversational filler.
@@ -339,6 +362,16 @@ public class GeminiService implements AIService {
                    - Every English 'example' MUST include its Turkish translation in parentheses.
                 2. **ROOT MATCHING (CRITICAL)**:
                    - If the rejection reason is 'Root mismatch', you MUST change the "word" field in the JSON to the correct base root. Do not define the past tense or plural form!
+                3. **SEMANTIC UNIQUENESS (CRITICAL)**:
+                   - Do NOT provide redundant or near-identical meanings. If a word primarily has one meaning, provide ONLY ONE.
+                4. **NO NESTED LISTS (CRITICAL)**:
+                   - Each 'definition' must be a SINGLE string. Do NOT use numbered lists (e.g., "1) ... 2) ...") inside a definition string. Use separate objects in the 'meanings' array instead.
+                5. **STRICT VERB FORM KEYS (CRITICAL)**:
+                   - You MUST use keys `v1`, `v2`, `v3`, and `ing` for the `verb_forms` object.
+                   - Do NOT use `present`, `past`, `participle`. Use `v1`, `v2`, `v3`, `ing`.
+                6. **NO NULL LISTS (CRITICAL)**:
+                   - If there are no `phrasal_verbs` or `meanings` to add, you MUST return an empty list `[]`.
+                   - Do NOT use `null` for list fields.
 
                 ### JSON STRUCTURE (STRICTLY FOLLOW THIS FORMAT):
                 {
@@ -351,8 +384,19 @@ public class GeminiService implements AIService {
                       "example": "He exemplified the behavior. (O, bu davranışı örnekledi.)"
                     }
                   ],
-                  "phrasal_verbs": [],
-                  "verb_forms": null
+                  "phrasal_verbs": [
+                    {
+                      "phrase": "exemplify by",
+                      "definition": "Bir şey ile örneklendirmek.",
+                      "example": "He exemplified the rule by giving an example. (Bir örnek vererek kuralı temellendirdi.)"
+                    }
+                  ],
+                  "verb_forms": {
+                    "v1": "exemplify",
+                    "v2": "exemplified",
+                    "v3": "exemplified",
+                    "ing": "exemplifying"
+                  }
                 }
                 Return ONLY a single valid JSON object. No conversational filler.
                 """;

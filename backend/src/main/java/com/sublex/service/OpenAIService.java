@@ -37,13 +37,16 @@ public class OpenAIService implements AIService {
                         Return a JSON object with:
                         1. 'word': the word itself.
                         2. 'difficulty': CEFR level (A1-C2). Use the provided level EXACTLY.
-                        3. 'verb_forms': If the word is a verb, provide 'v1', 'v2', 'v3', and 'ing' forms. Otherwise, return null.
-                        4. 'meanings': Array of objects, grouped by Part of Speech. For each POS, provide the most common 1-2 meanings.
+                        3. 'verb_forms': If any meaning of the word has "pos": "verb", you MUST provide 'v1', 'v2', 'v3', and 'ing' forms. CRITICAL: These fields MUST NEVER be null or empty if it is a verb. Otherwise, if not a verb, return null for the whole object.
+                        4. 'meanings': Array of objects, grouped by Part of Speech.
+                           - For each POS, provide the most common 1-2 meanings.
+                           - SEMANTIC UNIQUENESS (CRITICAL): Do NOT provide meanings that are near-synonyms or redundant. If a word primarily has one meaning, provide ONLY ONE meaning.
+                           - NO NESTED LISTS (CRITICAL): Each 'definition' must be a SINGLE string. Do NOT use numbered lists (e.g., '1)... 2)...') or bullet points inside a definition. Use separate entries in the 'meanings' array instead.
                            - 'pos': part of speech in English (noun, verb, adjective, adverb, number, etc.)
                            - 'definition': Short, clear, and NATURAL definition IN TURKISH. Explain slang or loanword context in Turkish.
                            - 'example': One example sentence in English, with its COMPLETE TURKISH translation in parentheses.
                         5. 'phrasal_verbs': Array of common phrasal verbs. return an empty array [] if none exist. Do NOT force or invent phrasal verbs for words like 'tea' or 'ketchup'.
-                           - 'phrase': the phrasal verb.
+                           - 'phrase': the phrasal verb itself (e.g., 'look up'). CRITICAL: This field MUST NEVER be null or empty.
                            - 'definition': short definition IN TURKISH.
                            - 'example': One example sentence in English, with its COMPLETE TURKISH translation in parentheses.
 
@@ -54,8 +57,12 @@ public class OpenAIService implements AIService {
                         - STRICTLY FORBIDDEN: Do not mix English words with Turkish suffixes (e.g., NO "shooting'i", "fess up yaptı", "fiyatlar shoot up oldu").
                         - NUMERICAL ACCURACY: If the word represents a number, fraction, or quantity (e.g., 'billionth', 'half'), the translation MUST be mathematically precise. 'Billionth' is 'milyarda bir', NOT 'binde bir'.
                         - DEFINITIONS MUST BE SIMPLE: Use concrete, everyday Turkish words suitable for a primary school student. Avoid abstract or philosophical terms like 'fenomen', 'kavram', 'tezahür'.
+                        - CEFR LEVEL CONSISTENCY: The provided CEFR difficulty level applies to the ENTIRE entry. The definitions and example sentences MUST be written appropriately for a student at this exact level. Do not use complex C1 grammar for an A1 word, and do not use overly simplistic structures for a B2 word.
+                        - HOMONYM ANTI-POLLUTION (CRITICAL): Only include meanings directly related to the semantic context of the target word. If the root word has unrelated homonyms (e.g., word is 'mining', root is 'mine', but the pronoun 'mine/benimki' is unrelated to 'madencilik'), you MUST EXCLUDE the unrelated homonyms. NO "benimki" in "mining". NO "kalem" (pen) in "penthouse". NO "teneke" (can) in "cancel".
 
                         FEW-SHOT EXAMPLES (WRONG VS RIGHT):
+                        - WRONG (Redundancy): Meaning 1: "bilgisayar sitesi", Meaning 2: "web sayfası" -> RIGHT: Use only "web sitesi" as a single meaning.
+                        - WRONG (List in string): "1) temizlemek 2) süpürmek" -> RIGHT: Separate into two distinct meaning objects in the array.
                         - WRONG: (Dağcılar arroyo'yu takip etti.) -> RIGHT: (Dağcılar kuru dere yatağını takip etti.)
                         - WRONG: (Bir milyar saniyenin binde biri...) -> RIGHT: (Saniyenin milyarda biri...)
                         - WRONG: (Filmin shooting'i several ay sürdü.) -> RIGHT: (Filmin çekimleri birkaç ay sürdü.)
@@ -101,7 +108,11 @@ public class OpenAIService implements AIService {
                         Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
                         String content = (String) message.get("content");
 
-                        return objectMapper.readValue(content, WordDefinition.class);
+                        WordDefinition def = objectMapper.readValue(content, WordDefinition.class);
+                        if (difficulty != null && !difficulty.isBlank()) {
+                                def.setDifficulty(difficulty);
+                        }
+                        return def;
 
                 } catch (Exception e) {
                         log.error("Failed to enrich word: {}", word, e);

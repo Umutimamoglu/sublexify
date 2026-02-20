@@ -48,36 +48,40 @@ public class JudgeService {
             currentJson = "{}";
         }
 
-        String prompt = String.format("""
-                You are 'The Judge', a senior reasoning-based quality gate for
-                an English-to-Turkish dictionary called Sublex.
+        String prompt = String.format(
+                """
+                        You are 'The Judge', a senior reasoning-based quality gate for
+                        an English-to-Turkish dictionary called Sublex.
 
-                Your task: Review the CURRENT definition and improve it if needed.
-                Be insight-dense but concise. Don't add filler. Capture the cultural
-                spirit and feeling of the word, not just the literal meaning.
+                        Your task: Review the CURRENT definition and improve it if needed.
+                        Be insight-dense but concise. Don't add filler. Capture the cultural
+                        spirit and feeling of the word, not just the literal meaning.
 
-                ## VERDICT CRITERIA:
-                1. **Ambiguity Resolution**: If the word has multiple meanings, prioritize
-                   the most contextually relevant one for a language learner.
-                2. **CEFR-Semantic Alignment**: Ensure the Turkish definition matches
-                   the complexity level. A B1 definition should be understandable by
-                   a B1 student.
-                3. **Slang & Idiom Accuracy**: Capture the *feeling* of slang, not just
-                   the dictionary definition.
-                4. **Native Verdict**: The translation must sound like a bilingual friend,
-                   not a dictionary robot.
+                        ## VERDICT CRITERIA:
+                        1. **Ambiguity Resolution**: If the word has multiple meanings, prioritize
+                           the most contextually relevant one for a language learner.
+                        2. **CEFR-Semantic Alignment**: Ensure the Turkish definition matches
+                           the complexity level. A B1 definition should be understandable by
+                           a B1 student.
+                        3. **Slang & Idiom Accuracy**: Capture the *feeling* of slang, not just
+                           the dictionary definition.
+                        4. **Native Verdict**: The translation must sound like a bilingual friend,
+                           not a dictionary robot.
+                        5. **SEMANTIC UNIQUENESS (CRITICAL)**: Do NOT provide or approve redundant or near-identical meanings. If a word primarily has one meaning, provide ONLY ONE.
+                        6. **NO NESTED LISTS (CRITICAL)**: Each 'definition' must be a SINGLE string. Do NOT use numbered lists (e.g., "1) ... 2) ...") inside a definition string. Use separate objects in the 'meanings' array instead.
 
-                ## CURRENT DEFINITION:
-                %s
+                        ## CURRENT DEFINITION:
+                        %s
 
-                ## TARGET WORD: "%s"
+                        ## TARGET WORD: "%s"
 
-                ## INSTRUCTIONS:
-                - Return ONLY valid JSON matching the exact same schema as the current definition.
-                - If the current definition is already excellent, return it unchanged.
-                - If improvements are needed, apply them and return the improved version.
-                - Do NOT include markdown formatting like ```json.
-                """, currentJson, word);
+                        ## INSTRUCTIONS:
+                        - Return ONLY valid JSON matching the exact same schema as the current definition.
+                        - If the current definition is already excellent, return it unchanged.
+                        - If improvements are needed, apply them and return the improved version.
+                        - Do NOT include markdown formatting like ```json.
+                        """,
+                currentJson, word);
 
         try {
             Map<String, Object> requestBody = Map.of(
@@ -104,7 +108,8 @@ public class JudgeService {
             return objectMapper.readValue(content, WordDefinition.class);
 
         } catch (Exception e) {
-            log.error("Judge (GPT-5-mini) failed for word '{}': {}", word, e.getMessage());
+            log.error("Judge (GPT-5-mini) failed for word '{}'. Error: {}", word, e.getMessage());
+            // It might be a model name issue or rate limit.
             return null;
         }
     }

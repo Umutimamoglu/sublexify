@@ -10,13 +10,21 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class WordDefinition {
     private String word;
     private String difficulty;
-    private List<Meaning> meanings;
+    private List<Meaning> meanings = new java.util.ArrayList<>();
 
     @JsonProperty("phrasal_verbs")
-    private List<PhrasalVerb> phrasalVerbs;
+    private List<PhrasalVerb> phrasalVerbs = new java.util.ArrayList<>();
 
     @JsonProperty("verb_forms")
     private VerbForms verbForms;
+
+    public void setMeanings(List<Meaning> meanings) {
+        this.meanings = meanings != null ? meanings : new java.util.ArrayList<>();
+    }
+
+    public void setPhrasalVerbs(List<PhrasalVerb> phrasalVerbs) {
+        this.phrasalVerbs = phrasalVerbs != null ? phrasalVerbs : new java.util.ArrayList<>();
+    }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)

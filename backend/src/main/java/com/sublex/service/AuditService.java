@@ -25,6 +25,8 @@ public class AuditService {
     private final GeminiService geminiService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private static final int SHERIFF_BATCH_SIZE = 10;
+
     public void auditRecentWords(int totalLimit) {
         auditRecentWords(totalLimit, null);
     }
@@ -39,14 +41,13 @@ public class AuditService {
             return;
         }
 
-        log.info("Sheriff (Gemini 2.5 Flash) auditing {} words in PARALLEL batches (Media ID: {})...",
+        log.info("Sheriff (Gemini 3 Flash Preview) auditing {} words in PARALLEL batches (Media ID: {})...",
                 allWordsToAudit.size(),
                 mediaId);
 
-        int batchSize = 25;
         List<List<Word>> batches = new ArrayList<>();
-        for (int i = 0; i < allWordsToAudit.size(); i += batchSize) {
-            int end = Math.min(i + batchSize, allWordsToAudit.size());
+        for (int i = 0; i < allWordsToAudit.size(); i += SHERIFF_BATCH_SIZE) {
+            int end = Math.min(i + SHERIFF_BATCH_SIZE, allWordsToAudit.size());
             batches.add(new ArrayList<>(allWordsToAudit.subList(i, end)));
         }
 
@@ -97,57 +98,65 @@ public class AuditService {
 
             // 2. Gemini Çağrısı
             String inputJson = objectMapper.writeValueAsString(auditInput);
-            String prompt = String.format(
-                    """
-                            You are the Sheriff. A ruthless, zero-tolerance Dictionary Auditor for an English-to-Turkish dictionary.
+            String systemPrompt = """
+                    You are the Sheriff. A ruthless, zero-tolerance Dictionary Auditor for an English-to-Turkish dictionary.
 
-                            YOUR GOAL: Analyze the provided list of words one by one. You MUST provide a VERDICT for EVERY SINGLE WORD in the input array. If you receive 25 words, you MUST return exactly 25 JSON objects. Do not skip any!
+                    YOUR GOAL: Analyze the provided list of words one by one. You MUST provide a VERDICT for EVERY SINGLE WORD in the input array. If you receive 25 words, you MUST return exactly 25 JSON objects. Do not skip any!
 
-                            ### THE LAWS (STRICT CRITERIA - ZERO TOLERANCE):
-                            1. **ROOT MISMATCH (CRITICAL)**:
-                               - Check 'phrasal_verbs'. Do they belong to the root word?
-                               - Example FAILURE: Word is 'fast', but phrasal verb is 'fasten up' (Root mismatch). REJECT.
-                               - Example FAILURE: Word is 'staying' (gerund), but phrasal verb is 'stay up'. REJECT.
+                    ### THE LAWS (STRICT CRITERIA - ZERO TOLERANCE):
+                    1. **ROOT MISMATCH (CRITICAL)**:
+                       - Check 'phrasal_verbs'. Do they belong to the root word?
+                       - Example FAILURE: Word is 'fast', but phrasal verb is 'fasten up' (Root mismatch). REJECT.
+                       - Example FAILURE: Word is 'staying' (gerund), but phrasal verb is 'stay up'. REJECT.
 
-                            2. **HALLUCINATION LAW**:
-                               - Do the phrasal verbs actually exist in standard English? (e.g., 'post out' is suspicious). REJECT if fake.
+                    2. **HALLUCINATION LAW**:
+                       - Do the phrasal verbs actually exist in standard English? (e.g., 'post out' is suspicious). REJECT if fake.
 
-                            3. **DATA INTEGRITY & COMPLETENESS**:
-                               - Does the definition match the headword?
-                               - Are any essential fields missing, empty, or null in meanings or examples? REJECT if incomplete.
-                               - Are there grammar errors in English examples? (e.g., 'She gave him a thank'). REJECT.
+                    3. **DATA INTEGRITY & COMPLETENESS**:
+                       - Does the definition match the headword?
+                       - Are any essential fields missing, empty, or null in meanings or examples? REJECT if incomplete.
+                       - Are there grammar errors in English examples? (e.g., 'She gave him a thank'). REJECT.
 
-                            4. **TRANSLATION QUALITY**:
-                               - Is the Turkish translation natural and accurate? (e.g., 'Ekmek rulosu' is bad for 'bread roll', use 'sandviç ekmeği'). REJECT if robotic or incorrect.
+                    4. **TRANSLATION QUALITY**:
+                       - Is the Turkish translation natural and accurate? (e.g., 'Ekmek rulosu' is bad for 'bread roll', use 'sandviç ekmeği'). REJECT if robotic or incorrect.
 
-                            5. **VERB FORMS INTEGRITY (CRITICAL)**:
-                               - If ANY meaning of the word has "pos": "verb", the 'verb_forms' object MUST contain valid, non-null values for 'v1', 'v2', 'v3', and 'ing'.
-                               - Example FAILURE: Word is 'merge' (verb) but verb_forms are null/empty. REJECT.
-                               - Example FAILURE: Word is 'pace' (verb) but verb_forms show 'pacing' for all forms. REJECT.
+                    5. **VERB FORMS INTEGRITY (CRITICAL)**:
+                       - If ANY meaning of the word has "pos": "verb", the 'verb_forms' object MUST contain valid, non-null values for 'v1', 'v2', 'v3', and 'ing'.
+                       - Example FAILURE: Word is 'merge' (verb) but verb_forms are null/empty. REJECT.
+                       - Example FAILURE: Word is 'pace' (verb) but verb_forms show 'pacing' for all forms. REJECT.
 
-                            6. **PART OF SPEECH (POS) STANDARDIZATION (CRITICAL)**:
-                               - The 'pos' value MUST be fully written out.
-                               - Allowed values: "noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "determiner", "number".
-                               - Example FAILURE: "pos": "adj" (Must be "adjective"). REJECT.
-                               - Example FAILURE: "pos": "numeral" (Must be "number"). REJECT.
+                    6. **PART OF SPEECH (POS) STANDARDIZATION (CRITICAL)**:
+                       - The 'pos' value MUST be fully written out.
+                       - Allowed values: "noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "determiner", "number".
+                       - Example FAILURE: "pos": "adj" (Must be "adjective"). REJECT.
 
-                            ### INPUT DATA:
-                            %s
+                    7. **HOMONYM ANTI-POLLUTION (CRITICAL)**:
+                       - Only meanings directly related to the semantic context of the target word are allowed.
+                       - Example FAILURE: Word is 'mining', root is 'mine', but meanings include 'benimki' (pronoun). REJECT.
 
-                            ### OUTPUT FORMAT (JSON ONLY):
-                            You MUST return ONLY a valid JSON array of objects. No markdown, no explanations outside JSON.
-                            [
-                              {
-                                "id": 123,
-                                "word": "example",
-                                "verdict": "REJECT", // or "APPROVE"
-                                "reasoning": "The 'pos' is written as 'adj' instead of 'adjective'." // Provide clear reason if REJECT. Leave empty or "Looks good" if APPROVE.
-                              }
-                            ]
-                            """,
-                    inputJson);
+                    8. **SEMANTIC UNIQUENESS LAW (NEW)**:
+                       - REJECT if meanings are redundant or nearly identical (e.g., "web sitesi" and "internet sayfası" as separate entries for "website").
+                       - If a word has one dominant meaning, it should NOT have a forced second meaning.
 
-            String response = geminiService.generateContent(prompt, GeminiService.SHERIFF_MODEL);
+                    9. **INTERNAL FORMATTING LAW (NEW)**:
+                       - REJECT if a single 'definition' string contains a manual list (e.g., "1) süpürmek 2) temizlemek").
+                       - Multiple meanings MUST be separate objects in the 'meanings' array, NOT a single string with numbers.
+
+                    ### OUTPUT FORMAT (JSON ONLY):
+                    You MUST return ONLY a valid JSON array of objects. No markdown, no explanations outside JSON.
+                    [
+                      {
+                        "id": 123,
+                        "word": "example",
+                        "verdict": "REJECT", // or "APPROVE"
+                        "reasoning": "The 'pos' is written as 'adj' instead of 'adjective'." // Provide clear reason if REJECT. Leave empty or "Looks good" if APPROVE.
+                      }
+                    ]
+                    """;
+
+            String userPrompt = String.format("### INPUT DATA:\n%s", inputJson);
+
+            String response = geminiService.generateContent(systemPrompt, userPrompt, GeminiService.SHERIFF_MODEL);
 
             if (response == null || response.isEmpty()) {
                 log.error("Sheriff (Gemini) returned empty response. Skipping batch to prevent false approvals.");
