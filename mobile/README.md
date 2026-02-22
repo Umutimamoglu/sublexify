@@ -87,22 +87,26 @@ mobile/
 ### Adımlar
 
 1. Expo CLI'yi yükleyin (eğer yoksa):
+
 ```bash
 npm install -g expo-cli
 ```
 
 2. Bağımlılıkları yükleyin:
+
 ```bash
 npm install
 ```
 
 3. Environment dosyasını oluşturun:
+
 ```bash
 cp .env.example .env
 # .env dosyasını düzenleyin
 ```
 
 4. Uygulamayı başlatın:
+
 ```bash
 npm start
 # veya
@@ -110,6 +114,7 @@ expo start
 ```
 
 5. Expo Go uygulamasını kullanarak QR kodu tarayın veya emulator kullanın:
+
 ```bash
 # iOS simulator (Mac)
 npm run ios
@@ -135,8 +140,8 @@ Kimlik doğrulama ve tema gibi global state'ler için Context API kullanılır:
 
 ```typescript
 // Context kullanımı
-import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 
 function MyScreen() {
   const { user, login, logout } = useAuth();
@@ -151,7 +156,7 @@ Kompleks state yönetimi için Zustand kullanılır:
 
 ```typescript
 // Store kullanımı
-import { useUserStore } from '@/store/userStore';
+import { useUserStore } from "@/store/userStore";
 
 function MyScreen() {
   const { users, fetchUsers, addUser } = useUserStore();
@@ -168,12 +173,12 @@ import { useTranslation } from 'react-i18next';
 
 function MyScreen() {
   const { t, i18n } = useTranslation();
-  
+
   return (
     <View>
       <Text>{t('welcome')}</Text>
-      <Button 
-        title="Türkçe" 
+      <Button
+        title="Türkçe"
         onPress={() => i18n.changeLanguage('tr')}
       />
     </View>
@@ -188,7 +193,7 @@ import { useTheme } from '@/context/ThemeContext';
 
 function MyScreen() {
   const { theme, colors, toggleTheme } = useTheme();
-  
+
   return (
     <View style={{ backgroundColor: colors.background }}>
       <Text style={{ color: colors.text }}>
@@ -240,16 +245,16 @@ export default function RootLayout() {
 ### Programatik Navigasyon
 
 ```typescript
-import { router } from 'expo-router';
+import { router } from "expo-router";
 
 // Sayfa değiştirme
-router.push('/profile');
+router.push("/profile");
 
 // Geri gitme
 router.back();
 
 // Replace
-router.replace('/login');
+router.replace("/login");
 ```
 
 ## Scriptler
@@ -337,25 +342,25 @@ eas submit --platform android
 ### Kamera
 
 ```typescript
-import { Camera } from 'expo-camera';
+import { Camera } from "expo-camera";
 ```
 
 ### Konum
 
 ```typescript
-import * as Location from 'expo-location';
+import * as Location from "expo-location";
 ```
 
 ### Bildirimler
 
 ```typescript
-import * as Notifications from 'expo-notifications';
+import * as Notifications from "expo-notifications";
 ```
 
 ### Güvenli Depolama
 
 ```typescript
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from "expo-secure-store";
 ```
 
 ## Geliştirme İş Akışı
