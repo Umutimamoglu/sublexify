@@ -30,26 +30,26 @@ public class MediaService {
      */
     public List<MediaDTO> getRecentMediaForUser(Long userId, int limit) {
         return userMediaProgressService.getRecentMediaForUser(userId, limit).stream()
-                .map(this::convertToDTO)
+                .map(media -> convertToDTO(media, userId))
                 .collect(Collectors.toList());
     }
 
     /**
      * Get all media with total word counts
      */
-    public List<MediaDTO> getAllMedia() {
+    public List<MediaDTO> getAllMedia(Long userId) {
         return mediaRepository.findAll().stream()
-                .map(this::convertToDTO)
+                .map(media -> convertToDTO(media, userId))
                 .collect(Collectors.toList());
     }
 
     /**
      * Get media by ID
      */
-    public MediaDTO getMediaById(Long id) {
+    public MediaDTO getMediaById(Long id, Long userId) {
         Media media = mediaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + id));
-        return convertToDTO(media);
+        return convertToDTO(media, userId);
     }
 
     /**
@@ -89,7 +89,7 @@ public class MediaService {
                 .collect(Collectors.groupingBy(WordDTO::getDifficulty, Collectors.counting()));
 
         MediaWordsResponseDTO response = new MediaWordsResponseDTO();
-        response.setMedia(convertToDTO(media));
+        response.setMedia(convertToDTO(media, userId));
         response.setWords(words);
         response.setTotalWords(totalWords);
         response.setUnknownWords(unknownWords);
@@ -99,9 +99,9 @@ public class MediaService {
     }
 
     /**
-     * Convert Media entity to DTO
+     * Convert Media entity to DTO with personalized difficulty
      */
-    private MediaDTO convertToDTO(Media media) {
+    private MediaDTO convertToDTO(Media media, Long userId) {
         int totalWords = mediaWordRepository.countByMediaId(media.getId());
 
         MediaDTO dto = new MediaDTO();
@@ -119,6 +119,14 @@ public class MediaService {
         dto.setEpisodeNumber(media.getEpisodeNumber());
         dto.setVoteAverage(media.getVoteAverage());
         dto.setCreatedAt(media.getCreatedAt());
+
+        // Calculate level counts (A1, A2, B1, B2, C1, C2)
+        List<MediaWord> mediaWords = mediaWordRepository.findByMediaId(media.getId());
+        java.util.Map<String, Long> levelCounts = mediaWords.stream()
+                .map(MediaWord::getWord)
+                .filter(w -> w.getDifficulty() != null)
+                .collect(Collectors.groupingBy(com.sublex.model.Word::getDifficulty, Collectors.counting()));
+        dto.setLevelCounts(levelCounts);
 
         return dto;
     }

@@ -21,8 +21,8 @@ public class MediaController {
      * Get all available media
      */
     @GetMapping
-    public ResponseEntity<List<MediaDTO>> getAllMedia() {
-        return ResponseEntity.ok(mediaService.getAllMedia());
+    public ResponseEntity<List<MediaDTO>> getAllMedia(@RequestParam(required = false) Long userId) {
+        return ResponseEntity.ok(mediaService.getAllMedia(userId));
     }
 
     /**
@@ -44,8 +44,10 @@ public class MediaController {
      * Get specific media details
      */
     @GetMapping("/{id}")
-    public ResponseEntity<MediaDTO> getMediaById(@PathVariable Long id) {
-        return ResponseEntity.ok(mediaService.getMediaById(id));
+    public ResponseEntity<MediaDTO> getMediaById(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long userId) {
+        return ResponseEntity.ok(mediaService.getMediaById(id, userId));
     }
 
     /**
@@ -69,8 +71,10 @@ public class MediaController {
      * Download subtitles as a .txt file
      */
     @GetMapping("/{id}/download-subtitles")
-    public ResponseEntity<byte[]> downloadSubtitles(@PathVariable Long id) {
-        MediaDTO media = mediaService.getMediaById(id);
+    public ResponseEntity<byte[]> downloadSubtitles(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long userId) {
+        MediaDTO media = mediaService.getMediaById(id, userId);
         String content = mediaService.getSubtitleContent(id);
 
         if (content == null || content.isEmpty()) {
@@ -98,7 +102,7 @@ public class MediaController {
             @RequestParam(required = false) Boolean onlyUnknown,
             @RequestParam(required = false) Long userId) {
 
-        MediaDTO media = mediaService.getMediaById(id);
+        MediaDTO media = mediaService.getMediaById(id, userId);
         MediaWordsResponseDTO wordsResponse = mediaService.getMediaWords(id, userId,
                 onlyUnknown != null && onlyUnknown);
 

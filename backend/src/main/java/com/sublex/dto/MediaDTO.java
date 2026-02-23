@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -24,4 +25,9 @@ public class MediaDTO {
     private Integer episodeNumber;
     private Double voteAverage;
     private LocalDateTime createdAt;
+
+    // Personalized difficulty fields
+    private Double knownWordPercentage;
+    private String difficultyLevel;
+    private Map<String, Long> levelCounts;
 }
