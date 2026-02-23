@@ -1,33 +1,70 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/src/context/ThemeContext';
+import { useTranslation } from '@/src/i18n/useTranslation';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+function TabIcon({ name, color, size }: { name: IoniconName; color: string; size: number }) {
+  return <Ionicons name={name} size={size} color={color} />;
+}
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { theme } = useTheme();
+  const { t } = useTranslation('common');
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarActiveTintColor:   theme.colors.tabActive,
+        tabBarInactiveTintColor: theme.colors.tabInactive,
+        tabBarStyle: {
+          backgroundColor: theme.colors.tabBackground,
+          borderTopColor:  theme.colors.tabBorder,
+          borderTopWidth:  1,
+        },
+        tabBarLabelStyle: {
+          fontSize:   theme.fonts.size.xs,
+          fontWeight: '500',
+        },
+        tabBarHideOnKeyboard: true,
+      }}
+    >
       <Tabs.Screen
-        name="index"
+        name="discover"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: t('tabs.discover'),
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="film-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="vocabulary"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: t('tabs.vocabulary'),
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="book-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="lists"
+        options={{
+          title: t('tabs.lists'),
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="list-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: t('tabs.profile'),
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="person-outline" color={color} size={size} />
+          ),
         }}
       />
     </Tabs>

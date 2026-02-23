@@ -1,0 +1,11 @@
+{
+  "title": "Lists",
+  "myLists": "My Lists",
+  "standardLists": "Standard Lists",
+  "oxford5000": "Oxford 5000",
+  "createList": "Create List",
+  "listName": "List Name",
+  "noLists": "No lists yet. Create one!",
+  "wordCount": "{{count}} word",
+  "wordCount_plural": "{{count}} words"
+}

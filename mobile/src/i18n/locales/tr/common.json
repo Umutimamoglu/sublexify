@@ -1,0 +1,42 @@
+{
+  "tabs": {
+    "discover": "Keşfet",
+    "vocabulary": "Kelimelerim",
+    "lists": "Listeler",
+    "profile": "Profil"
+  },
+  "actions": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "retry": "Tekrar Dene",
+    "markKnown": "Biliyorum",
+    "unmarkKnown": "Bilinmeyenlere Ekle",
+    "add": "Ekle",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "search": "Ara",
+    "filter": "Filtrele",
+    "close": "Kapat",
+    "back": "Geri",
+    "continue": "Devam Et",
+    "signIn": "Giriş Yap",
+    "signOut": "Çıkış Yap",
+    "register": "Kayıt Ol"
+  },
+  "errors": {
+    "networkError": "Bağlantı kurulamadı. İnternet bağlantını kontrol et.",
+    "generic": "Bir hata oluştu. Lütfen tekrar dene.",
+    "notFound": "Bulunamadı.",
+    "unauthorized": "Devam etmek için giriş yap."
+  },
+  "difficulty": {
+    "A1": "Başlangıç",
+    "A2": "Temel",
+    "B1": "Orta",
+    "B2": "Orta-Üstü",
+    "C1": "İleri",
+    "C2": "Ustalık"
+  },
+  "loading": "Yükleniyor...",
+  "noResults": "Sonuç bulunamadı."
+}

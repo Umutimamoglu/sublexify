@@ -1,0 +1,10 @@
+{
+  "title": "Kelimelerim",
+  "knownWords": "Bildiğim Kelimeler",
+  "searchPlaceholder": "Kelime ara...",
+  "noWords": "Henüz kelime kaydedilmedi.",
+  "wordCount": "{{count}} kelime",
+  "wordCount_plural": "{{count}} kelime",
+  "difficulty": "Zorluk",
+  "allLevels": "Tüm Seviyeler"
+}

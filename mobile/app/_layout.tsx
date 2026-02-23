@@ -1,24 +1,54 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import '../global.css';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import * as SplashScreen from 'expo-splash-screen';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { I18nextProvider } from 'react-i18next';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from '@/src/context/ThemeContext';
+import { AuthProvider } from '@/src/context/AuthContext';
+import { initI18n } from '@/src/i18n';
+import i18n from '@/src/i18n';
+import { queryClient } from '@/src/api/queryClient';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    async function prepare() {
+      try {
+        await initI18n();
+      } catch (e) {
+        console.warn('i18n init failed:', e);
+      } finally {
+        setReady(true);
+        await SplashScreen.hideAsync();
+      }
+    }
+    prepare();
+  }, []);
+
+  if (!ready) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <I18nextProvider i18n={i18n}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <AuthProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="media/[id]" />
+                <Stack.Screen name="word/[id]" />
+              </Stack>
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </I18nextProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,0 +1,42 @@
+{
+  "tabs": {
+    "discover": "Discover",
+    "vocabulary": "Vocabulary",
+    "lists": "Lists",
+    "profile": "Profile"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "markKnown": "Mark as Known",
+    "unmarkKnown": "Remove from Known",
+    "add": "Add",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "close": "Close",
+    "back": "Back",
+    "continue": "Continue",
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "register": "Register"
+  },
+  "errors": {
+    "networkError": "Could not connect. Check your connection.",
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "Not found.",
+    "unauthorized": "Please sign in to continue."
+  },
+  "difficulty": {
+    "A1": "Beginner",
+    "A2": "Elementary",
+    "B1": "Intermediate",
+    "B2": "Upper-Intermediate",
+    "C1": "Advanced",
+    "C2": "Mastery"
+  },
+  "loading": "Loading...",
+  "noResults": "No results found."
+}

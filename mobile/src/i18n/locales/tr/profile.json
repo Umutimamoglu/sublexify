@@ -1,0 +1,17 @@
+{
+  "title": "Profil",
+  "statistics": "İstatistikler",
+  "knownWords": "Bilinen Kelimeler",
+  "totalWords": "Toplam Kelime",
+  "settings": "Ayarlar",
+  "theme": "Tema",
+  "themeLight": "Açık",
+  "themeDark": "Koyu",
+  "themeSystem": "Sistem",
+  "language": "Dil",
+  "languageEn": "İngilizce",
+  "languageTr": "Türkçe",
+  "account": "Hesap",
+  "signOut": "Çıkış Yap",
+  "version": "Sürüm"
+}

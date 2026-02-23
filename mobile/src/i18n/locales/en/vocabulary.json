@@ -1,0 +1,10 @@
+{
+  "title": "Vocabulary",
+  "knownWords": "Known Words",
+  "searchPlaceholder": "Search your vocabulary...",
+  "noWords": "No words saved yet.",
+  "wordCount": "{{count}} word",
+  "wordCount_plural": "{{count}} words",
+  "difficulty": "Difficulty",
+  "allLevels": "All Levels"
+}

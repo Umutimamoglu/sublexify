@@ -1,0 +1,11 @@
+{
+  "title": "Listeler",
+  "myLists": "Listelerim",
+  "standardLists": "Standart Listeler",
+  "oxford5000": "Oxford 5000",
+  "createList": "Liste Oluştur",
+  "listName": "Liste Adı",
+  "noLists": "Henüz liste yok. Bir tane oluştur!",
+  "wordCount": "{{count}} kelime",
+  "wordCount_plural": "{{count}} kelime"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Keşfet",
+  "searchPlaceholder": "Dizi, film ara...",
+  "allContent": "Tüm İçerikler",
+  "movies": "Filmler",
+  "series": "Diziler",
+  "words": "kelime",
+  "unknownWords": "bilinmeyen",
+  "noContent": "Henüz içerik yok.",
+  "season": "Sezon",
+  "episode": "Bölüm",
+  "continueLearning": "Öğrenmeye Devam Et",
+  "browseMedia": "İçeriklere Göz At",
+  "curatedLists": "Seçilmiş Listeler",
+  "viewAll": "TÜMÜNÜ GÖR",
+  "noContinueTitle": "Henüz başlanan içerik yok",
+  "noContinueSubtitle": "Kelime takibine başlamak için aşağıdan bir içerik seç"
+}

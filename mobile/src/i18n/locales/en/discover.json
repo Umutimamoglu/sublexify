@@ -1,0 +1,18 @@
+{
+  "title": "Discover",
+  "searchPlaceholder": "Search series, movies...",
+  "allContent": "All Content",
+  "movies": "Movies",
+  "series": "Series",
+  "words": "words",
+  "unknownWords": "unknown",
+  "noContent": "No content available yet.",
+  "season": "Season",
+  "episode": "Episode",
+  "continueLearning": "Continue Learning",
+  "browseMedia": "Browse Media",
+  "curatedLists": "Curated Lists",
+  "viewAll": "VIEW ALL",
+  "noContinueTitle": "Nothing started yet",
+  "noContinueSubtitle": "Pick a show or movie below to start tracking words"
+}
