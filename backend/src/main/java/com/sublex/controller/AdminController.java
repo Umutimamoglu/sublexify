@@ -112,6 +112,69 @@ public class AdminController {
         }
     }
 
+    @PostMapping("/lists/seed/verbs-curated")
+    public ResponseEntity<String> seedCuratedVerbs() {
+        log.info("Request to seed curated verb list");
+        try {
+            String result = standardListSeeder.seedVerbJsonList("top_verbs_by_frequency.json");
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Failed to seed curated verb list", e);
+            return ResponseEntity.internalServerError().body("Failed to seed curated verbs: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/lists/seed/adjectives")
+    public ResponseEntity<String> seedAdjectives() {
+        log.info("Request to seed all adjectives from JSON");
+        try {
+            String result = standardListSeeder.seedFrequencyListJson("Top Adjectives",
+                    "top_adjectives_by_frequency.json", null);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Failed to seed adjectives", e);
+            return ResponseEntity.internalServerError().body("Failed to seed adjectives: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/lists/seed/adverbs")
+    public ResponseEntity<String> seedAdverbs() {
+        log.info("Request to seed all adverbs from JSON");
+        try {
+            String result = standardListSeeder.seedFrequencyListJson("Top Adverbs", "top_adverbs_by_frequency.json",
+                    null);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Failed to seed adverbs", e);
+            return ResponseEntity.internalServerError().body("Failed to seed adverbs: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/lists/seed/phrasal-verbs")
+    public ResponseEntity<String> seedPhrasalVerbs() {
+        log.info("Request to seed all phrasal verbs from JSON");
+        try {
+            String result = standardListSeeder.seedPhrasalVerbJson("200 Common Phrasal Verbs", "phrasal_verbs.json");
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Failed to seed phrasal verbs", e);
+            return ResponseEntity.internalServerError().body("Failed to seed phrasal verbs: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/lists/seed/adjectives-test")
+    public ResponseEntity<String> seedAdjectivesTest() {
+        log.info("Request to seed 20 test adjectives");
+        try {
+            String result = standardListSeeder.seedFrequencyListJson("Top 200 Adjectives",
+                    "top_adjectives_by_frequency.json", 20);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Failed to seed test adjectives", e);
+            return ResponseEntity.internalServerError().body("Failed to seed test adjectives: " + e.getMessage());
+        }
+    }
+
     /**
      * Batch upload subtitles with auto-detection
      */

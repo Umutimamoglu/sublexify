@@ -1,7 +1,10 @@
 package com.sublex.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sublex.model.User;
 import com.sublex.model.Word;
+import com.sublex.model.WordDefinition;
 import com.sublex.model.WordList;
 import com.sublex.repository.UserRepository;
 import com.sublex.repository.WordListRepository;
@@ -14,12 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Set;
-
+import java.util.*;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +30,7 @@ public class StandardListSeeder {
     private final WordRepository wordRepository;
     private final WordListRepository wordListRepository;
     private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
     // Hardcoded system user ID (usually admin or ID 1)
     private static final Long SYSTEM_USER_ID = 1L;
@@ -235,13 +237,277 @@ public class StandardListSeeder {
     }
 
     @Transactional
+    public String seedFrequencyListJson(String listName, String fileName, Integer limit) {
+        log.info("Seeding frequency list '{}' from {}", listName, fileName);
+        try {
+            ClassPathResource resource = new ClassPathResource("data/" + fileName);
+            List<Map<String, Object>> curatedList = objectMapper.readValue(
+                    resource.getInputStream(),
+                    new TypeReference<List<Map<String, Object>>>() {
+                    });
+
+            User systemUser = userRepository.findById(1L)
+                    .orElseThrow(() -> new RuntimeException("System user not found"));
+
+            WordList wordList = wordListRepository.findByName(listName)
+                    .orElseGet(() -> {
+                        WordList newList = new WordList();
+                        newList.setName(listName);
+                        newList.setUser(systemUser);
+                        newList.setWords(new HashSet<>());
+                        return wordListRepository.save(newList);
+                    });
+
+            Set<String> wordsToProcess = curatedList.stream()
+                    .limit(limit != null ? limit : curatedList.size())
+                    .map(m -> ((String) m.get("word")).toLowerCase())
+                    .collect(Collectors.toSet());
+
+            List<Word> existingWords = wordRepository.findByWordIn(wordsToProcess);
+            Map<String, Word> existingWordMap = existingWords.stream()
+                    .collect(Collectors.toMap(Word::getWord, w -> w));
+
+            List<Word> wordsToSave = new ArrayList<>();
+            Set<Word> listWords = wordList.getWords();
+
+            for (String text : wordsToProcess) {
+                Word word = existingWordMap.get(text);
+                if (word == null) {
+                    word = Word.builder()
+                            .word(text)
+                            .language("en")
+                            .isEnriched(false)
+                            .status("PENDING")
+                            .build();
+                }
+                wordsToSave.add(word);
+                listWords.add(word);
+            }
+
+            wordRepository.saveAll(wordsToSave);
+            wordListRepository.save(wordList);
+
+            return "Successfully seeded " + wordsToSave.size() + " words into list '" + listName + "'";
+        } catch (Exception e) {
+            log.error("Failed to seed frequency list {}", listName, e);
+            throw new RuntimeException("Failed to seed frequency list: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public String seedPhrasalVerbJson(String listName, String fileName) {
+        log.info("Seeding phrasal verb list '{}' from {}", listName, fileName);
+        try {
+            ClassPathResource resource = new ClassPathResource("data/" + fileName);
+            List<Map<String, String>> curatedList = objectMapper.readValue(
+                    resource.getInputStream(),
+                    new TypeReference<List<Map<String, String>>>() {
+                    });
+
+            User systemUser = userRepository.findById(1L)
+                    .orElseThrow(() -> new RuntimeException("System user not found"));
+
+            WordList wordList = wordListRepository.findByName(listName)
+                    .orElseGet(() -> {
+                        WordList newList = new WordList();
+                        newList.setName(listName);
+                        newList.setUser(systemUser);
+                        newList.setWords(new HashSet<>());
+                        return wordListRepository.save(newList);
+                    });
+
+            Set<String> wordTexts = curatedList.stream()
+                    .map(m -> m.get("pv").toLowerCase())
+                    .collect(Collectors.toSet());
+
+            List<Word> existingWords = wordRepository.findByWordIn(wordTexts);
+            Map<String, Word> existingWordMap = existingWords.stream()
+                    .collect(Collectors.toMap(Word::getWord, w -> w));
+
+            List<Word> wordsToSave = new ArrayList<>();
+            Set<Word> listWords = wordList.getWords();
+            Set<Long> existingWordIdsInList = listWords.stream()
+                    .map(Word::getId)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            for (Map<String, String> m : curatedList) {
+                String text = m.get("pv").toLowerCase();
+                Word word = existingWordMap.get(text);
+
+                if (word == null) {
+                    WordDefinition definition = new WordDefinition();
+                    definition.setWord(text);
+
+                    WordDefinition.Meaning meaning = new WordDefinition.Meaning();
+                    meaning.setPos("phrasal verb");
+                    meaning.setDefinition(m.get("anlam_tr"));
+                    meaning.setExample(m.get("ornek_en") + " (" + m.get("ornek_tr") + ")");
+
+                    List<WordDefinition.Meaning> meanings = new ArrayList<>();
+                    meanings.add(meaning);
+                    definition.setMeanings(meanings);
+
+                    word = Word.builder()
+                            .word(text)
+                            .language("en")
+                            .isEnriched(true)
+                            .status("PROCESSED")
+                            .definition(definition)
+                            .difficulty(m.get("difficulty"))
+                            .enrichedAt(LocalDateTime.now())
+                            .build();
+
+                    // Add to map to avoid duplicates if the same PV appears again in the JSON
+                    existingWordMap.put(text, word);
+                    wordsToSave.add(word);
+                } else {
+                    // Update difficulty for existing words if present in JSON
+                    if (m.containsKey("difficulty")) {
+                        word.setDifficulty(m.get("difficulty"));
+                        if (!wordsToSave.contains(word)) {
+                            wordsToSave.add(word);
+                        }
+                    }
+                }
+
+                // Associate word with list only if not already tied
+                // For new words (id == null), we add them. For existing words, we check if they
+                // are already in the list.
+                if (word.getId() == null || !existingWordIdsInList.contains(word.getId())) {
+                    listWords.add(word);
+                    // If it was an existing word not in list, update our tracking set so it doesn't
+                    // try to add again if PV repeats in JSON
+                    if (word.getId() != null) {
+                        existingWordIdsInList.add(word.getId());
+                    }
+                }
+            }
+
+            wordRepository.saveAll(wordsToSave);
+            // Relationship is handled by listWords being the same set as
+            // wordList.getWords()
+            // but we save wordList to persist the new associations
+            wordListRepository.save(wordList);
+
+            return "Successfully seeded " + curatedList.size() + " phrasal verbs into list '" + listName + "'";
+        } catch (Exception e) {
+            log.error("Failed to seed phrasal verb list {}", listName, e);
+            throw new RuntimeException("Failed to seed phrasal verb list: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public String seedVerbJsonList(String filename) {
+        log.info("Seeding curated verb list from JSON file: {}", filename);
+        try {
+            ClassPathResource resource = new ClassPathResource("data/" + filename);
+            if (!resource.exists()) {
+                throw new RuntimeException("File not found: " + filename);
+            }
+
+            List<WordDefinition> curatedVerbs = objectMapper.readValue(
+                    resource.getInputStream(),
+                    new TypeReference<List<WordDefinition>>() {
+                    });
+
+            if (curatedVerbs.isEmpty()) {
+                return "Verb JSON file is empty: " + filename;
+            }
+
+            User systemUser = userRepository.findById(SYSTEM_USER_ID)
+                    .orElseThrow(() -> new RuntimeException("System user not found"));
+
+            WordList wordList = wordListRepository.findByNameAndUserId("Top Verbs", SYSTEM_USER_ID)
+                    .orElseGet(() -> {
+                        WordList newList = new WordList();
+                        newList.setName("Top Verbs");
+                        newList.setUser(systemUser);
+                        return wordListRepository.save(newList);
+                    });
+
+            Set<String> wordTexts = curatedVerbs.stream()
+                    .map(WordDefinition::getWord)
+                    .collect(Collectors.toSet());
+
+            Map<String, Word> existingWordMap = wordRepository.findByWordInAndLanguage(wordTexts, "en")
+                    .stream()
+                    .collect(Collectors.toMap(Word::getWord, w -> w));
+
+            List<Word> wordsToSave = new ArrayList<>();
+            Set<Word> listWords = wordList.getWords() != null ? wordList.getWords() : new HashSet<>();
+
+            for (WordDefinition curated : curatedVerbs) {
+                String text = curated.getWord().toLowerCase();
+                Word word = existingWordMap.get(text);
+
+                if (word == null) {
+                    word = Word.builder()
+                            .word(text)
+                            .language("en")
+                            .difficulty(curated.getDifficulty())
+                            .isEnriched(true)
+                            .status("PROCESSED")
+                            .definition(curated)
+                            .build();
+                } else {
+                    // MERGE LOGIC
+                    WordDefinition existingDef = word.getDefinition();
+                    if (existingDef == null) {
+                        word.setDefinition(curated);
+                    } else {
+                        // Keep non-verb meanings, replace/add verb meanings
+                        List<WordDefinition.Meaning> mergedMeanings = new ArrayList<>();
+
+                        // Add all non-verb meanings from existing
+                        if (existingDef.getMeanings() != null) {
+                            for (WordDefinition.Meaning m : existingDef.getMeanings()) {
+                                if (!"verb".equalsIgnoreCase(m.getPos())) {
+                                    mergedMeanings.add(m);
+                                }
+                            }
+                        }
+
+                        // Add verb meanings from curated
+                        if (curated.getMeanings() != null) {
+                            mergedMeanings.addAll(curated.getMeanings());
+                        }
+
+                        existingDef.setMeanings(mergedMeanings);
+                        existingDef.setVerbForms(curated.getVerbForms());
+                        existingDef.setPhrasalVerbs(curated.getPhrasalVerbs());
+                        word.setDefinition(existingDef);
+                    }
+                    word.setDifficulty(curated.getDifficulty());
+                    word.setIsEnriched(true);
+                    word.setStatus("PROCESSED");
+                    word.setEnrichedAt(java.time.LocalDateTime.now());
+                }
+                wordsToSave.add(word);
+                listWords.add(word);
+            }
+
+            wordRepository.saveAll(wordsToSave);
+            wordList.setWords(listWords);
+            wordListRepository.save(wordList);
+
+            return String.format("Successfully seeded curated verbs. Processed %d verbs.", curatedVerbs.size());
+
+        } catch (Exception e) {
+            log.error("Failed to seed verb JSON list", e);
+            throw new RuntimeException("Verb seeding failed: " + e.getMessage());
+        }
+    }
+
+    @Transactional
     public String seedDefaults() {
         StringBuilder result = new StringBuilder();
 
-        result.append(seedList("Top 500 Verbs", "top_500_verbs.txt")).append("\n");
-        result.append(seedList("Top 200 Adjectives", "top_200_adjectives.txt")).append("\n");
-        result.append(seedList("Top 100 Adverbs", "top_100_adverbs.txt")).append("\n");
-        result.append(seedOxfordList()).append("\n"); // Use the new CSV method
+        result.append(seedVerbJsonList("top_verbs_by_frequency.json")).append("\n");
+        result.append(seedFrequencyListJson("Top Adjectives", "top_adjectives_by_frequency.json", null)).append("\n");
+        result.append(seedFrequencyListJson("Top Adverbs", "top_adverbs_by_frequency.json", null)).append("\n");
+        result.append(seedPhrasalVerbJson("200 Common Phrasal Verbs", "phrasal_verbs.json")).append("\n");
+        result.append(seedOxfordList()).append("\n");
 
         return result.toString();
     }

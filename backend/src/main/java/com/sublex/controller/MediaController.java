@@ -26,6 +26,20 @@ public class MediaController {
     }
 
     /**
+     * GET /api/media/continue-learning
+     * Get media that the user has started learning from
+     */
+    @GetMapping("/continue-learning")
+    public ResponseEntity<List<MediaDTO>> getContinueLearning(
+            @RequestParam(required = false) Long userId,
+            @RequestParam(defaultValue = "10") Integer limit) {
+
+        // For now, use hardcoded user ID 1L if not provided
+        Long idToUse = (userId != null) ? userId : 1L;
+        return ResponseEntity.ok(mediaService.getRecentMediaForUser(idToUse, limit));
+    }
+
+    /**
      * GET /api/media/{id}
      * Get specific media details
      */

@@ -23,6 +23,16 @@ public class MediaService {
     private final MediaRepository mediaRepository;
     private final MediaWordRepository mediaWordRepository;
     private final UserKnownWordRepository userKnownWordRepository;
+    private final UserMediaProgressService userMediaProgressService;
+
+    /**
+     * Get recent media for user (Continue Learning)
+     */
+    public List<MediaDTO> getRecentMediaForUser(Long userId, int limit) {
+        return userMediaProgressService.getRecentMediaForUser(userId, limit).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
 
     /**
      * Get all media with total word counts

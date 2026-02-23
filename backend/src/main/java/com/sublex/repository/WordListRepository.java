@@ -11,4 +11,6 @@ public interface WordListRepository extends JpaRepository<WordList, Long> {
     List<WordList> findAllByUserId(Long userId);
 
     java.util.Optional<WordList> findByNameAndUserId(String name, Long userId);
+
+    java.util.Optional<WordList> findByName(String name);
 }

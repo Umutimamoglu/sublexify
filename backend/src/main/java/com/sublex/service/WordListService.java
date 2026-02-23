@@ -23,6 +23,7 @@ public class WordListService {
         private final MediaRepository mediaRepository;
         private final MediaWordRepository mediaWordRepository;
         private final UserKnownWordRepository userKnownWordRepository;
+        private final UserMediaProgressService userMediaProgressService;
 
         public List<WordList> getUserLists(Long userId) {
                 return wordListRepository.findAllByUserId(userId);
@@ -103,7 +104,12 @@ public class WordListService {
                 wordList.setUser(user);
                 wordList.getWords().addAll(unknownWords);
 
-                return wordListRepository.save(wordList);
+                WordList savedList = wordListRepository.save(wordList);
+
+                // Record progress
+                userMediaProgressService.recordProgress(userId, mediaId, "STARTED");
+
+                return savedList;
         }
 
         @Transactional(readOnly = true)
