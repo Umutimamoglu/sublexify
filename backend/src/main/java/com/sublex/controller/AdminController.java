@@ -112,18 +112,6 @@ public class AdminController {
         }
     }
 
-    @PostMapping("/lists/filter-coca")
-    public ResponseEntity<String> filterCocaList() {
-        log.info("Request to filter COCA 20k list");
-        try {
-            String result = standardListSeeder.filterCocaList();
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            log.error("Failed to filter COCA list", e);
-            return ResponseEntity.internalServerError().body("Failed to filter COCA list: " + e.getMessage());
-        }
-    }
-
     /**
      * Batch upload subtitles with auto-detection
      */

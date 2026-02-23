@@ -93,24 +93,31 @@ public class GeminiService implements AIService {
     }
 
     public String generateContent(String prompt, String model) {
+        return generateContent(null, prompt, model);
+    }
+
+    public String generateContent(String systemPrompt, String userPrompt, String model) {
         if (apiKey == null || apiKey.isEmpty()) {
             log.error("GEMINI_API_KEY is missing from environment!");
             return null;
         }
         log.info("Calling Gemini API with model: {} (Key length: {})", model, apiKey.length());
 
-        Map<String, Object> requestBody = Map.of(
-                "contents", List.of(
-                        Map.of("parts", List.of(
-                                Map.of("text", prompt)))),
-                "generationConfig", Map.of(
-                        "temperature", 0.1,
-                        "response_mime_type", "application/json"
-                // "thinking_level", "low" // API support varies, keeping simple for now
-                ));
+        Map<String, Object> contents = Map.of("parts", List.of(Map.of("text", userPrompt)));
+
+        Map<String, Object> requestBodyMap = new HashMap<>();
+        requestBodyMap.put("contents", List.of(contents));
+
+        if (systemPrompt != null && !systemPrompt.isEmpty()) {
+            requestBodyMap.put("system_instruction", Map.of("parts", List.of(Map.of("text", systemPrompt))));
+        }
+
+        requestBodyMap.put("generationConfig", Map.of(
+                "temperature", 0.1,
+                "response_mime_type", "application/json"));
 
         try {
-            String jsonBody = objectMapper.writeValueAsString(requestBody);
+            String jsonBody = objectMapper.writeValueAsString(requestBodyMap);
             log.info("DEBUG GEMINI REQUEST BODY: {}", jsonBody);
 
             String response = restClient.post()

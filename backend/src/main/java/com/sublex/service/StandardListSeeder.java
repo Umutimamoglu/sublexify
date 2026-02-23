@@ -14,17 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.File;
+
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Optional;
+
 import java.util.stream.Collectors;
 
 @Service
@@ -252,61 +246,4 @@ public class StandardListSeeder {
         return result.toString();
     }
 
-    @Transactional(readOnly = true)
-    public String filterCocaList() {
-        String cocaFilename = "COCA_20000.txt";
-        log.info("Filtering COCA list against existing database words...");
-
-        try {
-            ClassPathResource resource = new ClassPathResource("data/" + cocaFilename);
-            if (!resource.exists()) {
-                throw new RuntimeException("COCA file not found: " + cocaFilename);
-            }
-
-            // 1. Get all words currently in DB (Oxford + others)
-            java.util.List<Word> dbWords = wordRepository.findAll();
-            java.util.Set<String> dbWordTexts = dbWords.stream()
-                    .map(w -> w.getWord().toLowerCase())
-                    .collect(Collectors.toSet());
-
-            log.info("Found {} words in database to filter against.", dbWordTexts.size());
-
-            // 2. Read COCA and filter
-            java.util.List<String> cocaWords = new java.util.ArrayList<>();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String word = line.trim().toLowerCase();
-                    if (!word.isEmpty() && !dbWordTexts.contains(word)) {
-                        cocaWords.add(word);
-                    }
-                }
-            }
-
-            int originalCount = 20200; // Known from wc -l
-            int filteredCount = cocaWords.size();
-            int removedCount = originalCount - filteredCount;
-
-            log.info("COCA Filtering complete. Original: {}, Removed: {}, Remaining: {}",
-                    originalCount, removedCount, filteredCount);
-
-            // 3. Write to a new file for record/review
-            String outputFilename = "COCA_CLEANED.txt";
-            java.io.File outputFile = new java.io.File(
-                    "/Users/umutimamoglu/sublex/backend/src/main/resources/data/" + outputFilename);
-            try (java.io.PrintWriter writer = new java.io.PrintWriter(outputFile)) {
-                for (String word : cocaWords) {
-                    writer.println(word);
-                }
-            }
-
-            return String.format("COCA filtering done. Removed %d Oxford words. %d new COCA words saved to %s",
-                    removedCount, filteredCount, outputFilename);
-
-        } catch (Exception e) {
-            log.error("COCA filtering failed", e);
-            throw new RuntimeException("COCA filtering failed: " + e.getMessage());
-        }
-    }
 }
