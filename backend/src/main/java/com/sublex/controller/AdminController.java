@@ -610,4 +610,39 @@ public class AdminController {
         pipelineService.rejectJudgeVerdict(wordId);
         return ResponseEntity.ok("Judge verdict rejected for word ID: " + wordId);
     }
+
+    @PostMapping("/words/consolidate-roots")
+    @Operation(summary = "One-time migration: Merges MediaWord counts for all root-linked words")
+    @Transactional
+    public ResponseEntity<String> consolidateRoots() {
+        log.info("Starting legacy root consolidation...");
+        // 1. Find all words that have a rootWord
+        List<com.sublex.model.Word> inflectedWords = wordRepository.findAll().stream()
+                .filter(w -> w.getRootWord() != null)
+                .toList();
+
+        int mergeCount = 0;
+        for (com.sublex.model.Word infWord : inflectedWords) {
+            com.sublex.model.Word root = infWord.getRootWord();
+            List<com.sublex.model.MediaWord> associations = mediaWordRepository.findByWordId(infWord.getId());
+
+            for (com.sublex.model.MediaWord infAssociation : associations) {
+                java.util.Optional<com.sublex.model.MediaWord> rootAssociation = mediaWordRepository
+                        .findByMediaIdAndWordId(infAssociation.getMedia().getId(), root.getId());
+
+                if (rootAssociation.isPresent()) {
+                    com.sublex.model.MediaWord rootMW = rootAssociation.get();
+                    rootMW.setCount(rootMW.getCount() + infAssociation.getCount());
+                    mediaWordRepository.save(rootMW);
+                    mediaWordRepository.delete(infAssociation);
+                } else {
+                    infAssociation.setWord(root);
+                    mediaWordRepository.save(infAssociation);
+                }
+                mergeCount++;
+            }
+        }
+
+        return ResponseEntity.ok("Root consolidation completed. Merged " + mergeCount + " associations.");
+    }
 }

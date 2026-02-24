@@ -16,6 +16,8 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
 
        List<MediaWord> findByWordId(Long wordId);
 
+       java.util.Optional<MediaWord> findByMediaIdAndWordId(Long mediaId, Long wordId);
+
        int countByMediaId(Long mediaId);
 
        @Query("SELECT mw FROM MediaWord mw " +

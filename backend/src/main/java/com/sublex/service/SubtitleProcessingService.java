@@ -104,18 +104,31 @@ public class SubtitleProcessingService {
             });
         }
 
-        // 4. Create and Batch Save MediaWord Associations
-        java.util.List<MediaWord> mediaWords = new java.util.ArrayList<>();
+        // 4. Create and Batch Save MediaWord Associations (Aggregated by Root)
+        Map<Long, MediaWord> aggregatedMediaWords = new java.util.HashMap<>(); // wordId -> MediaWord
+
         for (Map.Entry<String, SubtitleParser.WordData> entry : wordDataMap.entrySet()) {
             Word word = wordMap.get(entry.getKey());
             if (word != null) {
-                mediaWords.add(new MediaWord(null, media, word, entry.getValue().count));
+                // If the word has a root, we use the root word for the association
+                Word targetWord = word.getRootWord() != null ? word.getRootWord() : word;
+                Long targetWordId = targetWord.getId();
+
+                int countToAdd = entry.getValue().count;
+
+                if (aggregatedMediaWords.containsKey(targetWordId)) {
+                    MediaWord existing = aggregatedMediaWords.get(targetWordId);
+                    existing.setCount(existing.getCount() + countToAdd);
+                } else {
+                    aggregatedMediaWords.put(targetWordId, new MediaWord(null, media, targetWord, countToAdd));
+                }
             }
         }
 
-        if (!mediaWords.isEmpty()) {
-            log.info("Saving {} MediaWord associations...", mediaWords.size());
-            mediaWordRepository.saveAll(mediaWords);
+        if (!aggregatedMediaWords.isEmpty()) {
+            java.util.List<MediaWord> toSave = new java.util.ArrayList<>(aggregatedMediaWords.values());
+            log.info("Saving {} aggregated MediaWord associations...", toSave.size());
+            mediaWordRepository.saveAll(toSave);
         }
 
         log.info("Subtitle processing completed for mediaId: {}", mediaId);

@@ -122,6 +122,9 @@ public class WordAnalysisService {
                         Word root = rootWordMap.get(result.getRoot().toLowerCase());
                         if (root != null) {
                             word.setRootWord(root);
+
+                            // MERGE LOGIC: Move counts from this word to the root word for all media
+                            mergeMediaWordCounts(word, root);
                         }
                     }
 
@@ -136,6 +139,35 @@ public class WordAnalysisService {
             wordRepository.saveAll(words);
             return null;
         });
+    }
+
+    private final com.sublex.repository.MediaWordRepository mediaWordRepository;
+
+    /**
+     * Merges MediaWord counts from an inflected word to its root word.
+     */
+    private void mergeMediaWordCounts(Word inflectedWord, Word rootWord) {
+        List<com.sublex.model.MediaWord> inflectedAssociations = mediaWordRepository
+                .findByWordId(inflectedWord.getId());
+
+        for (com.sublex.model.MediaWord infAssociation : inflectedAssociations) {
+            Optional<com.sublex.model.MediaWord> rootAssociation = mediaWordRepository.findByMediaIdAndWordId(
+                    infAssociation.getMedia().getId(),
+                    rootWord.getId());
+
+            if (rootAssociation.isPresent()) {
+                // Add count to existing root association
+                com.sublex.model.MediaWord rootMW = rootAssociation.get();
+                rootMW.setCount(rootMW.getCount() + infAssociation.getCount());
+                mediaWordRepository.save(rootMW);
+                // Delete inflected association
+                mediaWordRepository.delete(infAssociation);
+            } else {
+                // Re-link inflected association to root word
+                infAssociation.setWord(rootWord);
+                mediaWordRepository.save(infAssociation);
+            }
+        }
     }
 
     private void handleBatchFailure(List<Word> words) {
