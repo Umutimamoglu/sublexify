@@ -3,17 +3,18 @@ import { Text } from './Text';
 import type { Difficulty } from '@/src/types/api';
 
 // Tailwind dinamik class üretemez — renk değerleri sabit map olarak tutulur
-const colorMap: Record<Difficulty, string> = {
+const colorMap: Record<Difficulty | '-', string> = {
   A1: '#22C55E',
   A2: '#84CC16',
   B1: '#F59E0B',
   B2: '#F97316',
   C1: '#EF4444',
   C2: '#9333EA',
+  '-': '#6B7280',
 };
 
 type BadgeProps = {
-  difficulty: Difficulty;
+  difficulty: Difficulty | '-';
   size?: 'sm' | 'md';
 };
 

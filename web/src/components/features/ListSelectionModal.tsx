@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Check } from 'lucide-react';
-import { listService, type WordList } from '@/services/list';
+import WordListService, { type WordListDTO } from '@/services/WordListService';
 import { cn } from '@/utils/cn';
 
 interface ListSelectionModalProps {
@@ -11,7 +11,7 @@ interface ListSelectionModalProps {
 }
 
 const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModalProps) => {
-    const [lists, setLists] = useState<WordList[]>([]);
+    const [lists, setLists] = useState<WordListDTO[]>([]);
     const [loading, setLoading] = useState(false);
     const [newListName, setNewListName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
@@ -19,26 +19,22 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
 
     useEffect(() => {
         if (isOpen) {
-            fetchLists();
+            fetchListsAndStatus();
         }
     }, [isOpen]);
 
-    const fetchLists = async () => {
+    const fetchListsAndStatus = async () => {
         try {
             setLoading(true);
-            const data = await listService.getUserLists();
-            setLists(data);
-
-            // Check which lists already contain this word
-            const added = new Set<number>();
-            data.forEach(list => {
-                if (list.words.some((w: any) => w.id === wordId)) {
-                    added.add(list.id);
-                }
-            });
-            setAddedLists(added);
+            const [userLists, containingListIds] = await Promise.all([
+                WordListService.getUserLists(),
+                WordListService.getListsContainingWord(wordId)
+            ]);
+            
+            setLists(userLists);
+            setAddedLists(new Set(containingListIds));
         } catch (error) {
-            console.error("Failed to fetch lists", error);
+            console.error("Failed to fetch lists or status", error);
         } finally {
             setLoading(false);
         }
@@ -50,7 +46,7 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
 
         try {
             setIsCreating(true);
-            const newList = await listService.createList(newListName);
+            const newList = await WordListService.createList(newListName);
             setLists([...lists, newList]);
             setNewListName('');
 
@@ -65,7 +61,7 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
 
     const handleAddToList = async (listId: number) => {
         try {
-            await listService.addWordToList(listId, wordId);
+            await WordListService.addWordToList(listId, wordId);
             setAddedLists(prev => new Set(prev).add(listId));
         } catch (error) {
             console.error("Failed to add word to list", error);
@@ -74,7 +70,7 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
 
     const handleRemoveFromList = async (listId: number) => {
         try {
-            await listService.removeWordFromList(listId, wordId);
+            await WordListService.removeWordFromList(listId, wordId);
             setAddedLists(prev => {
                 const next = new Set(prev);
                 next.delete(listId);

@@ -83,3 +83,20 @@ export type ApiError = {
   message: string;
   status: number;
 };
+
+// List detail — GET /api/lists/{id} yanıtı (words dahil)
+export type ListWord = {
+  id: number;
+  word: string;
+  language: string;
+  difficulty: Difficulty | null;
+  definition: WordDefinition | null;
+  isEnriched: boolean;
+};
+
+export type ListDetailDTO = {
+  id: number;
+  name: string;
+  words: ListWord[];
+  createdAt: string;
+};

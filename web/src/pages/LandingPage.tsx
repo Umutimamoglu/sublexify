@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { Film, Tv, List } from 'lucide-react';
+import { Film, Tv, List, PlayCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import MediaService, { type Media } from '@/services/MediaService';
+import MediaCard from '@/components/features/MediaCard';
 
 const LandingPage = () => {
     const navigate = useNavigate();
@@ -42,6 +44,9 @@ const LandingPage = () => {
                 Select a category to start your immersive language learning journey with Sublex.
             </p>
 
+            {/* Continue Learning Section */}
+            <ContinueLearning />
+
             {/* Categories Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mb-20">
                 {categories.map((category) => (
@@ -65,6 +70,42 @@ const LandingPage = () => {
 
             {/* Featured Lists Section */}
             <FeaturedLists />
+        </div>
+    );
+};
+
+const ContinueLearning = () => {
+    const [mediaList, setMediaList] = useState<Media[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchContinueLearning = async () => {
+            try {
+                // For now use default limit of 5
+                const data = await MediaService.getContinueLearning();
+                setMediaList(data);
+            } catch (err) {
+                console.error('Failed to fetch continue learning media', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchContinueLearning();
+    }, []);
+
+    if (loading || mediaList.length === 0) return null;
+
+    return (
+        <div className="w-full max-w-5xl mb-16">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-3">
+                <PlayCircle className="w-6 h-6 text-indigo-500" />
+                Continue Learning
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                {mediaList.map((media) => (
+                    <MediaCard key={media.id} media={media} imageUrl={media.posterUrl || media.backdropUrl} />
+                ))}
+            </div>
         </div>
     );
 };

@@ -1,6 +1,8 @@
 package com.sublex.service;
 
 import com.sublex.dto.WordDTO;
+import com.sublex.dto.WordListDTO;
+import com.sublex.dto.WordListWordsResponseDTO;
 import com.sublex.model.*;
 import com.sublex.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +27,10 @@ public class WordListService {
         private final UserKnownWordRepository userKnownWordRepository;
         private final UserMediaProgressService userMediaProgressService;
 
-        public List<WordList> getUserLists(Long userId) {
-                return wordListRepository.findAllByUserId(userId);
+        public List<WordListDTO> getUserLists(Long userId) {
+                return wordListRepository.findAllByUserId(userId).stream()
+                                .map(list -> convertToDTO(list, userId))
+                                .collect(Collectors.toList());
         }
 
         public WordList getListById(Long listId) {
@@ -71,7 +75,7 @@ public class WordListService {
         }
 
         @Transactional
-        public WordList createUnknownWordsList(Long userId, Long mediaId) {
+        public WordListDTO createUnknownWordsList(Long userId, Long mediaId) {
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
@@ -109,12 +113,115 @@ public class WordListService {
                 // Record progress
                 userMediaProgressService.recordProgress(userId, mediaId, "STARTED");
 
-                return savedList;
+                return convertToDTO(savedList, userId);
         }
 
         @Transactional(readOnly = true)
-        public List<WordList> getStandardLists() {
-                return wordListRepository.findAllByUserId(1L);
+        public List<WordListDTO> getStandardLists() {
+                return wordListRepository.findAllByUserId(1L).stream()
+                                .map(list -> convertToDTO(list, 1L)) // Default system user ID
+                                .collect(Collectors.toList());
+        }
+
+        @Transactional(readOnly = true)
+        public WordListWordsResponseDTO getListWords(Long listId, Long userId, boolean onlyUnknown) {
+                WordList wordList = wordListRepository.findById(listId)
+                                .orElseThrow(() -> new RuntimeException("List not found: " + listId));
+
+                // Get user's known words
+                Set<Long> knownWordIds = userKnownWordRepository.findByUserId(userId).stream()
+                                .map(ukw -> ukw.getWord().getId())
+                                .collect(Collectors.toSet());
+
+                // Filter and convert to DTOs
+                List<WordDTO> words = wordList.getWords().stream()
+                                .map(word -> convertToWordDTO(word, knownWordIds.contains(word.getId())))
+                                .filter(w -> !onlyUnknown || !w.getIsKnown())
+                                .collect(Collectors.toList());
+
+                // Calculate stats
+                int totalWords = wordList.getWords().size();
+                int unknownCount = (int) wordList.getWords().stream()
+                                .filter(word -> !knownWordIds.contains(word.getId()))
+                                .count();
+
+                java.util.Map<String, Long> levelCounts = wordList.getWords().stream()
+                                .filter(w -> w.getDifficulty() != null)
+                                .collect(Collectors.groupingBy(Word::getDifficulty, Collectors.counting()));
+
+                WordListWordsResponseDTO response = new WordListWordsResponseDTO();
+                response.setList(convertToDTO(wordList, userId));
+                response.setWords(words);
+                response.setTotalWords(totalWords);
+                response.setUnknownWords(unknownCount);
+                response.setLevelCounts(levelCounts);
+
+                return response;
+        }
+
+        @Transactional
+        public WordListDTO createSubListFromUnknown(Long userId, Long listId) {
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+                WordList sourceList = wordListRepository.findById(listId)
+                                .orElseThrow(() -> new RuntimeException("Source list not found: " + listId));
+
+                Set<Long> knownWordIds = userKnownWordRepository.findByUserId(userId).stream()
+                                .map(ukw -> ukw.getWord().getId())
+                                .collect(Collectors.toSet());
+
+                List<Word> unknownWords = sourceList.getWords().stream()
+                                .filter(word -> !knownWordIds.contains(word.getId()))
+                                .collect(Collectors.toList());
+
+                WordList newList = new WordList();
+                newList.setName(sourceList.getName() + " (Unknown Words)");
+                newList.setUser(user);
+                newList.getWords().addAll(unknownWords);
+
+                WordList saved = wordListRepository.save(newList);
+                return convertToDTO(saved, userId);
+        }
+
+        public WordListDTO convertToDTO(WordList list, Long userId) {
+                WordListDTO dto = new WordListDTO();
+                dto.setId(list.getId());
+                dto.setName(list.getName());
+                dto.setCreatedAt(list.getCreatedAt());
+
+                int totalWords = list.getWords().size();
+                dto.setTotalWords(totalWords);
+
+                if (userId != null) {
+                        Set<Long> knownWordIds = userKnownWordRepository.findByUserId(userId).stream()
+                                        .map(ukw -> ukw.getWord().getId())
+                                        .collect(Collectors.toSet());
+
+                        long unknownCount = list.getWords().stream()
+                                        .filter(word -> !knownWordIds.contains(word.getId()))
+                                        .count();
+                        dto.setUnknownWords((int) unknownCount);
+                }
+
+                java.util.Map<String, Long> levelCounts = list.getWords().stream()
+                                .filter(w -> w.getDifficulty() != null)
+                                .collect(Collectors.groupingBy(Word::getDifficulty, Collectors.counting()));
+                dto.setLevelCounts(levelCounts);
+
+                return dto;
+        }
+
+        private WordDTO convertToWordDTO(Word word, boolean isKnown) {
+                WordDTO dto = new WordDTO();
+                dto.setId(word.getId());
+                dto.setWord(word.getWord());
+                dto.setLanguage(word.getLanguage());
+                dto.setIsKnown(isKnown);
+                dto.setDefinition(word.getDefinition());
+                dto.setDifficulty(word.getDifficulty());
+                dto.setIsEnriched(word.getIsEnriched());
+                return dto;
         }
 
         @Transactional(readOnly = true)
@@ -137,5 +244,9 @@ public class WordListService {
                 wordList.setWords(words);
 
                 return wordList;
+        }
+
+        public List<Long> getListsContainingWord(Long userId, Long wordId) {
+                return wordListRepository.findListIdsByUserIdAndWordId(userId, wordId);
         }
 }

@@ -33,31 +33,60 @@ export interface Word {
     judgeApprovedAt?: string;
 }
 
-export interface WordList {
+export interface WordListDTO {
     id: number;
     name: string;
-    words: Word[];
-    wordCount?: number;
+    createdAt: string;
+    totalWords: number;
+    unknownWords: number;
+    levelCounts: Record<string, number>;
+}
+
+export interface WordListWordsResponseDTO {
+    list: WordListDTO;
+    words: (Word & {
+        isKnown: boolean;
+        frequency?: number;
+    })[];
+    totalWords: number;
+    unknownWords: number;
+    levelCounts: Record<string, number>;
+}
+
+// Keep the old WordList interface for compatibility if needed, but mark it for removal
+export interface WordList extends WordListDTO {
+    words: Word[]; 
 }
 
 const WordListService = {
-    getUserLists: async (): Promise<WordList[]> => {
-        const response = await api.get<WordList[]>('/lists');
+    getUserLists: async (): Promise<WordListDTO[]> => {
+        const response = await api.get<WordListDTO[]>('/lists');
         return response.data;
     },
 
-    getStandardLists: async (): Promise<WordList[]> => {
-        const response = await api.get<WordList[]>('/lists/standard');
+    getStandardLists: async (): Promise<WordListDTO[]> => {
+        const response = await api.get<WordListDTO[]>('/lists/standard');
         return response.data;
     },
 
-    createList: async (name: string): Promise<WordList> => {
-        const response = await api.post<WordList>('/lists', null, { params: { name } });
+    createList: async (name: string): Promise<WordListDTO> => {
+        // Backend expects raw string or JSON string. Based on controller: @RequestBody String name
+        // Our previous impl in list.ts used text/plain
+        const response = await api.post<WordListDTO>('/lists', name, {
+            headers: { 'Content-Type': 'text/plain' }
+        });
         return response.data;
     },
 
-    getListById: async (id: number): Promise<WordList> => {
-        const response = await api.get<WordList>(`/lists/${id}`);
+    getListById: async (id: number): Promise<WordListDTO> => {
+        const response = await api.get<WordListDTO>(`/lists/${id}`);
+        return response.data;
+    },
+
+    getListWords: async (id: number, userId?: number, onlyUnknown?: boolean): Promise<WordListWordsResponseDTO> => {
+        const response = await api.get<WordListWordsResponseDTO>(`/lists/${id}/words`, {
+            params: { userId, onlyUnknown }
+        });
         return response.data;
     },
 
@@ -73,8 +102,18 @@ const WordListService = {
         await api.delete(`/lists/${id}`);
     },
 
-    generateUnknownWordsList: async (mediaId: number): Promise<WordList> => {
-        const response = await api.post<WordList>('/lists/generate/unknown', null, { params: { mediaId } });
+    generateUnknownWordsList: async (mediaId: number): Promise<WordListDTO> => {
+        const response = await api.post<WordListDTO>('/lists/generate/unknown', null, { params: { mediaId } });
+        return response.data;
+    },
+
+    createSubListFromUnknown: async (listId: number): Promise<WordListDTO> => {
+        const response = await api.post<WordListDTO>(`/lists/${listId}/generate/unknown`);
+        return response.data;
+    },
+
+    getListsContainingWord: async (wordId: number): Promise<number[]> => {
+        const response = await api.get<number[]>(`/lists/containing-word/${wordId}`);
         return response.data;
     }
 };

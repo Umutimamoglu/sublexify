@@ -16,6 +16,9 @@ export interface Media {
     episodeNumber?: number;
     voteAverage?: number;
     createdAt: string;
+    knownWordPercentage?: number;
+    difficultyLevel?: string;
+    levelCounts?: Record<string, number>;
 }
 
 export interface MediaWordsResponse {
@@ -29,13 +32,24 @@ export interface MediaWordsResponse {
 }
 
 const MediaService = {
-    getAllMedia: async (): Promise<Media[]> => {
-        const response = await api.get<Media[]>('/media');
+    getAllMedia: async (userId?: number): Promise<Media[]> => {
+        const response = await api.get<Media[]>('/media', {
+            params: { userId },
+        });
         return response.data;
     },
 
-    getMediaById: async (id: number): Promise<Media> => {
-        const response = await api.get<Media>(`/media/${id}`);
+    getMediaById: async (id: number, userId?: number): Promise<Media> => {
+        const response = await api.get<Media>(`/media/${id}`, {
+            params: { userId },
+        });
+        return response.data;
+    },
+    
+    getContinueLearning: async (userId?: number, limit: number = 10): Promise<Media[]> => {
+        const response = await api.get<Media[]>('/media/continue-learning', {
+            params: { userId, limit },
+        });
         return response.data;
     },
 

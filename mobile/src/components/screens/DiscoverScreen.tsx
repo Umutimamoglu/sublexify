@@ -7,12 +7,17 @@ import {
   StyleSheet,
   StatusBar,
   useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DifficultyBadge } from '@/src/components/ui';
+import { useRouter } from 'expo-router';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useTheme } from '@/src/context/ThemeContext';
-import type { Difficulty } from '@/src/types/api';
+import { DifficultyBadge } from '@/src/components/ui';
+import { useMedia, useContinueLearning } from '@/src/api/queries/media.queries';
+import { useStandardLists } from '@/src/api/queries/lists.queries';
+import { useKnownWords } from '@/src/api/queries/user.queries';
+import type { MediaDTO, WordListDTO } from '@/src/types/api';
 
 // ─── Cinema Colour Palettes ───────────────────────────────────
 const DARK = {
@@ -41,51 +46,38 @@ const LIGHT = {
 
 const CARD_R = 14;
 
-// ─── Dummy Data ───────────────────────────────────────────────
-type ContinueItem = {
-  id: string;
-  title: string;
-  episode: string;
-  timeLeft: string;
-  darkBg: string;
-  lightBg: string;
-  accent: string;
-};
+// ─── Card Accent Palette ──────────────────────────────────────
+const CARD_ACCENTS = [
+  { darkBg: '#1a0f2e', lightBg: '#2d1a4a', accent: '#9333ea' },
+  { darkBg: '#0f1a2e', lightBg: '#1a2d4a', accent: '#3b82f6' },
+  { darkBg: '#1a1a0f', lightBg: '#2a2a0f', accent: '#ca8a04' },
+  { darkBg: '#0f1a1a', lightBg: '#1a2d2d', accent: '#10b981' },
+  { darkBg: '#1a0f0f', lightBg: '#2d1515', accent: '#ef4444' },
+] as const;
 
-type MediaItem = {
-  id: string;
-  title: string;
-  level: Difficulty;
-  darkBg: string;
-  lightBg: string;
-  accent: string;
-  selected?: boolean;
-};
+function cardAccent(id: number) {
+  return CARD_ACCENTS[id % CARD_ACCENTS.length];
+}
 
-type ListItem = {
-  id: string;
-  title: string;
-  subtitle: string;
-  icon: string;
-};
+function listIcon(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes('oxford') || n.includes('essential')) return '🎓';
+  if (n.includes('business') || n.includes('professional')) return '💼';
+  if (n.includes('phrasal')) return '🧩';
+  if (n.includes('slang')) return '🎬';
+  if (n.includes('adjective')) return '🌈';
+  if (n.includes('adverb')) return '⚡';
+  if (n.includes('verb')) return '⚙️';
+  return '📚';
+}
 
-const DUMMY_CONTINUE: ContinueItem[] = [
-  { id: '1', title: 'Stranger Things', episode: 'S4:E2', timeLeft: '24m left', darkBg: '#1a0a0a', lightBg: '#2d1515', accent: '#8B1A1A' },
-  { id: '2', title: 'The Dark Knight', episode: 'S1:E1', timeLeft: '1h 12m left', darkBg: '#0a0a1a', lightBg: '#0f0f2a', accent: '#1A1A8B' },
-];
-
-const DUMMY_MEDIA: MediaItem[] = [
-  { id: '1', title: 'Inception', level: 'B2', darkBg: '#1a0f2e', lightBg: '#2d1a4a', accent: '#9333ea' },
-  { id: '2', title: 'Friends', level: 'A2', darkBg: '#0f1a2e', lightBg: '#1a2d4a', accent: '#3b82f6', selected: true },
-  { id: '3', title: 'Pulp Fiction', level: 'C1', darkBg: '#1a1a0f', lightBg: '#2a2a0f', accent: '#ca8a04' },
-];
-
-const DUMMY_LISTS: ListItem[] = [
-  { id: '1', title: 'Oxford 3000', subtitle: 'Essential vocab', icon: '🎓' },
-  { id: '2', title: 'Business', subtitle: 'Professional terms', icon: '💼' },
-  { id: '3', title: 'Slang 101', subtitle: 'Street talk', icon: '🎬' },
-  { id: '4', title: 'Phrasal Verbs', subtitle: 'Advanced grammar', icon: '🧩' },
-];
+function episodeLabel(media: MediaDTO): string {
+  if (media.type === 'EPISODE' && media.seasonNumber && media.episodeNumber) {
+    return `S${media.seasonNumber}:E${media.episodeNumber}`;
+  }
+  if (media.type === 'MOVIE') return 'Movie';
+  return media.type;
+}
 
 // ─── Styles Factory ───────────────────────────────────────────
 type Palette = typeof DARK;
@@ -122,7 +114,6 @@ function makeStyles(c: Palette, isDark: boolean) {
     continueTitle: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
 
     mediaCard: { width: 112, borderRadius: CARD_R, overflow: 'hidden', marginRight: 10, borderWidth: 1, borderColor: '#ffffff15' },
-    mediaCardSelected: { borderColor: '#ffffff55', borderWidth: 2 },
     badgeWrapper: { position: 'absolute', top: 8, left: 8, zIndex: 10 },
     posterPlaceholder: { height: 145, alignItems: 'center', justifyContent: 'center' },
     posterLetter: { fontSize: 52, fontWeight: '900', opacity: 0.7 },
@@ -146,47 +137,80 @@ function makeStyles(c: Palette, isDark: boolean) {
     emptyIcon: { fontSize: 28 },
     emptyTitle: { color: c.TEXT_P, fontSize: 14, fontWeight: '600', textAlign: 'center' },
     emptySubtitle: { color: c.TEXT_S, fontSize: 12, textAlign: 'center', paddingHorizontal: 24 },
+
+    knownCountBadge: { backgroundColor: c.PURPLE + '22', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+    knownCountText: { color: c.PURPLE, fontSize: 12, fontWeight: '700' },
+    wordChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: c.SURFACE2, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: c.BORDER },
+    wordChipText: { color: c.TEXT_P, fontSize: 14, fontWeight: '600' },
+    wordChipLevel: { color: c.PURPLE, fontSize: 10, fontWeight: '700' },
+
+    loader: { marginVertical: 20 },
   });
 }
 
 // ─── Sub-Components ───────────────────────────────────────────
 type Styles = ReturnType<typeof makeStyles>;
 
-function ContinueLearningCard({ item, wide, isDark, styles }: { item: ContinueItem; wide?: boolean; isDark: boolean; styles: Styles }) {
+function ContinueLearningCard({
+  item,
+  wide,
+  isDark,
+  styles,
+  onPress,
+}: {
+  item: MediaDTO;
+  wide?: boolean;
+  isDark: boolean;
+  styles: Styles;
+  onPress: () => void;
+}) {
   const { width } = useWindowDimensions();
+  const { darkBg, lightBg, accent } = cardAccent(item.id);
   return (
     <TouchableOpacity
       style={[
         styles.continueCard,
-        { backgroundColor: isDark ? item.darkBg : item.lightBg },
+        { backgroundColor: isDark ? darkBg : lightBg },
         wide ? { width: width * 0.57 } : { width: width * 0.36 },
       ]}
       activeOpacity={0.85}
+      onPress={onPress}
     >
-      <View style={[styles.continueOverlay, { backgroundColor: item.accent + '22' }]} />
+      <View style={[styles.continueOverlay, { backgroundColor: accent + '22' }]} />
       <View style={styles.continueContent}>
-        <Text style={styles.continueEpisode}>{item.episode} · {item.timeLeft}</Text>
+        <Text style={styles.continueEpisode}>{episodeLabel(item)}</Text>
         <Text style={styles.continueTitle} numberOfLines={1}>{item.title}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
-function MediaBrowseCard({ item, isDark, styles }: { item: MediaItem; isDark: boolean; styles: Styles }) {
+function MediaBrowseCard({
+  item,
+  isDark,
+  styles,
+  onPress,
+}: {
+  item: MediaDTO;
+  isDark: boolean;
+  styles: Styles;
+  onPress: () => void;
+}) {
+  const { darkBg, lightBg, accent } = cardAccent(item.id);
   return (
     <TouchableOpacity
       style={[
         styles.mediaCard,
-        { backgroundColor: isDark ? item.darkBg : item.lightBg },
-        item.selected && styles.mediaCardSelected,
+        { backgroundColor: isDark ? darkBg : lightBg },
       ]}
       activeOpacity={0.85}
+      onPress={onPress}
     >
       <View style={styles.badgeWrapper}>
-        <DifficultyBadge difficulty={item.level} size="sm" />
+        <DifficultyBadge difficulty="-" size="sm" />
       </View>
-      <View style={[styles.posterPlaceholder, { backgroundColor: item.accent + '22' }]}>
-        <Text style={[styles.posterLetter, { color: item.accent }]}>
+      <View style={[styles.posterPlaceholder, { backgroundColor: accent + '22' }]}>
+        <Text style={[styles.posterLetter, { color: accent }]}>
           {item.title.charAt(0)}
         </Text>
       </View>
@@ -195,14 +219,26 @@ function MediaBrowseCard({ item, isDark, styles }: { item: MediaItem; isDark: bo
   );
 }
 
-function ListCard({ item, styles }: { item: ListItem; styles: Styles }) {
+function KnownWordsCard({ count, loading, styles, onPress }: { count: number; loading: boolean; styles: Styles; onPress: () => void }) {
   const { width } = useWindowDimensions();
   const cardWidth = (width - 42) / 2;
   return (
-    <TouchableOpacity style={[styles.listCard, { width: cardWidth }]} activeOpacity={0.85}>
-      <Text style={styles.listIcon}>{item.icon}</Text>
-      <Text style={styles.listTitle}>{item.title}</Text>
-      <Text style={styles.listSubtitle}>{item.subtitle}</Text>
+    <TouchableOpacity style={[styles.listCard, { width: cardWidth }]} activeOpacity={0.85} onPress={onPress}>
+      <Text style={styles.listIcon}>📖</Text>
+      <Text style={styles.listTitle}>Bilinen Kelimeler</Text>
+      <Text style={styles.listSubtitle}>{loading ? '...' : `${count} kelime`}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function ListCard({ item, styles, onPress }: { item: WordListDTO; styles: Styles; onPress: () => void }) {
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - 42) / 2;
+  return (
+    <TouchableOpacity style={[styles.listCard, { width: cardWidth }]} activeOpacity={0.85} onPress={onPress}>
+      <Text style={styles.listIcon}>{listIcon(item.name)}</Text>
+      <Text style={styles.listTitle}>{item.name}</Text>
+      <Text style={styles.listSubtitle}>{item.wordCount} words</Text>
     </TouchableOpacity>
   );
 }
@@ -212,12 +248,17 @@ export default function DiscoverScreen() {
   const { t } = useTranslation('discover');
   const { colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
+  const router = useRouter();
 
   const styles = useMemo(
     () => makeStyles(isDark ? DARK : LIGHT, isDark),
     [isDark],
   );
 
+  const { data: continueMedia = [], isLoading: continueLoading } = useContinueLearning(5);
+  const { data: allMedia = [], isLoading: mediaLoading } = useMedia();
+  const { data: standardLists = [], isLoading: listsLoading } = useStandardLists();
+  const { data: knownWords = [], isLoading: knownLoading } = useKnownWords();
   return (
     <View style={styles.root}>
       <StatusBar
@@ -230,17 +271,13 @@ export default function DiscoverScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>A</Text>
+              <Text style={styles.avatarText}>S</Text>
             </View>
-            <Text style={styles.headerGreeting}>Evening, Alex</Text>
+            <Text style={styles.headerGreeting}>Sublex</Text>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.headerIconBtn}>
               <Text style={styles.headerIconText}>⌕</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.streakBadge}>
-              <Text style={styles.streakIcon}>🔥</Text>
-              <Text style={styles.streakCount}>12</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -257,7 +294,9 @@ export default function DiscoverScreen() {
                 <Text style={styles.viewAll}>{t('viewAll')}</Text>
               </TouchableOpacity>
             </View>
-            {DUMMY_CONTINUE.length === 0 ? (
+            {continueLoading ? (
+              <ActivityIndicator color={DARK.PURPLE} style={styles.loader} />
+            ) : continueMedia.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyIcon}>🎬</Text>
                 <Text style={styles.emptyTitle}>{t('noContinueTitle')}</Text>
@@ -265,8 +304,16 @@ export default function DiscoverScreen() {
               </View>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>
-                <ContinueLearningCard item={DUMMY_CONTINUE[0]} wide isDark={isDark} styles={styles} />
-                <ContinueLearningCard item={DUMMY_CONTINUE[1]} isDark={isDark} styles={styles} />
+                {continueMedia.map((item, index) => (
+                  <ContinueLearningCard
+                    key={item.id}
+                    item={item}
+                    wide={index === 0}
+                    isDark={isDark}
+                    styles={styles}
+                    onPress={() => router.push(`/media/${item.id}` as any)}
+                  />
+                ))}
               </ScrollView>
             )}
           </View>
@@ -274,21 +321,36 @@ export default function DiscoverScreen() {
           {/* Browse Media */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, styles.sectionPad]}>{t('browseMedia')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>
-              {DUMMY_MEDIA.map((item) => (
-                <MediaBrowseCard key={item.id} item={item} isDark={isDark} styles={styles} />
-              ))}
-            </ScrollView>
+            {mediaLoading ? (
+              <ActivityIndicator color={DARK.PURPLE} style={styles.loader} />
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>
+                {allMedia.map((item) => (
+                  <MediaBrowseCard
+                    key={item.id}
+                    item={item}
+                    isDark={isDark}
+                    styles={styles}
+                    onPress={() => router.push(`/media/${item.id}` as any)}
+                  />
+                ))}
+              </ScrollView>
+            )}
           </View>
 
           {/* Curated Lists */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, styles.sectionPad]}>{t('curatedLists')}</Text>
-            <View style={styles.listsGrid}>
-              {DUMMY_LISTS.map((item) => (
-                <ListCard key={item.id} item={item} styles={styles} />
-              ))}
-            </View>
+            {listsLoading ? (
+              <ActivityIndicator color={DARK.PURPLE} style={styles.loader} />
+            ) : (
+              <View style={styles.listsGrid}>
+                <KnownWordsCard count={knownWords.length} loading={knownLoading} styles={styles} onPress={() => router.push('/list/-1' as any)} />
+                {standardLists.map((item) => (
+                  <ListCard key={item.id} item={item} styles={styles} onPress={() => router.push(`/list/${item.id}` as any)} />
+                ))}
+              </View>
+            )}
           </View>
 
           <View style={{ height: 16 }} />

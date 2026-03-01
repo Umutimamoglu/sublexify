@@ -4,9 +4,10 @@ import { ENDPOINTS } from '@/src/api/endpoints';
 import type { MediaDTO, MediaWordsResponseDTO } from '@/src/types/api';
 
 export const mediaKeys = {
-  all:    ['media'] as const,
-  detail: (id: number) => ['media', id] as const,
-  words:  (id: number) => ['media', id, 'words'] as const,
+  all:            ['media'] as const,
+  continueLearning: ['media', 'continue-learning'] as const,
+  detail:         (id: number) => ['media', id] as const,
+  words:          (id: number) => ['media', id, 'words'] as const,
 };
 
 export function useMedia() {
@@ -27,6 +28,18 @@ export function useMediaDetail(id: number) {
       return res.data;
     },
     enabled: !!id,
+  });
+}
+
+export function useContinueLearning(limit = 5) {
+  return useQuery<MediaDTO[]>({
+    queryKey: mediaKeys.continueLearning,
+    queryFn:  async () => {
+      const res = await apiClient.get<MediaDTO[]>(
+        `${ENDPOINTS.media.continueLearning}?userId=1&limit=${limit}`,
+      );
+      return res.data;
+    },
   });
 }
 
