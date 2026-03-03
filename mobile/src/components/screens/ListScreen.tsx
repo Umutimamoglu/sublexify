@@ -29,6 +29,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
+import * as Speech from 'expo-speech';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -112,6 +113,7 @@ function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
     flipHint: { color: c.TEXT_S, fontSize: 11, opacity: 0.5, marginTop: 6 },
     cardKnownBtn: { position: 'absolute', top: 14, right: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
     cardListBtn:  { position: 'absolute', top: 14, left: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    cardTtsBtn:   { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
 
     // Back
     cardBack: { backgroundColor: c.SURFACE2 },
@@ -164,6 +166,10 @@ function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
     listBtn:     { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
     listBtnText: { color: c.TEXT_S, fontSize: 16 },
 
+    // TTS button on row
+    ttsBtn:      { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+    ttsBtnText:  { fontSize: 12 },
+
     // Remove button on row
     removeBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#EF444418', alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
     removeBtnText: { fontSize: 13 },
@@ -212,6 +218,13 @@ function WordRow({
       </View>
       <TouchableOpacity style={styles.listBtn} onPress={onAddToList} activeOpacity={0.7}>
         <Text style={styles.listBtnText}>+</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.ttsBtn, { borderColor: c.BORDER }]}
+        onPress={() => Speech.speak(word.word, { language: 'en-US' })}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.ttsBtnText}>🔊</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[
@@ -646,6 +659,13 @@ export default function ListScreen({ listId }: { listId: number }) {
                   {/* Front */}
                   <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]}>
                     <Text style={styles.cardBigWord}>{currentWord.word}</Text>
+                    <TouchableOpacity
+                      style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
+                      onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.ttsBtnText}>🔊</Text>
+                    </TouchableOpacity>
                     {currentWord.definition?.meanings?.[0] && (
                       <>
                         <View style={styles.posBadge}>

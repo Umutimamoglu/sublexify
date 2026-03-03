@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
+import * as Speech from 'expo-speech';
 import {
   View,
   Text,
@@ -106,6 +107,8 @@ function makeStyles(c: typeof DARK, isDark: boolean) {
     rowDiff:     { fontSize: 10, fontWeight: '700', marginTop: 2 },
     listBtn:     { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
     listBtnText: { color: c.TEXT_S, fontSize: 16 },
+    ttsBtn:      { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+    ttsBtnText:  { fontSize: 14 },
     checkBtn:    { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
     checkText:   { fontSize: 13, fontWeight: '900' },
 
@@ -183,6 +186,13 @@ function WordRow({
       </View>
       <TouchableOpacity style={styles.listBtn} onPress={onAddToList} activeOpacity={0.7}>
         <Text style={styles.listBtnText}>+</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.ttsBtn, { borderColor: c.BORDER }]}
+        onPress={() => Speech.speak(word.word, { language: 'en-US' })}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.ttsBtnText}>🔊</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[
