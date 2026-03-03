@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -38,29 +38,39 @@ type Palette = typeof DARK;
 
 function makeStyles(c: Palette) {
   return StyleSheet.create({
-    root:        { flex: 1, backgroundColor: c.BG },
-    safeArea:    { flex: 1, backgroundColor: c.BG },
-    header:      { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
-    backBtn:     { width: 36, height: 36, borderRadius: 18, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
-    backText:    { color: c.TEXT_P, fontSize: 18 },
+    root:     { flex: 1, backgroundColor: c.BG },
+    safeArea: { flex: 1, backgroundColor: c.BG },
+    header:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+    backBtn:  { width: 36, height: 36, borderRadius: 18, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
+    backText: { color: c.TEXT_P, fontSize: 18 },
     headerTitle: { color: c.TEXT_P, fontSize: 20, fontWeight: '700', flex: 1 },
 
-    seasonHeader:     { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 },
-    seasonHeaderText: { color: c.PURPLE, fontSize: 13, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
+    // Accordion season row
+    seasonRow: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingHorizontal: 16, paddingVertical: 16,
+      backgroundColor: c.SURFACE,
+      borderBottomWidth: 1, borderBottomColor: c.BORDER,
+      marginTop: 12,
+    },
+    seasonRowOpen: { backgroundColor: c.SURFACE2 },
+    seasonLabel:   { color: c.PURPLE, fontSize: 14, fontWeight: '700', flex: 1, letterSpacing: 0.3 },
+    seasonMeta:    { color: c.TEXT_S, fontSize: 12, marginRight: 10 },
+    seasonChevron: { color: c.TEXT_S, fontSize: 16, width: 16, textAlign: 'center' },
 
-    episodeRow:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.BORDER },
-    epNumberBox:  { width: 36, height: 36, borderRadius: 10, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-    epNumber:     { color: c.TEXT_S, fontSize: 13, fontWeight: '700' },
-    epInfo:       { flex: 1 },
-    epTitle:      { color: c.TEXT_P, fontSize: 15, fontWeight: '600', marginBottom: 2 },
-    epSubtitle:   { color: c.TEXT_S, fontSize: 12 },
-    epChevron:    { color: c.TEXT_S, fontSize: 18, marginLeft: 8 },
+    // Episode row
+    episodeRow:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.BORDER, backgroundColor: c.BG },
+    epNumberBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+    epNumber:    { color: c.TEXT_S, fontSize: 13, fontWeight: '700' },
+    epInfo:      { flex: 1 },
+    epTitle:     { color: c.TEXT_P, fontSize: 15, fontWeight: '600', marginBottom: 2 },
+    epSubtitle:  { color: c.TEXT_S, fontSize: 12 },
+    epChevron:   { color: c.TEXT_S, fontSize: 18, marginLeft: 8 },
 
     loader:    { marginTop: 60 },
     emptyCard: { margin: 24, padding: 32, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: c.BORDER, alignItems: 'center', gap: 8 },
-    emptyIcon:  { fontSize: 36 },
-    emptyText:  { color: c.TEXT_S, fontSize: 14, textAlign: 'center' },
-
+    emptyIcon: { fontSize: 36 },
+    emptyText: { color: c.TEXT_S, fontSize: 14, textAlign: 'center' },
     listContent: { paddingBottom: 32 },
   });
 }
@@ -85,8 +95,8 @@ function groupBySeasons(episodes: MediaDTO[]): SeasonSection[] {
     .map(([season, eps]) => ({ season, episodes: eps }));
 }
 
-// ─── Flat list data item types ─────────────────────────────────
-type RowSeason  = { kind: 'season'; season: number };
+// ─── Flat list row types ───────────────────────────────────────
+type RowSeason  = { kind: 'season';  season: number; epCount: number; isOpen: boolean };
 type RowEpisode = { kind: 'episode'; item: MediaDTO };
 type Row = RowSeason | RowEpisode;
 
@@ -100,6 +110,19 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
 
   const { data: episodes = [], isLoading, isError } = useSeriesEpisodes(imdbId);
 
+  const sections = useMemo(() => groupBySeasons(episodes), [episodes]);
+
+  const [openSeasons, setOpenSeasons] = useState<Set<number>>(new Set());
+  const initializedRef = useRef(false);
+
+  // Veri yüklenince ilk sezonu bir kez aç
+  useEffect(() => {
+    if (!initializedRef.current && sections.length > 0) {
+      initializedRef.current = true;
+      setOpenSeasons(new Set([sections[0].season]));
+    }
+  }, [sections]);
+
   const showTitle = useMemo(() => {
     if (!episodes.length) return '';
     const raw = episodes[0].title;
@@ -108,14 +131,25 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
   }, [episodes]);
 
   const rows: Row[] = useMemo(() => {
-    const sections = groupBySeasons(episodes);
     const result: Row[] = [];
     for (const { season, episodes: eps } of sections) {
-      result.push({ kind: 'season', season });
-      for (const ep of eps) result.push({ kind: 'episode', item: ep });
+      const isOpen = openSeasons.has(season);
+      result.push({ kind: 'season', season, epCount: eps.length, isOpen });
+      if (isOpen) {
+        for (const ep of eps) result.push({ kind: 'episode', item: ep });
+      }
     }
     return result;
-  }, [episodes]);
+  }, [sections, openSeasons]);
+
+  function toggleSeason(season: number) {
+    setOpenSeasons(prev => {
+      const next = new Set(prev);
+      if (next.has(season)) next.delete(season);
+      else next.add(season);
+      return next;
+    });
+  }
 
   return (
     <View style={styles.root}>
@@ -150,10 +184,17 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
             contentContainerStyle={styles.listContent}
             renderItem={({ item: row }) => {
               if (row.kind === 'season') {
+                const isOpen = row.isOpen;
                 return (
-                  <View style={styles.seasonHeader}>
-                    <Text style={styles.seasonHeaderText}>Sezon {row.season}</Text>
-                  </View>
+                  <TouchableOpacity
+                    style={[styles.seasonRow, isOpen && styles.seasonRowOpen]}
+                    activeOpacity={0.75}
+                    onPress={() => toggleSeason(row.season)}
+                  >
+                    <Text style={styles.seasonLabel}>Sezon {row.season}</Text>
+                    <Text style={styles.seasonMeta}>{row.epCount} bölüm</Text>
+                    <Text style={styles.seasonChevron}>{isOpen ? '▾' : '▸'}</Text>
+                  </TouchableOpacity>
                 );
               }
               const ep = row.item;
