@@ -81,15 +81,15 @@ public class EnrichmentService {
         int attempts = 0;
         WordDefinition definition = null;
 
-        while (attempts < 3) {
+        while (attempts < 2) {
             try {
-                definition = aiService.enrichWord(word.getWord(), word.getDifficulty());
+                definition = aiService.enrichWord(word.getWord(), word.getDifficulty(), word.getContextSentence());
                 if (definition != null)
                     break;
             } catch (Exception e) {
                 attempts++;
                 log.warn("Attempt {} failed for '{}': {}. Retrying...", attempts, word.getWord(), e.getMessage());
-                if (attempts < 3) {
+                if (attempts < 2) {
                     try {
                         Thread.sleep(1000 * attempts);
                     } catch (InterruptedException ie) {

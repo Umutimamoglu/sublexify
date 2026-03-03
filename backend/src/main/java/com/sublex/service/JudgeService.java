@@ -1,6 +1,7 @@
 package com.sublex.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sublex.model.Word;
 import com.sublex.model.WordDefinition;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +39,8 @@ public class JudgeService {
      * The Judge evaluates C1/C2 words and complex flagged entries.
      * Returns a proposed WordDefinition (verdict) — does NOT auto-save.
      */
-    public WordDefinition judgeWord(String word, WordDefinition currentDefinition) {
+    public WordDefinition judgeWord(Word wordObj, WordDefinition currentDefinition) {
+        String word = wordObj.getWord();
         log.info("Judge (GPT-5-mini) evaluating word: '{}'", word);
 
         String currentJson;
@@ -70,18 +72,22 @@ public class JudgeService {
                         5. **SEMANTIC UNIQUENESS (CRITICAL)**: Do NOT provide or approve redundant or near-identical meanings. If a word primarily has one meaning, provide ONLY ONE.
                         6. **NO NESTED LISTS (CRITICAL)**: Each 'definition' must be a SINGLE string. Do NOT use numbered lists (e.g., "1) ... 2) ...") inside a definition string. Use separate objects in the 'meanings' array instead.
 
+                        ## TARGET WORD: "%s"
+
+                        ## CONTEXT (CRITICAL):
+                        The word appeared in this sentence: "%s"
+                        The Turkish definition MUST fit this specific usage.
+
                         ## CURRENT DEFINITION:
                         %s
 
-                        ## TARGET WORD: "%s"
-
                         ## INSTRUCTIONS:
                         - Return ONLY valid JSON matching the exact same schema as the current definition.
-                        - If the current definition is already excellent, return it unchanged.
-                        - If improvements are needed, apply them and return the improved version.
+                        - If the current definition is already excellent and fits the CONTEXT, return it unchanged.
+                        - If improvements are needed to match the CONTEXT or improve quality, apply them and return the improved version.
                         - Do NOT include markdown formatting like ```json.
                         """,
-                currentJson, word);
+                word, wordObj.getContextSentence() != null ? wordObj.getContextSentence() : "", currentJson);
 
         try {
             Map<String, Object> requestBody = Map.of(
@@ -109,7 +115,6 @@ public class JudgeService {
 
         } catch (Exception e) {
             log.error("Judge (GPT-5-mini) failed for word '{}'. Error: {}", word, e.getMessage());
-            // It might be a model name issue or rate limit.
             return null;
         }
     }

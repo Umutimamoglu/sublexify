@@ -104,7 +104,8 @@ public class SpecialistService {
     public void fixSingleWord(Word word, java.time.LocalDateTime batchTime) {
         try {
             log.info("Specialist fixing word '{}'. Reason: {}", word.getWord(), word.getAuditNotes());
-            WordDefinition fixedDef = geminiService.fixWord(word.getWord(), word.getAuditNotes());
+            WordDefinition fixedDef = geminiService.fixWord(word.getWord(), word.getAuditNotes(),
+                    word.getContextSentence());
 
             if (fixedDef != null) {
                 applySpecialistFix(word, fixedDef, batchTime);
@@ -152,19 +153,8 @@ public class SpecialistService {
         log.info("AFTER Specialist flag update for '{}': needs_re_enrichment={}, is_verified={}",
                 word.getWord(), word.getNeedsReEnrichment(), word.getIsVerified());
 
-        // ======= AD-HOC JUDGE STEP FOR C1/C2 WORDS =======
-        String difficulty = word.getDifficulty();
-        if ("C1".equalsIgnoreCase(difficulty) || "C2".equalsIgnoreCase(difficulty)) {
-            log.info("Applying Judge evaluation for high-level Specialist fix: {}", word.getWord());
-            com.sublex.model.WordDefinition judgeVerdict = judgeService.judgeWord(word.getWord(), word.getDefinition());
-            if (judgeVerdict != null) {
-                word.setDefinition(judgeVerdict);
-                word.setDifficulty(judgeVerdict.getDifficulty());
-                word.setJudgeVerdict(judgeVerdict);
-                word.setJudgeStatus("APPROVED");
-                word.setJudgeApprovedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
-                log.info("Judge verdict applied for '{}'", word.getWord());
-            }
-        }
+        // AD-HOC JUDGE REMOVED — C1/C2 words are now judged in Pipeline Step 4 (batch
+        // Judge)
+        // This eliminates duplicate Judge calls and reduces API costs
     }
 }

@@ -29,7 +29,11 @@ public class GeminiService implements AIService {
             .requestFactory(new org.springframework.http.client.JdkClientHttpRequestFactory(
                     java.net.http.HttpClient.newBuilder()
                             .connectTimeout(java.time.Duration.ofSeconds(60))
-                            .build()))
+                            .build()) {
+                {
+                    setReadTimeout(java.time.Duration.ofSeconds(180));
+                }
+            })
             .build();
 
     private static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
@@ -39,6 +43,7 @@ public class GeminiService implements AIService {
     public static final String SHERIFF_MODEL = "gemini-3-flash-preview";
     public static final String PIPELINE_MODEL = "gemini-2.5-pro";
     public static final String SPECIALIST_MODEL = "gemini-2.5-pro";
+    public static final String ANALYSIS_MODEL = "gemini-2.5-flash";
     private static final String DEFAULT_MODEL = PIPELINE_MODEL;
 
     public List<com.sublex.dto.WordAnalysisResultDTO> analyzeWordsWithContext(
@@ -71,7 +76,7 @@ public class GeminiService implements AIService {
                             """,
                     jsonInput);
 
-            String response = generateContent(prompt, PIPELINE_MODEL);
+            String response = generateContent(prompt, ANALYSIS_MODEL);
             if (response == null)
                 return List.of();
 
@@ -159,15 +164,16 @@ public class GeminiService implements AIService {
     }
 
     @Override
-    public WordDefinition enrichWord(String word, String difficulty) {
+    public WordDefinition enrichWord(String word, String difficulty, String contextSentence) {
         // Individual enrichment using Gemini Pro/Flash
-        return fixWord(word, "Initial orientation");
+        return fixWord(word, "Initial orientation Context: " + contextSentence,
+                "Enriching dictionary entry definition and example");
     }
 
     @Override
-    public WordDefinition enrichTrustedWord(String word, String difficulty) {
+    public WordDefinition enrichTrustedWord(String word, String difficulty, String contextSentence) {
         // Simple delegator for now to satisfy interface
-        return enrichWord(word, difficulty);
+        return enrichWord(word, difficulty, contextSentence);
     }
 
     @Override
@@ -194,7 +200,11 @@ public class GeminiService implements AIService {
                    - Every English 'example' MUST include its Turkish translation in parentheses.
                 2. **LEMMA (ROOT) IDENTIFICATION**:
                    - Always use the base root form (lemma) of the word.
-                3. **NO NULL LISTS (CRITICAL)**:
+                3. **CONTEXT SENSITIVITY (CRITICAL)**:
+                   - You MUST prioritize the meaning that fits the provided 'CONTEXT'.
+                   - For example, if 'squash' is provided with a cooking context, do NOT define it as a sport.
+                   - If 'terminator' has a movie context, do NOT provide obscure astronomical definitions.
+                4. **NO NULL LISTS (CRITICAL)**:
                    - If there are no `phrasal_verbs` or `meanings` to add, you MUST return an empty list `[]`.
                    - Do NOT use `null` for list fields.
 
@@ -227,7 +237,7 @@ public class GeminiService implements AIService {
                         """,
                 batchDetails.toString());
 
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= 2; attempt++) {
             try {
                 String response = generateContent(systemPrompt + "\n\n" + userPrompt, PIPELINE_MODEL);
                 if (response == null) {
@@ -260,16 +270,18 @@ public class GeminiService implements AIService {
 
         log.info("Gemini Specialist fixing batch of {} words", words.size());
 
-        StringBuilder batchDetails = new StringBuilder();
+        StringBuilder batchInput = new StringBuilder();
         for (int i = 0; i < words.size(); i++) {
             com.sublex.model.Word w = words.get(i);
-            batchDetails
-                    .append(String.format("%d. WORD: \"%s\", REASON: \"%s\"\n", i + 1, w.getWord(), w.getAuditNotes()));
+            batchInput.append(String.format("%d. WORD: \"%s\", REASON: \"%s\", CONTEXT: \"%s\"\n",
+                    i + 1, w.getWord(), w.getAuditNotes(),
+                    w.getContextSentence() != null ? w.getContextSentence() : ""));
         }
 
         String systemPrompt = """
                 You are a meticulous Senior Lexicographer and Turkish Language Expert.
                 Your mission is to fix rejected dictionary entries with 100% linguistic accuracy.
+
                 ### MANDATORY QUALITY CONTROLS:
                 1. **TURKISH TRANSLATION IS STRICTLY REQUIRED**:
                    - Every 'definition' MUST be written in fluent Turkish.
@@ -315,7 +327,13 @@ public class GeminiService implements AIService {
                     }
                   }
                 ]
-                Return ONLY the JSON array. No conversational filler.
+                You are the 'Specialist', an expert lexicographer.
+                The following words were REJECTED by the Sheriff. You must fix them.
+
+                ### RULES:
+                1. **CONTEXTUAL ALIGNMENT (CRITICAL)**: For each word, look at the 'CONTEXT' provided. The definition MUST match how the word is used in that sentence.
+                2. **STRICT FORMATTING**: Return ONLY a JSON array.
+                No conversational filler.
                 """;
 
         String userPrompt = String.format(
@@ -326,11 +344,11 @@ public class GeminiService implements AIService {
 
                         Provide the corrected JSON array now:
                         """,
-                batchDetails.toString());
+                batchInput.toString());
 
         String fullPrompt = systemPrompt + "\n\n" + userPrompt;
 
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        for (int attempt = 1; attempt <= 2; attempt++) {
             try {
                 String response = generateContent(fullPrompt, SPECIALIST_MODEL);
                 if (response == null)
@@ -356,11 +374,11 @@ public class GeminiService implements AIService {
         return Map.of();
     }
 
-    public com.sublex.model.WordDefinition fixWord(String word, String auditNotes) {
-        log.info("Gemini Specialist fixing word: '{}' because: {}", word, auditNotes);
+    public com.sublex.model.WordDefinition fixWord(String word, String auditNotes, String contextSentence) {
+        log.info("Gemini Specialist fixing word: '{}' because: {}. Context: {}", word, auditNotes, contextSentence);
 
         String systemPrompt = """
-                You are a meticulous Senior Lexicographer and Turkish Language Expert.
+                You are a meticulous Senior Lexicographer and Turkish Language Expert for the Sublex dictionary.
                 Your mission is to fix rejected dictionary entries with 100% linguistic accuracy.
 
                 ### MANDATORY QUALITY CONTROLS:
@@ -369,14 +387,16 @@ public class GeminiService implements AIService {
                    - Every English 'example' MUST include its Turkish translation in parentheses.
                 2. **ROOT MATCHING (CRITICAL)**:
                    - If the rejection reason is 'Root mismatch', you MUST change the "word" field in the JSON to the correct base root. Do not define the past tense or plural form!
-                3. **SEMANTIC UNIQUENESS (CRITICAL)**:
+                3. **CONTEXTUAL ALIGNMENT (CRITICAL)**:
+                   - You MUST look at the provided 'CONTEXT'. The definition MUST match how the word is used in that sentence.
+                4. **SEMANTIC UNIQUENESS (CRITICAL)**:
                    - Do NOT provide redundant or near-identical meanings. If a word primarily has one meaning, provide ONLY ONE.
-                4. **NO NESTED LISTS (CRITICAL)**:
+                5. **NO NESTED LISTS (CRITICAL)**:
                    - Each 'definition' must be a SINGLE string. Do NOT use numbered lists (e.g., "1) ... 2) ...") inside a definition string. Use separate objects in the 'meanings' array instead.
-                5. **STRICT VERB FORM KEYS (CRITICAL)**:
+                6. **STRICT VERB FORM KEYS (CRITICAL)**:
                    - You MUST use keys `v1`, `v2`, `v3`, and `ing` for the `verb_forms` object.
                    - Do NOT use `present`, `past`, `participle`. Use `v1`, `v2`, `v3`, `ing`.
-                6. **NO NULL LISTS (CRITICAL)**:
+                7. **NO NULL LISTS (CRITICAL)**:
                    - If there are no `phrasal_verbs` or `meanings` to add, you MUST return an empty list `[]`.
                    - Do NOT use `null` for list fields.
 
@@ -412,37 +432,33 @@ public class GeminiService implements AIService {
                 """
                         STRICT RECTIFICATION REQUIRED:
 
-                        1. REJECTED WORD: "%s"
+                        1. WORD: "%s"
                         2. REJECTION REASON: "%s"
+                        3. CONTEXT: "%s"
 
                         ACTION PLAN:
-                        - If the reason is 'Typo', perform a spelling audit.
-                        - If the reason is 'Natural translation', replace robotic phrasing with idiomatic Turkish.
-                        - If the reason is 'Inaccurate definition', re-research the word domain (e.g., tech, nature).
+                        - Ensure the definition matches the CONTEXT.
+                        - Correct any errors identified in the REJECTION REASON.
 
                         Provide the corrected JSON now:
                         """,
-                word, auditNotes);
+                word, auditNotes, contextSentence != null ? contextSentence : "");
 
         String fullPrompt = systemPrompt + "\n\n" + userPrompt;
 
-        // RETRY MECHANISM (3 Attempts)
-        for (int attempt = 1; attempt <= 3; attempt++) {
+        // RETRY MECHANISM (2 Attempts)
+        for (int attempt = 1; attempt <= 2; attempt++) {
             try {
                 String response = generateContent(fullPrompt, SPECIALIST_MODEL);
                 if (response == null)
                     continue;
 
                 log.info("Gemini Specialist response for {} (Attempt {}): {}", word, attempt, response);
-
                 return objectMapper.readValue(response, com.sublex.model.WordDefinition.class);
 
             } catch (Exception e) {
                 log.warn("Gemini Specialist failed to fix word: {} (Attempt {}). Error: {}", word, attempt,
                         e.getMessage());
-                if (attempt == 3) {
-                    log.error("Final Gemini attempt failed for word: {}", word, e);
-                }
             }
         }
         return null;

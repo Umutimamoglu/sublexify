@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface UserKnownWordRepository extends JpaRepository<UserKnownWord, Long> {
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"word"})
     List<UserKnownWord> findByUserId(Long userId);
 
     Optional<UserKnownWord> findByUserIdAndWordId(Long userId, Long wordId);

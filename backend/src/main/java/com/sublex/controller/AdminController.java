@@ -16,12 +16,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sublex.model.MediaType;
+import com.sublex.model.Word;
 import com.sublex.service.TmdbService;
 import com.sublex.util.FilenameParser;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -278,7 +281,30 @@ public class AdminController {
         String content = new String(file.getBytes(), StandardCharsets.UTF_8);
         subtitleProcessingService.processSubtitles(media.getId(), content, language);
 
+        // Trigger word analysis after subtitle processing (replaces @Scheduled)
+        log.info("Triggering word analysis after subtitle processing for media: {}", media.getId());
+        Thread.startVirtualThread(() -> wordAnalysisService.processPendingWords());
+
         return String.format("Processed %s as %s (ID: %d)", filename, media.getTitle(), media.getId());
+    }
+
+    @PostMapping("/words/fix-proper-nouns")
+    @Transactional
+    public ResponseEntity<String> fixProperNouns() {
+        log.info("Fixing proper nouns stuck in re-enrichment...");
+        List<Word> stuckWords = wordRepository.findAll().stream()
+                .filter(w -> Boolean.TRUE.equals(w.getNeedsReEnrichment()))
+                .filter(w -> Boolean.TRUE.equals(w.getIsProperNoun()))
+                .toList();
+
+        for (Word w : stuckWords) {
+            w.setNeedsReEnrichment(false);
+            w.setIsVerified(true);
+            w.setAuditNotes("Auto-approved as proper noun by admin fix script");
+        }
+        wordRepository.saveAll(stuckWords);
+
+        return ResponseEntity.ok("Fixed " + stuckWords.size() + " proper nouns.");
     }
 
     @DeleteMapping("/media/{id}")
@@ -574,9 +600,19 @@ public class AdminController {
     @Operation(summary = "Starts the full 4-step enrichment pipeline for a specific media")
     public ResponseEntity<String> startMediaPipeline(@PathVariable Long id,
             @RequestParam(defaultValue = "100") int size) {
-        log.info("Starting enrichment pipeline for media ID: {} ({} words)", id, size);
+        log.info("Starting enrichment pipeline for media {} (size: {})", id, size);
         pipelineService.startPipeline(size, id);
-        return ResponseEntity.accepted().body("Pipeline started for media " + id + ".");
+        return ResponseEntity.accepted().body("Pipeline started for media " + id + " (" + size + " words).");
+    }
+
+    @GetMapping("/pipeline/pending-counts")
+    @Operation(summary = "Returns counts of words waiting for analysis and enrichment")
+    public ResponseEntity<java.util.Map<String, Long>> getPendingCounts(
+            @RequestParam(defaultValue = "en") String language) {
+        java.util.Map<String, Long> counts = new java.util.HashMap<>();
+        counts.put("pendingAnalysis", wordRepository.countPendingAnalysis(language));
+        counts.put("pendingEnrichment", wordRepository.countPendingEnrichment(language));
+        return ResponseEntity.ok(counts);
     }
 
     @GetMapping("/pipeline/status")

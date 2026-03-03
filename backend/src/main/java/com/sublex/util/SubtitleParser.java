@@ -19,7 +19,9 @@ public class SubtitleParser {
     // GÜNCELLEME 1: Regex artık Unicode karakterleri (\p{L}), tire ve kesme
     // işaretlerini destekler.
     // Örn: "café", "long-term", "don't" tek token olarak yakalanır.
-    private static final Pattern WORD_PATTERN = Pattern.compile("[\\p{L}]+(?:['’\\-][\\p{L}]+)*");
+    // Max 2 hyphen/apostrophe segments: captures 'long-term', 'don't', 'well-to-do'
+    // but NOT 'hotshot-chef-at-the-big-fancy' (which becomes individual tokens)
+    private static final Pattern WORD_PATTERN = Pattern.compile("[\\p{L}]+(?:[''\\-][\\p{L}]+){0,2}");
 
     /**
      * Data holder for word analysis
@@ -130,6 +132,11 @@ public class SubtitleParser {
 
             // Tek harfli kelime kontrolü: Sadece "a" ve "i" kabul edilir.
             if (word.length() == 1 && !word.equals("a") && !word.equals("i")) {
+                continue;
+            }
+
+            // Maksimum kelime uzunluğu: 30 karakteri geçen tokenlar cümle parçasıdır.
+            if (word.length() > 30) {
                 continue;
             }
 

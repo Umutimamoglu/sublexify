@@ -12,17 +12,18 @@ public interface AIService {
      * @param word The word to enrich
      * @return WordDefinition object or null if failed
      */
-    WordDefinition enrichWord(String word, String difficulty);
+    WordDefinition enrichWord(String word, String difficulty, String contextSentence);
 
     /**
      * Enriches a word while strictly respecting the provided difficulty level.
      * Useful for trusted lists like Oxford.
      * 
-     * @param word       The word to enrich
-     * @param difficulty The trusted difficulty level
+     * @param word            The word to enrich
+     * @param difficulty      The trusted difficulty level
+     * @param contextSentence The context in which the word is used
      * @return WordDefinition object or null if failed
      */
-    WordDefinition enrichTrustedWord(String word, String difficulty);
+    WordDefinition enrichTrustedWord(String word, String difficulty, String contextSentence);
 
     /**
      * Enriches a list of words in a single batch.

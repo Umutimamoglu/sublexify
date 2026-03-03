@@ -30,7 +30,8 @@ public class WordAnalysisService {
 
     private static final int BATCH_SIZE = 50; // Process 50 words at a time
 
-    @Scheduled(fixedDelay = 10000) // Run every 10 seconds
+    // @Scheduled removed — now triggered manually after media upload to reduce AI
+    // costs
     public void processPendingWords() {
         // 1. Fetch pending words
         Pageable pageable = PageRequest.of(0, BATCH_SIZE);
@@ -189,6 +190,36 @@ public class WordAnalysisService {
 
     // Public method to trigger manually
     public void triggerAnalysis() {
-        processPendingWords();
+        int processedCount = 0;
+        int maxBatches = 100; // Process up to 5000 words in one trigger
+        int batchCount = 0;
+
+        while (batchCount < maxBatches) {
+            Pageable pageable = PageRequest.of(0, BATCH_SIZE);
+            List<Word> pendingWords = wordRepository.findWordsForAnalysis(pageable);
+
+            if (pendingWords.isEmpty()) {
+                log.info("Analysis trigger completed. Total words processed in this run: {}", processedCount);
+                break;
+            }
+
+            log.info("Trigger analysis loop: processing batch {} ({} words)", batchCount + 1, pendingWords.size());
+            processPendingWords();
+            processedCount += pendingWords.size();
+            batchCount++;
+
+            // Brief pause between batches to respect API rate limits
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Analysis trigger loop interrupted");
+                break;
+            }
+        }
+
+        if (batchCount >= maxBatches) {
+            log.warn("Trigger analysis loop reached safety limit of {} batches", maxBatches);
+        }
     }
 }

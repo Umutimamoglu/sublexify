@@ -50,7 +50,17 @@ public class SubtitleProcessingService {
 
         wordDataMap.entrySet().removeIf(entry -> {
             String w = entry.getKey().toLowerCase();
-            return w.length() <= 2 && !shortWordWhitelist.contains(w);
+            // 1. Çok kısa kelimeleri at (whitelist hariç)
+            if (w.length() <= 2 && !shortWordWhitelist.contains(w))
+                return true;
+            // 2. 3+ tire segmenti olan cümle parçalarını at (örn:
+            // 'hotshot-chef-at-the-big-fancy')
+            if (w.split("-").length >= 4)
+                return true;
+            // 3. 30 karakterden uzun tokenları at
+            if (w.length() > 30)
+                return true;
+            return false;
         });
 
         log.info("Parsed {} unique words (after filtering short words)", wordDataMap.size());

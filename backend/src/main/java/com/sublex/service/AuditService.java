@@ -14,7 +14,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.PageRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -28,36 +31,58 @@ public class AuditService {
     private static final int SHERIFF_BATCH_SIZE = 10;
 
     public void auditRecentWords(int totalLimit) {
-        auditRecentWords(totalLimit, null);
+        auditRecentWords(totalLimit, null, null);
     }
 
-    public void auditRecentWords(int totalLimit, Long mediaId) {
-        List<Word> allWordsToAudit = (mediaId == null)
-                ? wordRepository.findTopEnrichedWords(totalLimit)
-                : wordRepository.findTopEnrichedWordsByMediaId(mediaId, totalLimit);
+    public void auditRecentWords(int limit, Long mediaId, BiConsumer<Integer, Integer> progressCallback) {
+        log.info("Starting Sheriff audit for up to {} words...", limit);
 
-        if (allWordsToAudit.isEmpty()) {
-            log.info("No words to audit for mediaId: {}.", mediaId);
+        List<Word> pendingWords = (mediaId == null)
+                ? wordRepository.findTopEnrichedWords(limit)
+                : wordRepository.findTopEnrichedWordsByMediaId(mediaId, limit);
+
+        if (pendingWords.isEmpty()) {
+            log.info("No words pending audit.");
             return;
         }
 
-        log.info("Sheriff (Gemini 3 Flash Preview) auditing {} words in PARALLEL batches (Media ID: {})...",
-                allWordsToAudit.size(),
-                mediaId);
+        log.info("Found {} words pending audit.", pendingWords.size());
 
         List<List<Word>> batches = new ArrayList<>();
-        for (int i = 0; i < allWordsToAudit.size(); i += SHERIFF_BATCH_SIZE) {
-            int end = Math.min(i + SHERIFF_BATCH_SIZE, allWordsToAudit.size());
-            batches.add(new ArrayList<>(allWordsToAudit.subList(i, end)));
+        int batchSize = 10;
+        for (int i = 0; i < pendingWords.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, pendingWords.size());
+            batches.add(new ArrayList<>(pendingWords.subList(i, end)));
         }
 
-        log.info("Sheriff splitting into {} parallel batches.", batches.size());
+        log.info("Sheriff splitting into {} parallel batches of {} words.", batches.size(), batchSize);
 
-        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+        AtomicInteger doneCount = new AtomicInteger(0);
+        int totalToAudit = pendingWords.size();
+
+        try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            // Max 5 parallel Gemini calls to avoid rate limiting
+            java.util.concurrent.Semaphore auditSemaphore = new java.util.concurrent.Semaphore(5);
+
             for (List<Word> batch : batches) {
-                executor.submit(() -> auditBatch(batch));
+                executor.submit(() -> {
+                    try {
+                        auditSemaphore.acquire();
+                        try {
+                            auditBatch(batch);
+                        } finally {
+                            auditSemaphore.release();
+                        }
+                    } catch (Exception e) {
+                        log.error("Sheriff parallel batch failed", e);
+                    }
+                    int done = doneCount.addAndGet(batch.size());
+                    if (progressCallback != null) {
+                        progressCallback.accept(done, totalToAudit);
+                    }
+                });
             }
-        }
+        } // Wait for all Virtual Threads to complete
 
         log.info("Sheriff parallel audit complete.");
     }
@@ -75,6 +100,7 @@ public class AuditService {
                     auditInput.add(Map.of(
                             "id", w.getId(),
                             "word", w.getWord(),
+                            "context", w.getContextSentence() != null ? w.getContextSentence() : "",
                             "meanings", w.getDefinition().getMeanings(),
                             "phrasal_verbs",
                             w.getDefinition().getPhrasalVerbs() != null ? w.getDefinition().getPhrasalVerbs()
@@ -104,41 +130,48 @@ public class AuditService {
                     YOUR GOAL: Analyze the provided list of words one by one. You MUST provide a VERDICT for EVERY SINGLE WORD in the input array. If you receive 25 words, you MUST return exactly 25 JSON objects. Do not skip any!
 
                     ### THE LAWS (STRICT CRITERIA - ZERO TOLERANCE):
-                    1. **ROOT MISMATCH (CRITICAL)**:
+                    1. **CONTEXT MATCH (CRITICAL)**:
+                       - You are provided with a 'context' sentence for each word.
+                       - You MUST reject the entry if the provided meanings/definitions do NOT fit the usage in that specific sentence.
+                       - Example FAILURE: Word is 'squash', context is about a vegetable, but definition is about a sport. REJECT.
+                       - Example FAILURE: Word is 'terminator', context is about a movie character, but definition is astronomical. REJECT.
+
+                    2. **ROOT MISMATCH (CRITICAL)**:
                        - Check 'phrasal_verbs'. Do they belong to the root word?
                        - Example FAILURE: Word is 'fast', but phrasal verb is 'fasten up' (Root mismatch). REJECT.
                        - Example FAILURE: Word is 'staying' (gerund), but phrasal verb is 'stay up'. REJECT.
 
-                    2. **HALLUCINATION LAW**:
+                    3. **HALLUCINATION LAW**:
                        - Do the phrasal verbs actually exist in standard English? (e.g., 'post out' is suspicious). REJECT if fake.
 
-                    3. **DATA INTEGRITY & COMPLETENESS**:
+                    4. **DATA INTEGRITY & COMPLETENESS**:
                        - Does the definition match the headword?
                        - Are any essential fields missing, empty, or null in meanings or examples? REJECT if incomplete.
                        - Are there grammar errors in English examples? (e.g., 'She gave him a thank'). REJECT.
 
-                    4. **TRANSLATION QUALITY**:
+                    5. **TRANSLATION QUALITY**:
                        - Is the Turkish translation natural and accurate? (e.g., 'Ekmek rulosu' is bad for 'bread roll', use 'sandviç ekmeği'). REJECT if robotic or incorrect.
 
-                    5. **VERB FORMS INTEGRITY (CRITICAL)**:
+                    6. **VERB FORMS INTEGRITY (CRITICAL)**:
                        - If ANY meaning of the word has "pos": "verb", the 'verb_forms' object MUST contain valid, non-null values for 'v1', 'v2', 'v3', and 'ing'.
                        - Example FAILURE: Word is 'merge' (verb) but verb_forms are null/empty. REJECT.
                        - Example FAILURE: Word is 'pace' (verb) but verb_forms show 'pacing' for all forms. REJECT.
 
-                    6. **PART OF SPEECH (POS) STANDARDIZATION (CRITICAL)**:
+                    7. **PART OF SPEECH (POS) STANDARDIZATION (CRITICAL)**:
                        - The 'pos' value MUST be fully written out.
-                       - Allowed values: "noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "determiner", "number".
+                       - Allowed values: "noun", "verb", "adjective", "adverb", "pronoun", "preposition", "conjunction", "determiner", "number", "suffix".
                        - Example FAILURE: "pos": "adj" (Must be "adjective"). REJECT.
+                       - **PROPER NOUN EXCEPTION**: If the word is clearly a specific person's name (e.g., Frances, Heathcliff, Jen), DO NOT reject it for being a proper noun. Use 'noun' or 'proper noun' and approve it if the definition accurately describes it as a name.
 
-                    7. **HOMONYM ANTI-POLLUTION (CRITICAL)**:
+                    8. **HOMONYM ANTI-POLLUTION (CRITICAL)**:
                        - Only meanings directly related to the semantic context of the target word are allowed.
                        - Example FAILURE: Word is 'mining', root is 'mine', but meanings include 'benimki' (pronoun). REJECT.
 
-                    8. **SEMANTIC UNIQUENESS LAW (NEW)**:
+                    9. **SEMANTIC UNIQUENESS LAW (NEW)**:
                        - REJECT if meanings are redundant or nearly identical (e.g., "web sitesi" and "internet sayfası" as separate entries for "website").
                        - If a word has one dominant meaning, it should NOT have a forced second meaning.
 
-                    9. **INTERNAL FORMATTING LAW (NEW)**:
+                    10. **INTERNAL FORMATTING LAW (NEW)**:
                        - REJECT if a single 'definition' string contains a manual list (e.g., "1) süpürmek 2) temizlemek").
                        - Multiple meanings MUST be separate objects in the 'meanings' array, NOT a single string with numbers.
 

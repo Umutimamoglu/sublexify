@@ -27,10 +27,10 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         @Query(value = "INSERT INTO word (word, language, created_at) VALUES (:word, :language, NOW()) ON CONFLICT (word, language) DO NOTHING", nativeQuery = true)
         void insertIgnore(@Param("word") String word, @Param("language") String language);
 
-        @Query("SELECT w FROM Word w WHERE (w.isEnriched = false OR w.isEnriched IS NULL) AND w.rootWord IS NULL ORDER BY w.id ASC LIMIT 50")
+        @Query("SELECT w FROM Word w WHERE w.status = 'PROCESSED' AND (w.isEnriched = false OR w.isEnriched IS NULL) AND w.rootWord IS NULL ORDER BY w.id ASC LIMIT 50")
         List<Word> findPendingEnrichment();
 
-        @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND (mw.word.isEnriched = false OR mw.word.isEnriched IS NULL) AND mw.word.rootWord IS NULL ORDER BY mw.word.id ASC")
+        @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND mw.word.status = 'PROCESSED' AND (mw.word.isEnriched = false OR mw.word.isEnriched IS NULL) AND mw.word.rootWord IS NULL ORDER BY mw.word.id ASC")
         List<Word> findPendingEnrichmentByMediaId(@Param("mediaId") Long mediaId,
                         org.springframework.data.domain.Pageable pageable);
 
@@ -92,10 +92,10 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND (w.needsReEnrichment = false OR w.needsReEnrichment IS NULL) AND (w.isVerified = false OR w.isVerified IS NULL) ORDER BY w.enrichedAt ASC LIMIT :limit")
         List<Word> findTopEnrichedWords(@Param("limit") int limit);
 
-        @Query("SELECT w FROM Word w WHERE (w.isEnriched = false OR w.isEnriched IS NULL) AND w.rootWord IS NULL ORDER BY w.id ASC")
+        @Query("SELECT w FROM Word w WHERE w.status = 'PROCESSED' AND (w.isEnriched = false OR w.isEnriched IS NULL) AND w.rootWord IS NULL ORDER BY w.id ASC")
         List<Word> findPendingEnrichmentWithLimit(org.springframework.data.domain.Pageable pageable);
 
-        @Query("SELECT w FROM Word w WHERE (w.isEnriched = false OR w.isEnriched IS NULL) AND w.rootWord IS NULL AND w.difficulty IS NOT NULL ORDER BY w.id ASC")
+        @Query("SELECT w FROM Word w WHERE w.status = 'PROCESSED' AND (w.isEnriched = false OR w.isEnriched IS NULL) AND w.rootWord IS NULL AND w.difficulty IS NOT NULL ORDER BY w.id ASC")
         List<Word> findPendingTrustedEnrichment(org.springframework.data.domain.Pageable pageable);
 
         List<Word> findByJudgeStatus(String judgeStatus);
@@ -114,4 +114,10 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         @Modifying
         @Query("UPDATE Word w SET w.definition = NULL, w.isEnriched = false, w.enrichedAt = NULL, w.judgeVerdict = NULL, w.judgeStatus = NULL, w.judgeApprovedAt = NULL, w.auditNotes = NULL WHERE w.language = :language")
         void clearAllTranslations(@Param("language") String language);
+
+        @Query("SELECT COUNT(w) FROM Word w WHERE (w.status = 'PENDING' OR (w.status = 'FAILED' AND w.retryCount < 3)) AND w.language = :language")
+        long countPendingAnalysis(@Param("language") String language);
+
+        @Query("SELECT COUNT(w) FROM Word w WHERE w.status = 'PROCESSED' AND (w.isEnriched = false OR w.isEnriched IS NULL) AND w.rootWord IS NULL AND w.language = :language")
+        long countPendingEnrichment(@Param("language") String language);
 }

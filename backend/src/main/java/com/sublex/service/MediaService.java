@@ -5,7 +5,6 @@ import com.sublex.dto.MediaWordsResponseDTO;
 import com.sublex.dto.WordDTO;
 import com.sublex.model.Media;
 import com.sublex.model.MediaWord;
-import com.sublex.model.UserKnownWord;
 import com.sublex.repository.MediaRepository;
 import com.sublex.repository.MediaWordRepository;
 import com.sublex.repository.UserKnownWordRepository;
@@ -35,11 +34,11 @@ public class MediaService {
     }
 
     /**
-     * Get all media with total word counts
+     * Get all media — lightweight, no per-row DB queries
      */
     public List<MediaDTO> getAllMedia(Long userId) {
         return mediaRepository.findAll().stream()
-                .map(media -> convertToDTO(media, userId))
+                .map(this::convertToBasicDTO)
                 .collect(Collectors.toList());
     }
 
@@ -96,6 +95,27 @@ public class MediaService {
         response.setLevelCounts(levelCounts);
 
         return response;
+    }
+
+    /**
+     * Lightweight conversion — no extra DB queries, used for list endpoints
+     */
+    private MediaDTO convertToBasicDTO(Media media) {
+        MediaDTO dto = new MediaDTO();
+        dto.setId(media.getId());
+        dto.setTitle(media.getTitle());
+        dto.setImdbId(media.getImdbId());
+        dto.setType(media.getType().toString());
+        dto.setLanguage(media.getLanguage());
+        dto.setOverview(media.getOverview());
+        dto.setPosterUrl(media.getPosterUrl());
+        dto.setBackdropUrl(media.getBackdropUrl());
+        dto.setTmdbId(media.getTmdbId());
+        dto.setSeasonNumber(media.getSeasonNumber());
+        dto.setEpisodeNumber(media.getEpisodeNumber());
+        dto.setVoteAverage(media.getVoteAverage());
+        dto.setCreatedAt(media.getCreatedAt());
+        return dto;
     }
 
     /**

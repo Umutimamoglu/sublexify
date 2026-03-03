@@ -131,14 +131,42 @@ public class PipelineService {
         LocalDateTime batchTime = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
         AtomicInteger workerDone = new AtomicInteger(0);
 
+        List<Word> properNouns = words.stream().filter(w -> Boolean.TRUE.equals(w.getIsProperNoun())).toList();
+        List<Word> wordsToProcess = words.stream().filter(w -> !Boolean.TRUE.equals(w.getIsProperNoun())).toList();
+
+        if (!properNouns.isEmpty()) {
+            log.info("Bypassing AI for {} proper nouns and marking as APPROVED.", properNouns.size());
+            for (Word word : properNouns) {
+                com.sublex.model.WordDefinition def = new com.sublex.model.WordDefinition();
+                def.setWord(word.getWord());
+                def.setDifficulty("A1");
+                com.sublex.model.WordDefinition.Meaning meaning = new com.sublex.model.WordDefinition.Meaning();
+                meaning.setPos("noun");
+                meaning.setDefinition("A proper noun (Name, Place, etc.)");
+                meaning.setExample(word.getContextSentence() != null ? word.getContextSentence() : "");
+                def.getMeanings().add(meaning);
+
+                word.setDefinition(def);
+                word.setDifficulty("A1");
+                word.setIsEnriched(true);
+                word.setNeedsReEnrichment(false);
+                word.setIsVerified(true); // Bypass Sheriff
+                word.setJudgeStatus("APPROVED"); // Bypass Judge
+                word.setAuditNotes("Auto-approved proper noun. Bypassed AI pipeline.");
+                word.setEnrichedAt(batchTime);
+            }
+            // properNouns are part of `words` list, which gets saved at the end of WORKER
+            // step.
+        }
+
         // ======= STEP 1: WORKER (Batch Enrichment) =======
         updateStep(PipelineStatus.Step.WORKER);
 
         int workerBatchSize = 25;
         List<List<Word>> workerBatches = new ArrayList<>();
-        for (int i = 0; i < words.size(); i += workerBatchSize) {
-            int end = Math.min(i + workerBatchSize, words.size());
-            workerBatches.add(new ArrayList<>(words.subList(i, end)));
+        for (int i = 0; i < wordsToProcess.size(); i += workerBatchSize) {
+            int end = Math.min(i + workerBatchSize, wordsToProcess.size());
+            workerBatches.add(new ArrayList<>(wordsToProcess.subList(i, end)));
         }
 
         log.info("Worker splitting into {} parallel batches of {} words.", workerBatches.size(), workerBatchSize);
@@ -209,9 +237,15 @@ public class PipelineService {
         stepStart = System.currentTimeMillis();
 
         updateStep(PipelineStatus.Step.SHERIFF);
+        currentStatus.updateAndGet(s -> s.toBuilder()
+                .processedWords(0)
+                .progressPercent(0)
+                .build());
 
         try {
-            auditService.auditRecentWords(actualSize, mediaId);
+            auditService.auditRecentWords(actualSize, mediaId, (done, total) -> {
+                updateProgress(PipelineStatus.Step.SHERIFF, done, total);
+            });
         } catch (Exception e) {
             log.error("Sheriff audit failed: {}", e.getMessage());
             addFailure("SHERIFF", "BATCH", e.getMessage());
@@ -301,40 +335,51 @@ public class PipelineService {
 
         currentStatus.updateAndGet(s -> s.withJudgeQueueSize(judgeQueue.size()));
 
-        log.info("Judge queue: {} C1/C2 words to evaluate.", judgeQueue.size());
+        log.info("Judge queue: {} C1/C2 words to evaluate in BATCHES.", judgeQueue.size());
 
         AtomicInteger judgeDone = new AtomicInteger(0);
         int judgeTotal = judgeQueue.size();
 
+        // Batch Judge: 10 words parallel via individual judgeWord calls
+        int judgeBatchSize = 10;
+        List<List<Word>> judgeBatches = new ArrayList<>();
+        for (int i = 0; i < judgeQueue.size(); i += judgeBatchSize) {
+            int end = Math.min(i + judgeBatchSize, judgeQueue.size());
+            judgeBatches.add(new ArrayList<>(judgeQueue.subList(i, end)));
+        }
+
+        log.info("Judge splitting into {} parallel batches of {} words.", judgeBatches.size(), judgeBatchSize);
+
         try (var judgeExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
-            for (Word word : judgeQueue) {
+            for (List<Word> batch : judgeBatches) {
                 judgeExecutor.submit(() -> {
-                    try {
-                        judgeSemaphore.acquire();
+                    for (Word word : batch) {
                         try {
-                            WordDefinition verdict = judgeService.judgeWord(word.getWord(), word.getDefinition());
-                            if (verdict != null) {
-                                // Auto-apply the judge's verdict immediately
-                                word.setJudgeVerdict(verdict);
-                                word.setDefinition(verdict);
-                                word.setDifficulty(verdict.getDifficulty());
-                                word.setJudgeStatus("APPROVED");
-                                word.setJudgeApprovedAt(batchTime);
-                                word.setEnrichedAt(batchTime);
-                                wordRepository.save(word);
-                                log.info("Judge verdict auto-applied for '{}'", word.getWord());
-                            } else {
-                                addFailure("JUDGE", word.getWord(), "GPT-5-mini returned null");
+                            judgeSemaphore.acquire();
+                            try {
+                                WordDefinition verdict = judgeService.judgeWord(word, word.getDefinition());
+                                if (verdict != null) {
+                                    word.setJudgeVerdict(verdict);
+                                    word.setDefinition(verdict);
+                                    word.setDifficulty(verdict.getDifficulty());
+                                    word.setJudgeStatus("APPROVED");
+                                    word.setJudgeApprovedAt(batchTime);
+                                    word.setEnrichedAt(batchTime);
+                                    wordRepository.save(word);
+                                    log.info("Judge verdict auto-applied for '{}'", word.getWord());
+                                } else {
+                                    addFailure("JUDGE", word.getWord(), "GPT-5-mini returned null for this word");
+                                }
+                            } finally {
+                                judgeSemaphore.release();
                             }
-                        } finally {
-                            judgeSemaphore.release();
+                        } catch (Exception e) {
+                            log.error("Judge failed for word '{}': {}", word.getWord(), e.getMessage());
+                            addFailure("JUDGE", word.getWord(), e.getMessage());
                         }
-                    } catch (Exception e) {
-                        log.error("Judge failed for '{}': {}", word.getWord(), e.getMessage());
-                        addFailure("JUDGE", word.getWord(), e.getMessage());
+                        int done = judgeDone.incrementAndGet();
+                        updateProgress(PipelineStatus.Step.JUDGE, done, judgeTotal);
                     }
-                    int done = judgeDone.incrementAndGet();
-                    updateProgress(PipelineStatus.Step.JUDGE, done, judgeTotal);
                 });
             }
         }
@@ -453,7 +498,8 @@ public class PipelineService {
                     try {
                         workerSemaphore.acquire();
                         try {
-                            WordDefinition def = openAIService.enrichTrustedWord(word.getWord(), word.getDifficulty());
+                            WordDefinition def = openAIService.enrichTrustedWord(word.getWord(), word.getDifficulty(),
+                                    word.getContextSentence());
                             if (def != null) {
                                 word.setDefinition(def);
                                 word.setDifficulty(def.getDifficulty());
@@ -465,7 +511,7 @@ public class PipelineService {
                                 if ("C1".equalsIgnoreCase(word.getDifficulty())
                                         || "C2".equalsIgnoreCase(word.getDifficulty())) {
                                     log.info("Applying Judge to high-level Oxford word: {}", word.getWord());
-                                    WordDefinition judgeDef = judgeService.judgeWord(word.getWord(),
+                                    WordDefinition judgeDef = judgeService.judgeWord(word,
                                             word.getDefinition());
                                     if (judgeDef != null) {
                                         // Oxford olduğu için Judge sonucunu doğrudan 'APPROVED' olarak kabul edebiliriz

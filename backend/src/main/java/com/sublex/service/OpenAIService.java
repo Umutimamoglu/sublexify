@@ -80,12 +80,16 @@ public class OpenAIService implements AIService {
                         """;
 
         @Override
-        public WordDefinition enrichWord(String word, String difficulty) {
+        public WordDefinition enrichWord(String word, String difficulty, String contextSentence) {
                 log.info("Enriching word via OpenAI: {} (Difficulty: {})", word, difficulty);
 
+                String promptContext = contextSentence != null && !contextSentence.isBlank()
+                                ? " Context sentence from media: '" + contextSentence + "'."
+                                : "";
+
                 String userPrompt = String.format(
-                                "Analyze the English word or term '%s'. Its difficulty level is already determined as: %s. Return the JSON response matching the required structure.",
-                                word, difficulty);
+                                "Analyze the English word or term '%s'. Its difficulty level is already determined as: %s.%s Return the JSON response matching the required structure.",
+                                word, difficulty, promptContext);
 
                 try {
                         Map<String, Object> requestBody = Map.of(
@@ -121,13 +125,19 @@ public class OpenAIService implements AIService {
         }
 
         @Override
-        public WordDefinition enrichTrustedWord(String word, String difficulty) {
+        public WordDefinition enrichTrustedWord(String word, String difficulty, String contextSentence) {
                 log.info("Trusted enrichment for Oxford word: {} ({})", word, difficulty);
+
+                String promptContext = contextSentence != null && !contextSentence.isBlank()
+                                ? " Use this original context sentence to prioritize its meaning: '" + contextSentence
+                                                + "'. "
+                                : "";
 
                 String userPrompt = String.format(
                                 "The English word is '%s'. " +
                                                 "Its CEFR level is EXACTLY '%s' (Oxford verified - DO NOT change it). "
                                                 +
+                                                promptContext +
                                                 "DO NOT re-evaluate the level. DO NOT change the root word. " +
                                                 "ONLY provide a natural Turkish definition and one example sentence. " +
                                                 "Return JSON matching the required structure.",
@@ -174,7 +184,8 @@ public class OpenAIService implements AIService {
                 try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
                         for (Word word : words) {
                                 executor.submit(() -> {
-                                        WordDefinition def = enrichWord(word.getWord(), word.getDifficulty());
+                                        WordDefinition def = enrichWord(word.getWord(), word.getDifficulty(),
+                                                        word.getContextSentence());
                                         if (def != null) {
                                                 results.put(word.getWord(), def);
                                         }
