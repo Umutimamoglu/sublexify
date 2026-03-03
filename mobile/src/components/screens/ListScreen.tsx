@@ -462,6 +462,7 @@ export default function ListScreen({ listId }: { listId: number }) {
   const hapticFired = useSharedValue(false);
   const totalSV = useSharedValue(filteredWords.length);
   const indexSV = useSharedValue(cardIndex);
+  const buttonActiveRef = useRef(false);
 
   useEffect(() => { totalSV.value = filteredWords.length; }, [filteredWords.length]);
   useEffect(() => { indexSV.value = cardIndex; }, [cardIndex]);
@@ -497,6 +498,7 @@ export default function ListScreen({ listId }: { listId: number }) {
   }));
 
   const doFlip = useCallback(() => {
+    if (buttonActiveRef.current) return;
     const next = !isFlipped.value;
     isFlipped.value = next;
     flipProgress.value = withTiming(next ? 1 : 0, { duration: 380, easing: Easing.inOut(Easing.ease) });
@@ -662,6 +664,8 @@ export default function ListScreen({ listId }: { listId: number }) {
                     <TouchableOpacity
                       style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
                       onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
+                      onPressIn={() => { buttonActiveRef.current = true; }}
+                      onPressOut={() => { buttonActiveRef.current = false; }}
                       activeOpacity={0.7}
                     >
                       <Text style={styles.ttsBtnText}>🔊</Text>
@@ -682,6 +686,8 @@ export default function ListScreen({ listId }: { listId: number }) {
                     <TouchableOpacity
                       style={[styles.cardListBtn, { borderColor: c.BORDER }]}
                       onPress={() => setAddModal({ wordId: currentWord.id, wordName: currentWord.word })}
+                      onPressIn={() => { buttonActiveRef.current = true; }}
+                      onPressOut={() => { buttonActiveRef.current = false; }}
                       activeOpacity={0.7}
                     >
                       <Text style={[styles.listBtnText, { fontSize: 16 }]}>+</Text>
@@ -692,6 +698,8 @@ export default function ListScreen({ listId }: { listId: number }) {
                         backgroundColor: knownIds.has(currentWord.id) ? c.PURPLE + '22' : 'transparent',
                       }]}
                       onPress={() => handleToggle(currentWord.id)}
+                      onPressIn={() => { buttonActiveRef.current = true; }}
+                      onPressOut={() => { buttonActiveRef.current = false; }}
                       activeOpacity={0.7}
                     >
                       <Text style={[styles.checkText, { color: knownIds.has(currentWord.id) ? c.PURPLE : c.TEXT_S }]}>✓</Text>
