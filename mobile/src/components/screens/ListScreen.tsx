@@ -17,11 +17,12 @@ import {
   PanResponder,
   useWindowDimensions,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
-import { useListDetail } from '@/src/api/queries/lists.queries';
+import { useListDetail, useRemoveWordFromList, useCreateSubListFromUnknown } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
 import type { ListWord, Difficulty } from '@/src/types/api';
@@ -130,6 +131,16 @@ function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
     // Progress
     progressText: { color: c.TEXT_S, fontSize: 13, marginTop: 14, textAlign: 'center' },
 
+    // Remove button on row
+    removeBtn:  { width: 30, height: 30, borderRadius: 15, backgroundColor: '#EF444418', alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+    removeBtnText: { fontSize: 13 },
+
+    // Bottom CTA
+    ctaBar:    { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: isDark ? '#ffffff0f' : '#e0e0ea' },
+    ctaBtn:    { backgroundColor: c.PURPLE, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+    ctaBtnDis: { opacity: 0.4 },
+    ctaText:   { color: '#fff', fontSize: 14, fontWeight: '700' },
+
     // Empty/loading
     center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
     emptyText: { color: c.TEXT_S, fontSize: 15 },
@@ -144,12 +155,14 @@ function WordRow({
   word,
   isKnown,
   onToggle,
+  onRemove,
   styles,
   c,
 }: {
   word: ListWord;
   isKnown: boolean;
   onToggle: () => void;
+  onRemove?: () => void;
   styles: Styles;
   c: typeof DARK;
 }) {
@@ -175,6 +188,11 @@ function WordRow({
       >
         <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
       </TouchableOpacity>
+      {!!onRemove && (
+        <TouchableOpacity style={styles.removeBtn} onPress={onRemove} activeOpacity={0.7}>
+          <Text style={styles.removeBtnText}>🗑</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -297,7 +315,9 @@ export default function ListScreen({ listId }: { listId: number }) {
   const isKnownList = listId === -1;
   const { data: list, isLoading: listLoading } = useListDetail(listId);
   const { data: knownWordsData = [], isLoading: knownLoading } = useKnownWords();
-  const { mutate: toggleKnown } = useMarkKnown();
+  const { mutate: toggleKnown }                                = useMarkKnown();
+  const { mutate: removeWord }                                 = useRemoveWordFromList();
+  const { mutate: generateSubList, isPending: generating }     = useCreateSubListFromUnknown();
 
   // listId=-1 için knownWordsData'yı ListDetailDTO formatına çevir
   const knownWordsAsDetail = useMemo<typeof list>(() => {
@@ -318,10 +338,14 @@ export default function ListScreen({ listId }: { listId: number }) {
   const [filter, setFilter]     = useState<Filter>('all');
   const [cardIndex, setCardIndex] = useState(0);
   const [knownIds, setKnownIds]   = useState<Set<number>>(new Set());
+  const knownInitialized = useRef(false);
 
-  // ─── Sync known IDs ───────────────────────────────────────
+  // ─── Init known IDs once ───────────────────────────────────
   useEffect(() => {
-    setKnownIds(new Set(knownWordsData.map((w) => w.id)));
+    if (!knownInitialized.current && knownWordsData.length > 0) {
+      setKnownIds(new Set(knownWordsData.map((w) => w.id)));
+      knownInitialized.current = true;
+    }
   }, [knownWordsData]);
 
   // ─── Filtered words ───────────────────────────────────────
@@ -350,6 +374,37 @@ export default function ListScreen({ listId }: { listId: number }) {
     });
     toggleKnown({ wordId, isKnown: currentlyKnown });
   }, [knownIds, toggleKnown]);
+
+  // ─── Remove word from list ────────────────────────────────
+  const handleRemove = useCallback((wordId: number, wordName: string) => {
+    Alert.alert(
+      'Kelimeyi Kaldır',
+      `"${wordName}" kelimesini listeden kaldırmak istiyor musunuz?`,
+      [
+        { text: 'İptal', style: 'cancel' },
+        { text: 'Kaldır', style: 'destructive', onPress: () => removeWord({ listId, wordId }) },
+      ],
+    );
+  }, [removeWord, listId]);
+
+  // ─── Generate sub-list from unknowns ─────────────────────
+  const unknownCount = useMemo(
+    () => filteredWords.filter((w) => !knownIds.has(w.id)).length,
+    [filteredWords, knownIds],
+  );
+
+  const handleGenerateSubList = useCallback(() => {
+    Alert.alert(
+      'Alt-Liste Oluştur',
+      `Bu listedeki ${unknownCount} bilinmeyen kelimeden yeni bir liste oluşturulsun mu?`,
+      [
+        { text: 'İptal', style: 'cancel' },
+        { text: 'Oluştur', onPress: () => generateSubList(listId, {
+          onSuccess: (newList) => Alert.alert('Başarılı', `"${newList.name}" oluşturuldu.`),
+        }) },
+      ],
+    );
+  }, [generateSubList, listId, unknownCount]);
 
   // ─── Flashcard animations ─────────────────────────────────
   const translateX = useRef(new Animated.Value(0)).current;
@@ -499,12 +554,14 @@ export default function ListScreen({ listId }: { listId: number }) {
                 word={item}
                 isKnown={knownIds.has(item.id)}
                 onToggle={() => handleToggle(item.id)}
+                onRemove={!isKnownList ? () => handleRemove(item.id, item.word) : undefined}
                 styles={styles}
                 c={c}
               />
             )}
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             showsVerticalScrollIndicator={false}
+            ListFooterComponent={<View style={{ height: 16 }} />}
           />
         ) : (
           /* ── FLASHCARD VIEW ──────────────────────────────── */
@@ -559,6 +616,23 @@ export default function ListScreen({ listId }: { listId: number }) {
             <Text style={styles.progressText}>
               {cardIndex + 1} / {filteredWords.length}
             </Text>
+          </View>
+        )}
+
+        {/* Alt-liste CTA — sadece normal listeler için, bilinmeyen kelime varsa */}
+        {!isKnownList && viewMode === 'list' && unknownCount > 0 && (
+          <View style={styles.ctaBar}>
+            <TouchableOpacity
+              style={[styles.ctaBtn, generating && styles.ctaBtnDis]}
+              onPress={handleGenerateSubList}
+              disabled={generating}
+              activeOpacity={0.85}
+            >
+              {generating
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.ctaText}>Bilinmeyenlerden Alt-Liste Oluştur ({unknownCount})</Text>
+              }
+            </TouchableOpacity>
           </View>
         )}
 

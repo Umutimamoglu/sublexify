@@ -40,6 +40,15 @@ public class MediaController {
     }
 
     /**
+     * GET /api/media/series/{imdbId}/episodes
+     * Get all episodes for a series, sorted by season and episode number
+     */
+    @GetMapping("/series/{imdbId}/episodes")
+    public ResponseEntity<List<MediaDTO>> getSeriesEpisodes(@PathVariable String imdbId) {
+        return ResponseEntity.ok(mediaService.getSeriesEpisodes(imdbId));
+    }
+
+    /**
      * GET /api/media/{id}
      * Get specific media details
      */

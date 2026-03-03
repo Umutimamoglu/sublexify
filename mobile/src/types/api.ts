@@ -58,24 +58,32 @@ export type MediaDTO = {
   episodeNumber: number | null;
   voteAverage: number | null;
   createdAt: string;
+  // userId ile çekildiğinde gelen ek alanlar
+  knownWordPercentage?: number | null;
+  difficultyLevel?: string | null;
+  levelCounts?: Record<string, number> | null;
 };
 
+// GET /api/media/{id}/words yanıtı
 export type MediaWordsResponseDTO = {
-  media: MediaDTO;
+  mediaId: number;
+  totalWords: number;
+  levelCounts: Record<string, number>;
   words: WordDTO[];
-  totalCount: number;
-  unknownCount: number;
 };
 
 export type UserStatistics = {
-  totalKnown: number;
+  totalKnownWords: number;
   totalWords: number;
 };
 
+// GET /api/lists ve /api/lists/standard yanıtı
 export type WordListDTO = {
   id: number;
   name: string;
-  wordCount: number;
+  totalWords: number;
+  unknownWords: number;
+  levelCounts: Record<string, number>;
   createdAt: string;
 };
 
@@ -84,7 +92,7 @@ export type ApiError = {
   status: number;
 };
 
-// List detail — GET /api/lists/{id} yanıtı (words dahil)
+// List detail — GET /api/lists/{id}/words yanıtı
 export type ListWord = {
   id: number;
   word: string;
@@ -92,6 +100,7 @@ export type ListWord = {
   difficulty: Difficulty | null;
   definition: WordDefinition | null;
   isEnriched: boolean;
+  isKnown?: boolean;
 };
 
 export type ListDetailDTO = {

@@ -52,10 +52,64 @@ export function useListDetail(id: number) {
 
 export function useCreateList() {
   const qc = useQueryClient();
-
   return useMutation({
     mutationFn: async (name: string) => {
-      const res = await apiClient.post<WordListDTO>(ENDPOINTS.lists.list, { name });
+      const res = await apiClient.post<WordListDTO>(ENDPOINTS.lists.list, name, {
+        headers: { 'Content-Type': 'text/plain' },
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: listKeys.all });
+    },
+  });
+}
+
+export function useDeleteList() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (listId: number) => {
+      await apiClient.delete(ENDPOINTS.lists.detail(listId));
+      return listId;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: listKeys.all });
+    },
+  });
+}
+
+export function useAddWordToList() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ listId, wordId }: { listId: number; wordId: number }) => {
+      await apiClient.post(ENDPOINTS.lists.wordItem(listId, wordId));
+      return { listId, wordId };
+    },
+    onSuccess: ({ listId }) => {
+      qc.invalidateQueries({ queryKey: listKeys.detail(listId) });
+    },
+  });
+}
+
+export function useRemoveWordFromList() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ listId, wordId }: { listId: number; wordId: number }) => {
+      await apiClient.delete(ENDPOINTS.lists.wordItem(listId, wordId));
+      return { listId, wordId };
+    },
+    onSuccess: ({ listId }) => {
+      qc.invalidateQueries({ queryKey: listKeys.detail(listId) });
+      qc.invalidateQueries({ queryKey: listKeys.all });
+    },
+  });
+}
+
+export function useCreateSubListFromUnknown() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (listId: number) => {
+      const res = await apiClient.post<WordListDTO>(ENDPOINTS.lists.generateSubList(listId));
       return res.data;
     },
     onSuccess: () => {

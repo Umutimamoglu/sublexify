@@ -43,6 +43,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="media/[id]" />
+                <Stack.Screen name="show/[imdbId]" />
                 <Stack.Screen name="word/[id]" />
               </Stack>
             </AuthProvider>

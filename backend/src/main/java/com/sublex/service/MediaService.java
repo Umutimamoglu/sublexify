@@ -11,7 +11,11 @@ import com.sublex.repository.UserKnownWordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.sublex.model.MediaType;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,10 +38,44 @@ public class MediaService {
     }
 
     /**
-     * Get all media — lightweight, no per-row DB queries
+     * Get all media — movies directly, episodes deduplicated by imdbId (one card per series)
      */
     public List<MediaDTO> getAllMedia(Long userId) {
-        return mediaRepository.findAll().stream()
+        List<Media> all = mediaRepository.findAll();
+        List<MediaDTO> result = new ArrayList<>();
+
+        // Track which series (imdbId) we've already added
+        Map<String, Boolean> seenSeries = new LinkedHashMap<>();
+
+        for (Media media : all) {
+            if (media.getType() == MediaType.MOVIE) {
+                result.add(convertToBasicDTO(media));
+            } else if (media.getType() == MediaType.EPISODE) {
+                String imdbId = media.getImdbId();
+                if (imdbId != null && !seenSeries.containsKey(imdbId)) {
+                    seenSeries.put(imdbId, true);
+                    MediaDTO dto = convertToBasicDTO(media);
+                    // Extract show title: "Mr. Robot - Episode Name" → "Mr. Robot"
+                    String rawTitle = media.getTitle();
+                    int sep = rawTitle.indexOf(" - ");
+                    dto.setTitle(sep > 0 ? rawTitle.substring(0, sep) : rawTitle);
+                    // Clear episode-specific fields
+                    dto.setSeasonNumber(null);
+                    dto.setEpisodeNumber(null);
+                    result.add(dto);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Get all episodes for a series, sorted by season and episode number
+     */
+    public List<MediaDTO> getSeriesEpisodes(String imdbId) {
+        return mediaRepository
+                .findByImdbIdAndTypeOrderBySeasonNumberAscEpisodeNumberAsc(imdbId, MediaType.EPISODE)
+                .stream()
                 .map(this::convertToBasicDTO)
                 .collect(Collectors.toList());
     }

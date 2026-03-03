@@ -1,13 +1,8 @@
-import { View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Text } from '@/src/components/ui';
+import MediaDetailScreen from '@/src/components/screens/MediaDetailScreen';
 
-export default function MediaDetailScreen() {
+export default function MediaDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-
-  return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <Text variant="heading2">Media #{id}</Text>
-    </View>
-  );
+  const mediaId = parseInt(id ?? '0', 10);
+  return <MediaDetailScreen mediaId={mediaId} />;
 }

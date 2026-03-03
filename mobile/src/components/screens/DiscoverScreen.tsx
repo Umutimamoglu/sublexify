@@ -16,7 +16,7 @@ import { useTheme } from '@/src/context/ThemeContext';
 import { DifficultyBadge } from '@/src/components/ui';
 import { useMedia, useContinueLearning } from '@/src/api/queries/media.queries';
 import { useStandardLists } from '@/src/api/queries/lists.queries';
-import { useKnownWords } from '@/src/api/queries/user.queries';
+import { useUserStats } from '@/src/api/queries/user.queries';
 import type { MediaDTO, WordListDTO } from '@/src/types/api';
 
 // ─── Cinema Colour Palettes ───────────────────────────────────
@@ -238,7 +238,7 @@ function ListCard({ item, styles, onPress }: { item: WordListDTO; styles: Styles
     <TouchableOpacity style={[styles.listCard, { width: cardWidth }]} activeOpacity={0.85} onPress={onPress}>
       <Text style={styles.listIcon}>{listIcon(item.name)}</Text>
       <Text style={styles.listTitle}>{item.name}</Text>
-      <Text style={styles.listSubtitle}>{item.wordCount} words</Text>
+      <Text style={styles.listSubtitle}>{item.totalWords} kelime</Text>
     </TouchableOpacity>
   );
 }
@@ -256,9 +256,9 @@ export default function DiscoverScreen() {
   );
 
   const { data: continueMedia = [], isLoading: continueLoading } = useContinueLearning(5);
-  const { data: allMedia = [], isLoading: mediaLoading } = useMedia();
+  const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
   const { data: standardLists = [], isLoading: listsLoading } = useStandardLists();
-  const { data: knownWords = [], isLoading: knownLoading } = useKnownWords();
+  const { data: userStats, isLoading: knownLoading } = useUserStats();
   return (
     <View style={styles.root}>
       <StatusBar
@@ -323,6 +323,12 @@ export default function DiscoverScreen() {
             <Text style={[styles.sectionTitle, styles.sectionPad]}>{t('browseMedia')}</Text>
             {mediaLoading ? (
               <ActivityIndicator color={DARK.PURPLE} style={styles.loader} />
+            ) : mediaError ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyIcon}>⚠️</Text>
+                <Text style={styles.emptyTitle}>İçerikler yüklenemedi</Text>
+                <Text style={styles.emptySubtitle}>Sunucu bağlantısı kontrol edilsin</Text>
+              </View>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>
                 {allMedia.map((item) => (
@@ -331,7 +337,11 @@ export default function DiscoverScreen() {
                     item={item}
                     isDark={isDark}
                     styles={styles}
-                    onPress={() => router.push(`/media/${item.id}` as any)}
+                    onPress={() =>
+                      item.type === 'MOVIE'
+                        ? router.push(`/media/${item.id}` as any)
+                        : router.push(`/show/${item.imdbId}` as any)
+                    }
                   />
                 ))}
               </ScrollView>
@@ -345,7 +355,7 @@ export default function DiscoverScreen() {
               <ActivityIndicator color={DARK.PURPLE} style={styles.loader} />
             ) : (
               <View style={styles.listsGrid}>
-                <KnownWordsCard count={knownWords.length} loading={knownLoading} styles={styles} onPress={() => router.push('/list/-1' as any)} />
+                <KnownWordsCard count={userStats?.totalKnownWords ?? 0} loading={knownLoading} styles={styles} onPress={() => router.push('/list/-1' as any)} />
                 {standardLists.map((item) => (
                   <ListCard key={item.id} item={item} styles={styles} onPress={() => router.push(`/list/${item.id}` as any)} />
                 ))}

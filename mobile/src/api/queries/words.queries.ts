@@ -1,8 +1,39 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/src/api/client';
 import { ENDPOINTS } from '@/src/api/endpoints';
+import type { WordDTO } from '@/src/types/api';
 import { mediaKeys } from './media.queries';
 import { userKeys } from './user.queries';
+
+export const wordKeys = {
+  search:   (q: string) => ['words', 'search', q] as const,
+  frequent: ['words', 'frequent'] as const,
+};
+
+export function useWordSearch(query: string) {
+  return useQuery<WordDTO[]>({
+    queryKey: wordKeys.search(query),
+    queryFn:  async () => {
+      const res = await apiClient.get<WordDTO[]>(
+        `${ENDPOINTS.words.search}?q=${encodeURIComponent(query)}&language=en&userId=1`,
+      );
+      return res.data;
+    },
+    enabled: query.trim().length >= 2,
+  });
+}
+
+export function useFrequentWords(limit = 50) {
+  return useQuery<WordDTO[]>({
+    queryKey: wordKeys.frequent,
+    queryFn:  async () => {
+      const res = await apiClient.get<WordDTO[]>(
+        `${ENDPOINTS.words.frequent}?language=en&limit=${limit}&userId=1`,
+      );
+      return res.data;
+    },
+  });
+}
 
 export function useMarkKnown() {
   const qc = useQueryClient();
