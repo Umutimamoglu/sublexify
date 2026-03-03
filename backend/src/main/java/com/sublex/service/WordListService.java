@@ -55,6 +55,10 @@ public class WordListService {
                 WordList wordList = wordListRepository.findById(listId)
                                 .orElseThrow(() -> new RuntimeException("List not found: " + listId));
 
+                if (Boolean.TRUE.equals(wordList.getIsSystem())) {
+                        throw new RuntimeException("Words cannot be added to system lists.");
+                }
+
                 Word word = wordRepository.findById(wordId)
                                 .orElseThrow(() -> new RuntimeException("Word not found: " + wordId));
 
@@ -66,6 +70,10 @@ public class WordListService {
         public void removeWordFromList(Long listId, Long wordId) {
                 WordList wordList = wordListRepository.findById(listId)
                                 .orElseThrow(() -> new RuntimeException("List not found: " + listId));
+
+                if (Boolean.TRUE.equals(wordList.getIsSystem())) {
+                        throw new RuntimeException("Words cannot be removed from system lists.");
+                }
 
                 Word word = wordRepository.findById(wordId)
                                 .orElseThrow(() -> new RuntimeException("Word not found: " + wordId));

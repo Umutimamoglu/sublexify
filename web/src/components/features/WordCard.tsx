@@ -12,10 +12,11 @@ interface WordProps {
     definition?: WordDefinition;
     difficulty?: string;
     onToggleKnown: (id: number, currentStatus: boolean) => void;
-    onRemove?: () => void; // Optional remove handler for lists
+    onRemove?: () => void;
+    isSystemProtected?: boolean;
 }
 
-const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onToggleKnown, onRemove }: WordProps) => {
+const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onToggleKnown, onRemove, isSystemProtected = false }: WordProps) => {
     // Frequency to visual width (cap at 100%)
     const freqWidth = Math.min(frequency * 5, 100);
     const [showListModal, setShowListModal] = useState(false);
@@ -188,7 +189,7 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                 >
                                     <Bookmark className="w-4 h-4" />
                                 </button>
-                                {onRemove && (
+                                {onRemove && !isSystemProtected && (
                                     <button
                                         onClick={(e) => handleAction(e, onRemove)}
                                         className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

@@ -372,6 +372,7 @@ const UserListsPage = () => {
                                                 {...word}
                                                 onToggleKnown={handleToggleKnown}
                                                 onRemove={() => handleDeleteWord(selectedList.id, word.id)}
+                                                isSystemProtected={selectedList.isSystem}
                                             />
                                         ))}
                                     </div>

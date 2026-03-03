@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Check } from 'lucide-react';
+import { X, Plus, Check, Lock } from 'lucide-react';
 import WordListService, { type WordListDTO } from '@/services/WordListService';
 import { cn } from '@/utils/cn';
 
@@ -126,10 +126,10 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                         {loading ? (
                             <div className="text-center py-4 text-gray-400">Loading lists...</div>
-                        ) : lists.length === 0 ? (
-                            <div className="text-center py-4 text-gray-400">No lists found. Create one above!</div>
+                        ) : lists.filter(l => !l.isSystem).length === 0 ? (
+                            <div className="text-center py-4 text-gray-400">No custom lists found. Create one above!</div>
                         ) : (
-                            lists.map(list => {
+                            lists.filter(l => !l.isSystem).map(list => {
                                 const isAdded = addedLists.has(list.id);
                                 return (
                                     <button
@@ -142,7 +142,9 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
                                                 : "hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                                         )}
                                     >
-                                        <span className="font-medium truncate">{list.name}</span>
+                                        <div className="flex items-center gap-2 truncate">
+                                            <span className="font-medium truncate">{list.name}</span>
+                                        </div>
                                         {isAdded && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
                                     </button>
                                 );
