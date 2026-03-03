@@ -1,10 +1,16 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { useAuthStore } from '@/src/store/authStore';
 
-const host = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+function getDevHost(): string {
+  const hostUri = Constants.expoConfig?.hostUri; // "192.168.x.x:8081" on real device
+  if (hostUri) return hostUri.split(':')[0];
+  return Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+}
+
 const BASE_URL = __DEV__
-  ? `http://${host}:8080/api`
+  ? `http://${getDevHost()}:8080/api`
   : 'https://api.sublex.app/api'; // production URL
 
 export const apiClient = axios.create({
