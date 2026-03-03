@@ -147,7 +147,7 @@ export default function AddToListModal({
   const { colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const c = isDark ? DARK : LIGHT;
-  const styles = useMemo(() => makeStyles(c), [isDark]);
+  const styles = useMemo(() => makeStyles(c), [c]);
 
   const [addedIds,     setAddedIds]     = useState<Set<number>>(new Set());
   const [pendingId,    setPendingId]    = useState<number | null>(null);
@@ -208,9 +208,9 @@ export default function AddToListModal({
     });
   }, [newListName, createList, addWord, wordId]);
 
-  // Only show custom (non-system) lists
+  // All user lists (already filtered by backend)
   const customLists = useMemo(
-    () => lists.filter((l) => !l.isSystem),
+    () => lists,
     [lists],
   );
 
@@ -224,7 +224,7 @@ export default function AddToListModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle} numberOfLines={1}>
-              "{wordName}" listesine ekle
+              {`"${wordName}" listesine ekle`}
             </Text>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
               <Text style={styles.closeText}>✕</Text>
