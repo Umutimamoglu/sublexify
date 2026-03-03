@@ -1,0 +1,17 @@
+
+> web@0.0.0 dev
+> vite
+
+
+  VITE v7.3.1  ready in 282 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+11:48:23 AM [vite] (client) hmr update /src/pages/SeriesDetailPage.tsx, /src/pages/BrowsePage.tsx, /src/pages/MediaDetailPage.tsx, /src/pages/AdminPage.tsx, /src/components/PipelineControlPanel.tsx, /src/components/JudgeReviewPanel.tsx, /src/index.css
+11:48:46 AM [vite] (client) hmr update /src/pages/LandingPage.tsx, /src/index.css
+11:48:52 AM [vite] (client) hmr update /src/pages/LandingPage.tsx, /src/index.css
+12:18:05 PM [vite] (client) hmr update /src/pages/SeriesDetailPage.tsx, /src/pages/BrowsePage.tsx, /src/pages/MediaDetailPage.tsx, /src/pages/AdminPage.tsx, /src/components/PipelineControlPanel.tsx, /src/components/JudgeReviewPanel.tsx, /src/pages/LandingPage.tsx, /src/index.css
+12:18:26 PM [vite] (client) hmr update /src/components/features/MediaCard.tsx, /src/index.css
+12:22:11 PM [vite] (client) hmr update /src/pages/SeriesDetailPage.tsx, /src/pages/BrowsePage.tsx, /src/pages/MediaDetailPage.tsx, /src/pages/AdminPage.tsx, /src/components/PipelineControlPanel.tsx, /src/components/JudgeReviewPanel.tsx, /src/pages/LandingPage.tsx, /src/index.css
+3:48:30 PM [vite] (client) hmr update /src/pages/SeriesDetailPage.tsx, /src/pages/BrowsePage.tsx, /src/pages/MediaDetailPage.tsx, /src/pages/AdminPage.tsx, /src/components/PipelineControlPanel.tsx, /src/components/JudgeReviewPanel.tsx, /src/pages/LandingPage.tsx, /src/index.css
+3:49:21 PM [vite] (client) hmr update /src/components/features/MediaCard.tsx, /src/index.css

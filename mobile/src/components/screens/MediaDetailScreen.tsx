@@ -23,6 +23,7 @@ import { useTheme } from '@/src/context/ThemeContext';
 import { useMediaDetail, useMediaWords, useGenerateListFromMedia } from '@/src/api/queries/media.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
+import AddToListModal from '@/src/components/ui/AddToListModal';
 import type { WordDTO, Difficulty } from '@/src/types/api';
 
 // ─── Palette ──────────────────────────────────────────────────
@@ -98,13 +99,15 @@ function makeStyles(c: typeof DARK, isDark: boolean) {
     separator: { height: 1, backgroundColor: c.BORDER, marginHorizontal: 16 },
 
     // Word row
-    row:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
-    rowInfo:    { flex: 1 },
-    rowWord:    { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
-    rowMeaning: { color: c.TEXT_S, fontSize: 12, marginTop: 3, lineHeight: 17 },
-    rowDiff:    { fontSize: 10, fontWeight: '700', marginTop: 2 },
-    checkBtn:   { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
-    checkText:  { fontSize: 13, fontWeight: '900' },
+    row:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+    rowInfo:     { flex: 1 },
+    rowWord:     { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
+    rowMeaning:  { color: c.TEXT_S, fontSize: 12, marginTop: 3, lineHeight: 17 },
+    rowDiff:     { fontSize: 10, fontWeight: '700', marginTop: 2 },
+    listBtn:     { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+    listBtnText: { color: c.TEXT_S, fontSize: 16 },
+    checkBtn:    { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+    checkText:   { fontSize: 13, fontWeight: '900' },
 
     // Bottom CTA
     ctaBar:    { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: isDark ? '#ffffff0f' : '#e0e0ea' },
@@ -153,12 +156,14 @@ function WordRow({
   word,
   isKnown,
   onToggle,
+  onAddToList,
   styles,
   c,
 }: {
   word: WordDTO;
   isKnown: boolean;
   onToggle: () => void;
+  onAddToList: () => void;
   styles: Styles;
   c: typeof DARK;
 }) {
@@ -176,6 +181,9 @@ function WordRow({
           </Text>
         )}
       </View>
+      <TouchableOpacity style={styles.listBtn} onPress={onAddToList} activeOpacity={0.7}>
+        <Text style={styles.listBtnText}>+</Text>
+      </TouchableOpacity>
       <TouchableOpacity
         style={[
           styles.checkBtn,
@@ -205,6 +213,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const [onlyUnknown, setOnlyUnknown] = useState(false);
   const [filter, setFilter]           = useState<Filter>('all');
   const [knownIds, setKnownIds]       = useState<Set<number>>(new Set());
+  const [addModal, setAddModal]       = useState<{ wordId: number; wordName: string } | null>(null);
   const knownIdsInitialized           = useRef(false);
 
   // ─── Data ─────────────────────────────────────────────────
@@ -410,6 +419,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
                 word={item}
                 isKnown={knownIds.has(item.id)}
                 onToggle={() => handleToggle(item.id)}
+                onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
                 styles={styles}
                 c={c}
               />
@@ -446,6 +456,13 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         )}
 
       </SafeAreaView>
+
+      <AddToListModal
+        visible={!!addModal}
+        wordId={addModal?.wordId ?? 0}
+        wordName={addModal?.wordName ?? ''}
+        onClose={() => setAddModal(null)}
+      />
     </View>
   );
 }

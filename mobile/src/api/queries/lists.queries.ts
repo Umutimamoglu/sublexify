@@ -105,6 +105,17 @@ export function useRemoveWordFromList() {
   });
 }
 
+export function useListsContainingWord(wordId: number) {
+  return useQuery<number[]>({
+    queryKey: ['lists', 'containing-word', wordId],
+    queryFn:  async () => {
+      const res = await apiClient.get<number[]>(ENDPOINTS.lists.containingWord(wordId));
+      return res.data;
+    },
+    enabled: wordId > 0,
+  });
+}
+
 export function useCreateSubListFromUnknown() {
   const qc = useQueryClient();
   return useMutation({

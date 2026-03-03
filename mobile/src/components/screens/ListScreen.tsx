@@ -35,6 +35,7 @@ import { useTheme } from '@/src/context/ThemeContext';
 import { useListDetail, useRemoveWordFromList, useCreateSubListFromUnknown } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
+import AddToListModal from '@/src/components/ui/AddToListModal';
 import type { ListWord, Difficulty } from '@/src/types/api';
 
 // ─── Palettes (same as DiscoverScreen) ───────────────────────
@@ -65,77 +66,78 @@ function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
   const cardH = sh * 0.72;
 
   return StyleSheet.create({
-    root:    { flex: 1, backgroundColor: c.BG },
-    safeArea:{ flex: 1, backgroundColor: c.BG },
+    root: { flex: 1, backgroundColor: c.BG },
+    safeArea: { flex: 1, backgroundColor: c.BG },
 
     // Header
-    header:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
-    backBtn:   { width: 36, height: 36, borderRadius: 18, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
-    backText:  { color: c.TEXT_P, fontSize: 18 },
-    title:     { flex: 1, color: c.TEXT_P, fontSize: 17, fontWeight: '700' },
+    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+    backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
+    backText: { color: c.TEXT_P, fontSize: 18 },
+    title: { flex: 1, color: c.TEXT_P, fontSize: 17, fontWeight: '700' },
     toggleRow: { flexDirection: 'row', backgroundColor: c.SURFACE2, borderRadius: 10, padding: 3, gap: 2 },
     toggleBtn: { width: 34, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     toggleActive: { backgroundColor: c.PURPLE },
-    toggleIcon:   { fontSize: 15 },
+    toggleIcon: { fontSize: 15 },
 
     // Chips
     chipScrollWrap: { flexShrink: 0, flexGrow: 0 },
     chipScroll: { paddingHorizontal: 16, paddingBottom: 12, flexGrow: 0 },
-    chip:       { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-    chipText:   { fontSize: 12, fontWeight: '700' },
+    chip: { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    chipText: { fontSize: 12, fontWeight: '700' },
 
     // Separator
     separator: { height: 1, backgroundColor: c.BORDER, marginHorizontal: 16 },
 
     // List view row
-    row:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13 },
-    rowInfo:    { flex: 1 },
-    rowWord:    { color: c.TEXT_P, fontSize: 16, fontWeight: '700' },
+    row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13 },
+    rowInfo: { flex: 1 },
+    rowWord: { color: c.TEXT_P, fontSize: 16, fontWeight: '700' },
     rowMeaning: { color: c.TEXT_S, fontSize: 13, marginTop: 3, lineHeight: 18 },
-    checkBtn:   { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
-    checkText:  { fontSize: 14, fontWeight: '900' },
+    checkBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
+    checkText: { fontSize: 14, fontWeight: '900' },
 
     // Flashcard container
     flashOuter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    cardStack:  { width: cardW, height: cardH },
+    cardStack: { width: cardW, height: cardH },
 
     // Card (front & back share base)
-    card:       { width: cardW, height: cardH, borderRadius: 20, position: 'absolute', borderWidth: 1, borderColor: isDark ? '#ffffff18' : c.BORDER, overflow: 'hidden', backfaceVisibility: 'hidden' },
+    card: { width: cardW, height: cardH, borderRadius: 20, position: 'absolute', borderWidth: 1, borderColor: isDark ? '#ffffff18' : c.BORDER, overflow: 'hidden', backfaceVisibility: 'hidden' },
 
     // Front
-    cardFront:     { backgroundColor: c.SURFACE, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12 },
-    cardBigWord:   { color: c.TEXT_P, fontSize: 44, fontWeight: '900', textAlign: 'center' },
-    posBadge:      { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, backgroundColor: c.PURPLE + '22' },
-    posBadgeText:  { color: c.PURPLE, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
-    cardExample:   { color: c.TEXT_S, fontSize: 13, fontStyle: 'italic', textAlign: 'center', lineHeight: 20 },
-    flipHint:      { color: c.TEXT_S, fontSize: 11, opacity: 0.5, marginTop: 6 },
-    cardKnownBtn:  { position: 'absolute', top: 14, right: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+    cardFront: { backgroundColor: c.SURFACE, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12 },
+    cardBigWord: { color: c.TEXT_P, fontSize: 44, fontWeight: '900', textAlign: 'center' },
+    posBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, backgroundColor: c.PURPLE + '22' },
+    posBadgeText: { color: c.PURPLE, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+    cardExample: { color: c.TEXT_S, fontSize: 13, fontStyle: 'italic', textAlign: 'center', lineHeight: 20 },
+    flipHint: { color: c.TEXT_S, fontSize: 11, opacity: 0.5, marginTop: 6 },
+    cardKnownBtn: { position: 'absolute', top: 14, right: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+    cardListBtn:  { position: 'absolute', top: 14, left: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
     // Back
-    cardBack:         { backgroundColor: c.SURFACE2 },
-    cardBackInner:    { flex: 1, padding: 20 },
-    cardBackWord:     { color: c.TEXT_P, fontSize: 20, fontWeight: '800', marginBottom: 14 },
-    sectionLabel:     { color: c.TEXT_S, fontSize: 10, fontWeight: '700', letterSpacing: 1.2, marginTop: 14, marginBottom: 6 },
-    meaningBlock:     { marginBottom: 12 },
-    meaningDef:       { color: c.TEXT_P, fontSize: 13, lineHeight: 19, marginTop: 3 },
-    meaningEx:        { color: c.TEXT_S, fontSize: 12, fontStyle: 'italic', marginTop: 3, lineHeight: 17 },
-    verbGrid:         { flexDirection: 'row', gap: 6 },
-    verbCell:         { flex: 1, backgroundColor: c.SURFACE, borderRadius: 8, padding: 8, alignItems: 'center' },
-    verbLabel:        { color: c.TEXT_S, fontSize: 10, fontWeight: '700' },
-    verbValue:        { color: c.TEXT_P, fontSize: 12, fontWeight: '600', marginTop: 2 },
-    phrasalBlock:     { marginBottom: 10 },
-    phrasalPhrase:    { color: c.PURPLE, fontSize: 13, fontWeight: '700' },
-    phrasalDef:       { color: c.TEXT_P, fontSize: 13, marginTop: 2 },
-    phrasalEx:        { color: c.TEXT_S, fontSize: 12, fontStyle: 'italic', marginTop: 2 },
-    cardFlipBackBtn:  { position: 'absolute', top: 14, right: 14, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: c.SURFACE },
+    cardBack: { backgroundColor: c.SURFACE2 },
+    cardBackInner: { flex: 1, padding: 20 },
+    cardBackWord: { color: c.TEXT_P, fontSize: 20, fontWeight: '800', marginBottom: 14 },
+    sectionLabel: { color: c.TEXT_S, fontSize: 10, fontWeight: '700', letterSpacing: 1.2, marginTop: 14, marginBottom: 6 },
+    meaningBlock: { marginBottom: 12 },
+    meaningDef: { color: c.TEXT_P, fontSize: 13, lineHeight: 19, marginTop: 3 },
+    meaningEx: { color: c.TEXT_S, fontSize: 12, fontStyle: 'italic', marginTop: 3, lineHeight: 17 },
+    verbGrid: { flexDirection: 'row', gap: 6 },
+    verbCell: { flex: 1, backgroundColor: c.SURFACE, borderRadius: 8, padding: 8, alignItems: 'center' },
+    verbLabel: { color: c.TEXT_S, fontSize: 10, fontWeight: '700' },
+    verbValue: { color: c.TEXT_P, fontSize: 12, fontWeight: '600', marginTop: 2 },
+    phrasalBlock: { marginBottom: 10 },
+    phrasalPhrase: { color: c.PURPLE, fontSize: 13, fontWeight: '700' },
+    phrasalDef: { color: c.TEXT_P, fontSize: 13, marginTop: 2 },
+    phrasalEx: { color: c.TEXT_S, fontSize: 12, fontStyle: 'italic', marginTop: 2 },
+    cardFlipBackBtn: { position: 'absolute', top: 14, right: 14, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: c.SURFACE },
     cardFlipBackText: { color: c.TEXT_S, fontSize: 11 },
 
     // Difficulty badge (back card)
-    diffBadge:     { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, borderWidth: 1, marginBottom: 12 },
+    diffBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, borderWidth: 1, marginBottom: 12 },
     diffBadgeText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
 
     // Unenriched fallback (back card)
-    unenrichedBox:  { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 10, paddingTop: 40 },
+    unenrichedBox: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 10, paddingTop: 40 },
     unenrichedIcon: { fontSize: 32 },
     unenrichedText: { color: c.TEXT_S, fontSize: 13, textAlign: 'center' as const },
 
@@ -146,7 +148,7 @@ function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
       paddingHorizontal: 12, paddingVertical: 6,
       transform: [{ rotate: '-15deg' }],
     },
-    knownStampText:   { color: '#22C55E', fontSize: 20, fontWeight: '900', letterSpacing: 1.5 },
+    knownStampText: { color: '#22C55E', fontSize: 20, fontWeight: '900', letterSpacing: 1.5 },
     unknownStamp: {
       position: 'absolute', top: 28, right: 20, zIndex: 10,
       borderWidth: 3, borderColor: '#EF4444', borderRadius: 8,
@@ -158,18 +160,22 @@ function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
     // Progress
     progressText: { color: c.TEXT_S, fontSize: 13, marginTop: 14, textAlign: 'center' },
 
+    // Add-to-list button on row
+    listBtn:     { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+    listBtnText: { color: c.TEXT_S, fontSize: 16 },
+
     // Remove button on row
-    removeBtn:  { width: 30, height: 30, borderRadius: 15, backgroundColor: '#EF444418', alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+    removeBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#EF444418', alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
     removeBtnText: { fontSize: 13 },
 
     // Bottom CTA
-    ctaBar:    { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: isDark ? '#ffffff0f' : '#e0e0ea' },
-    ctaBtn:    { backgroundColor: c.PURPLE, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+    ctaBar: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: isDark ? '#ffffff0f' : '#e0e0ea' },
+    ctaBtn: { backgroundColor: c.PURPLE, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
     ctaBtnDis: { opacity: 0.4 },
-    ctaText:   { color: '#fff', fontSize: 14, fontWeight: '700' },
+    ctaText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
     // Empty/loading
-    center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
     emptyText: { color: c.TEXT_S, fontSize: 15 },
     emptyIcon: { fontSize: 36 },
   });
@@ -182,6 +188,7 @@ function WordRow({
   word,
   isKnown,
   onToggle,
+  onAddToList,
   onRemove,
   styles,
   c,
@@ -189,6 +196,7 @@ function WordRow({
   word: ListWord;
   isKnown: boolean;
   onToggle: () => void;
+  onAddToList: () => void;
   onRemove?: () => void;
   styles: Styles;
   c: typeof DARK;
@@ -202,6 +210,9 @@ function WordRow({
           <Text style={styles.rowMeaning} numberOfLines={2}>{meaning}</Text>
         )}
       </View>
+      <TouchableOpacity style={styles.listBtn} onPress={onAddToList} activeOpacity={0.7}>
+        <Text style={styles.listBtnText}>+</Text>
+      </TouchableOpacity>
       <TouchableOpacity
         style={[
           styles.checkBtn,
@@ -342,9 +353,9 @@ export default function ListScreen({ listId }: { listId: number }) {
   const isKnownList = listId === -1;
   const { data: list, isLoading: listLoading } = useListDetail(listId);
   const { data: knownWordsData = [], isLoading: knownLoading } = useKnownWords();
-  const { mutate: toggleKnown }                                = useMarkKnown();
-  const { mutate: removeWord }                                 = useRemoveWordFromList();
-  const { mutate: generateSubList, isPending: generating }     = useCreateSubListFromUnknown();
+  const { mutate: toggleKnown } = useMarkKnown();
+  const { mutate: removeWord } = useRemoveWordFromList();
+  const { mutate: generateSubList, isPending: generating } = useCreateSubListFromUnknown();
 
   // listId=-1 için knownWordsData'yı ListDetailDTO formatına çevir
   const knownWordsAsDetail = useMemo<typeof list>(() => {
@@ -362,9 +373,10 @@ export default function ListScreen({ listId }: { listId: number }) {
 
   // ─── State ────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [filter, setFilter]     = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>('all');
   const [cardIndex, setCardIndex] = useState(0);
-  const [knownIds, setKnownIds]   = useState<Set<number>>(new Set());
+  const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
+  const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
   const knownInitialized = useRef(false);
 
   // ─── Init known IDs once ───────────────────────────────────
@@ -420,32 +432,34 @@ export default function ListScreen({ listId }: { listId: number }) {
       `Bu listedeki ${unknownCount} bilinmeyen kelimeden yeni bir liste oluşturulsun mu?`,
       [
         { text: 'İptal', style: 'cancel' },
-        { text: 'Oluştur', onPress: () => generateSubList(listId, {
-          onSuccess: (newList) => Alert.alert('Başarılı', `"${newList.name}" oluşturuldu.`),
-        }) },
+        {
+          text: 'Oluştur', onPress: () => generateSubList(listId, {
+            onSuccess: (newList) => Alert.alert('Başarılı', `"${newList.name}" oluşturuldu.`),
+          })
+        },
       ],
     );
   }, [generateSubList, listId, unknownCount]);
 
   // ─── Flashcard animations (Reanimated 4 + Gesture Handler) ──
-  const cardX        = useSharedValue(0);
-  const cardY        = useSharedValue(0);
+  const cardX = useSharedValue(0);
+  const cardY = useSharedValue(0);
   const flipProgress = useSharedValue(0);
-  const isFlipped    = useSharedValue(false);
-  const hapticFired  = useSharedValue(false);
-  const totalSV      = useSharedValue(filteredWords.length);
-  const indexSV      = useSharedValue(cardIndex);
+  const isFlipped = useSharedValue(false);
+  const hapticFired = useSharedValue(false);
+  const totalSV = useSharedValue(filteredWords.length);
+  const indexSV = useSharedValue(cardIndex);
 
   useEffect(() => { totalSV.value = filteredWords.length; }, [filteredWords.length]);
-  useEffect(() => { indexSV.value = cardIndex; },           [cardIndex]);
+  useEffect(() => { indexSV.value = cardIndex; }, [cardIndex]);
 
   // Reset flip when card changes
   useEffect(() => {
     flipProgress.value = 0;
-    isFlipped.value    = false;
+    isFlipped.value = false;
   }, [cardIndex]);
 
-  const triggerLight  = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),  []);
+  const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
   const triggerMedium = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), []);
 
   // Card container: tilt + scale while dragging
@@ -471,7 +485,7 @@ export default function ListScreen({ listId }: { listId: number }) {
 
   const doFlip = useCallback(() => {
     const next = !isFlipped.value;
-    isFlipped.value    = next;
+    isFlipped.value = next;
     flipProgress.value = withTiming(next ? 1 : 0, { duration: 380, easing: Easing.inOut(Easing.ease) });
   }, [flipProgress, isFlipped]);
 
@@ -496,18 +510,18 @@ export default function ListScreen({ listId }: { listId: number }) {
       hapticFired.value = false;
       const committed = Math.abs(e.translationX) > 80 || Math.abs(e.velocityX) > 500;
       if (!isFlipped.value && committed) {
-        const goLeft  = e.velocityX < -200 ? true : e.velocityX > 200 ? false : e.translationX < 0;
-        const total   = totalSV.value;
-        const cur     = indexSV.value;
+        const goLeft = e.velocityX < -200 ? true : e.velocityX > 200 ? false : e.translationX < 0;
+        const total = totalSV.value;
+        const cur = indexSV.value;
         // sola = ileri (cur+1), sağa = geri (cur-1)
         const nextIdx = goLeft ? (cur < total - 1 ? cur + 1 : -1) : (cur > 0 ? cur - 1 : -1);
         runOnJS(triggerMedium)();
         if (nextIdx >= 0) {
-          const exitX  = goLeft ? -width * 1.5 : width * 1.5;
-          const enterX = goLeft ?  width * 1.5 : -width * 1.5;
+          const exitX = goLeft ? -width * 1.5 : width * 1.5;
+          const enterX = goLeft ? width * 1.5 : -width * 1.5;
           cardX.value = withTiming(exitX, { duration: 200, easing: Easing.in(Easing.ease) }, () => {
             flipProgress.value = 0;
-            isFlipped.value    = false;
+            isFlipped.value = false;
             runOnJS(setCardIndex)(nextIdx);
             cardX.value = enterX;
             cardY.value = 0;
@@ -581,7 +595,7 @@ export default function ListScreen({ listId }: { listId: number }) {
         >
           {FILTERS.map((f) => {
             const active = filter === f;
-            const color  = DIFF_COLORS[f];
+            const color = DIFF_COLORS[f];
             return (
               <TouchableOpacity
                 key={f}
@@ -612,6 +626,7 @@ export default function ListScreen({ listId }: { listId: number }) {
                 word={item}
                 isKnown={knownIds.has(item.id)}
                 onToggle={() => handleToggle(item.id)}
+                onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
                 onRemove={!isKnownList ? () => handleRemove(item.id, item.word) : undefined}
                 styles={styles}
                 c={c}
@@ -644,6 +659,13 @@ export default function ListScreen({ listId }: { listId: number }) {
                       </>
                     )}
                     <Text style={styles.flipHint}>karta dokun → çevir</Text>
+                    <TouchableOpacity
+                      style={[styles.cardListBtn, { borderColor: c.BORDER }]}
+                      onPress={() => setAddModal({ wordId: currentWord.id, wordName: currentWord.word })}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.listBtnText, { fontSize: 16 }]}>+</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.cardKnownBtn, {
                         borderColor: knownIds.has(currentWord.id) ? c.PURPLE : c.TEXT_S,
@@ -694,6 +716,13 @@ export default function ListScreen({ listId }: { listId: number }) {
         )}
 
       </SafeAreaView>
+
+      <AddToListModal
+        visible={!!addModal}
+        wordId={addModal?.wordId ?? 0}
+        wordName={addModal?.wordName ?? ''}
+        onClose={() => setAddModal(null)}
+      />
     </View>
   );
 }

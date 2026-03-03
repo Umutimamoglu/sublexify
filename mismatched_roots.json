@@ -1,0 +1,887 @@
+[
+  {
+    "database_word": "aged",
+    "ai_json_definition": {
+      "word": "age",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "He has aged a lot in the last year. (Geçen yıl içinde çok yaşlandı.)",
+          "definition": "Yaşlanmak veya olgunlaşmak."
+        },
+        {
+          "pos": "noun",
+          "example": "What is your age? (Yaşınız kaç?)",
+          "definition": "Bir kişinin veya şeyin var olduğu süre; yaş."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "age",
+        "v2": "aged",
+        "v3": "aged",
+        "ing": "aging"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "associated",
+    "ai_json_definition": {
+      "word": "associate",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "I always associate the smell of cinnamon with Christmas. (Tarçın kokusunu her zaman Noel ile ilişkilendiririm.)",
+          "definition": "İnsanları veya şeyleri zihinsel olarak birbirine bağlamak; ilişkilendirmek."
+        }
+      ],
+      "difficulty": "B2",
+      "verb_forms": {
+        "v1": "associate",
+        "v2": "associated",
+        "v3": "associated",
+        "ing": "associating"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "associate with",
+          "example": "He doesn't associate with his old friends anymore. (Artık eski arkadaşlarıyla görüşmüyor.)",
+          "definition": "Biriyle veya bir grupla zaman geçirmek, arkadaşlık etmek."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "bored",
+    "ai_json_definition": {
+      "word": "bore",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "His long stories always bore me. (Onun uzun hikayeleri beni her zaman sıkar.)",
+          "definition": "Birini ilgisiz veya sıkılmış hissettirmek; sıkmak, canını sıkmak."
+        },
+        {
+          "pos": "verb",
+          "example": "The drill can bore through solid rock. (Matkap, katı kayayı delebilir.)",
+          "definition": "Dönerek sert bir yüzeyde delik açmak."
+        },
+        {
+          "pos": "noun",
+          "example": "He is such a bore at parties. (Partilerde o kadar sıkıcı biridir ki.)",
+          "definition": "Sıkıcı, ilgi çekmeyen kimse veya şey."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "bore",
+        "v2": "bored",
+        "v3": "bored",
+        "ing": "boring"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "bore into",
+          "example": "His eyes bored into me. (Gözleri içime işledi.)",
+          "definition": "Birine delici veya rahatsız edici bir şekilde bakmak."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "boring",
+    "ai_json_definition": {
+      "word": "bore",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "His monotonous voice bored everyone in the room. (Onun monoton sesi odadaki herkesi sıktı.)",
+          "definition": "Birini ilgisiz veya yorgun hissettirerek canını sıkmak."
+        },
+        {
+          "pos": "verb",
+          "example": "The machine bores holes into the steel plates. (Makine, çelik plakalara delikler açar.)",
+          "definition": "Dönerek veya basınç uygulayarak sert bir yüzeyde delik açmak."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "bore",
+        "v2": "bored",
+        "v3": "bored",
+        "ing": "boring"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "cutting",
+    "ai_json_definition": {
+      "word": "cut",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "He cut the apple in half. (Elmayı ikiye kesti.)",
+          "definition": "Bıçak gibi keskin bir alet kullanarak bir şeyi açmak veya bölmek; kesmek."
+        }
+      ],
+      "difficulty": "A1",
+      "verb_forms": {
+        "v1": "cut",
+        "v2": "cut",
+        "v3": "cut",
+        "ing": "cutting"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "divorced",
+    "ai_json_definition": {
+      "word": "divorce",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "She decided to divorce her husband. (Kocasından boşanmaya karar verdi.)",
+          "definition": "Evliliği yasal olarak sonlandırmak; boşanmak."
+        },
+        {
+          "pos": "noun",
+          "example": "They went through a difficult divorce. (Zor bir boşanma süreci geçirdiler.)",
+          "definition": "Evliliğin yasal olarak sona erdirilmesi; boşanma."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "divorce",
+        "v2": "divorced",
+        "v3": "divorced",
+        "ing": "divorcing"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "driving",
+    "ai_json_definition": {
+      "word": "drive",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "He is learning to drive a car. (Araba sürmeyi öğreniyor.)",
+          "definition": "Bir aracı (otomobil, otobüs vb.) çalıştırmak ve yönlendirmek; araba sürmek."
+        },
+        {
+          "pos": "verb",
+          "example": "The noise is driving me crazy. (Gürültü beni çıldırtıyor.)",
+          "definition": "Birini veya bir şeyi belirli bir duruma veya eyleme zorlamak, itmek."
+        }
+      ],
+      "difficulty": "A2",
+      "verb_forms": {
+        "v1": "drive",
+        "v2": "drove",
+        "v3": "driven",
+        "ing": "driving"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "drive off",
+          "example": "The thieves drove off in a stolen car. (Hırsızlar çalıntı bir arabayla uzaklaştılar.)",
+          "definition": "Bir araçla bir yerden ayrılmak."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "expected",
+    "ai_json_definition": {
+      "word": "expect",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "I expect to see him at the party. (Onu partide görmeyi umuyorum.)",
+          "definition": "Bir şeyin olacağına veya gerçekleşeceğine inanmak; ummak."
+        },
+        {
+          "pos": "verb",
+          "example": "The company expects its employees to be punctual. (Şirket, çalışanlarının dakik olmasını bekler.)",
+          "definition": "Birinden bir davranışı veya görevi yerine getirmesini istemek veya gerekli görmek."
+        }
+      ],
+      "difficulty": "A2",
+      "verb_forms": {
+        "v1": "expect",
+        "v2": "expected",
+        "v3": "expected",
+        "ing": "expecting"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "failed",
+    "ai_json_definition": {
+      "word": "fail",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "He failed his driving test. (Sürüş sınavında başarısız oldu.)",
+          "definition": "Bir şeyi başaramamak veya beklenen sonucu elde edememek."
+        },
+        {
+          "pos": "verb",
+          "example": "The brakes on the car failed. (Arabanın frenleri bozuldu.)",
+          "definition": "Çalışmayı durdurmak, bozulmak."
+        }
+      ],
+      "difficulty": "A2",
+      "verb_forms": {
+        "v1": "fail",
+        "v2": "failed",
+        "v3": "failed",
+        "ing": "failing"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "flying",
+    "ai_json_definition": {
+      "word": "fly",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "Birds fly south for the winter. (Kuşlar kış için güneye uçar.)",
+          "definition": "Havada kanat veya bir makine yardımıyla hareket etmek."
+        }
+      ],
+      "difficulty": "A2",
+      "verb_forms": {
+        "v1": "fly",
+        "v2": "flew",
+        "v3": "flown",
+        "ing": "flying"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "fly away",
+          "example": "The bird got scared and flew away. (Kuş korktu ve uçup gitti.)",
+          "definition": "Uçarak uzaklaşmak."
+        },
+        {
+          "phrase": "fly over",
+          "example": "The plane will fly over the mountains. (Uçak dağların üzerinden uçacak.)",
+          "definition": "Bir yerin üzerinden uçmak."
+        },
+        {
+          "phrase": "fly by",
+          "example": "The summer vacation flew by. (Yaz tatili göz açıp kapayıncaya kadar geçti.)",
+          "definition": "(Zaman için) çok hızlı geçmek."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "gathering",
+    "ai_json_definition": {
+      "word": "gather",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "She gathered her books and left. (Kitaplarını topladı ve ayrıldı.)",
+          "definition": "Farklı yerlerden bir araya getirmek veya toplanmak."
+        },
+        {
+          "pos": "noun",
+          "example": "It was a small family gathering. (Küçük bir aile toplantısıydı.)",
+          "definition": "(Genellikle 'gathering' formunda) Bir grup insanın sosyal veya resmi bir amaçla bir araya gelmesi; toplantı."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "gather",
+        "v2": "gathered",
+        "v3": "gathered",
+        "ing": "gathering"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "gather up",
+          "example": "He gathered up his papers from the floor. (Kağıtlarını yerden topladı.)",
+          "definition": "Dağınık şeyleri toplamak."
+        },
+        {
+          "phrase": "gather around",
+          "example": "The children gathered around the storyteller. (Çocuklar masalcının etrafında toplandı.)",
+          "definition": "Bir şeyin veya birinin etrafında toplanmak."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "it_invalid",
+    "ai_json_definition": {
+      "word": "it",
+      "meanings": [
+        {
+          "pos": "pronoun",
+          "example": "The cat is sleeping; it looks very peaceful. (Kedi uyuyor; çok huzurlu görünüyor.)",
+          "definition": "Daha önce bahsedilmiş veya kolayca tanımlanabilen bir hayvan veya cansız bir nesneye atıfta bulunmak için kullanılan zamir; üçüncü tekil şahıs zamiri."
+        }
+      ],
+      "difficulty": "A1",
+      "verb_forms": null,
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "landing",
+    "ai_json_definition": {
+      "word": "land",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "The plane will land in ten minutes. (Uçak on dakika içinde inecek.)",
+          "definition": "Bir uçağın veya başka bir aracın yere inmesi; bir yere varmak."
+        },
+        {
+          "pos": "noun",
+          "example": "They bought a piece of land to build a house. (Ev yapmak için bir arsa satın aldılar.)",
+          "definition": "Yeryüzünün suyla kaplı olmayan kısmı; kara parçası."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "land",
+        "v2": "landed",
+        "v3": "landed",
+        "ing": "landing"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "land on",
+          "example": "The cat always lands on its feet. (Kedi her zaman dört ayağının üzerine düşer.)",
+          "definition": "Bir yüzeye veya yere inmek."
+        },
+        {
+          "phrase": "land up",
+          "example": "He landed up in jail after the fight. (Kavgadan sonra kendini hapiste buldu.)",
+          "definition": "Beklenmedik veya istenmeyen bir duruma veya yere düşmek."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "leading",
+    "ai_json_definition": {
+      "word": "lead",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "She will lead the team to victory. (Takımı zafere o taşıyacak.)",
+          "definition": "Bir gruba veya yola rehberlik etmek; öncülük etmek."
+        },
+        {
+          "pos": "verb",
+          "example": "The evidence led the police to the suspect. (Kanıtlar polisi şüpheliye götürdü.)",
+          "definition": "Bir sonuca veya duruma neden olmak, yol açmak."
+        },
+        {
+          "pos": "noun",
+          "example": "Our team took the lead in the second half. (Takımımız ikinci yarıda öne geçti.)",
+          "definition": "Öncülük pozisyonu; liderlik."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "lead",
+        "v2": "led",
+        "v3": "led",
+        "ing": "leading"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "lead to",
+          "example": "Smoking can lead to cancer. (Sigara içmek kansere yol açabilir.)",
+          "definition": "Bir sonuca neden olmak, yol açmak."
+        },
+        {
+          "phrase": "lead up to",
+          "example": "The weeks leading up to the election were tense. (Seçime giden haftalar gergindi.)",
+          "definition": "Bir olaydan hemen önce meydana gelmek veya ona zemin hazırlamak."
+        },
+        {
+          "phrase": "lead on",
+          "example": "He was leading her on with promises of marriage. (Onu evlilik vaatleriyle kandırıyordu.)",
+          "definition": "Birini yanlış yönlendirmek, kandırmak veya boş umutlar vermek."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "left",
+    "ai_json_definition": {
+      "word": "leave",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "The train leaves at 10 a.m. (Tren saat 10'da ayrılıyor.)",
+          "definition": "Bir yerden veya kişiden uzaklaşmak; ayrılmak, terk etmek."
+        }
+      ],
+      "difficulty": "A2",
+      "verb_forms": {
+        "v1": "leave",
+        "v2": "left",
+        "v3": "left",
+        "ing": "leaving"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "lost",
+    "ai_json_definition": {
+      "word": "lose",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "Be careful not to lose your keys. (Anahtarlarını kaybetmemeye dikkat et.)",
+          "definition": "Bir şeye sahip olmayı bırakmak, kaybetmek."
+        },
+        {
+          "pos": "verb",
+          "example": "Our team is likely to lose the match. (Takımımızın maçı kaybetmesi muhtemel.)",
+          "definition": "Bir yarışmayı veya oyunu kazanamamak, yenilmek."
+        }
+      ],
+      "difficulty": "A2",
+      "verb_forms": {
+        "v1": "lose",
+        "v2": "lost",
+        "v3": "lost",
+        "ing": "losing"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "mining",
+    "ai_json_definition": {
+      "word": "mine",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "They mine for coal in this region. (Bu bölgede kömür madenciliği yapıyorlar.)",
+          "definition": "Kömür veya diğer mineralleri yerden çıkarmak; madencilik yapmak."
+        },
+        {
+          "pos": "noun",
+          "example": "He worked in a coal mine. (Bir kömür madeninde çalıştı.)",
+          "definition": "Kömür, elmas gibi değerli maddelerin yerden çıkarıldığı bir çukur veya tünel; maden."
+        }
+      ],
+      "difficulty": "B2",
+      "verb_forms": {
+        "v1": "mine",
+        "v2": "mined",
+        "v3": "mined",
+        "ing": "mining"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "moving",
+    "ai_json_definition": {
+      "word": "move",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "Can you help me move this table? (Bu masayı taşımama yardım edebilir misin?)",
+          "definition": "Bir yerden başka bir yere gitmek veya bir şeyi bir yerden başka bir yere koymak; hareket etmek, taşımak."
+        }
+      ],
+      "difficulty": "A1",
+      "verb_forms": {
+        "v1": "move",
+        "v2": "moved",
+        "v3": "moved",
+        "ing": "moving"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "opposed",
+    "ai_json_definition": {
+      "word": "oppose",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "Many residents oppose the plan to build a new highway. (Birçok bölge sakini yeni bir otoyol inşa etme planına karşı çıkıyor.)",
+          "definition": "Birine veya bir şeye karşı çıkmak, muhalefet etmek veya aynı fikirde olmamak."
+        }
+      ],
+      "difficulty": "B2",
+      "verb_forms": {
+        "v1": "oppose",
+        "v2": "opposed",
+        "v3": "opposed",
+        "ing": "opposing"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "planning",
+    "ai_json_definition": {
+      "word": "plan",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "They are planning a trip to Italy. (İtalya'ya bir gezi planlıyorlar.)",
+          "definition": "Gelecekte yapmak istediğiniz bir şey hakkında ayrıntılı olarak karar vermek; planlamak."
+        },
+        {
+          "pos": "noun",
+          "example": "Do you have any plans for the weekend? (Hafta sonu için bir planın var mı?)",
+          "definition": "Gelecekte yapılacak bir eylem veya olay için ayrıntılı bir teklif; plan."
+        }
+      ],
+      "difficulty": "A2",
+      "verb_forms": {
+        "v1": "plan",
+        "v2": "planned",
+        "v3": "planned",
+        "ing": "planning"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "prepared",
+    "ai_json_definition": {
+      "word": "prepare",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "She prepared dinner for the family. (Aile için akşam yemeği hazırladı.)",
+          "definition": "Bir şeyi bir amaç için hazır hale getirmek veya düzenlemek; hazırlanmak."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "prepare",
+        "v2": "prepared",
+        "v3": "prepared",
+        "ing": "preparing"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "prepare for",
+          "example": "They are preparing for the final exam. (Final sınavına hazırlanıyorlar.)",
+          "definition": "Gelecekteki bir olaya veya duruma hazır olmak."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "qualified",
+    "ai_json_definition": {
+      "word": "qualify",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "He failed to qualify for the final round. (Final turuna katılmaya hak kazanamadı.)",
+          "definition": "Bir iş, yarışma veya pozisyon için gerekli koşulları veya standartları karşılamak; hak kazanmak."
+        },
+        {
+          "pos": "verb",
+          "example": "This training course will qualify you as a certified technician. (Bu eğitim kursu sizi sertifikalı bir teknisyen olarak yetkin kılacaktır.)",
+          "definition": "Birini bir iş veya görev için gerekli beceri veya bilgiyle donatmak, yetkin kılmak."
+        }
+      ],
+      "difficulty": "B2",
+      "verb_forms": {
+        "v1": "qualify",
+        "v2": "qualified",
+        "v3": "qualified",
+        "ing": "qualifying"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "qualify for",
+          "example": "With her high grades, she will qualify for the scholarship. (Yüksek notlarıyla bursa hak kazanacak.)",
+          "definition": "Bir şeye hak kazanmak, uygun olmak."
+        },
+        {
+          "phrase": "qualify as",
+          "example": "A score of 90% or higher qualifies as an 'A' grade. (%90 veya daha yüksek bir puan 'A' notu olarak nitelendirilir.)",
+          "definition": "Bir şey olarak nitelendirilmek veya kabul edilmek."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "remains",
+    "ai_json_definition": {
+      "word": "remain",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "Please remain seated until the plane has come to a complete stop. (Lütfen uçak tamamen durana kadar yerinizde kalınız.)",
+          "definition": "Bir yerde kalmaya devam etmek veya belirli bir durumda olmayı sürdürmek."
+        },
+        {
+          "pos": "verb",
+          "example": "After the fire, very little of the house remained. (Yangından sonra evden geriye çok az şey kaldı.)",
+          "definition": "Geriye kalmak, artmak."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "remain",
+        "v2": "remained",
+        "v3": "remained",
+        "ing": "remaining"
+      },
+      "phrasal_verbs": null
+    }
+  },
+  {
+    "database_word": "running",
+    "ai_json_definition": {
+      "word": "run",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "He runs five miles every day. (Her gün beş mil koşar.)",
+          "definition": "Ayaklarını kullanarak hızla hareket etmek, koşmak."
+        },
+        {
+          "pos": "verb",
+          "example": "Can you show me how to run this software? (Bu yazılımı nasıl çalıştıracağımı gösterebilir misin?)",
+          "definition": "Bir makineyi veya sistemi çalıştırmak, işletmek."
+        }
+      ],
+      "difficulty": "A1",
+      "verb_forms": {
+        "v1": "run",
+        "v2": "ran",
+        "v3": "run",
+        "ing": "running"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "run into",
+          "example": "I ran into my old teacher at the mall. (Alışveriş merkezinde eski öğretmenime rastladım.)",
+          "definition": "Biriyle beklenmedik bir şekilde karşılaşmak, rastlamak."
+        },
+        {
+          "phrase": "run out of",
+          "example": "We have run out of coffee. (Kahvemiz bitti.)",
+          "definition": "Bir şeyin tamamını tüketmek, bitirmek."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "sailing",
+    "ai_json_definition": {
+      "word": "sail",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "We sailed around the islands. (Adaların etrafında yelkenle dolaştık.)",
+          "definition": "Bir teknenin rüzgar gücüyle su üzerinde hareket etmesi veya ettirilmesi."
+        },
+        {
+          "pos": "noun",
+          "example": "The wind tore the main sail. (Rüzgar ana yelkeni yırttı.)",
+          "definition": "Teknenin rüzgarı yakalayıp hareket etmesini sağlayan büyük kumaş parçası; yelken."
+        }
+      ],
+      "difficulty": "B1",
+      "verb_forms": {
+        "v1": "sail",
+        "v2": "sailed",
+        "v3": "sailed",
+        "ing": "sailing"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "sail through",
+          "example": "She sailed through her final exams. (Final sınavlarını kolayca geçti.)",
+          "definition": "Bir şeyi (sınav, görev vb.) çok kolay ve hızlı bir şekilde başarmak."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "screening",
+    "ai_json_definition": {
+      "word": "screen",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "They screen all blood donations for viruses. (Tüm kan bağışlarını virüslere karşı tararlar.)",
+          "definition": "Belirli bir özellik veya hastalık için bir grup insanı veya şeyi sistematik olarak kontrol etmek; elemek, taramak."
+        },
+        {
+          "pos": "verb",
+          "example": "The documentary was screened on national television. (Belgesel ulusal televizyonda gösterildi.)",
+          "definition": "Bir filmi veya televizyon programını göstermek, yayınlamak."
+        },
+        {
+          "pos": "noun",
+          "example": "My phone screen is cracked. (Telefonumun ekranı çatlak.)",
+          "definition": "Elektronik bir cihazın görüntünün gösterildiği düz yüzeyi; ekran."
+        }
+      ],
+      "difficulty": "B2",
+      "verb_forms": {
+        "v1": "screen",
+        "v2": "screened",
+        "v3": "screened",
+        "ing": "screening"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "screen for",
+          "example": "The test screens for genetic disorders. (Test, genetik bozuklukları tarar.)",
+          "definition": "Belirli bir hastalık veya durumu aramak için test etmek."
+        },
+        {
+          "phrase": "screen out",
+          "example": "The initial interview is used to screen out unsuitable candidates. (İlk mülakat, uygun olmayan adayları elemek için kullanılır.)",
+          "definition": "İstenmeyen veya uygun olmayan kişileri/şeyleri bir süreçle ayıklamak, elemek."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "smoking",
+    "ai_json_definition": {
+      "word": "smoke",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "You are not allowed to smoke here. (Burada sigara içmenize izin verilmiyor.)",
+          "definition": "Tütün veya benzeri bir maddeyi yakarak dumanını solumak; sigara içmek."
+        },
+        {
+          "pos": "noun",
+          "example": "I saw smoke coming from the kitchen. (Mutfaktan duman geldiğini gördüm.)",
+          "definition": "Yanan bir maddeden çıkan, havada asılı duran gaz ve küçük katı parçacıklar bütünü; duman."
+        }
+      ],
+      "difficulty": "A2",
+      "verb_forms": {
+        "v1": "smoke",
+        "v2": "smoked",
+        "v3": "smoked",
+        "ing": "smoking"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "smoke out",
+          "example": "They used tear gas to smoke out the protesters. (Protestocuları dumanla dışarı çıkarmak için göz yaşartıcı gaz kullandılar.)",
+          "definition": "Birini veya bir şeyi duman kullanarak saklandığı yerden çıkmaya zorlamak."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "stunning",
+    "ai_json_definition": {
+      "word": "stun",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "The news of his resignation stunned everyone. (Onun istifa haberi herkesi şoke etti.)",
+          "definition": "Birini bir darbe, şaşırtıcı bir haber veya olay ile sersemletmek, şaşkına çevirmek veya şoke etmek."
+        }
+      ],
+      "difficulty": "B2",
+      "verb_forms": {
+        "v1": "stun",
+        "v2": "stunned",
+        "v3": "stunned",
+        "ing": "stunning"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "suffering",
+    "ai_json_definition": {
+      "word": "suffer",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "Many people suffer in silence. (Birçok insan sessizce acı çeker.)",
+          "definition": "Fiziksel veya zihinsel acı, ağrı veya sıkıntı çekmek."
+        }
+      ],
+      "difficulty": "B2",
+      "verb_forms": {
+        "v1": "suffer",
+        "v2": "suffered",
+        "v3": "suffered",
+        "ing": "suffering"
+      },
+      "phrasal_verbs": [
+        {
+          "phrase": "suffer from",
+          "example": "She suffers from severe migraines. (Şiddetli migren ağrılarından muzdarip.)",
+          "definition": "Belirli bir hastalıktan veya sorundan muzdarip olmak."
+        }
+      ]
+    }
+  },
+  {
+    "database_word": "swimming",
+    "ai_json_definition": {
+      "word": "swim",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "I like to swim in the sea. (Denizde yüzmeyi severim.)",
+          "definition": "Kolları ve bacakları kullanarak suda hareket etmek; yüzmek."
+        }
+      ],
+      "difficulty": "A1",
+      "verb_forms": {
+        "v1": "swim",
+        "v2": "swam",
+        "v3": "swum",
+        "ing": "swimming"
+      },
+      "phrasal_verbs": []
+    }
+  },
+  {
+    "database_word": "writing",
+    "ai_json_definition": {
+      "word": "write",
+      "meanings": [
+        {
+          "pos": "verb",
+          "example": "Please write your name at the top of the paper. (Lütfen adınızı kağıdın en üstüne yazın.)",
+          "definition": "Bir yüzey üzerine harf veya kelimeler yazmak; yazmak."
+        }
+      ],
+      "difficulty": "A1",
+      "verb_forms": {
+        "v1": "write",
+        "v2": "wrote",
+        "v3": "written",
+        "ing": "writing"
+      },
+      "phrasal_verbs": []
+    }
+  }
+]

@@ -24,6 +24,7 @@ export const ENDPOINTS = {
     wordItem:           (listId: number, wordId: number) => `/lists/${listId}/words/${wordId}`,
     generateFromMedia:  '/lists/generate/unknown',
     generateSubList:    (id: number) => `/lists/${id}/generate/unknown`,
+    containingWord:     (wordId: number) => `/lists/containing-word/${wordId}`,
   },
   auth: {
     login:    '/auth/login',
