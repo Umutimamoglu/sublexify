@@ -13,12 +13,22 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-  Animated,
-  PanResponder,
   useWindowDimensions,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import Reanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolation,
+  Easing,
+} from 'react-native-reanimated';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -52,7 +62,7 @@ const FILTERS: Filter[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 // ─── Styles ───────────────────────────────────────────────────
 function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
   const cardW = sw - 32;
-  const cardH = sh * 0.64;
+  const cardH = sh * 0.72;
 
   return StyleSheet.create({
     root:    { flex: 1, backgroundColor: c.BG },
@@ -69,6 +79,7 @@ function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
     toggleIcon:   { fontSize: 15 },
 
     // Chips
+    chipScrollWrap: { flexShrink: 0, flexGrow: 0 },
     chipScroll: { paddingHorizontal: 16, paddingBottom: 12, flexGrow: 0 },
     chip:       { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     chipText:   { fontSize: 12, fontWeight: '700' },
@@ -127,6 +138,22 @@ function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
     unenrichedBox:  { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 10, paddingTop: 40 },
     unenrichedIcon: { fontSize: 32 },
     unenrichedText: { color: c.TEXT_S, fontSize: 13, textAlign: 'center' as const },
+
+    // Swipe stamps
+    knownStamp: {
+      position: 'absolute', top: 28, left: 20, zIndex: 10,
+      borderWidth: 3, borderColor: '#22C55E', borderRadius: 8,
+      paddingHorizontal: 12, paddingVertical: 6,
+      transform: [{ rotate: '-15deg' }],
+    },
+    knownStampText:   { color: '#22C55E', fontSize: 20, fontWeight: '900', letterSpacing: 1.5 },
+    unknownStamp: {
+      position: 'absolute', top: 28, right: 20, zIndex: 10,
+      borderWidth: 3, borderColor: '#EF4444', borderRadius: 8,
+      paddingHorizontal: 12, paddingVertical: 6,
+      transform: [{ rotate: '15deg' }],
+    },
+    unknownStampText: { color: '#EF4444', fontSize: 20, fontWeight: '900', letterSpacing: 1.5 },
 
     // Progress
     progressText: { color: c.TEXT_S, fontSize: 13, marginTop: 14, textAlign: 'center' },
@@ -213,11 +240,11 @@ function FlashCardBack({
   onFlipBack: () => void;
   styles: Styles;
   c: typeof DARK;
-  animStyle: object;
+  animStyle: any;
 }) {
   const def = word.definition;
   return (
-    <Animated.View style={[styles.card, styles.cardBack, animStyle]}>
+    <Reanimated.View style={[styles.card, styles.cardBack, animStyle]}>
       <ScrollView style={styles.cardBackInner} showsVerticalScrollIndicator={false}>
         <Text style={styles.cardBackWord}>{word.word}</Text>
 
@@ -297,7 +324,7 @@ function FlashCardBack({
       <TouchableOpacity style={styles.cardFlipBackBtn} onPress={onFlipBack}>
         <Text style={styles.cardFlipBackText}>↩ flip</Text>
       </TouchableOpacity>
-    </Animated.View>
+    </Reanimated.View>
   );
 }
 
@@ -355,12 +382,6 @@ export default function ListScreen({ listId }: { listId: number }) {
     return effectiveList.words.filter((w) => w.difficulty === filter);
   }, [effectiveList?.words, filter]);
 
-  // Refs for panResponder stale closure
-  const filteredWordsRef = useRef(filteredWords);
-  filteredWordsRef.current = filteredWords;
-  const cardIndexRef = useRef(cardIndex);
-  cardIndexRef.current = cardIndex;
-
   // Reset card index on filter change
   useEffect(() => { setCardIndex(0); }, [filter]);
 
@@ -406,73 +427,109 @@ export default function ListScreen({ listId }: { listId: number }) {
     );
   }, [generateSubList, listId, unknownCount]);
 
-  // ─── Flashcard animations ─────────────────────────────────
-  const translateX = useRef(new Animated.Value(0)).current;
-  const flipAnim   = useRef(new Animated.Value(0)).current;
-  const isFlippedRef = useRef(false);
+  // ─── Flashcard animations (Reanimated 4 + Gesture Handler) ──
+  const cardX        = useSharedValue(0);
+  const cardY        = useSharedValue(0);
+  const flipProgress = useSharedValue(0);
+  const isFlipped    = useSharedValue(false);
+  const hapticFired  = useSharedValue(false);
+  const totalSV      = useSharedValue(filteredWords.length);
+  const indexSV      = useSharedValue(cardIndex);
 
-  const flipFront = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
-  const flipBack  = flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] });
-  const frontStyle = { transform: [{ rotateY: flipFront }] };
-  const backStyle  = { transform: [{ rotateY: flipBack  }] };
+  useEffect(() => { totalSV.value = filteredWords.length; }, [filteredWords.length]);
+  useEffect(() => { indexSV.value = cardIndex; },           [cardIndex]);
+
+  // Reset flip when card changes
+  useEffect(() => {
+    flipProgress.value = 0;
+    isFlipped.value    = false;
+  }, [cardIndex]);
+
+  const triggerLight  = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),  []);
+  const triggerMedium = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), []);
+
+  // Card container: tilt + scale while dragging
+  const cardContainerStyle = useAnimatedStyle(() => {
+    const rotate = interpolate(
+      cardX.value, [-width * 0.5, 0, width * 0.5], [-14, 0, 14], Extrapolation.CLAMP,
+    );
+    const scale = interpolate(
+      Math.abs(cardX.value), [0, width * 0.5], [1, 0.94], Extrapolation.CLAMP,
+    );
+    return { transform: [{ translateX: cardX.value }, { translateY: cardY.value }, { rotate: `${rotate}deg` }, { scale }] };
+  });
+
+  // 3D flip faces
+  const frontAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ perspective: 1200 }, { rotateY: `${interpolate(flipProgress.value, [0, 1], [0, 180])}deg` }],
+    backfaceVisibility: 'hidden' as const,
+  }));
+  const backAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ perspective: 1200 }, { rotateY: `${interpolate(flipProgress.value, [0, 1], [180, 360])}deg` }],
+    backfaceVisibility: 'hidden' as const,
+  }));
 
   const doFlip = useCallback(() => {
-    const next = !isFlippedRef.current;
-    isFlippedRef.current = next;
-    Animated.timing(flipAnim, {
-      toValue: next ? 1 : 0,
-      duration: 350,
-      useNativeDriver: true,
-    }).start();
-  }, [flipAnim]);
+    const next = !isFlipped.value;
+    isFlipped.value    = next;
+    flipProgress.value = withTiming(next ? 1 : 0, { duration: 380, easing: Easing.inOut(Easing.ease) });
+  }, [flipProgress, isFlipped]);
 
-  const snapBack = useCallback(() => {
-    Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
-  }, [translateX]);
-
-  const goToCard = useCallback((nextIndex: number, direction: 'left' | 'right') => {
-    const exit = direction === 'left' ? -width * 1.3 : width * 1.3;
-    const enter = direction === 'left' ? width * 1.3 : -width * 1.3;
-    Animated.timing(translateX, { toValue: exit, duration: 220, useNativeDriver: true }).start(() => {
-      // Reset flip
-      flipAnim.setValue(0);
-      isFlippedRef.current = false;
-      setCardIndex(nextIndex);
-      translateX.setValue(enter);
-      Animated.spring(translateX, { toValue: 0, friction: 7, useNativeDriver: true }).start();
-    });
-  }, [translateX, flipAnim, width]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, g) =>
-        !isFlippedRef.current && Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 8,
-      onPanResponderMove: (_, g) => { translateX.setValue(g.dx); },
-      onPanResponderRelease: (_, g) => {
-        if (Math.abs(g.dx) < 6 && Math.abs(g.dy) < 6) {
-          // tap → flip
-          snapBack();
-          doFlip();
-          return;
-        }
-        if (g.dx < -80) {
-          // swipe left → next
-          const total = filteredWordsRef.current.length;
-          const cur   = cardIndexRef.current;
-          const next  = cur < total - 1 ? cur + 1 : cur;
-          if (next !== cur) { goToCard(next, 'left'); } else { snapBack(); }
-        } else if (g.dx > 80) {
-          // swipe right → prev
-          const cur  = cardIndexRef.current;
-          const prev = cur > 0 ? cur - 1 : cur;
-          if (prev !== cur) { goToCard(prev, 'right'); } else { snapBack(); }
+  // Gestures
+  const panGesture = Gesture.Pan()
+    .minDistance(5)
+    .activeOffsetX([-8, 8])
+    .failOffsetY([-15, 15])
+    .onUpdate((e) => {
+      if (isFlipped.value) return;
+      cardX.value = e.translationX;
+      cardY.value = e.translationY * 0.15;
+      if (!hapticFired.value && Math.abs(e.translationX) > 80) {
+        hapticFired.value = true;
+        runOnJS(triggerLight)();
+      }
+      if (hapticFired.value && Math.abs(e.translationX) <= 80) {
+        hapticFired.value = false;
+      }
+    })
+    .onEnd((e) => {
+      hapticFired.value = false;
+      const committed = Math.abs(e.translationX) > 80 || Math.abs(e.velocityX) > 500;
+      if (!isFlipped.value && committed) {
+        const goLeft  = e.velocityX < -200 ? true : e.velocityX > 200 ? false : e.translationX < 0;
+        const total   = totalSV.value;
+        const cur     = indexSV.value;
+        // sola = ileri (cur+1), sağa = geri (cur-1)
+        const nextIdx = goLeft ? (cur < total - 1 ? cur + 1 : -1) : (cur > 0 ? cur - 1 : -1);
+        runOnJS(triggerMedium)();
+        if (nextIdx >= 0) {
+          const exitX  = goLeft ? -width * 1.5 : width * 1.5;
+          const enterX = goLeft ?  width * 1.5 : -width * 1.5;
+          cardX.value = withTiming(exitX, { duration: 200, easing: Easing.in(Easing.ease) }, () => {
+            flipProgress.value = 0;
+            isFlipped.value    = false;
+            runOnJS(setCardIndex)(nextIdx);
+            cardX.value = enterX;
+            cardY.value = 0;
+            cardX.value = withSpring(0, { damping: 20, stiffness: 220, mass: 0.85 });
+          });
         } else {
-          snapBack();
+          // Edge wobble
+          cardX.value = withSpring(0, { damping: 4, stiffness: 180 });
+          cardY.value = withSpring(0, { damping: 20, stiffness: 200 });
         }
-      },
-    }),
-  ).current;
+      } else {
+        cardX.value = withSpring(0, { damping: 20, stiffness: 200 });
+        cardY.value = withSpring(0, { damping: 20, stiffness: 200 });
+      }
+    });
+
+  const tapGesture = Gesture.Tap()
+    .maxDistance(8)
+    .maxDuration(350)
+    .onEnd(() => { runOnJS(doFlip)(); });
+
+  const cardGesture = Gesture.Exclusive(panGesture, tapGesture);
 
   // ─── Render ───────────────────────────────────────────────
   if (isLoading) {
@@ -515,10 +572,11 @@ export default function ListScreen({ listId }: { listId: number }) {
           </View>
         </View>
 
-        {/* Difficulty Chips */}
+        {/* Difficulty Chips — her iki modda da görünür */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.chipScrollWrap}
           contentContainerStyle={styles.chipScroll}
         >
           {FILTERS.map((f) => {
@@ -567,50 +625,49 @@ export default function ListScreen({ listId }: { listId: number }) {
           /* ── FLASHCARD VIEW ──────────────────────────────── */
           <View style={styles.flashOuter}>
             {currentWord && (
-              <Animated.View
-                style={[styles.cardStack, { transform: [{ translateX }] }]}
-                {...panResponder.panHandlers}
-              >
-                {/* Front */}
-                <Animated.View style={[styles.card, styles.cardFront, frontStyle]}>
-                  <Text style={styles.cardBigWord}>{currentWord.word}</Text>
-                  {currentWord.definition?.meanings?.[0] && (
-                    <>
-                      <View style={styles.posBadge}>
-                        <Text style={styles.posBadgeText}>
-                          {currentWord.definition.meanings[0].pos}
-                        </Text>
-                      </View>
-                      <Text style={styles.cardExample} numberOfLines={3}>
-                        {currentWord.definition.meanings[0].example}
-                      </Text>
-                    </>
-                  )}
-                  <Text style={styles.flipHint}>karta dokun → çevir</Text>
-                  {/* Known btn */}
-                  <TouchableOpacity
-                    style={[styles.cardKnownBtn, {
-                      borderColor: knownIds.has(currentWord.id) ? c.PURPLE : c.TEXT_S,
-                      backgroundColor: knownIds.has(currentWord.id) ? c.PURPLE + '22' : 'transparent',
-                    }]}
-                    onPress={() => handleToggle(currentWord.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.checkText, { color: knownIds.has(currentWord.id) ? c.PURPLE : c.TEXT_S }]}>✓</Text>
-                  </TouchableOpacity>
-                </Animated.View>
+              <GestureDetector gesture={cardGesture}>
+                <Reanimated.View style={[styles.cardStack, cardContainerStyle]}>
 
-                {/* Back */}
-                <FlashCardBack
-                  word={currentWord}
-                  isKnown={knownIds.has(currentWord.id)}
-                  onToggle={() => handleToggle(currentWord.id)}
-                  onFlipBack={doFlip}
-                  styles={styles}
-                  c={c}
-                  animStyle={backStyle}
-                />
-              </Animated.View>
+                  {/* Front */}
+                  <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]}>
+                    <Text style={styles.cardBigWord}>{currentWord.word}</Text>
+                    {currentWord.definition?.meanings?.[0] && (
+                      <>
+                        <View style={styles.posBadge}>
+                          <Text style={styles.posBadgeText}>
+                            {currentWord.definition.meanings[0].pos}
+                          </Text>
+                        </View>
+                        <Text style={styles.cardExample} numberOfLines={3}>
+                          {currentWord.definition.meanings[0].example}
+                        </Text>
+                      </>
+                    )}
+                    <Text style={styles.flipHint}>karta dokun → çevir</Text>
+                    <TouchableOpacity
+                      style={[styles.cardKnownBtn, {
+                        borderColor: knownIds.has(currentWord.id) ? c.PURPLE : c.TEXT_S,
+                        backgroundColor: knownIds.has(currentWord.id) ? c.PURPLE + '22' : 'transparent',
+                      }]}
+                      onPress={() => handleToggle(currentWord.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.checkText, { color: knownIds.has(currentWord.id) ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+                    </TouchableOpacity>
+                  </Reanimated.View>
+
+                  {/* Back */}
+                  <FlashCardBack
+                    word={currentWord}
+                    isKnown={knownIds.has(currentWord.id)}
+                    onToggle={() => handleToggle(currentWord.id)}
+                    onFlipBack={doFlip}
+                    styles={styles}
+                    c={c}
+                    animStyle={backAnimStyle}
+                  />
+                </Reanimated.View>
+              </GestureDetector>
             )}
 
             <Text style={styles.progressText}>

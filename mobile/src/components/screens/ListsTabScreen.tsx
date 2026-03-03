@@ -230,7 +230,11 @@ export default function ListsTabScreen() {
 
   const [showCreate, setShowCreate] = useState(false);
 
-  const { data: lists = [], isLoading }          = useLists();
+  const { data: rawLists = [], isLoading }        = useLists();
+  const lists = useMemo(
+    () => [...rawLists].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [rawLists],
+  );
   const { data: knownWords = [] }                = useKnownWords();
   const { mutate: createList, isPending: creating } = useCreateList();
   const { mutate: deleteList }                   = useDeleteList();
