@@ -26,6 +26,7 @@ const STEP_COLORS: Record<string, string> = {
 const PipelineControlPanel: React.FC = () => {
     const [batchSize, setBatchSize] = useState(100);
     const [status, setStatus] = useState<PipelineStatus | null>(null);
+    const [pendingCounts, setPendingCounts] = useState<{ pendingAnalysis: number; pendingEnrichment: number }>({ pendingAnalysis: 0, pendingEnrichment: 0 });
     const [starting, setStarting] = useState(false);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -118,6 +119,7 @@ const PipelineControlPanel: React.FC = () => {
                     Global Specialist Fix
                 </button>
             </div>
+
 
             {/* Progress */}
             {step !== 'IDLE' && (

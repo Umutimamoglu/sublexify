@@ -73,6 +73,7 @@ public class StandardListSeeder {
                         WordList newList = new WordList();
                         newList.setName(listName);
                         newList.setUser(systemUser);
+                        newList.setIsSystem(true);
                         return wordListRepository.save(newList);
                     });
 
@@ -182,6 +183,7 @@ public class StandardListSeeder {
                         WordList newList = new WordList();
                         newList.setName("Oxford 5000");
                         newList.setUser(systemUser);
+                        newList.setIsSystem(true);
                         return wordListRepository.save(newList);
                     });
 
@@ -255,6 +257,7 @@ public class StandardListSeeder {
                         newList.setName(listName);
                         newList.setUser(systemUser);
                         newList.setWords(new HashSet<>());
+                        newList.setIsSystem(true);
                         return wordListRepository.save(newList);
                     });
 
@@ -313,6 +316,7 @@ public class StandardListSeeder {
                         newList.setName(listName);
                         newList.setUser(systemUser);
                         newList.setWords(new HashSet<>());
+                        newList.setIsSystem(true);
                         return wordListRepository.save(newList);
                     });
 
@@ -423,6 +427,7 @@ public class StandardListSeeder {
                         WordList newList = new WordList();
                         newList.setName("Top Verbs");
                         newList.setUser(systemUser);
+                        newList.setIsSystem(true);
                         return wordListRepository.save(newList);
                     });
 

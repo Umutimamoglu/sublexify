@@ -75,6 +75,20 @@ public class WordListService {
         }
 
         @Transactional
+        public void deleteList(Long listId) {
+                WordList wordList = wordListRepository.findById(listId)
+                                .orElseThrow(() -> new RuntimeException("List not found: " + listId));
+
+                if (Boolean.TRUE.equals(wordList.getIsSystem())) {
+                        throw new RuntimeException("System lists cannot be deleted.");
+                }
+
+                // Clear the ManyToMany relationship first to avoid constraint violation
+                wordList.getWords().clear();
+                wordListRepository.delete(wordList);
+        }
+
+        @Transactional
         public WordListDTO createUnknownWordsList(Long userId, Long mediaId) {
                 User user = userRepository.findById(userId)
                                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
@@ -189,6 +203,7 @@ public class WordListService {
                 dto.setId(list.getId());
                 dto.setName(list.getName());
                 dto.setCreatedAt(list.getCreatedAt());
+                dto.setIsSystem(list.getIsSystem());
 
                 int totalWords = list.getWords().size();
                 dto.setTotalWords(totalWords);

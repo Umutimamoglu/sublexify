@@ -39,6 +39,7 @@ export interface WordListDTO {
     createdAt: string;
     totalWords: number;
     unknownWords: number;
+    isSystem?: boolean;
     levelCounts: Record<string, number>;
 }
 

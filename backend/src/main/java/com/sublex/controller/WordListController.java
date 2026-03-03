@@ -59,6 +59,17 @@ public class WordListController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/containing-word/{wordId}")
+    public ResponseEntity<List<Long>> getListsContainingWord(@PathVariable Long wordId) {
+        return ResponseEntity.ok(wordListService.getListsContainingWord(CURRENT_USER_ID, wordId));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteList(@PathVariable Long id) {
+        wordListService.deleteList(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}/words/{wordId}")
     public ResponseEntity<Void> removeWordFromList(@PathVariable Long id, @PathVariable Long wordId) {
         wordListService.removeWordFromList(id, wordId);

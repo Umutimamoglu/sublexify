@@ -324,6 +324,18 @@ const PipelineAPI = {
         const response = await api.post(`/admin/pipeline/specialist-global-fix?language=${language}`);
         return response.data;
     },
+
+    getPendingCounts: async (language: string = 'en'): Promise<{ pendingAnalysis: number; pendingEnrichment: number }> => {
+        const response = await api.get('/admin/pipeline/pending-counts', {
+            params: { language }
+        });
+        return response.data;
+    },
+
+    triggerAnalysis: async (): Promise<string> => {
+        const response = await api.post('/admin/word-analysis/trigger');
+        return response.data;
+    }
 };
 
 export { PipelineAPI };

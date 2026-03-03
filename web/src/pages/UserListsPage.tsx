@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import WordListService, { type WordListDTO, type WordListWordsResponseDTO } from '@/services/WordListService';
 import WordCard from '@/components/features/WordCard';
-import { Loader2, Plus, Trash2, ChevronRight, Book, Star, Filter, Wand2, Check, CheckCircle2, BookOpen } from 'lucide-react';
+import { Loader2, Plus, Trash2, ChevronRight, Book, Star, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import api from '@/services/api';
 
@@ -38,9 +38,14 @@ const UserListsPage = () => {
         try {
             setLoading(true);
             const data = await WordListService.getUserLists();
-            setLists(data);
-            if (data.length > 0 && !selectedList) {
-                setSelectedList(data[0]);
+            // Sort: Custom lists first, then newest first
+            const sortedData = [...data].sort((a, b) => {
+                if (!!a.isSystem !== !!b.isSystem) return a.isSystem ? 1 : -1;
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            });
+            setLists(sortedData);
+            if (sortedData.length > 0 && !selectedList) {
+                setSelectedList(sortedData[0]);
             }
         } catch (error) {
             console.error("Failed to fetch lists", error);
@@ -155,6 +160,17 @@ const UserListsPage = () => {
         }
     };
 
+    const sortedLists = useMemo(() => {
+        return [...lists].sort((a, b) => {
+            // First: Custom lists (isSystem: false) go to top
+            if (!!a.isSystem !== !!b.isSystem) {
+                return a.isSystem ? 1 : -1;
+            }
+            // Second: Newest first
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+    }, [lists]);
+
     const filteredWords = useMemo(() => {
         if (!wordData) return [];
         return wordData.words.filter(w => 
@@ -195,7 +211,7 @@ const UserListsPage = () => {
                             <div className="p-8 text-center text-gray-400">No lists yet.</div>
                         ) : (
                             <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {lists.map(list => (
+                                {sortedLists.map(list => (
                                     <button
                                         key={list.id}
                                         onClick={() => setSelectedList(list)}
@@ -209,7 +225,14 @@ const UserListsPage = () => {
                                         <div className="min-w-0 flex items-center gap-3">
                                             <div className="w-2 h-2 rounded-full bg-indigo-400 shrink-0" />
                                             <div className="min-w-0">
-                                                <p className="font-semibold truncate">{list.name}</p>
+                                                <p className="font-semibold truncate flex items-center gap-2">
+                                                    {list.name}
+                                                    {list.isSystem && (
+                                                        <span title="System List">
+                                                            <Lock className="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-500 shrink-0" />
+                                                        </span>
+                                                    )}
+                                                </p>
                                                 <p className="text-xs text-gray-400 mt-1">
                                                     {list.totalWords} words • {list.unknownWords} unknown
                                                 </p>
@@ -277,13 +300,19 @@ const UserListsPage = () => {
                                             {isGeneratingList ? 'Hazırlanıyor...' : isGenerationSuccess ? 'Hazır!' : 'Bilinmeyenlerden Liste'}
                                         </button>
                                         
-                                        <button
-                                            onClick={() => handleDeleteList(selectedList.id)}
-                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-                                            title="Delete List"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
+                                        {!selectedList.isSystem ? (
+                                            <button
+                                                onClick={() => handleDeleteList(selectedList.id)}
+                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors shrink-0"
+                                                title="Delete List"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        ) : (
+                                            <div className="p-2 text-gray-300 dark:text-gray-600 cursor-not-allowed shrink-0" title="System lists cannot be deleted">
+                                                <Lock className="w-5 h-5" />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

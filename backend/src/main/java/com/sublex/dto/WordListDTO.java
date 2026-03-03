@@ -15,6 +15,7 @@ public class WordListDTO {
     private String name;
     private Integer totalWords;
     private Integer unknownWords;
+    private Boolean isSystem;
     private Map<String, Long> levelCounts;
     private LocalDateTime createdAt;
 }

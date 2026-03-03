@@ -32,6 +32,9 @@ public class WordList {
     @JoinTable(name = "word_list_words", joinColumns = @JoinColumn(name = "word_list_id"), inverseJoinColumns = @JoinColumn(name = "word_id"))
     private Set<Word> words = new HashSet<>();
 
+    @Column(name = "is_system", nullable = false, columnDefinition = "boolean default false")
+    private Boolean isSystem = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
