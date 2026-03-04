@@ -14,192 +14,81 @@ Bu backend servisi şu görevleri yerine getirir:
 ## Teknolojiler
 
 - **Java 25** - Modern Java özellikleri ile geliştirilmiş
-- **Spring Boot 3.x** - Enterprise düzeyinde backend framework
-- **Spring Data JPA** - ORM ve veritabanı işlemleri
-- **Spring Security** - JWT tabanlı kimlik doğrulama
-- **PostgreSQL** - İlişkisel veritabanı
-- **YAML** - Konfigürasyon dosyaları
-- **Swagger/OpenAPI** - API dokümantasyonu
-- **Maven** - Dependency management
+- **Spring Boot 4.x** - En güncel Spring Boot sürümü
+- **AI Clients**: Gemini (Google), Anthropic (Claude), OpenAI entegrasyonları
+- **Subtitle Scraping**: Jsoup (Web scraping) ve OpenSubtitles API
+- **Annotation Processing**: Lombok (Kod sadeleştirme)
+- **Spring Data JPA & PostgreSQL** - Veri yönetimi
+- **Spring Security & JWT** - Kimlik doğrulama
 
-## Domain Model
+## Domain Model (Yeni Eklenenler)
 
-### 🎬 Media
-Film, dizi sezonu veya bölümü temsil eder.
+### 🤖 WordDefinition
 
-**Alanlar:**
-- `id`: Benzersiz kimlik
-- `title`: Başlık (örn. "Mr. Robot S01")
-- `imdbId`: IMDb ID (opsiyonel)
-- `type`: MOVIE, SEASON, EPISODE
-- `createdAt`: Oluşturulma zamanı
-
-### 📝 Word
-Sistemdeki benzersiz kelimeler.
+Kelimenin AI tarafından üretilmiş detaylı sözlük karşılığı.
 
 **Alanlar:**
-- `id`: Benzersiz kimlik
-- `word`: Kelime (normalize edilmiş, küçük harf)
-- `language`: Dil kodu (örn. "en", "tr")
 
-### 🔗 MediaWord
-Media ile Word arasındaki ilişki ve frekans bilgisi.
+- `difficulty`: A1-C2 seviyesi
+- `definitions`: POS bazlı tanımlar (JSON)
+- `examples`: Örnek cümleler ve çevirileri (JSON)
+- `phrasalVerbs`: İlgili phrasal verb'ler
 
-**Alanlar:**
-- `id`: Benzersiz kimlik
-- `mediaId`: Media referansı
-- `wordId`: Word referansı
-- `count`: Bu kelime bu media'da kaç kez geçti
+### 📋 WordList
 
-### 👤 User
-Kullanıcı hesapları.
+Kullanıcıların veya sistemin oluşturduğu kelime listeleri.
 
-**Alanlar:**
-- `id`: Benzersiz kimlik
-- `email`: Email (unique)
-- `password`: Şifrelenmiş şifre (BCrypt)
-- `name`: Kullanıcı adı
-- `createdAt`: Kayıt tarihi
+- `Standard`: Herkesin erişebildiği (Oxford 3000 vb.)
+- `User`: Kullanıcının kendi oluşturdukları
+- `Unknown`: Bir medyadan çıkarılan bilmediğin kelimeler
 
-### ✅ UserKnownWord
-Kullanıcının bildiği kelimeler.
+### 📈 UserMediaProgress
 
-**Alanlar:**
-- `id`: Benzersiz kimlik
-- `userId`: User referansı
-- `wordId`: Word referansı
-- `markedAt`: İşaretlenme zamanı
+Kullanıcının bir filmi/diziyi ne kadarını "öğrendiğini" takip eder.
 
-## Proje Yapısı
+## Proje Yapısı (Gelişmiş Servisler)
 
 ```
 backend/
-├── src/
-│   ├── main/
-│   │   ├── java/com/sublex/
-│   │   │   ├── controller/          # REST API endpoints
-│   │   │   │   ├── AuthController.java
-│   │   │   │   ├── MediaController.java
-│   │   │   │   ├── WordController.java
-│   │   │   │   └── AdminController.java
-│   │   │   ├── service/             # İş mantığı
-│   │   │   │   ├── SubtitleProcessingService.java
-│   │   │   │   ├── MediaService.java
-│   │   │   │   ├── WordService.java
-│   │   │   │   └── UserService.java
-│   │   │   ├── repository/          # Veri erişim katmanı
-│   │   │   │   ├── MediaRepository.java
-│   │   │   │   ├── WordRepository.java
-│   │   │   │   ├── MediaWordRepository.java
-│   │   │   │   ├── UserRepository.java
-│   │   │   │   └── UserKnownWordRepository.java
-│   │   │   ├── model/               # Entity modelleri
-│   │   │   │   ├── Media.java
-│   │   │   │   ├── Word.java
-│   │   │   │   ├── MediaWord.java
-│   │   │   │   ├── User.java
-│   │   │   │   └── UserKnownWord.java
-│   │   │   ├── dto/                 # Data Transfer Objects
-│   │   │   │   ├── MediaDTO.java
-│   │   │   │   ├── WordFrequencyDTO.java
-│   │   │   │   ├── LoginRequest.java
-│   │   │   │   └── SubtitleUploadRequest.java
-│   │   │   ├── config/              # Konfigürasyon
-│   │   │   │   ├── SecurityConfig.java
-│   │   │   │   ├── SwaggerConfig.java
-│   │   │   │   └── CorsConfig.java
-│   │   │   ├── exception/           # Exception handling
-│   │   │   │   ├── GlobalExceptionHandler.java
-│   │   │   │   └── CustomExceptions.java
-│   │   │   └── util/                # Yardımcı sınıflar
-│   │   │       ├── SubtitleParser.java
-│   │   │       └── JwtUtil.java
-│   │   └── resources/
-│   │       ├── application.yml
-│   │       ├── application-dev.yml
-│   │       └── application-prod.yml
-│   └── test/
-│       └── java/                    # Test sınıfları
-├── pom.xml
-└── README.md
+├── service/
+│   ├── ai/                # AI Sağlayıcıları (Gemini, Anthropic, OpenAI)
+│   ├── pipeline/          # AI Enrichment Hattı (Sheriff, Specialist, Judge)
+│   ├── scraper/           # Altyazı Scraper'lar (OpenSubtitles, TMDB)
+│   ├── AuditService.java  # Sistem loglama ve denetleme
+│   ├── WordAnalysisService.java # Dilbilimsel analiz
+│   └── WordListService.java # Liste yönetimi
 ```
 
-## API Endpoint'leri
+## AI Enrichment Pipeline
 
-### 🔐 Authentication (`/api/auth`)
+Bu backend'in en kritik parçası, kelimeleri anlamlı verilere dönüştüren 3 aşamalı AI hattıdır:
 
-| Method | Endpoint | Açıklama |
-|--------|----------|----------|
-| POST | `/register` | Yeni kullanıcı kaydı |
-| POST | `/login` | Giriş yap, JWT token al |
-| POST | `/refresh` | Token yenile |
+1. **Sheriff (Şerif)**: Kelimeyi ilk analiz eden, tanım ve örnekleri oluşturan ana ajan.
+2. **Specialist (Uzman)**: Şerif'in ürettiği veriyi dilbilgisi ve doğallık açısından kontrol eden ajan.
+3. **Judge (Hakim)**: Son kalite kontrolünü yapan ve veritabanına kaydı onaylayan ajan.
 
-### 🎬 Media (`/api/media`)
+## Altyazı Edinme ve İşleme
 
-| Method | Endpoint | Açıklama |
-|--------|----------|----------|
-| GET | `/` | Tüm media listesi |
-| GET | `/{id}` | Media detayı |
-| GET | `/{id}/words` | Media'daki kullanıcının bilmediği kelimeler |
+Sistem sadece yüklenen dosyaları değil, internetteki altyazıları da otomatik bulur:
 
-### 📝 Words (`/api/words`)
+1. **YTS & OpenSubtitles Scraping**: Popüler kaynaklardan altyazı linklerini çeker.
+2. **TMDB Integration**: Film afişi, türü ve oyuncu bilgilerini otomatik eşleştirir.
+3. **SubtitleParser**: SRT ve ASS formatlarını yüksek doğrulukla işler (reklamları ve gürültüleri filtreler).
 
-| Method | Endpoint | Açıklama |
-|--------|----------|----------|
-| POST | `/mark-known` | Kelimeyi biliyorum olarak işaretle |
-| DELETE | `/unmark/{wordId}` | İşareti kaldır |
-| GET | `/known` | Kullanıcının bildiği tüm kelimeler |
+## API Endpoint'leri (Genişletilmiş)
 
-### 👨‍💼 Admin (`/api/admin`)
+### 📋 Word Lists (`/api/lists`)
 
-| Method | Endpoint | Açıklama |
-|--------|----------|----------|
-| POST | `/media` | Yeni media oluştur |
-| POST | `/media/{id}/subtitle` | Altyazı yükle ve işle |
-| DELETE | `/media/{id}` | Media sil |
+- `GET /api/lists`: Kullanıcının tüm listeleri
+- `GET /api/lists/standard`: Sistem listeleri
+- `POST /api/lists`: Yeni liste oluştur
+- `POST /api/lists/{id}/words/{wordId}`: Listeye kelime ekle
 
-## Altyazı İşleme Akışı
+### 👨‍💼 Admin & Pipeline (`/api/admin`)
 
-### SubtitleProcessingService
-
-1. **Dosya Upload**: .srt veya .zip dosyası alınır
-2. **Parse İşlemi**:
-   - Zaman damgaları temizlenir (`00:01:23,456 --> 00:01:25,789`)
-   - HTML etiketleri kaldırılır (`<i>`, `<b>`, vb.)
-   - Noktalama işaretleri temizlenir
-   - Satır numaraları atlanır
-3. **Kelime Çıkarma**:
-   - Her satır kelimelere bölünür
-   - Kelimeler normalize edilir (küçük harf)
-   - Stop words (a, an, the, vb.) filtrelenebilir
-4. **Frekans Hesaplama**:
-   - Her kelimenin kaç kez geçtiği sayılır
-5. **Veritabanı Kayıt**:
-   - Kelimeler `Word` tablosuna eklenir (eğer yoksa)
-   - Frekanslar `MediaWord` tablosuna kaydedilir
-
-**Örnek:**
-```java
-@Service
-public class SubtitleProcessingService {
-    public void processSubtitle(Long mediaId, MultipartFile file) {
-        // 1. Parse subtitle
-        List<String> lines = parseSubtitleFile(file);
-        
-        // 2. Extract words
-        Map<String, Integer> wordFrequency = new HashMap<>();
-        for (String line : lines) {
-            String[] words = cleanAndSplit(line);
-            for (String word : words) {
-                wordFrequency.merge(word, 1, Integer::sum);
-            }
-        }
-        
-        // 3. Save to database
-        saveWordFrequencies(mediaId, wordFrequency);
-    }
-}
-```
+- `POST /api/admin/pipeline/process`: Bekleyen kelimeleri işle
+- `GET /api/admin/pipeline/stats`: Pipeline durumunu gör
+- `POST /api/admin/media/scrape`: Altyazıları internetten çek
 
 ## Kişiselleştirilmiş Kelime Filtreleme
 
@@ -208,13 +97,13 @@ public class SubtitleProcessingService {
 Kullanıcının bilmediği kelimeleri döndürmek için:
 
 ```sql
-SELECT w.*, mw.count 
+SELECT w.*, mw.count
 FROM media_word mw
 JOIN word w ON mw.word_id = w.id
 WHERE mw.media_id = ?
   AND w.id NOT IN (
-    SELECT word_id 
-    FROM user_known_word 
+    SELECT word_id
+    FROM user_known_word
     WHERE user_id = ?
   )
 ORDER BY mw.count DESC
@@ -231,21 +120,25 @@ ORDER BY mw.count DESC
 ### Adımlar
 
 1. **Bağımlılıkları yükleyin:**
+
 ```bash
 mvn clean install
 ```
 
 2. **PostgreSQL veritabanı oluşturun:**
+
 ```sql
 CREATE DATABASE sublex;
 ```
 
 3. **Konfigürasyon dosyasını düzenleyin:**
+
 ```bash
 cp src/main/resources/application.yml.example src/main/resources/application.yml
 ```
 
 4. **application.yml'i düzenleyin:**
+
 ```yaml
 spring:
   datasource:
@@ -255,6 +148,7 @@ spring:
 ```
 
 5. **Uygulamayı çalıştırın:**
+
 ```bash
 mvn spring-boot:run
 ```
@@ -281,7 +175,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  
+
   servlet:
     multipart:
       max-file-size: 50MB
@@ -289,7 +183,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: 86400000  # 24 saat
+  expiration: 86400000 # 24 saat
 
 logging:
   level:
@@ -299,11 +193,13 @@ logging:
 ## Test
 
 ### Unit Testler
+
 ```bash
 mvn test
 ```
 
 ### Integration Testler
+
 ```bash
 mvn verify
 ```
@@ -314,12 +210,12 @@ Swagger UI: `http://localhost:8080/swagger-ui.html`
 
 ## Ortam Değişkenleri
 
-| Değişken | Açıklama | Varsayılan |
-|----------|----------|------------|
-| `DB_USERNAME` | PostgreSQL kullanıcı adı | - |
-| `DB_PASSWORD` | PostgreSQL şifresi | - |
-| `JWT_SECRET` | JWT secret key | - |
-| `SERVER_PORT` | Sunucu portu | 8080 |
+| Değişken      | Açıklama                 | Varsayılan |
+| ------------- | ------------------------ | ---------- |
+| `DB_USERNAME` | PostgreSQL kullanıcı adı | -          |
+| `DB_PASSWORD` | PostgreSQL şifresi       | -          |
+| `JWT_SECRET`  | JWT secret key           | -          |
+| `SERVER_PORT` | Sunucu portu             | 8080       |
 
 ## Production Build
 

@@ -16,13 +16,12 @@ React Native (Expo) ve TypeScript ile geliştirilmiş iOS ve Android mobil uygul
 
 ## Özellikler
 
-- 🌓 **Dark/Light Mode** - Kullanıcı tercihine göre tema
-- 🌍 **Çoklu Dil Desteği** - i18n ile uluslararasılaştırma
-- 🔐 **Kimlik Doğrulama** - Context API ile JWT auth
-- ⚡ **Performanslı State Yönetimi** - Zustand ile optimize edilmiş
-- 📱 **Native Features** - Kamera, konum, bildirimler
-- 🔄 **Offline Support** - AsyncStorage ile offline çalışma
-- ♿ **Erişilebilirlik** - React Native accessibility props
+- 🌓 **Dark/Light Mode** - Sistem temasına uyumlu arayüz.
+- 🌍 **Çoklu Dil Desteği** - i18next ile Türkçe ve İngilizce desteği.
+- 🔐 **Kimlik Doğrulama** - JWT tabanlı güvenli giriş ve oturum yönetimi.
+- ⚡ **Hızlı API Entegrasyonu** - Axios ve özel hook'larla optimize edilmiş veri çekme.
+- 📖 **Kelime Listeleri** - Bilinen kelimeler ve medyaya özel bilinmeyenler listesi.
+- 🔄 **Offline Desteği** - AsyncStorage ile temel verilerin önbelleğe alınması.
 
 ## Proje Yapısı
 

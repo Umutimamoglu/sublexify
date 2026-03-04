@@ -1,73 +1,63 @@
-# React + TypeScript + Vite
+# Sublex Web Interface
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, TypeScript ve Vite ile geliştirilmiş, Sublex platformunun kullanıcı ve admin arayüzüdür.
 
-Currently, two official plugins are available:
+## 🚀 Özellikler
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Gelişmiş Admin Paneli**: Medya ekleme, altyazı yükleme, AI pipeline takibi ve içerik yönetimi.
+- **Medya Keşfetme**: Tüm film ve dizilerin listelendiği, filtreleme ve arama yapılabilen ana sayfa.
+- **Medya Detay & Analiz**: Bir içeriğe girmeden önce seviye bazlı (A1-C2) kelime dağılımını görme.
+- **Kişisel Listeler**: "Biliyorum" dediğin kelimeler ve özel oluşturduğun listelerin yönetimi.
+- **İnteraktif Kelime Kartları**: AI tarafından üretilmiş tanımlar, örnek cümleler ve çeviriler.
+- **Çoklu Dil & Tema**: Dark/Light mode ve Türkçe/İngilizce dil desteği.
 
-## React Compiler
+## 🛠️ Teknolojiler
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 18** & **TypeScript**
+- **Vite** (Hızlı development ve build)
+- **Zustand** (Global state yönetimi)
+- **Axios** (API iletişimi)
+- **React Router** (Sayfa navigasyonu)
+- **CSS Modules** (Scope'lanmış stiller)
 
-## Expanding the ESLint configuration
+## 📁 Sayfa Yapısı
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- `LandingPage`: Karşılama ve özellik tanıtımı.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+* `BrowsePage`: Tüm içeriklerin listelendiği keşif sayfası.
+* `MediaDetailPage`: Bir filmin/bölümün kelimelerinin analiz edildiği ana çalışma sayfası.
+* `UserListsPage`: Kullanıcının özel listelerini yönettiği alan.
+* `AdminPage`: İçerik yükleme ve AI sistemini yönetme merkezi.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🔨 Kurulum ve Çalıştırma
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Gereksinimler
+
+- Node.js 18+
+- npm veya yarn
+
+### Adımlar
+
+1. Bağımlılıkları yükleyin:
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. Geliştirme sunucusunu başlatın:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+3. Production build oluşturun:
+
+```bash
+npm run build
+```
+
+## 🌐 API Bağlantısı
+
+Web uygulaması `backend` servisiyle konuşur. API URL ayarları `.env` dosyası üzerinden veya development sırasında `vite.config.ts` proxy ayarlarıyla yönetilir.
+
+Varsayılan Backend URL: `http://localhost:8080`

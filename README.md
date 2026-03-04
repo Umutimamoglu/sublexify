@@ -20,13 +20,17 @@ sublex/
 
 Sublex, film ve dizi izlerken dil öğrenmeyi kolaylaştıran bir platformdur. Temel çalışma prensibi:
 
-1. **İzlediğin içerik**'in altyazısı Sublex'e yüklenir (örn. Mr. Robot S01)
-2. Sistem altyazıyı **otomatik analiz eder** ve tüm kelimeleri frekanslarıyla birlikte çıkarır
-3. **Sen giriş yaptığında**, sistem senin bildiğin kelimeleri filtreler
-4. Sadece **bilmediğin kelimeler** gösterilir - o içerikte gerçekten geçen kelimeler
-5. Kelimelere tıklayarak "**biliyorum**" işaretlersin ve bir daha gösterilmez
+1. **İçerik Seçimi**: Sistemde hazır bulunan veya yeni eklenen içerikler (örn. Mr. Robot S01) arasından seçim yapılır.
+2. **AI Destekli Zenginleştirme**: Sistem altyazıları sadece parse etmekle kalmaz, her kelimeyi **AI (OpenAI, Gemini, Anthropic)** kullanarak zenginleştirir:
+   - Bağlam içi Türkçe tanım
+   - Örnek cümle (ve Türkçe çevirisi)
+   - CEFR zorluk seviyesi (A1-C2)
+   - Fiil çekimleri ve phrasal verb'ler
+3. **Kişiselleştirilmiş Filtreleme**: Sistem senin bildiğin kelimeleri filtreler.
+4. **Odaklanmış Öğrenme**: Sadece **bilmediğin kelimeler** gösterilir - o içerikte gerçekten geçen ve senin seviyene uygun olanlar.
+5. **Kendi Listeni Oluştur**: Kelimeleri "Biliyorum" olarak işaretleyebilir veya özel listenize ekleyebilirsiniz.
 
-**Sonuç:** Rastgele kelime listeleri yerine, izlediğin yapımda geçen ve senin bilmediğin kelimeleri öğrenirsin.
+**Sonuç:** Rastgele kelime listeleri yerine, izlediğin yapımda geçen ve senin bilmediğin kelimeleri, AI tarafından oluşturulmuş kaliteli içeriklerle öğrenirsin.
 
 ---
 
@@ -36,93 +40,51 @@ Sublex, film ve dizi izlerken dil öğrenmeyi kolaylaştıran bir platformdur. T
 
 Sistemdeki her film, dizi sezonu veya bölümü temsil eder.
 
-**Örnekler:**
-- Inception (2010)
-- Mr. Robot – Season 1
-- Mr. Robot – S01E03
-
-Her Media kaydı ID, isim, IMDb ID gibi bilgileri içerir.
-
 #### 2️⃣ Word (Kelime)
 
-Sistemdeki **benzersiz kelimeler**. Her kelime sadece bir kez saklanır.
+Sistemdeki **benzersiz kelimeler** ve bunların AI tarafından üretilmiş detaylı tanımları (`WordDefinition`).
 
-**Örnekler:**
-- "computer"
-- "hack"
-- "society"
+#### 3️⃣ Pipeline & PipelineStatus
 
-Bir kelime birçok farklı Media'da geçebilir.
+Kelimelerin AI zenginleştirme sürecindeki durumunu takip eder (PENDING, PROCESSED, FAILED).
 
-#### 3️⃣ MediaWord (İlişki Tablosu)
+#### 4️⃣ WordList
 
-**"Bu kelime, bu yapımda kaç kez geçti?"** sorusunun cevabı.
+Kullanıcıların oluşturduğu özel kelime listeleri veya sistem tarafından otomatik oluşturulan (Standard, Unknown) listeler.
 
-**Örnek:**
-- Media: Mr. Robot S01
-- Word: "hack"
-- Count: 37
+#### 5️⃣ User & Progress
 
-#### 4️⃣ User (Kullanıcı)
-
-Email ve şifre ile giriş yapan kullanıcılar.
-
-#### 5️⃣ UserKnownWord (Bilinen Kelimeler)
-
-**Her kullanıcının bildiği kelimelerin** kişisel listesi.
-
-**Örnek:**
-- User: Umut
-- Word: "hack"
-- → Umut bu kelimeyi biliyor
-
-Bu bilgi tamamen kişiseldir; farklı kullanıcılar farklı kelimeler bilir.
+Kullanıcının hangi medyada ne kadar ilerlediğini ve hangi kelimeleri öğrendiğini takip eder.
 
 ---
 
 ### ⚙️ Sistem Nasıl Çalışıyor?
 
-#### 📋 A) Admin Tarafı – Altyazı Hazırlama
+#### 📋 A) İçerik Hazırlama (Admin & Otomasyon)
 
-1. **Admin panele giriş** yapar
-2. **Yeni Media oluşturur** (örn. Mr. Robot S01)
-3. **Altyazı dosyası yükler** (.srt veya .zip içinde .srt)
-4. **Sistem otomatik işleme başlar:**
-   - Zaman damgalarını temizler (`00:01:23,456 --> 00:01:25,789`)
-   - HTML etiketlerini kaldırır (`<i>hello</i>` → `hello`)
-   - Noktalama işaretlerini temizler (`"Hello, world!"` → `Hello world`)
-   - Cümleleri kelimelere böler
-   - Küçük/büyük harf normalize eder (`Hello` = `hello`)
-   - **Frekans hesaplar:** Her kelimeden kaç tane geçtiğini sayar
-5. **Sonuç:**
-   - `Word` tablosunda kelimeler
-   - `MediaWord` tablosunda frekanslar
-
-Bu işlem **bir kere yapılır** ve Media hazır hale gelir.
+1. **İçerik Keşfi**: Sistem TMDB entegrasyonu ile film/dizi meta verilerini çeker.
+2. **Altyazı Edinme**: **OpenSubtitles API** veya web scraping ile altyazılar otomatik olarak bulunur ve indirilir.
+3. **Altyazı İşleme**:
+   - Zaman damgaları ve gürültü temizlenir.
+   - Kelime frekansları hesaplanır (`MediaWord`).
+4. **AI Enrichment Pipeline**:
+   - **Sheriff**: Kelimeyi analiz eder ve detayları oluşturur.
+   - **Specialist**: Tanım ve örnekleri kontrol eder, gerekirse düzeltir.
+   - **Judge**: Son kalite kontrolünü yapar ve onaylar.
 
 #### 👤 B) Kullanıcı Tarafı – Kelime Öğrenme
 
-1. **Kullanıcı giriş yapar**
-2. **Media listesinden** bir yapım seçer (örn. Mr. Robot S01)
-3. **Sistem şu adımları gerçekleştirir:**
-   - `MediaWord` üzerinden tüm kelimeleri ve frekanslarını çeker
-   - `UserKnownWord` tablosuna bakarak kullanıcının bildiği kelimeleri filtreler
-   - **Sadece bilmediği kelimeleri** gösterir
-4. **Kullanıcı ekranda görür:**
-   ```
-   society – 23 kez
-   vulnerable – 7 kez
-   encryption – 4 kez
-   ```
-5. **"Biliyorum" butonuna tıklar:**
-   - Sistem `UserKnownWord`'e kelimeyi ekler
-   - Kelime UI'dan anında kaybolur
-6. **Bir sonraki sefer:**
-   - O kelime artık görünmez
+1. **Kullanıcı Keşfeder**: Popüler veya yeni eklenen medyalar arasından seçim yapar.
+2. **Seviye Analizi**: Sistem, kullanıcının o medyada bilmediği kaç kelime olduğunu seviye bazlı (A1, B2 vb.) gösterir.
+3. **Listelerle Çalışma**:
+   - **Unknown Words List**: O medyada bilmediğin tüm kelimeler.
+   - **My Lists**: Kendi oluşturduğun özel listeler.
+4. **Etkileşim**: Kelimelere tıklayarak detaylı AI tanımlarını görür, telaffuz dinler veya "Biliyorum" olarak işaretler.
 
 **Formül:**
+
 ```
-Gösterilecek Kelimeler = Media Kelimeleri - Kullanıcının Bildikleri
+Gösterilecek Kelimeler = (Media Kelimeleri - Kullanıcının Bildikleri) + AI Zenginliği
 ```
 
 ---
@@ -130,9 +92,11 @@ Gösterilecek Kelimeler = Media Kelimeleri - Kullanıcının Bildikleri
 ## Uygulamalar
 
 ### Backend
+
 Backend API sunucusu, veri yönetimi ve iş mantığını sağlar.
 
 **Teknolojiler:**
+
 - Java 25
 - Spring Boot
 - YAML (konfigürasyon dosyaları)
@@ -140,30 +104,36 @@ Backend API sunucusu, veri yönetimi ve iş mantığını sağlar.
 **Detaylı bilgi için:** [backend/README.md](./backend/README.md)
 
 ### Web
+
 React ile geliştirilmiş web arayüzü, tarayıcı üzerinden erişim sağlar.
 
 **Teknolojiler:**
+
 - React
 - TypeScript
 - Context API (kullanıcı kimlik doğrulama vb.)
 - Zustand (global state yönetimi)
 
 **Özellikler:**
+
 - 🌓 Dark/Light mode desteği
 - 🌍 Çoklu dil desteği (i18n)
 
 **Detaylı bilgi için:** [web/README.md](./web/README.md)
 
 ### Mobile
+
 React Native ile geliştirilmiş mobil uygulama, iOS ve Android platformlarında çalışır.
 
 **Teknolojiler:**
+
 - React Native (Expo)
 - TypeScript
 - Context API (kullanıcı kimlik doğrulama vb.)
 - Zustand (global state yönetimi)
 
 **Özellikler:**
+
 - 🌓 Dark/Light mode desteği
 - 🌍 Çoklu dil desteği (i18n)
 
@@ -190,10 +160,12 @@ Detaylı geliştirme talimatları ve standartları her bir uygulamanın kendi RE
 Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 
 #### 1. Özellik Ekleme
+
 - ✅ Her yeni özellik eklendiğinde ilgili README dosyası güncellenmeli
 - ✅ Ana proje README'si gerektiğinde güncellenmelidir
 
 #### 2. Commit Standartları
+
 - ✅ Her özellik tamamlandığında commit yapılmalı
 - ✅ Commit mesajları standart formatta olmalı:
   ```
@@ -205,7 +177,7 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
   ```
 
 #### 3. Test Politikası
+
 - ✅ Test edilebilir her özellik mutlaka test edilmelidir
 - ✅ Testler ilgili uygulamanın test klasöründe yer almalıdır
 - ✅ Commit öncesi testler çalıştırılmalıdır
-
