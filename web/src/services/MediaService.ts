@@ -4,7 +4,7 @@ import { Word } from './WordListService';
 export interface Media {
     id: number;
     title: string;
-    type: 'MOVIE' | 'EPISODE' | 'SONG' | 'OTHER';
+    type: 'MOVIE' | 'SEASON' | 'EPISODE' | 'SONG' | 'OTHER';
     language: string;
     imdbId?: string;
     totalWords: number;

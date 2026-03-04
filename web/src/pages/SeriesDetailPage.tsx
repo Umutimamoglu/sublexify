@@ -32,10 +32,17 @@ const SeriesDetailPage = () => {
     const seasons = useMemo(() => {
         const s = new Set<number>();
         seriesEpisodes.forEach(ep => {
-            if (ep.seasonNumber) s.add(ep.seasonNumber);
+            if (ep.seasonNumber !== undefined && ep.seasonNumber !== null) s.add(ep.seasonNumber);
         });
         return Array.from(s).sort((a, b) => a - b);
     }, [seriesEpisodes]);
+
+    // Update selected season if not set or if current one is not in the list
+    useEffect(() => {
+        if (seasons.length > 0 && !seasons.includes(selectedSeason)) {
+            setSelectedSeason(seasons[0]);
+        }
+    }, [seasons, selectedSeason]);
 
     // Filter current season episodes
     const currentEpisodes = useMemo(() => {

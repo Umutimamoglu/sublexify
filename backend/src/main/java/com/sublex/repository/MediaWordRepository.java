@@ -31,4 +31,7 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
        @org.springframework.data.jpa.repository.Modifying
        @org.springframework.transaction.annotation.Transactional
        void deleteByMediaId(Long mediaId);
+
+       @Query("SELECT mw.media.id, COUNT(mw) FROM MediaWord mw GROUP BY mw.media.id")
+       List<Object[]> countAllByMediaId();
 }

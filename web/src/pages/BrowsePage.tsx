@@ -31,13 +31,18 @@ const BrowsePage = () => {
         // Filter by type
         if (type === 'series') {
             // Filter for seasons/episodes and Group by Series (TMDB ID)
-            // We want to show distinct shows
             const seriesMap = new Map<number, Media>();
 
             filtered.forEach(media => {
                 if ((media.type === 'SEASON' || media.type === 'EPISODE') && media.tmdbId) {
                     if (!seriesMap.has(media.tmdbId)) {
-                        seriesMap.set(media.tmdbId, media);
+                        // Create a copy to modify the title for display without changing the original record
+                        const seriesMedia = { ...media };
+                        const sep = seriesMedia.title.indexOf(' - ');
+                        if (sep > 0) {
+                            seriesMedia.title = seriesMedia.title.substring(0, sep);
+                        }
+                        seriesMap.set(media.tmdbId, seriesMedia);
                     }
                 }
             });

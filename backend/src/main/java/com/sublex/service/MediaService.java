@@ -44,27 +44,18 @@ public class MediaService {
         List<Media> all = mediaRepository.findAll();
         List<MediaDTO> result = new ArrayList<>();
 
-        // Track which series (imdbId) we've already added
-        Map<String, Boolean> seenSeries = new LinkedHashMap<>();
+        // Fetch all word counts at once to avoid N+1
+        Map<Long, Integer> wordCounts = mediaWordRepository.countAllByMediaId()
+                .stream()
+                .collect(Collectors.toMap(
+                        obj -> (Long) obj[0],
+                        obj -> ((Long) obj[1]).intValue()
+                ));
 
         for (Media media : all) {
-            if (media.getType() == MediaType.MOVIE) {
-                result.add(convertToBasicDTO(media));
-            } else if (media.getType() == MediaType.EPISODE) {
-                String imdbId = media.getImdbId();
-                if (imdbId != null && !seenSeries.containsKey(imdbId)) {
-                    seenSeries.put(imdbId, true);
-                    MediaDTO dto = convertToBasicDTO(media);
-                    // Extract show title: "Mr. Robot - Episode Name" → "Mr. Robot"
-                    String rawTitle = media.getTitle();
-                    int sep = rawTitle.indexOf(" - ");
-                    dto.setTitle(sep > 0 ? rawTitle.substring(0, sep) : rawTitle);
-                    // Clear episode-specific fields
-                    dto.setSeasonNumber(null);
-                    dto.setEpisodeNumber(null);
-                    result.add(dto);
-                }
-            }
+            MediaDTO dto = convertToBasicDTO(media);
+            dto.setTotalWords(wordCounts.getOrDefault(media.getId(), 0));
+            result.add(dto);
         }
         return result;
     }
