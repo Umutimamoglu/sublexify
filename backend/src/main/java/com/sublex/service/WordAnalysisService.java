@@ -2,13 +2,14 @@ package com.sublex.service;
 
 import com.sublex.dto.WordAnalysisResultDTO;
 import com.sublex.dto.WordContextDTO;
+import com.sublex.event.SubtitleProcessedEvent;
 import com.sublex.model.Word;
 import com.sublex.repository.WordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -17,6 +18,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,8 +35,42 @@ public class WordAnalysisService {
 
     private static final int BATCH_SIZE = 50; // Process 50 words at a time
 
-    // @Scheduled removed — now triggered manually after media upload to reduce AI
-    // costs
+    // Debounce: wait 30 seconds after the last subtitle event before triggering analysis
+    private final ScheduledExecutorService debounceScheduler = Executors.newSingleThreadScheduledExecutor();
+    private volatile ScheduledFuture<?> pendingAnalysisTask;
+    private static final long DEBOUNCE_DELAY_SECONDS = 30;
+
+    /**
+     * Debounced event listener: resets a 30-second timer each time a subtitle
+     * is processed. Only fires triggerAnalysis() once 30 seconds pass with no
+     * new events. This prevents redundant Gemini API calls when adding
+     * multiple episodes in quick succession.
+     */
+    @EventListener
+    public void onSubtitleProcessed(SubtitleProcessedEvent event) {
+        log.info("SubtitleProcessedEvent received for mediaId: {}. Scheduling debounced analysis ({} sec delay)...",
+                event.getMediaId(), DEBOUNCE_DELAY_SECONDS);
+
+        // Cancel any previously scheduled analysis
+        if (pendingAnalysisTask != null && !pendingAnalysisTask.isDone()) {
+            pendingAnalysisTask.cancel(false);
+            log.debug("Previous debounce timer cancelled. Resetting...");
+        }
+
+        // Schedule new analysis after delay
+        pendingAnalysisTask = debounceScheduler.schedule(() -> {
+            log.info("Debounce timer expired. Starting automatic word analysis...");
+            try {
+                triggerAnalysis();
+            } catch (Exception e) {
+                log.error("Auto-triggered word analysis failed: {}", e.getMessage(), e);
+            }
+        }, DEBOUNCE_DELAY_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Processes a single batch of pending words (50 max).
+     */
     public void processPendingWords() {
         // 1. Fetch pending words
         Pageable pageable = PageRequest.of(0, BATCH_SIZE);

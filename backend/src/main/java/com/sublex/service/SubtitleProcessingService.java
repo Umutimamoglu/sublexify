@@ -1,5 +1,6 @@
 package com.sublex.service;
 
+import com.sublex.event.SubtitleProcessedEvent;
 import com.sublex.model.Media;
 import com.sublex.model.MediaWord;
 import com.sublex.model.Word;
@@ -9,6 +10,7 @@ import com.sublex.repository.WordRepository;
 import com.sublex.util.SubtitleParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ public class SubtitleProcessingService {
 
     private static final Object DICTIONARY_LOCK = new Object();
     private final org.springframework.transaction.support.TransactionTemplate transactionTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Process subtitle file and save words to database
@@ -142,5 +145,8 @@ public class SubtitleProcessingService {
         }
 
         log.info("Subtitle processing completed for mediaId: {}", mediaId);
+
+        // Publish event so WordAnalysisService can pick up PENDING words (debounced)
+        eventPublisher.publishEvent(new SubtitleProcessedEvent(this, mediaId));
     }
 }

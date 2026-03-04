@@ -281,9 +281,7 @@ public class AdminController {
         String content = new String(file.getBytes(), StandardCharsets.UTF_8);
         subtitleProcessingService.processSubtitles(media.getId(), content, language);
 
-        // Trigger word analysis after subtitle processing (replaces @Scheduled)
-        log.info("Triggering word analysis after subtitle processing for media: {}", media.getId());
-        Thread.startVirtualThread(() -> wordAnalysisService.processPendingWords());
+        // Word analysis is now triggered automatically via SubtitleProcessedEvent + debounce
 
         return String.format("Processed %s as %s (ID: %d)", filename, media.getTitle(), media.getId());
     }
