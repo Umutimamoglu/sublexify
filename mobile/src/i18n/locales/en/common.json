@@ -9,6 +9,11 @@
     "save": "Save",
     "cancel": "Cancel",
     "retry": "Retry",
+    "create": "Create",
+    "done": "Done",
+    "remove": "Remove",
+    "all": "All",
+    "ok": "OK",
     "markKnown": "Mark as Known",
     "unmarkKnown": "Remove from Known",
     "add": "Add",
@@ -27,8 +32,11 @@
     "networkError": "Could not connect. Check your connection.",
     "generic": "Something went wrong. Please try again.",
     "notFound": "Not found.",
-    "unauthorized": "Please sign in to continue."
+    "unauthorized": "Please sign in to continue.",
+    "loadFailed": "Content could not be loaded",
+    "checkServer": "Check server connection"
   },
+  "success": "Success",
   "difficulty": {
     "A1": "Beginner",
     "A2": "Elementary",

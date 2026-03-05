@@ -14,20 +14,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
+import { useTranslation } from '@/src/i18n/useTranslation';
+import { useResponsive } from '@/src/hooks/useResponsive';
 import { useLists, useCreateList, useDeleteList } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import type { WordListDTO } from '@/src/types/api';
 
-// ─── Palette ──────────────────────────────────────────────────
-const DARK = {
-  BG: '#0d0d14', SURFACE: '#16161f', SURFACE2: '#1e1e2a',
-  TEXT_P: '#f0f0f5', TEXT_S: '#8888aa', BORDER: '#ffffff0f',
-  PURPLE: '#7c3aed',
-};
-const LIGHT = {
-  BG: '#f4f4f8', SURFACE: '#ffffff', SURFACE2: '#ededf5',
-  TEXT_P: '#111118', TEXT_S: '#888899', BORDER: '#e0e0ea',
-  PURPLE: '#6d28d9',
+type Palette = {
+  BG: string; SURFACE: string; SURFACE2: string;
+  TEXT_P: string; TEXT_S: string; BORDER: string;
+  PURPLE: string;
 };
 
 const DIFF_COLORS: Record<string, string> = {
@@ -37,29 +33,30 @@ const DIFF_COLORS: Record<string, string> = {
 };
 
 // ─── Styles ───────────────────────────────────────────────────
-function makeStyles(c: typeof DARK, isDark: boolean) {
+function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
+  const pad = isTablet ? 32 : 16;
   return StyleSheet.create({
     root:     { flex: 1, backgroundColor: c.BG },
     safeArea: { flex: 1, backgroundColor: c.BG },
 
     // Header
-    header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
+    header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 14 },
     headerTitle: { flex: 1, color: c.TEXT_P, fontSize: 22, fontWeight: '800' },
     addBtn:      { width: 36, height: 36, borderRadius: 18, backgroundColor: c.PURPLE, alignItems: 'center', justifyContent: 'center' },
     addBtnText:  { color: '#fff', fontSize: 22, lineHeight: 26 },
 
     // Bilinen kelimeler card
-    knownCard:      { marginHorizontal: 16, marginBottom: 8, padding: 16, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
+    knownCard:      { marginHorizontal: pad, marginBottom: 8, padding: 16, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
     knownCardTitle: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
     knownCardSub:   { color: c.TEXT_S, fontSize: 12, marginTop: 4 },
     knownCardBadge: { marginTop: 8, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: c.PURPLE + '22' },
     knownCardBadgeText: { color: c.PURPLE, fontSize: 12, fontWeight: '700' },
 
     // Section label
-    sectionLabel: { color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
+    sectionLabel: { color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, paddingHorizontal: pad, paddingTop: 14, paddingBottom: 8 },
 
     // List card
-    listCard:      { marginHorizontal: 16, marginBottom: 10, padding: 14, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
+    listCard:      { marginHorizontal: pad, marginBottom: 10, padding: 14, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
     listCardRow:   { flexDirection: 'row', alignItems: 'flex-start' },
     listCardInfo:  { flex: 1 },
     listCardName:  { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
@@ -136,6 +133,7 @@ function ListCard({
   styles: Styles;
   c: typeof DARK;
 }) {
+  const { t } = useTranslation('lists');
   const unknownPct = item.totalWords > 0
     ? Math.round(((item.totalWords - item.unknownWords) / item.totalWords) * 100)
     : 0;
@@ -146,7 +144,7 @@ function ListCard({
         <View style={styles.listCardInfo}>
           <Text style={styles.listCardName}>{item.name}</Text>
           <Text style={styles.listCardStats}>
-            {item.totalWords.toLocaleString()} kelime · %{unknownPct} biliniyor
+            {t('wordCount', { count: item.totalWords })} · {t('wordStatsPct', { pct: unknownPct })}
           </Text>
         </View>
         <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} activeOpacity={0.7}>
@@ -176,6 +174,8 @@ function CreateModal({
   styles: Styles;
   c: typeof DARK;
 }) {
+  const { t } = useTranslation('lists');
+  const { t: tCommon } = useTranslation('common');
   const [name, setName] = useState('');
 
   const handleCreate = () => {
@@ -189,10 +189,10 @@ function CreateModal({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity style={styles.modalSheet} activeOpacity={1}>
-          <Text style={styles.modalTitle}>Yeni Liste</Text>
+          <Text style={styles.modalTitle}>{t('newList')}</Text>
           <TextInput
             style={styles.modalInput}
-            placeholder="Liste adı..."
+            placeholder={t('listNamePlaceholder')}
             placeholderTextColor={c.TEXT_S}
             value={name}
             onChangeText={setName}
@@ -201,7 +201,7 @@ function CreateModal({
           />
           <View style={styles.modalBtns}>
             <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
-              <Text style={styles.modalCancelText}>İptal</Text>
+              <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalCreate, (!name.trim() || creating) && { opacity: 0.5 }]}
@@ -210,7 +210,7 @@ function CreateModal({
             >
               {creating
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.modalCreateText}>Oluştur</Text>
+                : <Text style={styles.modalCreateText}>{tCommon('actions.create')}</Text>
               }
             </TouchableOpacity>
           </View>
@@ -223,10 +223,21 @@ function CreateModal({
 // ─── Main Screen ──────────────────────────────────────────────
 export default function ListsTabScreen() {
   const router = useRouter();
-  const { colorScheme } = useTheme();
+  const { t } = useTranslation('lists');
+  const { t: tCommon } = useTranslation('common');
+  const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
-  const c = isDark ? DARK : LIGHT;
-  const styles = useMemo(() => makeStyles(c, isDark), [isDark]);
+  const { isTablet } = useResponsive();
+  const c = useMemo(() => ({
+    BG: theme.colors.background,
+    SURFACE: theme.colors.surface,
+    SURFACE2: theme.colors.surfaceSubtle,
+    TEXT_P: theme.colors.textPrimary,
+    TEXT_S: theme.colors.textSecondary,
+    BORDER: theme.colors.borderDefault,
+    PURPLE: theme.colors.primary,
+  }), [theme]);
+  const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
   const [showCreate, setShowCreate] = useState(false);
 
@@ -247,14 +258,14 @@ export default function ListsTabScreen() {
 
   const handleDelete = useCallback((item: WordListDTO) => {
     Alert.alert(
-      'Listeyi Sil',
-      `"${item.name}" listesini silmek istiyor musunuz? Bu işlem geri alınamaz.`,
+      t('deleteListTitle'),
+      t('deleteListMessage', { name: item.name }),
       [
-        { text: 'İptal', style: 'cancel' },
-        { text: 'Sil', style: 'destructive', onPress: () => deleteList(item.id) },
+        { text: tCommon('actions.cancel'), style: 'cancel' },
+        { text: tCommon('actions.delete'), style: 'destructive', onPress: () => deleteList(item.id) },
       ],
     );
-  }, [deleteList]);
+  }, [deleteList, t, tCommon]);
 
   return (
     <View style={styles.root}>
@@ -265,7 +276,7 @@ export default function ListsTabScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Listelerim</Text>
+          <Text style={styles.headerTitle}>{t('myLists')}</Text>
           <TouchableOpacity style={styles.addBtn} onPress={() => setShowCreate(true)}>
             <Text style={styles.addBtnText}>+</Text>
           </TouchableOpacity>
@@ -273,7 +284,7 @@ export default function ListsTabScreen() {
 
         {isLoading ? (
           <View style={styles.center}>
-            <ActivityIndicator color={DARK.PURPLE} size="large" />
+            <ActivityIndicator color={c.PURPLE} size="large" />
           </View>
         ) : (
           <FlatList
@@ -287,19 +298,19 @@ export default function ListsTabScreen() {
                   onPress={() => router.push('/list/-1' as any)}
                   activeOpacity={0.75}
                 >
-                  <Text style={styles.knownCardTitle}>Bilinen Kelimeler</Text>
+                  <Text style={styles.knownCardTitle}>{t('knownWords')}</Text>
                   <Text style={styles.knownCardSub}>
-                    Bilinen olarak işaretlediğin tüm kelimeler
+                    {t('knownWordsSubtitle')}
                   </Text>
                   <View style={styles.knownCardBadge}>
                     <Text style={styles.knownCardBadgeText}>
-                      {knownWords.length} kelime
+                      {t('wordCount', { count: knownWords.length })}
                     </Text>
                   </View>
                 </TouchableOpacity>
 
                 {lists.length > 0 && (
-                  <Text style={styles.sectionLabel}>KİŞİSEL LİSTELER</Text>
+                  <Text style={styles.sectionLabel}>{t('personalLists')}</Text>
                 )}
               </>
             )}
@@ -315,7 +326,7 @@ export default function ListsTabScreen() {
             ListEmptyComponent={() => (
               <View style={styles.center}>
                 <Text style={styles.emptyIcon}>📋</Text>
-                <Text style={styles.emptyText}>Henüz liste oluşturmadın</Text>
+                <Text style={styles.emptyText}>{t('noPersonalLists')}</Text>
               </View>
             )}
             showsVerticalScrollIndicator={false}

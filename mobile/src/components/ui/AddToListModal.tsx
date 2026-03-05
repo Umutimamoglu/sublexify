@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '@/src/context/ThemeContext';
+import { useTranslation } from '@/src/i18n/useTranslation';
 import {
   useLists,
   useListsContainingWord,
@@ -18,19 +19,13 @@ import {
 } from '@/src/api/queries/lists.queries';
 import type { WordListDTO } from '@/src/types/api';
 
-// ─── Palette ──────────────────────────────────────────────────
-const DARK = {
-  BG: '#0d0d14', SURFACE: '#16161f', SURFACE2: '#1e1e2a',
-  TEXT_P: '#f0f0f5', TEXT_S: '#8888aa', BORDER: '#ffffff0f',
-  PURPLE: '#7c3aed',
-};
-const LIGHT = {
-  BG: '#f4f4f8', SURFACE: '#ffffff', SURFACE2: '#ededf5',
-  TEXT_P: '#111118', TEXT_S: '#888899', BORDER: '#e0e0ea',
-  PURPLE: '#6d28d9',
+type Palette = {
+  BG: string; SURFACE: string; SURFACE2: string;
+  TEXT_P: string; TEXT_S: string; BORDER: string;
+  PURPLE: string;
 };
 
-function makeStyles(c: typeof DARK) {
+function makeStyles(c: Palette) {
   return StyleSheet.create({
     overlay:    { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' },
     sheet:      {
@@ -102,8 +97,9 @@ function ListRow({
   isPending: boolean;
   onPress: () => void;
   styles: ReturnType<typeof makeStyles>;
-  c: typeof DARK;
+  c: Palette;
 }) {
+  const { t } = useTranslation('lists');
   return (
     <TouchableOpacity
       style={[styles.listItem, isAdded && styles.listItemAdded]}
@@ -113,7 +109,7 @@ function ListRow({
     >
       <View style={styles.listInfo}>
         <Text style={styles.listName}>{item.name}</Text>
-        <Text style={styles.listCount}>{item.totalWords.toLocaleString()} kelime</Text>
+        <Text style={styles.listCount}>{t('wordCount', { count: item.totalWords })}</Text>
       </View>
       {isPending ? (
         <ActivityIndicator size="small" color={c.PURPLE} />
@@ -144,9 +140,18 @@ export default function AddToListModal({
   wordName: string;
   onClose:  () => void;
 }) {
-  const { colorScheme } = useTheme();
-  const isDark = colorScheme === 'dark';
-  const c = isDark ? DARK : LIGHT;
+  const { t } = useTranslation('lists');
+  const { t: tCommon } = useTranslation('common');
+  const { theme } = useTheme();
+  const c = useMemo<Palette>(() => ({
+    BG: theme.colors.background,
+    SURFACE: theme.colors.surface,
+    SURFACE2: theme.colors.surfaceSubtle,
+    TEXT_P: theme.colors.textPrimary,
+    TEXT_S: theme.colors.textSecondary,
+    BORDER: theme.colors.borderDefault,
+    PURPLE: theme.colors.primary,
+  }), [theme]);
   const styles = useMemo(() => makeStyles(c), [c]);
 
   const [addedIds,     setAddedIds]     = useState<Set<number>>(new Set());
@@ -224,7 +229,7 @@ export default function AddToListModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle} numberOfLines={1}>
-              {`"${wordName}" listesine ekle`}
+              {t('addToList', { name: wordName })}
             </Text>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
               <Text style={styles.closeText}>✕</Text>
@@ -235,7 +240,7 @@ export default function AddToListModal({
           {listsLoading ? (
             <ActivityIndicator color={c.PURPLE} style={{ paddingVertical: 24 }} />
           ) : customLists.length === 0 ? (
-            <Text style={styles.emptyText}>Henüz liste oluşturmadın</Text>
+            <Text style={styles.emptyText}>{t('noPersonalLists')}</Text>
           ) : (
             <FlatList
               data={customLists}
@@ -262,7 +267,7 @@ export default function AddToListModal({
             activeOpacity={0.7}
           >
             <Text style={styles.createToggleText}>
-              {showCreate ? '− İptal' : '+ Yeni liste oluştur'}
+              {showCreate ? t('cancelCreate') : t('createNew')}
             </Text>
           </TouchableOpacity>
 
@@ -270,7 +275,7 @@ export default function AddToListModal({
             <View style={styles.createRow}>
               <TextInput
                 style={styles.createInput}
-                placeholder="Liste adı..."
+                placeholder={t('listNamePlaceholder')}
                 placeholderTextColor={c.TEXT_S}
                 value={newListName}
                 onChangeText={setNewListName}
@@ -285,7 +290,7 @@ export default function AddToListModal({
               >
                 {creating
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.createBtnText}>Oluştur</Text>
+                  : <Text style={styles.createBtnText}>{tCommon('actions.create')}</Text>
                 }
               </TouchableOpacity>
             </View>
@@ -294,7 +299,7 @@ export default function AddToListModal({
           {/* Done */}
           <View style={styles.doneWrap}>
             <TouchableOpacity style={styles.doneBtn} onPress={onClose} activeOpacity={0.75}>
-              <Text style={styles.doneBtnText}>Bitti</Text>
+              <Text style={styles.doneBtnText}>{tCommon('actions.done')}</Text>
             </TouchableOpacity>
           </View>
 

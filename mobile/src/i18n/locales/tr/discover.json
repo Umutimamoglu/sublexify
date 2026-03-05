@@ -14,5 +14,9 @@
   "curatedLists": "Seçilmiş Listeler",
   "viewAll": "TÜMÜNÜ GÖR",
   "noContinueTitle": "Henüz başlanan içerik yok",
-  "noContinueSubtitle": "Kelime takibine başlamak için aşağıdan bir içerik seç"
+  "noContinueSubtitle": "Kelime takibine başlamak için aşağıdan bir içerik seç",
+  "knownWords": "Bilinen Kelimeler",
+  "noEpisodes": "Bölüm bulunamadı",
+  "episodeCount": "{{count}} bölüm",
+  "episodeCount_plural": "{{count}} bölüm"
 }

@@ -6,5 +6,10 @@
   "wordCount": "{{count}} kelime",
   "wordCount_plural": "{{count}} kelime",
   "difficulty": "Zorluk",
-  "allLevels": "Tüm Seviyeler"
+  "allLevels": "Tüm Seviyeler",
+  "statsKnown": "Bilinen",
+  "statsTop60": "Top 60'ta bilinen",
+  "searchResultsFor": "\"{{query}}\" için sonuçlar",
+  "frequentWords": "EN SIK KULLANILAN KELİMELER",
+  "noSearchResults": "\"{{query}}\" için sonuç bulunamadı"
 }

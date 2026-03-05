@@ -14,5 +14,9 @@
   "curatedLists": "Curated Lists",
   "viewAll": "VIEW ALL",
   "noContinueTitle": "Nothing started yet",
-  "noContinueSubtitle": "Pick a show or movie below to start tracking words"
+  "noContinueSubtitle": "Pick a show or movie below to start tracking words",
+  "knownWords": "Known Words",
+  "noEpisodes": "No episodes found",
+  "episodeCount": "{{count}} episode",
+  "episodeCount_plural": "{{count}} episodes"
 }

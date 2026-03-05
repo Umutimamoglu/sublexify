@@ -33,22 +33,18 @@ import * as Speech from 'expo-speech';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
+import { useTranslation } from '@/src/i18n/useTranslation';
+import { useResponsive } from '@/src/hooks/useResponsive';
 import { useListDetail, useRemoveWordFromList, useCreateSubListFromUnknown } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import type { ListWord, Difficulty } from '@/src/types/api';
 
-// ─── Palettes (same as DiscoverScreen) ───────────────────────
-const DARK = {
-  BG: '#0d0d14', SURFACE: '#16161f', SURFACE2: '#1e1e2a',
-  TEXT_P: '#f0f0f5', TEXT_S: '#8888aa', BORDER: '#ffffff0f',
-  PURPLE: '#7c3aed',
-};
-const LIGHT = {
-  BG: '#f4f4f8', SURFACE: '#ffffff', SURFACE2: '#ededf5',
-  TEXT_P: '#111118', TEXT_S: '#888899', BORDER: '#e0e0ea',
-  PURPLE: '#6d28d9',
+type Palette = {
+  BG: string; SURFACE: string; SURFACE2: string;
+  TEXT_P: string; TEXT_S: string; BORDER: string;
+  PURPLE: string;
 };
 const DIFF_COLORS: Record<string, string> = {
   all: '#6B7280',
@@ -62,16 +58,17 @@ type Filter = 'all' | Difficulty;
 const FILTERS: Filter[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 // ─── Styles ───────────────────────────────────────────────────
-function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
-  const cardW = sw - 32;
-  const cardH = sh * 0.72;
+function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTablet: boolean) {
+  const pad = isTablet ? 32 : 16;
+  const cardW = Math.min(sw - 32, 500);
+  const cardH = Math.min(sh * 0.72, 600);
 
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.BG },
     safeArea: { flex: 1, backgroundColor: c.BG },
 
     // Header
-    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 12, gap: 10 },
     backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
     backText: { color: c.TEXT_P, fontSize: 18 },
     title: { flex: 1, color: c.TEXT_P, fontSize: 17, fontWeight: '700' },
@@ -82,15 +79,15 @@ function makeStyles(c: typeof DARK, isDark: boolean, sw: number, sh: number) {
 
     // Chips
     chipScrollWrap: { flexShrink: 0, flexGrow: 0 },
-    chipScroll: { paddingHorizontal: 16, paddingBottom: 12, flexGrow: 0 },
+    chipScroll: { paddingHorizontal: pad, paddingBottom: 12, flexGrow: 0 },
     chip: { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     chipText: { fontSize: 12, fontWeight: '700' },
 
     // Separator
-    separator: { height: 1, backgroundColor: c.BORDER, marginHorizontal: 16 },
+    separator: { height: 1, backgroundColor: c.BORDER, marginHorizontal: pad },
 
     // List view row
-    row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13 },
+    row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 13 },
     rowInfo: { flex: 1 },
     rowWord: { color: c.TEXT_P, fontSize: 16, fontWeight: '700' },
     rowMeaning: { color: c.TEXT_S, fontSize: 13, marginTop: 3, lineHeight: 18 },
@@ -205,7 +202,7 @@ function WordRow({
   onAddToList: () => void;
   onRemove?: () => void;
   styles: Styles;
-  c: typeof DARK;
+  c: Palette;
 }) {
   const meaning = word.definition?.meanings?.[0]?.definition;
   return (
@@ -263,9 +260,10 @@ function FlashCardBack({
   onToggle: () => void;
   onFlipBack: () => void;
   styles: Styles;
-  c: typeof DARK;
+  c: Palette;
   animStyle: any;
 }) {
+  const { t } = useTranslation('lists');
   const def = word.definition;
   return (
     <Reanimated.View style={[styles.card, styles.cardBack, animStyle]}>
@@ -286,7 +284,7 @@ function FlashCardBack({
         {!def ? (
           <View style={styles.unenrichedBox}>
             <Text style={styles.unenrichedIcon}>⏳</Text>
-            <Text style={styles.unenrichedText}>Kelime detayı henüz işlenmedi</Text>
+            <Text style={styles.unenrichedText}>{t('notEnriched')}</Text>
           </View>
         ) : (
           <>
@@ -304,7 +302,7 @@ function FlashCardBack({
             {/* Verb Forms */}
             {def.verb_forms && (
               <>
-                <Text style={styles.sectionLabel}>VERB FORMS</Text>
+                <Text style={styles.sectionLabel}>{t('verbForms')}</Text>
                 <View style={styles.verbGrid}>
                   {(['v1', 'v2', 'v3', 'ing'] as const).map((key) => (
                     <View key={key} style={styles.verbCell}>
@@ -319,7 +317,7 @@ function FlashCardBack({
             {/* Phrasal Verbs */}
             {def.phrasal_verbs?.length ? (
               <>
-                <Text style={styles.sectionLabel}>PHRASAL VERBS</Text>
+                <Text style={styles.sectionLabel}>{t('phrasalVerbs')}</Text>
                 {def.phrasal_verbs.map((pv, i) => (
                   <View key={i} style={styles.phrasalBlock}>
                     <Text style={styles.phrasalPhrase}>{pv.phrase}</Text>
@@ -346,7 +344,7 @@ function FlashCardBack({
 
       {/* Flip back */}
       <TouchableOpacity style={styles.cardFlipBackBtn} onPress={onFlipBack}>
-        <Text style={styles.cardFlipBackText}>↩ flip</Text>
+        <Text style={styles.cardFlipBackText}>{t('flipBack')}</Text>
       </TouchableOpacity>
     </Reanimated.View>
   );
@@ -355,12 +353,23 @@ function FlashCardBack({
 // ─── Main Screen ──────────────────────────────────────────────
 export default function ListScreen({ listId }: { listId: number }) {
   const router = useRouter();
-  const { colorScheme } = useTheme();
+  const { t } = useTranslation('lists');
+  const { t: tCommon } = useTranslation('common');
+  const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
+  const { isTablet } = useResponsive();
   const { width, height } = useWindowDimensions();
-  const c = isDark ? DARK : LIGHT;
+  const c = useMemo<Palette>(() => ({
+    BG: theme.colors.background,
+    SURFACE: theme.colors.surface,
+    SURFACE2: theme.colors.surfaceSubtle,
+    TEXT_P: theme.colors.textPrimary,
+    TEXT_S: theme.colors.textSecondary,
+    BORDER: theme.colors.borderDefault,
+    PURPLE: theme.colors.primary,
+  }), [theme]);
 
-  const styles = useMemo(() => makeStyles(c, isDark, width, height), [isDark, width, height]);
+  const styles = useMemo(() => makeStyles(c, isDark, width, height, isTablet), [c, isDark, width, height, isTablet]);
 
   // ─── Data ─────────────────────────────────────────────────
   const isKnownList = listId === -1;
@@ -375,11 +384,11 @@ export default function ListScreen({ listId }: { listId: number }) {
     if (!isKnownList) return undefined;
     return {
       id: -1,
-      name: 'Bilinen Kelimeler',
+      name: t('knownWords'),
       words: knownWordsData as any as ListWord[],
       createdAt: new Date().toISOString(),
     };
-  }, [isKnownList, knownWordsData]);
+  }, [isKnownList, knownWordsData, t]);
 
   const effectiveList = isKnownList ? knownWordsAsDetail : list;
   const isLoading = isKnownList ? knownLoading : listLoading;
@@ -424,14 +433,14 @@ export default function ListScreen({ listId }: { listId: number }) {
   // ─── Remove word from list ────────────────────────────────
   const handleRemove = useCallback((wordId: number, wordName: string) => {
     Alert.alert(
-      'Kelimeyi Kaldır',
-      `"${wordName}" kelimesini listeden kaldırmak istiyor musunuz?`,
+      t('removeWordTitle'),
+      t('removeWordMessage', { name: wordName }),
       [
-        { text: 'İptal', style: 'cancel' },
-        { text: 'Kaldır', style: 'destructive', onPress: () => removeWord({ listId, wordId }) },
+        { text: tCommon('actions.cancel'), style: 'cancel' },
+        { text: tCommon('actions.remove'), style: 'destructive', onPress: () => removeWord({ listId, wordId }) },
       ],
     );
-  }, [removeWord, listId]);
+  }, [removeWord, listId, t, tCommon]);
 
   // ─── Generate sub-list from unknowns ─────────────────────
   const unknownCount = useMemo(
@@ -441,18 +450,18 @@ export default function ListScreen({ listId }: { listId: number }) {
 
   const handleGenerateSubList = useCallback(() => {
     Alert.alert(
-      'Alt-Liste Oluştur',
-      `Bu listedeki ${unknownCount} bilinmeyen kelimeden yeni bir liste oluşturulsun mu?`,
+      t('subListTitle'),
+      t('subListMessage', { count: unknownCount }),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: tCommon('actions.cancel'), style: 'cancel' },
         {
-          text: 'Oluştur', onPress: () => generateSubList(listId, {
-            onSuccess: (newList) => Alert.alert('Başarılı', `"${newList.name}" oluşturuldu.`),
+          text: tCommon('actions.create'), onPress: () => generateSubList(listId, {
+            onSuccess: (newList) => Alert.alert(tCommon('success'), t('subListCreated', { name: newList.name })),
           })
         },
       ],
     );
-  }, [generateSubList, listId, unknownCount]);
+  }, [generateSubList, listId, unknownCount, t, tCommon]);
 
   // ─── Flashcard animations (Reanimated 4 + Gesture Handler) ──
   const cardX = useSharedValue(0);
@@ -564,7 +573,7 @@ export default function ListScreen({ listId }: { listId: number }) {
   if (isLoading) {
     return (
       <View style={[styles.root, styles.center]}>
-        <ActivityIndicator color={DARK.PURPLE} size="large" />
+        <ActivityIndicator color={c.PURPLE} size="large" />
       </View>
     );
   }
@@ -619,7 +628,7 @@ export default function ListScreen({ listId }: { listId: number }) {
                 activeOpacity={0.75}
               >
                 <Text style={[styles.chipText, { color: active ? color : c.TEXT_S }]}>
-                  {f === 'all' ? 'Tümü' : f}
+                  {f === 'all' ? tCommon('actions.all') : f}
                 </Text>
               </TouchableOpacity>
             );
@@ -629,7 +638,7 @@ export default function ListScreen({ listId }: { listId: number }) {
         {filteredWords.length === 0 ? (
           <View style={styles.center}>
             <Text style={styles.emptyIcon}>📭</Text>
-            <Text style={styles.emptyText}>Bu seviyede kelime yok</Text>
+            <Text style={styles.emptyText}>{t('noWordsAtLevel')}</Text>
           </View>
         ) : viewMode === 'list' ? (
           /* ── LIST VIEW ──────────────────────────────────── */
@@ -682,7 +691,7 @@ export default function ListScreen({ listId }: { listId: number }) {
                         </Text>
                       </>
                     )}
-                    <Text style={styles.flipHint}>karta dokun → çevir</Text>
+                    <Text style={styles.flipHint}>{t('cardFlipHint')}</Text>
                     <TouchableOpacity
                       style={[styles.cardListBtn, { borderColor: c.BORDER }]}
                       onPress={() => setAddModal({ wordId: currentWord.id, wordName: currentWord.word })}
@@ -737,7 +746,7 @@ export default function ListScreen({ listId }: { listId: number }) {
             >
               {generating
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.ctaText}>Bilinmeyenlerden Alt-Liste Oluştur ({unknownCount})</Text>
+                : <Text style={styles.ctaText}>{t('createSubListCta', { count: unknownCount })}</Text>
               }
             </TouchableOpacity>
           </View>

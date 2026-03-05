@@ -1,10 +1,15 @@
 {
   "title": "Vocabulary",
   "knownWords": "Known Words",
-  "searchPlaceholder": "Search your vocabulary...",
+  "searchPlaceholder": "Search words...",
   "noWords": "No words saved yet.",
   "wordCount": "{{count}} word",
   "wordCount_plural": "{{count}} words",
   "difficulty": "Difficulty",
-  "allLevels": "All Levels"
+  "allLevels": "All Levels",
+  "statsKnown": "Known",
+  "statsTop60": "Known in Top 60",
+  "searchResultsFor": "Results for \"{{query}}\"",
+  "frequentWords": "MOST FREQUENT WORDS",
+  "noSearchResults": "No results for \"{{query}}\""
 }

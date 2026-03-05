@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useResponsive } from '@/src/hooks/useResponsive';
 import {
   View,
   Text,
@@ -8,6 +9,7 @@ import {
   StatusBar,
   useWindowDimensions,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -19,30 +21,8 @@ import { useStandardLists } from '@/src/api/queries/lists.queries';
 import { useUserStats } from '@/src/api/queries/user.queries';
 import type { MediaDTO, WordListDTO } from '@/src/types/api';
 
-// ─── Cinema Colour Palettes ───────────────────────────────────
-const DARK = {
-  BG: '#0d0d14',
-  SURFACE: '#16161f',
-  SURFACE2: '#1e1e2a',
-  TEXT_P: '#f0f0f5',
-  TEXT_S: '#8888aa',
-  BORDER: '#ffffff0f',
-  PURPLE: '#7c3aed',
-  STREAK_BG: '#7f1d1d',
-  STREAK_T: '#fca5a5',
-};
-
-const LIGHT = {
-  BG: '#f4f4f8',
-  SURFACE: '#ffffff',
-  SURFACE2: '#ededf5',
-  TEXT_P: '#111118',
-  TEXT_S: '#888899',
-  BORDER: '#e0e0ea',
-  PURPLE: '#6d28d9',
-  STREAK_BG: '#7f1d1d',
-  STREAK_T: '#fca5a5',
-};
+const STREAK_BG = '#7f1d1d';
+const STREAK_T  = '#fca5a5';
 
 const CARD_R = 14;
 
@@ -79,16 +59,52 @@ function episodeLabel(media: MediaDTO): string {
   return media.type;
 }
 
-// ─── Styles Factory ───────────────────────────────────────────
-type Palette = typeof DARK;
+// Benzersiz gösterimler için: MOVIE'ler + her diziden ilk EPISODE (imdbId bazlı)
+type MediaFilter = 'all' | 'movie' | 'series';
 
-function makeStyles(c: Palette, isDark: boolean) {
+function deduplicateMedia(items: MediaDTO[], filter: MediaFilter): MediaDTO[] {
+  const seen = new Set<string>();
+  return items.filter((m) => {
+    if (m.type === 'MOVIE') {
+      if (filter === 'series') return false;
+      return true;
+    }
+    if (m.type === 'EPISODE' || m.type === 'SEASON') {
+      if (filter === 'movie') return false;
+      if (!m.imdbId) return false;
+      if (seen.has(m.imdbId)) return false;
+      seen.add(m.imdbId);
+      return true;
+    }
+    return false;
+  });
+}
+
+// Dizi kartı için gösterim başlığı: "Show Title - S1:E1" → "Show Title"
+function seriesTitle(media: MediaDTO): string {
+  if (media.type !== 'MOVIE') {
+    const idx = media.title.indexOf(' - ');
+    if (idx > 0) return media.title.substring(0, idx);
+  }
+  return media.title;
+}
+
+// ─── Styles Factory ───────────────────────────────────────────
+type Palette = {
+  BG: string; SURFACE: string; SURFACE2: string;
+  TEXT_P: string; TEXT_S: string; BORDER: string;
+  PURPLE: string; STREAK_BG: string; STREAK_T: string;
+};
+
+function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
+  const pad = isTablet ? 32 : 16;
+  const mediaCardW = isTablet ? 160 : 112;
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.BG },
     safeArea: { flex: 1, backgroundColor: c.BG },
     scrollContent: { paddingBottom: 8 },
 
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 12 },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: c.PURPLE + '66' },
     avatarText: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
@@ -101,11 +117,11 @@ function makeStyles(c: Palette, isDark: boolean) {
     streakCount: { color: c.STREAK_T, fontSize: 13, fontWeight: '700' },
 
     section: { marginBottom: 24 },
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, marginBottom: 12 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: pad, marginBottom: 12 },
     sectionTitle: { color: c.TEXT_P, fontSize: 18, fontWeight: '700' },
-    sectionPad: { paddingHorizontal: 16, marginBottom: 12 },
+    sectionPad: { paddingHorizontal: pad, marginBottom: 12 },
     viewAll: { color: c.PURPLE, fontSize: 12, fontWeight: '600', letterSpacing: 0.5 },
-    hScrollContent: { paddingLeft: 16, paddingRight: 6 },
+    hScrollContent: { paddingLeft: pad, paddingRight: 6 },
 
     continueCard: { height: 148, borderRadius: CARD_R, overflow: 'hidden', justifyContent: 'flex-end', marginRight: 10, borderWidth: 1, borderColor: '#ffffff15' },
     continueOverlay: { ...StyleSheet.absoluteFillObject },
@@ -113,13 +129,21 @@ function makeStyles(c: Palette, isDark: boolean) {
     continueEpisode: { color: '#aaaacc', fontSize: 11, marginBottom: 3 },
     continueTitle: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
 
-    mediaCard: { width: 112, borderRadius: CARD_R, overflow: 'hidden', marginRight: 10, borderWidth: 1, borderColor: '#ffffff15' },
+    mediaCard: { width: mediaCardW, borderRadius: CARD_R, overflow: 'hidden', marginRight: 10, borderWidth: 1, borderColor: '#ffffff15' },
     badgeWrapper: { position: 'absolute', top: 8, left: 8, zIndex: 10 },
-    posterPlaceholder: { height: 145, alignItems: 'center', justifyContent: 'center' },
+    poster: { width: '100%', height: 155 },
+    posterPlaceholder: { height: 155, alignItems: 'center', justifyContent: 'center' },
     posterLetter: { fontSize: 52, fontWeight: '900', opacity: 0.7 },
     mediaTitle: { color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: 8, paddingHorizontal: 6 },
 
-    listsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 10 },
+    // Filter chips
+    filterRow: { flexDirection: 'row', paddingHorizontal: pad, paddingBottom: 12, gap: 8 },
+    filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: c.BORDER, backgroundColor: c.SURFACE2 },
+    filterChipActive: { backgroundColor: c.PURPLE, borderColor: c.PURPLE },
+    filterChipText: { color: c.TEXT_S, fontSize: 13, fontWeight: '600' },
+    filterChipTextActive: { color: '#ffffff' },
+
+    listsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: pad, gap: 10 },
     listCard: {
       backgroundColor: c.SURFACE, borderRadius: CARD_R, padding: 18, alignItems: 'center', gap: 5,
       borderWidth: 1, borderColor: c.BORDER, minHeight: 110,
@@ -133,7 +157,7 @@ function makeStyles(c: Palette, isDark: boolean) {
     listTitle: { color: c.TEXT_P, fontSize: 14, fontWeight: '700', textAlign: 'center' },
     listSubtitle: { color: c.TEXT_S, fontSize: 11, textAlign: 'center' },
 
-    emptyCard: { marginHorizontal: 16, height: 110, borderRadius: CARD_R, borderWidth: 1, borderStyle: 'dashed', borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.SURFACE },
+    emptyCard: { marginHorizontal: pad, height: 110, borderRadius: CARD_R, borderWidth: 1, borderStyle: 'dashed', borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: c.SURFACE },
     emptyIcon: { fontSize: 28 },
     emptyTitle: { color: c.TEXT_P, fontSize: 14, fontWeight: '600', textAlign: 'center' },
     emptySubtitle: { color: c.TEXT_S, fontSize: 12, textAlign: 'center', paddingHorizontal: 24 },
@@ -197,6 +221,8 @@ function MediaBrowseCard({
   onPress: () => void;
 }) {
   const { darkBg, lightBg, accent } = cardAccent(item.id);
+  const title = seriesTitle(item);
+  const diff = (item.difficultyLevel as any) ?? '-';
   return (
     <TouchableOpacity
       style={[
@@ -207,38 +233,45 @@ function MediaBrowseCard({
       onPress={onPress}
     >
       <View style={styles.badgeWrapper}>
-        <DifficultyBadge difficulty="-" size="sm" />
+        <DifficultyBadge difficulty={diff} size="sm" />
       </View>
-      <View style={[styles.posterPlaceholder, { backgroundColor: accent + '22' }]}>
-        <Text style={[styles.posterLetter, { color: accent }]}>
-          {item.title.charAt(0)}
-        </Text>
-      </View>
-      <Text style={styles.mediaTitle}>{item.title}</Text>
+      {item.posterUrl ? (
+        <Image source={{ uri: item.posterUrl }} style={styles.poster} resizeMode="cover" />
+      ) : (
+        <View style={[styles.posterPlaceholder, { backgroundColor: accent + '22' }]}>
+          <Text style={[styles.posterLetter, { color: accent }]}>
+            {title.charAt(0)}
+          </Text>
+        </View>
+      )}
+      <Text style={styles.mediaTitle} numberOfLines={2}>{title}</Text>
     </TouchableOpacity>
   );
 }
 
 function KnownWordsCard({ count, loading, styles, onPress }: { count: number; loading: boolean; styles: Styles; onPress: () => void }) {
+  const { t } = useTranslation('discover');
+  const { t: tLists } = useTranslation('lists');
   const { width } = useWindowDimensions();
   const cardWidth = (width - 42) / 2;
   return (
     <TouchableOpacity style={[styles.listCard, { width: cardWidth }]} activeOpacity={0.85} onPress={onPress}>
       <Text style={styles.listIcon}>📖</Text>
-      <Text style={styles.listTitle}>Bilinen Kelimeler</Text>
-      <Text style={styles.listSubtitle}>{loading ? '...' : `${count} kelime`}</Text>
+      <Text style={styles.listTitle}>{t('knownWords')}</Text>
+      <Text style={styles.listSubtitle}>{loading ? '...' : tLists('wordCount', { count })}</Text>
     </TouchableOpacity>
   );
 }
 
 function ListCard({ item, styles, onPress }: { item: WordListDTO; styles: Styles; onPress: () => void }) {
+  const { t } = useTranslation('lists');
   const { width } = useWindowDimensions();
   const cardWidth = (width - 42) / 2;
   return (
     <TouchableOpacity style={[styles.listCard, { width: cardWidth }]} activeOpacity={0.85} onPress={onPress}>
       <Text style={styles.listIcon}>{listIcon(item.name)}</Text>
       <Text style={styles.listTitle}>{item.name}</Text>
-      <Text style={styles.listSubtitle}>{item.totalWords} kelime</Text>
+      <Text style={styles.listSubtitle}>{t('wordCount', { count: item.totalWords })}</Text>
     </TouchableOpacity>
   );
 }
@@ -246,24 +279,46 @@ function ListCard({ item, styles, onPress }: { item: WordListDTO; styles: Styles
 // ─── Main Screen ──────────────────────────────────────────────
 export default function DiscoverScreen() {
   const { t } = useTranslation('discover');
-  const { colorScheme } = useTheme();
+  const { t: tCommon } = useTranslation('common');
+  const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
+  const { isTablet } = useResponsive();
   const router = useRouter();
 
+  const c = useMemo<Palette>(() => ({
+    BG: theme.colors.background,
+    SURFACE: theme.colors.surface,
+    SURFACE2: theme.colors.surfaceSubtle,
+    TEXT_P: theme.colors.textPrimary,
+    TEXT_S: theme.colors.textSecondary,
+    BORDER: theme.colors.borderDefault,
+    PURPLE: theme.colors.primary,
+    STREAK_BG,
+    STREAK_T,
+  }), [theme]);
+
   const styles = useMemo(
-    () => makeStyles(isDark ? DARK : LIGHT, isDark),
-    [isDark],
+    () => makeStyles(c, isDark, isTablet),
+    [c, isDark, isTablet],
   );
+
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
 
   const { data: continueMedia = [], isLoading: continueLoading } = useContinueLearning(5);
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
   const { data: standardLists = [], isLoading: listsLoading } = useStandardLists();
   const { data: userStats, isLoading: knownLoading } = useUserStats();
+
+  const browsedMedia = useMemo(
+    () => deduplicateMedia(allMedia, mediaFilter),
+    [allMedia, mediaFilter],
+  );
+
   return (
     <View style={styles.root}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={isDark ? DARK.BG : LIGHT.BG}
+        backgroundColor={c.BG}
       />
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
@@ -295,7 +350,7 @@ export default function DiscoverScreen() {
               </TouchableOpacity>
             </View>
             {continueLoading ? (
-              <ActivityIndicator color={DARK.PURPLE} style={styles.loader} />
+              <ActivityIndicator color={c.PURPLE} style={styles.loader} />
             ) : continueMedia.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyIcon}>🎬</Text>
@@ -320,20 +375,48 @@ export default function DiscoverScreen() {
 
           {/* Browse Media */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, styles.sectionPad]}>{t('browseMedia')}</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('browseMedia')}</Text>
+            </View>
+
+            {/* Filter chips */}
+            <View style={styles.filterRow}>
+              {(['all', 'movie', 'series'] as MediaFilter[]).map((f) => {
+                const label = f === 'all' ? t('allContent') : f === 'movie' ? t('movies') : t('series');
+                const active = mediaFilter === f;
+                return (
+                  <TouchableOpacity
+                    key={f}
+                    style={[styles.filterChip, active && styles.filterChipActive]}
+                    onPress={() => setMediaFilter(f)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             {mediaLoading ? (
-              <ActivityIndicator color={DARK.PURPLE} style={styles.loader} />
+              <ActivityIndicator color={c.PURPLE} style={styles.loader} />
             ) : mediaError ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyIcon}>⚠️</Text>
-                <Text style={styles.emptyTitle}>İçerikler yüklenemedi</Text>
-                <Text style={styles.emptySubtitle}>Sunucu bağlantısı kontrol edilsin</Text>
+                <Text style={styles.emptyTitle}>{tCommon('errors.loadFailed')}</Text>
+                <Text style={styles.emptySubtitle}>{tCommon('errors.checkServer')}</Text>
+              </View>
+            ) : browsedMedia.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyIcon}>🎬</Text>
+                <Text style={styles.emptyTitle}>{t('noContent')}</Text>
               </View>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>
-                {allMedia.map((item) => (
+                {browsedMedia.map((item) => (
                   <MediaBrowseCard
-                    key={item.id}
+                    key={`${item.id}-${item.imdbId}`}
                     item={item}
                     isDark={isDark}
                     styles={styles}
@@ -352,7 +435,7 @@ export default function DiscoverScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, styles.sectionPad]}>{t('curatedLists')}</Text>
             {listsLoading ? (
-              <ActivityIndicator color={DARK.PURPLE} style={styles.loader} />
+              <ActivityIndicator color={c.PURPLE} style={styles.loader} />
             ) : (
               <View style={styles.listsGrid}>
                 <KnownWordsCard count={userStats?.totalKnownWords ?? 0} loading={knownLoading} styles={styles} onPress={() => router.push('/list/-1' as any)} />

@@ -50,7 +50,7 @@ export const FontFamily = {
   medium:   'System',
   semibold: 'System',
   bold:     'System',
-  mono:     'SpaceMono',
+  mono:     'System',
 } as const;
 
 export const FontSize = {

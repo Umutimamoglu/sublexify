@@ -21,22 +21,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
+import { useTranslation } from '@/src/i18n/useTranslation';
+import { useResponsive } from '@/src/hooks/useResponsive';
 import { useMediaDetail, useMediaWords, useGenerateListFromMedia } from '@/src/api/queries/media.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import type { WordDTO, Difficulty } from '@/src/types/api';
 
-// ─── Palette ──────────────────────────────────────────────────
-const DARK = {
-  BG: '#0d0d14', SURFACE: '#16161f', SURFACE2: '#1e1e2a',
-  TEXT_P: '#f0f0f5', TEXT_S: '#8888aa', BORDER: '#ffffff0f',
-  PURPLE: '#7c3aed',
-};
-const LIGHT = {
-  BG: '#f4f4f8', SURFACE: '#ffffff', SURFACE2: '#ededf5',
-  TEXT_P: '#111118', TEXT_S: '#888899', BORDER: '#e0e0ea',
-  PURPLE: '#6d28d9',
+type Palette = {
+  BG: string; SURFACE: string; SURFACE2: string;
+  TEXT_P: string; TEXT_S: string; BORDER: string;
+  PURPLE: string;
 };
 
 const DIFF_COLORS: Record<string, string> = {
@@ -49,20 +45,23 @@ type Filter = 'all' | Difficulty;
 const FILTERS: Filter[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 // ─── Styles ───────────────────────────────────────────────────
-function makeStyles(c: typeof DARK, isDark: boolean) {
+function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
+  const pad = isTablet ? 32 : 16;
+  const posterW = isTablet ? 120 : 90;
+  const posterH = isTablet ? 173 : 130;
   return StyleSheet.create({
     root:      { flex: 1, backgroundColor: c.BG },
     safeArea:  { flex: 1, backgroundColor: c.BG },
 
     // Header bar
-    headerBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+    headerBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 12, gap: 10 },
     backBtn:   { width: 36, height: 36, borderRadius: 18, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
     backText:  { color: c.TEXT_P, fontSize: 18 },
     headerTitle: { flex: 1, color: c.TEXT_P, fontSize: 16, fontWeight: '700' },
 
     // Hero section
-    hero:          { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 16, gap: 14 },
-    posterWrap:    { width: 90, height: 130, borderRadius: 10, overflow: 'hidden', backgroundColor: c.SURFACE2 },
+    hero:          { flexDirection: 'row', paddingHorizontal: pad, paddingBottom: 16, gap: 14 },
+    posterWrap:    { width: posterW, height: posterH, borderRadius: 10, overflow: 'hidden', backgroundColor: c.SURFACE2 },
     poster:        { width: '100%', height: '100%' },
     posterPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     posterIcon:    { fontSize: 32 },
@@ -74,7 +73,7 @@ function makeStyles(c: typeof DARK, isDark: boolean) {
     heroOverview:  { color: c.TEXT_S, fontSize: 12, lineHeight: 17, marginTop: 8 },
 
     // Progress section
-    progressWrap:  { paddingHorizontal: 16, paddingBottom: 14 },
+    progressWrap:  { paddingHorizontal: pad, paddingBottom: 14 },
     progressLabel: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
     progressText:  { color: c.TEXT_S, fontSize: 12 },
     progressPct:   { color: c.PURPLE, fontSize: 12, fontWeight: '700' },
@@ -168,7 +167,7 @@ function WordRow({
   onToggle: () => void;
   onAddToList: () => void;
   styles: Styles;
-  c: typeof DARK;
+  c: Palette;
 }) {
   const meaning = word.definition?.meanings?.[0]?.definition;
   return (
@@ -214,10 +213,21 @@ function WordRow({
 // ─── Main Screen ──────────────────────────────────────────────
 export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const router = useRouter();
-  const { colorScheme } = useTheme();
+  const { t } = useTranslation('lists');
+  const { t: tCommon } = useTranslation('common');
+  const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
-  const c = isDark ? DARK : LIGHT;
-  const styles = useMemo(() => makeStyles(c, isDark), [isDark]);
+  const { isTablet } = useResponsive();
+  const c = useMemo<Palette>(() => ({
+    BG: theme.colors.background,
+    SURFACE: theme.colors.surface,
+    SURFACE2: theme.colors.surfaceSubtle,
+    TEXT_P: theme.colors.textPrimary,
+    TEXT_S: theme.colors.textSecondary,
+    BORDER: theme.colors.borderDefault,
+    PURPLE: theme.colors.primary,
+  }), [theme]);
+  const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
   // ─── State ────────────────────────────────────────────────
   const [onlyUnknown, setOnlyUnknown] = useState(false);
@@ -263,17 +273,17 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   // ─── Generate list ────────────────────────────────────────
   const handleGenerate = useCallback(() => {
     Alert.alert(
-      'Liste Oluştur',
-      'Bu medyadaki bilinmeyen kelimeleri yeni bir listeye eklemek istiyor musunuz?',
+      t('generateListTitle'),
+      t('generateListMessage'),
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: tCommon('actions.cancel'), style: 'cancel' },
         {
-          text: 'Oluştur',
+          text: tCommon('actions.create'),
           onPress: () => {
             generateList(mediaId, {
               onSuccess: (list) => {
-                Alert.alert('Başarılı', `"${list.name}" listesi oluşturuldu.`, [
-                  { text: 'Tamam', onPress: () => router.push(`/list/${list.id}` as any) },
+                Alert.alert(tCommon('success'), t('generateListCreated', { name: list.name }), [
+                  { text: tCommon('actions.ok'), onPress: () => router.push(`/list/${list.id}` as any) },
                 ]);
               },
             });
@@ -281,7 +291,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         },
       ],
     );
-  }, [generateList, mediaId, router]);
+  }, [generateList, mediaId, router, t, tCommon]);
 
   // ─── Computed values ──────────────────────────────────────
   const knownPct    = media?.knownWordPercentage ?? 0;
@@ -343,8 +353,8 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
       {/* Progress */}
       <View style={styles.progressWrap}>
         <View style={styles.progressLabel}>
-          <Text style={styles.progressText}>{totalWords.toLocaleString()} kelime</Text>
-          <Text style={styles.progressPct}>%{Math.round(knownPct)} biliniyor</Text>
+          <Text style={styles.progressText}>{t('wordCount', { count: totalWords })}</Text>
+          <Text style={styles.progressPct}>{t('wordStatsPct', { pct: Math.round(knownPct) })}</Text>
         </View>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${knownPct}%` }]} />
@@ -356,7 +366,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
 
       {/* Unknown only toggle */}
       <View style={styles.toggleWrap}>
-        <Text style={styles.toggleLabel}>Sadece bilinmeyenler</Text>
+        <Text style={styles.toggleLabel}>{t('unknownOnlyToggle')}</Text>
         <TouchableOpacity
           style={[styles.toggleBtn, { backgroundColor: onlyUnknown ? c.PURPLE : c.SURFACE2 }]}
           onPress={() => { setOnlyUnknown((v) => !v); setFilter('all'); }}
@@ -386,7 +396,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
               activeOpacity={0.75}
             >
               <Text style={[styles.chipText, { color: active ? color : c.TEXT_S }]}>
-                {f === 'all' ? 'Tümü' : f}
+                {f === 'all' ? tCommon('actions.all') : f}
               </Text>
             </TouchableOpacity>
           );
@@ -417,7 +427,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
 
         {isLoading ? (
           <View style={styles.center}>
-            <ActivityIndicator color={DARK.PURPLE} size="large" />
+            <ActivityIndicator color={c.PURPLE} size="large" />
           </View>
         ) : (
           <FlatList
@@ -437,7 +447,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             ListEmptyComponent={() => (
               <View style={styles.center}>
-                <Text style={styles.emptyText}>Bu seviyede kelime yok</Text>
+                <Text style={styles.emptyText}>{t('noWordsAtLevel')}</Text>
               </View>
             )}
             showsVerticalScrollIndicator={false}
@@ -458,7 +468,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.ctaText}>
-                  Bilinmeyenlerden Liste Oluştur ({unknownCount})
+                  {t('createSubListCtaMedia', { count: unknownCount })}
                 </Text>
               )}
             </TouchableOpacity>

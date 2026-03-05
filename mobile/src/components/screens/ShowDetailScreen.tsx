@@ -11,36 +11,23 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
+import { useTranslation } from '@/src/i18n/useTranslation';
+import { useResponsive } from '@/src/hooks/useResponsive';
 import { useSeriesEpisodes } from '@/src/api/queries/media.queries';
 import type { MediaDTO } from '@/src/types/api';
 
-// ─── Colour Palettes ──────────────────────────────────────────
-const DARK = {
-  BG: '#0d0d14',
-  SURFACE: '#16161f',
-  SURFACE2: '#1e1e2a',
-  TEXT_P: '#f0f0f5',
-  TEXT_S: '#8888aa',
-  BORDER: '#ffffff0f',
-  PURPLE: '#7c3aed',
-};
-const LIGHT = {
-  BG: '#f4f4f8',
-  SURFACE: '#ffffff',
-  SURFACE2: '#ededf5',
-  TEXT_P: '#111118',
-  TEXT_S: '#888899',
-  BORDER: '#e0e0ea',
-  PURPLE: '#6d28d9',
+type Palette = {
+  BG: string; SURFACE: string; SURFACE2: string;
+  TEXT_P: string; TEXT_S: string; BORDER: string;
+  PURPLE: string;
 };
 
-type Palette = typeof DARK;
-
-function makeStyles(c: Palette) {
+function makeStyles(c: Palette, isTablet: boolean) {
+  const pad = isTablet ? 32 : 16;
   return StyleSheet.create({
     root:     { flex: 1, backgroundColor: c.BG },
     safeArea: { flex: 1, backgroundColor: c.BG },
-    header:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
+    header:   { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: pad, paddingVertical: 14 },
     backBtn:  { width: 36, height: 36, borderRadius: 18, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
     backText: { color: c.TEXT_P, fontSize: 18 },
     headerTitle: { color: c.TEXT_P, fontSize: 20, fontWeight: '700', flex: 1 },
@@ -102,10 +89,20 @@ type Row = RowSeason | RowEpisode;
 
 // ─── Main Screen ──────────────────────────────────────────────
 export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
-  const { colorScheme } = useTheme();
+  const { t } = useTranslation('discover');
+  const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
-  const c = isDark ? DARK : LIGHT;
-  const styles = useMemo(() => makeStyles(c), [isDark]);
+  const { isTablet } = useResponsive();
+  const c = useMemo(() => ({
+    BG: theme.colors.background,
+    SURFACE: theme.colors.surface,
+    SURFACE2: theme.colors.surfaceSubtle,
+    TEXT_P: theme.colors.textPrimary,
+    TEXT_S: theme.colors.textSecondary,
+    BORDER: theme.colors.borderDefault,
+    PURPLE: theme.colors.primary,
+  }), [theme]);
+  const styles = useMemo(() => makeStyles(c, isTablet), [c, isTablet]);
   const router = useRouter();
 
   const { data: episodes = [], isLoading, isError } = useSeriesEpisodes(imdbId);
@@ -155,7 +152,7 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
     <View style={styles.root}>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={isDark ? DARK.BG : LIGHT.BG}
+        backgroundColor={c.BG}
       />
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
@@ -169,11 +166,11 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
 
         {/* Content */}
         {isLoading ? (
-          <ActivityIndicator color={DARK.PURPLE} style={styles.loader} />
+          <ActivityIndicator color={c.PURPLE} style={styles.loader} />
         ) : isError || episodes.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyIcon}>📺</Text>
-            <Text style={styles.emptyText}>Bölüm bulunamadı</Text>
+            <Text style={styles.emptyText}>{t('noEpisodes')}</Text>
           </View>
         ) : (
           <FlatList
@@ -191,8 +188,8 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
                     activeOpacity={0.75}
                     onPress={() => toggleSeason(row.season)}
                   >
-                    <Text style={styles.seasonLabel}>Sezon {row.season}</Text>
-                    <Text style={styles.seasonMeta}>{row.epCount} bölüm</Text>
+                    <Text style={styles.seasonLabel}>{t('season')} {row.season}</Text>
+                    <Text style={styles.seasonMeta}>{t('episodeCount', { count: row.epCount })}</Text>
                     <Text style={styles.seasonChevron}>{isOpen ? '▾' : '▸'}</Text>
                   </TouchableOpacity>
                 );

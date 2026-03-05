@@ -11,21 +11,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/context/ThemeContext';
+import { useTranslation } from '@/src/i18n/useTranslation';
+import { useResponsive } from '@/src/hooks/useResponsive';
 import { useWordSearch, useFrequentWords } from '@/src/api/queries/words.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
 import type { WordDTO } from '@/src/types/api';
 
-// ─── Palette ──────────────────────────────────────────────────
-const DARK = {
-  BG: '#0d0d14', SURFACE: '#16161f', SURFACE2: '#1e1e2a',
-  TEXT_P: '#f0f0f5', TEXT_S: '#8888aa', BORDER: '#ffffff0f',
-  PURPLE: '#7c3aed',
-};
-const LIGHT = {
-  BG: '#f4f4f8', SURFACE: '#ffffff', SURFACE2: '#ededf5',
-  TEXT_P: '#111118', TEXT_S: '#888899', BORDER: '#e0e0ea',
-  PURPLE: '#6d28d9',
+type Palette = {
+  BG: string; SURFACE: string; SURFACE2: string;
+  TEXT_P: string; TEXT_S: string; BORDER: string;
+  PURPLE: string;
 };
 
 const DIFF_COLORS: Record<string, string> = {
@@ -35,13 +31,14 @@ const DIFF_COLORS: Record<string, string> = {
 };
 
 // ─── Styles ───────────────────────────────────────────────────
-function makeStyles(c: typeof DARK, isDark: boolean) {
+function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
+  const pad = isTablet ? 32 : 16;
   return StyleSheet.create({
     root:     { flex: 1, backgroundColor: c.BG },
     safeArea: { flex: 1, backgroundColor: c.BG },
 
     // Header
-    header:      { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+    header:      { paddingHorizontal: pad, paddingTop: 14, paddingBottom: 10 },
     headerTitle: { color: c.TEXT_P, fontSize: 22, fontWeight: '800', marginBottom: 12 },
 
     // Search bar
@@ -58,11 +55,11 @@ function makeStyles(c: typeof DARK, isDark: boolean) {
     // Section label
     sectionLabel: {
       color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 1.2,
-      paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
+      paddingHorizontal: pad, paddingTop: 16, paddingBottom: 8,
     },
 
     // Word row
-    row:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+    row:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 12 },
     rowInfo:    { flex: 1 },
     rowWord:    { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
     rowMeaning: { color: c.TEXT_S, fontSize: 12, marginTop: 3, lineHeight: 17 },
@@ -110,7 +107,7 @@ function WordRow({
   isKnown: boolean;
   onToggle: () => void;
   styles: Styles;
-  c: typeof DARK;
+  c: Palette;
 }) {
   const meaning = word.definition?.meanings?.[0]?.definition;
   const diffColor = word.difficulty ? DIFF_COLORS[word.difficulty] : null;
@@ -154,10 +151,20 @@ function WordRow({
 
 // ─── Main Screen ──────────────────────────────────────────────
 export default function VocabularyScreen() {
-  const { colorScheme } = useTheme();
+  const { t } = useTranslation('vocabulary');
+  const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
-  const c = isDark ? DARK : LIGHT;
-  const styles = useMemo(() => makeStyles(c, isDark), [isDark]);
+  const { isTablet } = useResponsive();
+  const c = useMemo(() => ({
+    BG: theme.colors.background,
+    SURFACE: theme.colors.surface,
+    SURFACE2: theme.colors.surfaceSubtle,
+    TEXT_P: theme.colors.textPrimary,
+    TEXT_S: theme.colors.textSecondary,
+    BORDER: theme.colors.borderDefault,
+    PURPLE: theme.colors.primary,
+  }), [theme]);
+  const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
   const [query, setQuery] = useState('');
   const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
@@ -205,14 +212,14 @@ export default function VocabularyScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Kelimeler</Text>
+          <Text style={styles.headerTitle}>{t('title')}</Text>
 
           {/* Search bar */}
           <View style={styles.searchWrap}>
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
               style={styles.searchInput}
-              placeholder="Kelime ara..."
+              placeholder={t('searchPlaceholder')}
               placeholderTextColor={c.TEXT_S}
               value={query}
               onChangeText={setQuery}
@@ -233,18 +240,18 @@ export default function VocabularyScreen() {
           <View style={styles.statsStrip}>
             <View style={styles.statCard}>
               <Text style={styles.statNum}>{knownCount.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>Bilinen</Text>
+              <Text style={styles.statLabel}>{t('statsKnown')}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNum}>{knownFromFrequent}</Text>
-              <Text style={styles.statLabel}>Top 60'ta bilinen</Text>
+              <Text style={styles.statLabel}>{t('statsTop60')}</Text>
             </View>
           </View>
         )}
 
         {isLoading ? (
           <View style={styles.center}>
-            <ActivityIndicator color={DARK.PURPLE} size="large" />
+            <ActivityIndicator color={c.PURPLE} size="large" />
           </View>
         ) : (
           <FlatList
@@ -253,8 +260,8 @@ export default function VocabularyScreen() {
             ListHeaderComponent={() => (
               <Text style={styles.sectionLabel}>
                 {isSearching
-                  ? `"${query}" için sonuçlar`
-                  : 'EN SIK KULLANILAN KELİMELER'}
+                  ? t('searchResultsFor', { query })
+                  : t('frequentWords')}
               </Text>
             )}
             renderItem={({ item }) => (
@@ -274,8 +281,8 @@ export default function VocabularyScreen() {
                 </Text>
                 <Text style={styles.emptyText}>
                   {isSearching
-                    ? `"${query}" için sonuç bulunamadı`
-                    : 'Yükleniyor...'}
+                    ? t('noSearchResults', { query })
+                    : t('noWords')}
                 </Text>
               </View>
             )}
