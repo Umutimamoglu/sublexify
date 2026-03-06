@@ -60,8 +60,7 @@ public class WordService {
      * Get most frequent words across all media
      */
     public List<WordDTO> getFrequentWords(String language, Integer limit, Long userId) {
-        // This is a simplified version - for production, use custom query
-        List<Word> words = wordRepository.findByLanguage(language, PageRequest.of(0, limit));
+        List<Word> words = wordRepository.findTopFrequentWords(language, PageRequest.of(0, limit));
 
         Set<Long> knownWordIds = Set.of();
         if (userId != null) {
@@ -80,16 +79,12 @@ public class WordService {
      * Convert Word entity to DTO
      */
     private WordDTO convertToDTO(Word word, boolean isKnown) {
-        // Get total frequency across all media
-        int totalFrequency = mediaWordRepository.findByWordId(word.getId()).stream()
-                .mapToInt(mw -> mw.getCount())
-                .sum();
 
         WordDTO dto = new WordDTO();
         dto.setId(word.getId());
         dto.setWord(word.getWord());
         dto.setLanguage(word.getLanguage());
-        dto.setFrequency(totalFrequency);
+        dto.setFrequency(word.getGlobalFrequency());
         dto.setIsKnown(isKnown);
         dto.setDefinition(word.getDefinition());
         dto.setDifficulty(word.getDifficulty());
@@ -97,5 +92,10 @@ public class WordService {
         dto.setIsProperNoun(word.getIsProperNoun());
 
         return dto;
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void updateAllGlobalFrequencies() {
+        wordRepository.updateGlobalFrequencies();
     }
 }

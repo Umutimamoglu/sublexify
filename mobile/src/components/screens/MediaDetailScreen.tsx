@@ -11,12 +11,12 @@ import {
   FlatList,
   ScrollView,
   TouchableOpacity,
+  Modal,
   StyleSheet,
   StatusBar,
   ActivityIndicator,
   Image,
   Alert,
-  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -25,7 +25,8 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useMediaDetail, useMediaWords, useGenerateListFromMedia } from '@/src/api/queries/media.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
-import { useMarkKnown } from '@/src/api/queries/words.queries';
+import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries';
+import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import type { WordDTO, Difficulty } from '@/src/types/api';
 
@@ -112,10 +113,27 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     checkText:   { fontSize: 13, fontWeight: '900' },
 
     // Bottom CTA
-    ctaBar:    { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: isDark ? '#ffffff0f' : '#e0e0ea' },
-    ctaBtn:    { backgroundColor: c.PURPLE, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-    ctaBtnDis: { opacity: 0.4 },
-    ctaText:   { color: '#fff', fontSize: 14, fontWeight: '700' },
+    ctaBar:         { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: isDark ? '#ffffff0f' : '#e0e0ea', flexDirection: 'row' as const, gap: 10 },
+    ctaBtn:         { flex: 1, backgroundColor: c.PURPLE, borderRadius: 12, paddingVertical: 14, alignItems: 'center' as const, justifyContent: 'center' as const, flexDirection: 'row' as const, gap: 6 },
+    ctaBtnOutline:  { backgroundColor: c.PURPLE + '15', borderWidth: 1.5, borderColor: c.PURPLE },
+    ctaBtnDis:      { opacity: 0.4 },
+    ctaText:        { color: '#fff', fontSize: 13, fontWeight: '700' as const },
+    ctaTextOutline: { color: c.PURPLE, fontSize: 13, fontWeight: '700' as const },
+
+    // Mark Known Modal
+    mkOverlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' as const },
+    mkSheet:   { backgroundColor: c.SURFACE, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 16 },
+    mkTitle:   { color: c.TEXT_P, fontSize: 17, fontWeight: '800' as const },
+    mkLevelRow:    { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6 },
+    mkLevelBadge:  { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10 },
+    mkLevelBadgeText: { fontSize: 13, fontWeight: '700' as const },
+    mkWarningBox:  { flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 10, backgroundColor: '#F59E0B18', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#F59E0B44' },
+    mkWarningText: { flex: 1, color: c.TEXT_S, fontSize: 13, lineHeight: 19 },
+    mkBtnRow:      { flexDirection: 'row' as const, gap: 10 },
+    mkCancelBtn:   { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: c.SURFACE2, alignItems: 'center' as const },
+    mkConfirmBtn:  { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: c.PURPLE, alignItems: 'center' as const },
+    mkCancelText:  { color: c.TEXT_S, fontWeight: '600' as const, fontSize: 15 },
+    mkConfirmText: { color: '#fff', fontWeight: '700' as const, fontSize: 15 },
 
     // Empty / center
     center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
@@ -124,6 +142,53 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 }
 
 type Styles = ReturnType<typeof makeStyles>;
+
+// ─── MarkKnownModal ───────────────────────────────────────────
+function MarkKnownModal({
+  visible, levels, wordCount, onClose, onConfirm, loading, styles, c,
+}: {
+  visible: boolean; levels: string[]; wordCount: number;
+  onClose: () => void; onConfirm: () => void; loading: boolean;
+  styles: Styles; c: Palette;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.mkOverlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity style={styles.mkSheet} activeOpacity={1}>
+          <View style={styles.mkLevelRow}>
+            {levels.map((lv) => (
+              <View key={lv} style={[styles.mkLevelBadge, { backgroundColor: DIFF_COLORS[lv] + '33' }]}>
+                <Text style={[styles.mkLevelBadgeText, { color: DIFF_COLORS[lv] }]}>{lv}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.mkTitle}>{wordCount} kelime bilinen olarak işaretlenecek</Text>
+          <View style={styles.mkWarningBox}>
+            <Ionicons name="warning-outline" size={18} color="#F59E0B" />
+            <Text style={styles.mkWarningText}>
+              Bu kelimeler kalıcı olarak Bilinen Kelimeler listenize eklenecek.
+              İşlem geri alınamaz — bu listeden ayrıca çıkarılamaz.
+            </Text>
+          </View>
+          <View style={styles.mkBtnRow}>
+            <TouchableOpacity style={styles.mkCancelBtn} onPress={onClose} activeOpacity={0.8}>
+              <Text style={styles.mkCancelText}>İptal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.mkConfirmBtn, loading && { opacity: 0.6 }]}
+              onPress={onConfirm} disabled={loading} activeOpacity={0.85}
+            >
+              {loading
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.mkConfirmText}>Onayla</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
 
 // ─── CEFR bar ─────────────────────────────────────────────────
 function CefrBar({
@@ -230,11 +295,12 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
   // ─── State ────────────────────────────────────────────────
-  const [onlyUnknown, setOnlyUnknown] = useState(false);
-  const [filter, setFilter]           = useState<Filter>('all');
-  const [knownIds, setKnownIds]       = useState<Set<number>>(new Set());
-  const [addModal, setAddModal]       = useState<{ wordId: number; wordName: string } | null>(null);
-  const knownIdsInitialized           = useRef(false);
+  const [onlyUnknown, setOnlyUnknown]   = useState(false);
+  const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
+  const [showMarkModal, setShowMarkModal]   = useState(false);
+  const [knownIds, setKnownIds]             = useState<Set<number>>(new Set());
+  const [addModal, setAddModal]             = useState<{ wordId: number; wordName: string } | null>(null);
+  const knownIdsInitialized                 = useRef(false);
 
   // ─── Data ─────────────────────────────────────────────────
   const { data: media, isLoading: mediaLoading }            = useMediaDetail(mediaId);
@@ -242,6 +308,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const { data: knownWordsData = [] }                       = useKnownWords();
   const { mutate: toggleKnown }                             = useMarkKnown();
   const { mutate: generateList, isPending: generating }     = useGenerateListFromMedia();
+  const { mutate: markKnownBatch, isPending: marking }      = useMarkKnownBatch();
 
   // Init knownIds once
   React.useEffect(() => {
@@ -255,9 +322,29 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   // ─── Filtered words ───────────────────────────────────────
   const filteredWords = useMemo<WordDTO[]>(() => {
     if (!wordData?.words) return [];
-    if (filter === 'all') return wordData.words;
-    return wordData.words.filter((w) => w.difficulty === filter);
-  }, [wordData?.words, filter]);
+    if (selectedLevels.size === 0) return wordData.words;
+    return wordData.words.filter((w) => w.difficulty && selectedLevels.has(w.difficulty));
+  }, [wordData?.words, selectedLevels]);
+
+  // ─── Mark known batch ─────────────────────────────────────
+  const wordsToMark = useMemo(
+    () => (wordData?.words ?? []).filter(
+      (w) => w.difficulty && selectedLevels.has(w.difficulty) && !knownIds.has(w.id),
+    ),
+    [wordData?.words, selectedLevels, knownIds],
+  );
+
+  const handleMarkKnown = useCallback(() => {
+    const ids = wordsToMark.map((w) => w.id);
+    if (ids.length === 0) { setShowMarkModal(false); return; }
+    markKnownBatch(ids, {
+      onSuccess: () => {
+        setShowMarkModal(false);
+        setSelectedLevels(new Set());
+        setKnownIds((prev) => new Set([...prev, ...ids]));
+      },
+    });
+  }, [wordsToMark, markKnownBatch]);
 
   // ─── Toggle known ─────────────────────────────────────────
   const handleToggle = useCallback((wordId: number) => {
@@ -373,7 +460,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         <Text style={styles.toggleLabel}>{t('unknownOnlyToggle')}</Text>
         <TouchableOpacity
           style={[styles.toggleBtn, { backgroundColor: onlyUnknown ? c.PURPLE : c.SURFACE2 }]}
-          onPress={() => { setOnlyUnknown((v) => !v); setFilter('all'); }}
+          onPress={() => { setOnlyUnknown((v) => !v); setSelectedLevels(new Set()); }}
           activeOpacity={0.8}
         >
           <View style={[
@@ -383,20 +470,30 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         </TouchableOpacity>
       </View>
 
-      {/* CEFR chips */}
+      {/* CEFR chips — multi-select */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipScroll}
       >
         {FILTERS.map((f) => {
-          const active = filter === f;
+          const active = f === 'all' ? selectedLevels.size === 0 : selectedLevels.has(f);
           const color  = f === 'all' ? '#6B7280' : DIFF_COLORS[f];
           return (
             <TouchableOpacity
               key={f}
               style={[styles.chip, { borderColor: color, backgroundColor: active ? color + '33' : 'transparent' }]}
-              onPress={() => setFilter(f)}
+              onPress={() => {
+                if (f === 'all') {
+                  setSelectedLevels(new Set());
+                } else {
+                  setSelectedLevels((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(f)) { next.delete(f); } else { next.add(f); }
+                    return next;
+                  });
+                }
+              }}
               activeOpacity={0.75}
             >
               <Text style={[styles.chipText, { color: active ? color : c.TEXT_S }]}>
@@ -407,7 +504,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         })}
       </ScrollView>
     </View>
-  ), [media, onlyUnknown, filter, knownPct, levelCounts, totalWords, unknownCount, isDark, styles, c, t, tCommon]);
+  ), [media, onlyUnknown, selectedLevels, knownPct, levelCounts, totalWords, unknownCount, isDark, styles, c, t, tCommon]);
 
   // ─── Render ───────────────────────────────────────────────
   return (
@@ -459,26 +556,51 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         )}
 
         {/* Bottom CTA */}
-        {!isLoading && unknownCount > 0 && (
+        {!isLoading && (selectedLevels.size > 0 || unknownCount > 0) && (
           <View style={styles.ctaBar}>
-            <TouchableOpacity
-              style={[styles.ctaBtn, generating && styles.ctaBtnDis]}
-              onPress={handleGenerate}
-              disabled={generating}
-              activeOpacity={0.85}
-            >
-              {generating ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.ctaText}>
-                  {t('createSubListCtaMedia', { count: unknownCount })}
+            {selectedLevels.size > 0 && (
+              <TouchableOpacity
+                style={[styles.ctaBtn, styles.ctaBtnOutline]}
+                onPress={() => setShowMarkModal(true)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="checkmark-circle-outline" size={15} color={c.PURPLE} />
+                <Text style={styles.ctaTextOutline} numberOfLines={1}>
+                  {[...selectedLevels].sort().join(' · ')} → Bilinen
                 </Text>
-              )}
-            </TouchableOpacity>
+              </TouchableOpacity>
+            )}
+            {unknownCount > 0 && (
+              <TouchableOpacity
+                style={[styles.ctaBtn, generating && styles.ctaBtnDis]}
+                onPress={handleGenerate}
+                disabled={generating}
+                activeOpacity={0.85}
+              >
+                {generating ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.ctaText}>
+                    {t('createSubListCtaMedia', { count: unknownCount })}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
       </SafeAreaView>
+
+      <MarkKnownModal
+        visible={showMarkModal}
+        levels={[...selectedLevels].sort()}
+        wordCount={wordsToMark.length}
+        onClose={() => setShowMarkModal(false)}
+        onConfirm={handleMarkKnown}
+        loading={marking}
+        styles={styles}
+        c={c}
+      />
 
       <AddToListModal
         visible={!!addModal}

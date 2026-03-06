@@ -53,9 +53,9 @@ const MediaService = {
         return response.data;
     },
 
-    getMediaWords: async (id: number, userId?: number, onlyUnknown?: boolean): Promise<MediaWordsResponse> => {
+    getMediaWords: async (id: number, userId?: number, onlyUnknown?: boolean, sortBy?: string): Promise<MediaWordsResponse> => {
         const response = await api.get<MediaWordsResponse>(`/media/${id}/words`, {
-            params: { userId, onlyUnknown },
+            params: { userId, onlyUnknown, sortBy },
         });
         return response.data;
     },

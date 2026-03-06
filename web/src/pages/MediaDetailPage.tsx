@@ -23,6 +23,8 @@ const MediaDetailPage = () => {
     // Mock userId for now (Sprint 4)
     const userId = 1;
 
+    const [sortBy, setSortBy] = useState<string | undefined>(undefined);
+
     useEffect(() => {
         const fetchData = async () => {
             if (!id) return;
@@ -30,7 +32,7 @@ const MediaDetailPage = () => {
                 setLoading(true);
                 const [mediaRes, wordsRes] = await Promise.all([
                     MediaService.getMediaById(Number(id)),
-                    MediaService.getMediaWords(Number(id), userId, filterUnknown)
+                    MediaService.getMediaWords(Number(id), userId, filterUnknown, sortBy)
                 ]);
                 setMedia(mediaRes);
                 setWordData(wordsRes);
@@ -42,7 +44,7 @@ const MediaDetailPage = () => {
         };
 
         fetchData();
-    }, [id, filterUnknown]);
+    }, [id, filterUnknown, sortBy]);
 
     const handleToggleKnown = async (wordId: number, currentStatus: boolean) => {
         try {
@@ -184,6 +186,19 @@ const MediaDetailPage = () => {
                         >
                             <Filter className="w-3.5 h-3.5" />
                             {filterUnknown ? 'Unknown only' : 'All status'}
+                        </button>
+
+                        <button
+                            onClick={() => setSortBy(sortBy === 'frequency' ? undefined : 'frequency')}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all mr-2",
+                                sortBy === 'frequency'
+                                    ? "bg-purple-600 text-white shadow-sm shadow-purple-500/25"
+                                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                            )}
+                        >
+                            <Filter className="w-3.5 h-3.5" />
+                            {sortBy === 'frequency' ? 'Most Frequent' : 'Normal Order'}
                         </button>
 
                         <button

@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   StyleSheet,
   StatusBar,
   useWindowDimensions,
@@ -177,6 +178,31 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     wordChipLevel: { color: c.PURPLE, fontSize: 10, fontWeight: '700' },
 
     loader: { marginVertical: 20 },
+
+    // Search bar
+    searchBar: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      marginHorizontal: pad,
+      marginBottom: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: c.BORDER,
+      backgroundColor: c.SURFACE,
+      gap: 8,
+    },
+    searchInput: {
+      flex: 1,
+      color: c.TEXT_P,
+      fontSize: 15,
+      padding: 0,
+    },
+    searchClear: {
+      padding: 4,
+    },
+    searchClearText: { color: c.TEXT_S, fontSize: 14 },
   });
 }
 
@@ -340,6 +366,9 @@ export default function DiscoverScreen() {
   );
 
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchActive, setSearchActive] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
 
   const { data: continueMedia = [], isLoading: continueLoading } = useContinueLearning(5);
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
@@ -347,10 +376,22 @@ export default function DiscoverScreen() {
   const systemLists = useMemo(() => allLists.filter((l) => l.isSystem), [allLists]);
   const { data: userStats, isLoading: knownLoading } = useUserStats();
 
-  const browsedMedia = useMemo(
-    () => deduplicateMedia(allMedia, mediaFilter),
-    [allMedia, mediaFilter],
-  );
+  const browsedMedia = useMemo(() => {
+    const filtered = deduplicateMedia(allMedia, mediaFilter);
+    if (!searchQuery.trim()) return filtered;
+    const q = searchQuery.trim().toLowerCase();
+    return filtered.filter((m) => seriesTitle(m).toLowerCase().includes(q));
+  }, [allMedia, mediaFilter, searchQuery]);
+
+  const openSearch = () => {
+    setSearchActive(true);
+    setTimeout(() => searchInputRef.current?.focus(), 50);
+  };
+
+  const closeSearch = () => {
+    setSearchActive(false);
+    setSearchQuery('');
+  };
 
   return (
     <View style={styles.root}>
@@ -369,11 +410,32 @@ export default function DiscoverScreen() {
             <Text style={styles.headerGreeting}>Sublex</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.headerIconBtn}>
+            <TouchableOpacity style={styles.headerIconBtn} onPress={openSearch}>
               <Text style={styles.headerIconText}>⌕</Text>
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Search bar — visible when active */}
+        {searchActive && (
+          <View style={styles.searchBar}>
+            <Text style={[styles.headerIconText, { color: c.TEXT_S }]}>⌕</Text>
+            <TextInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={t('searchPlaceholder')}
+              placeholderTextColor={c.TEXT_S}
+              returnKeyType="search"
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity style={styles.searchClear} onPress={closeSearch}>
+              <Text style={styles.searchClearText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -414,7 +476,9 @@ export default function DiscoverScreen() {
           {/* Browse Media */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('browseMedia')}</Text>
+              <Text style={styles.sectionTitle}>
+                {searchActive && searchQuery.trim() ? `"${searchQuery.trim()}"` : t('browseMedia')}
+              </Text>
             </View>
 
             {/* Filter chips */}
@@ -447,8 +511,10 @@ export default function DiscoverScreen() {
               </View>
             ) : browsedMedia.length === 0 ? (
               <View style={styles.emptyCard}>
-                <Text style={styles.emptyIcon}>🎬</Text>
-                <Text style={styles.emptyTitle}>{t('noContent')}</Text>
+                <Text style={styles.emptyIcon}>{searchQuery.trim() ? '🔍' : '🎬'}</Text>
+                <Text style={styles.emptyTitle}>
+                  {searchQuery.trim() ? `"${searchQuery.trim()}" için sonuç yok` : t('noContent')}
+                </Text>
               </View>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>

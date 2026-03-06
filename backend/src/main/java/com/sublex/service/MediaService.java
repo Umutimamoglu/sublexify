@@ -122,7 +122,7 @@ public class MediaService {
      * Get all words for a specific media
      * Optionally filter to show only unknown words for a user
      */
-    public MediaWordsResponseDTO getMediaWords(Long mediaId, Long userId, Boolean onlyUnknown) {
+    public MediaWordsResponseDTO getMediaWords(Long mediaId, Long userId, Boolean onlyUnknown, String sortBy) {
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
@@ -136,12 +136,17 @@ public class MediaService {
                     .collect(Collectors.toSet());
         }
 
-        // Convert to DTOs
+        // Convert and filter
         Set<Long> finalKnownWordIds = knownWordIds;
         List<WordDTO> words = mediaWords.stream()
                 .map(mw -> convertToWordDTO(mw, finalKnownWordIds.contains(mw.getWord().getId())))
                 .filter(wordDTO -> !onlyUnknown || !wordDTO.getIsKnown())
                 .collect(Collectors.toList());
+
+        // Sort if requested
+        if ("frequency".equalsIgnoreCase(sortBy)) {
+            words.sort((a, b) -> b.getFrequency().compareTo(a.getFrequency()));
+        }
 
         // Calculate stats
         int totalWords = mediaWords.size();

@@ -19,4 +19,6 @@ public class WordDTO {
     private String difficulty;
     private Boolean isEnriched;
     private Boolean isProperNoun;
+    private Integer globalFrequency;
+    private String contextSentence;
 }

@@ -123,4 +123,11 @@ public interface WordRepository extends JpaRepository<Word, Long> {
 
         @Query("SELECT COUNT(w) FROM Word w WHERE w.status = 'PROCESSED' AND (w.isEnriched = false OR w.isEnriched IS NULL) AND w.rootWord IS NULL AND w.language = :language")
         long countPendingEnrichment(@Param("language") String language);
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query(value = "UPDATE word w SET global_frequency = (SELECT COALESCE(SUM(mw.count), 0) FROM media_word mw WHERE mw.word_id = w.id)", nativeQuery = true)
+    void updateGlobalFrequencies();
+
+    @Query("SELECT w FROM Word w WHERE w.language = :language AND w.globalFrequency > 0 ORDER BY w.globalFrequency DESC")
+    List<Word> findTopFrequentWords(@Param("language") String language, org.springframework.data.domain.Pageable pageable);
 }

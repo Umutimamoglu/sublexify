@@ -70,9 +70,10 @@ public class MediaController {
     public ResponseEntity<MediaWordsResponseDTO> getMediaWords(
             @PathVariable Long id,
             @RequestParam(required = false) Boolean onlyUnknown,
-            @RequestParam(required = false) Long userId) {
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String sortBy) {
 
-        return ResponseEntity.ok(mediaService.getMediaWords(id, userId, onlyUnknown != null && onlyUnknown));
+        return ResponseEntity.ok(mediaService.getMediaWords(id, userId, onlyUnknown != null && onlyUnknown, sortBy));
     }
 
     /**

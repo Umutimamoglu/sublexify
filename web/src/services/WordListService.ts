@@ -116,6 +116,13 @@ const WordListService = {
     getListsContainingWord: async (wordId: number): Promise<number[]> => {
         const response = await api.get<number[]>(`/lists/containing-word/${wordId}`);
         return response.data;
+    },
+
+    getFrequentWords: async (language: string = 'en', limit: number = 100, userId?: number): Promise<(Word & { isKnown: boolean, frequency: number })[]> => {
+        const response = await api.get<(Word & { isKnown: boolean, frequency: number })[]>('/words/frequent', {
+            params: { language, limit, userId }
+        });
+        return response.data;
     }
 };
 

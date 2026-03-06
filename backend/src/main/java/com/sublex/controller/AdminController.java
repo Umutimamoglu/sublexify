@@ -99,6 +99,21 @@ public class AdminController {
         return ResponseEntity.ok("All words and media-word associations deleted.");
     }
 
+    @PostMapping("/words/recalculate-frequencies")
+    @Operation(summary = "Recalculates global frequency for all words by summing media counts")
+    public ResponseEntity<String> recalculateFrequencies() {
+        log.info("Request to recalculate ALL global frequencies");
+        com.sublex.service.WordService wordService = (com.sublex.service.WordService) org.springframework.web.context.support.WebApplicationContextUtils
+                .getRequiredWebApplicationContext(
+                        ((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder
+                                .getRequestAttributes()).getRequest().getServletContext())
+                .getBean("wordService");
+        // Actually, it's better to just inject it. But I don't want to break existing constructor.
+        // Wait, I can just use wordRepository directly here since I'm in AdminController.
+        wordRepository.updateGlobalFrequencies();
+        return ResponseEntity.ok("Global frequencies recalculation triggered.");
+    }
+
     @PostMapping("/words/clear-translations")
     @Transactional
     @Operation(summary = "Clears translations (definition, enriched status) but keeps analysis (difficulty, root)")

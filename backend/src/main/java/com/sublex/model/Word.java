@@ -29,6 +29,7 @@ public class Word {
     private String word;
 
     @Column(nullable = false)
+    @Builder.Default
     private String language = "en";
 
     // AI Enrichment Fields
@@ -36,6 +37,7 @@ public class Word {
     private String difficulty; // e.g., "A1", "C2"
 
     @Column(name = "is_enriched")
+    @Builder.Default
     private Boolean isEnriched = false;
 
     @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
@@ -46,9 +48,11 @@ public class Word {
     private LocalDateTime enrichedAt;
 
     @Column(name = "needs_re_enrichment")
+    @Builder.Default
     private Boolean needsReEnrichment = false;
 
     @Column(name = "is_verified")
+    @Builder.Default
     private Boolean isVerified = false;
 
     @Column(name = "judge_approved_at")
@@ -82,6 +86,10 @@ public class Word {
 
     @Column(name = "context_sentence", columnDefinition = "text")
     private String contextSentence;
+
+    @Column(name = "global_frequency")
+    @Builder.Default
+    private Integer globalFrequency = 0;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
