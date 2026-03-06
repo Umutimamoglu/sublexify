@@ -4,6 +4,7 @@ import { ENDPOINTS } from '@/src/api/endpoints';
 import type { WordDTO } from '@/src/types/api';
 import { mediaKeys } from './media.queries';
 import { userKeys } from './user.queries';
+import { listKeys } from './lists.queries';
 
 export const wordKeys = {
   search:   (q: string) => ['words', 'search', q] as const,
@@ -62,6 +63,22 @@ export function useMarkKnown() {
       if (mediaId) {
         qc.invalidateQueries({ queryKey: mediaKeys.words(mediaId) });
       }
+    },
+  });
+}
+
+export function useMarkKnownBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (wordIds: number[]) => {
+      await Promise.all(
+        wordIds.map((id) => apiClient.post(`${ENDPOINTS.words.markKnown(id)}?userId=1`)),
+      );
+      return wordIds;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: userKeys.knownWords });
+      qc.invalidateQueries({ queryKey: listKeys.all });
     },
   });
 }

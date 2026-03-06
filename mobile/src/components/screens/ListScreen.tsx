@@ -16,13 +16,13 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
-  withSequence,
   runOnJS,
   interpolate,
   Extrapolation,
@@ -40,7 +40,7 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useListDetail, useLists, useRemoveWordFromList, useCreateSubListFromUnknown } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
-import { useMarkKnown } from '@/src/api/queries/words.queries';
+import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries';
 import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import type { ListWord, Difficulty } from '@/src/types/api';
@@ -176,10 +176,32 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     removeBtnText: { fontSize: 13 },
 
     // Bottom CTA
-    ctaBar: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: isDark ? '#ffffff0f' : '#e0e0ea' },
-    ctaBtn: { backgroundColor: c.PURPLE, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+    ctaBar: {
+      paddingHorizontal: pad,
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      borderTopColor: isDark ? '#ffffff0f' : '#e0e0ea',
+      flexDirection: 'row' as const,
+      gap: 10,
+    },
+    ctaBtn: {
+      flex: 1,
+      backgroundColor: c.PURPLE,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      flexDirection: 'row' as const,
+      gap: 6,
+    },
+    ctaBtnOutline: {
+      backgroundColor: c.PURPLE + '15',
+      borderWidth: 1.5,
+      borderColor: c.PURPLE,
+    },
     ctaBtnDis: { opacity: 0.4 },
-    ctaText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    ctaText: { color: '#fff', fontSize: 13, fontWeight: '700' as const },
+    ctaTextOutline: { color: c.PURPLE, fontSize: 13, fontWeight: '700' as const },
 
     // Swipe-to-reveal actions
     swipeActions: { flexDirection: 'row', alignItems: 'stretch' },
@@ -188,6 +210,73 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     swipeActionTts: { backgroundColor: c.SURFACE2 },
     swipeActionDel: { backgroundColor: '#EF4444' },
 
+    // Mark as Known — floating glass button
+    glassBtn: {
+      position: 'absolute' as const,
+      left: pad,
+      right: pad,
+      borderRadius: 20,
+      overflow: 'hidden' as const,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(200,170,255,0.35)' : 'rgba(139,92,246,0.40)',
+      backgroundColor: isDark ? 'rgba(100,60,220,0.22)' : 'rgba(139,92,246,0.14)',
+      shadowColor: c.PURPLE,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.28,
+      shadowRadius: 20,
+      elevation: 10,
+    },
+    glassBtnInner: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      gap: 8,
+      paddingVertical: 15,
+      paddingHorizontal: 20,
+    },
+    glassBtnHighlight: {
+      position: 'absolute' as const,
+      top: 0, left: 0, right: 0,
+      height: 1,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.75)',
+    },
+    glassBtnText: {
+      color: isDark ? 'rgba(220,200,255,0.95)' : c.PURPLE,
+      fontSize: 14,
+      fontWeight: '700' as const,
+      letterSpacing: 0.2,
+    },
+
+    // Mark Known Modal
+    mkOverlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' as const },
+    mkSheet: {
+      backgroundColor: c.SURFACE,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      padding: 24,
+      gap: 16,
+    },
+    mkTitle: { color: c.TEXT_P, fontSize: 17, fontWeight: '800' as const },
+    mkLevelRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 6 },
+    mkLevelBadge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10 },
+    mkLevelBadgeText: { fontSize: 13, fontWeight: '700' as const },
+    mkWarningBox: {
+      flexDirection: 'row' as const,
+      alignItems: 'flex-start' as const,
+      gap: 10,
+      backgroundColor: '#F59E0B18',
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: '#F59E0B44',
+    },
+    mkWarningText: { flex: 1, color: c.TEXT_S, fontSize: 13, lineHeight: 19 },
+    mkBtnRow: { flexDirection: 'row' as const, gap: 10 },
+    mkCancelBtn: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: c.SURFACE2, alignItems: 'center' as const },
+    mkConfirmBtn: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: c.PURPLE, alignItems: 'center' as const },
+    mkCancelText: { color: c.TEXT_S, fontWeight: '600' as const, fontSize: 15 },
+    mkConfirmText: { color: '#fff', fontWeight: '700' as const, fontSize: 15 },
+
     // Empty/loading
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
     emptyText: { color: c.TEXT_S, fontSize: 15 },
@@ -195,8 +284,79 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
   });
 }
 
-// ─── WordRow ──────────────────────────────────────────────────
+// ─── MarkKnownModal ───────────────────────────────────────────
 type Styles = ReturnType<typeof makeStyles>;
+
+function MarkKnownModal({
+  visible,
+  levels,
+  wordCount,
+  onClose,
+  onConfirm,
+  loading,
+  styles,
+  c,
+}: {
+  visible: boolean;
+  levels: string[];
+  wordCount: number;
+  onClose: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+  styles: Styles;
+  c: Palette;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.mkOverlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity style={styles.mkSheet} activeOpacity={1}>
+          {/* Seviye badge'leri */}
+          <View style={styles.mkLevelRow}>
+            {levels.map((lv) => (
+              <View key={lv} style={[styles.mkLevelBadge, { backgroundColor: DIFF_COLORS[lv] + '33' }]}>
+                <Text style={[styles.mkLevelBadgeText, { color: DIFF_COLORS[lv] }]}>{lv}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Başlık */}
+          <Text style={styles.mkTitle}>
+            {wordCount} kelime bilinen olarak işaretlenecek
+          </Text>
+
+          {/* Uyarı */}
+          <View style={styles.mkWarningBox}>
+            <Ionicons name="warning-outline" size={18} color="#F59E0B" />
+            <Text style={styles.mkWarningText}>
+              Bu kelimeler kalıcı olarak Bilinen Kelimeler listenize eklenecek.
+              İşlem geri alınamaz — bu listeden ayrıca çıkarılamaz.
+            </Text>
+          </View>
+
+          {/* Butonlar */}
+          <View style={styles.mkBtnRow}>
+            <TouchableOpacity style={styles.mkCancelBtn} onPress={onClose} activeOpacity={0.8}>
+              <Text style={styles.mkCancelText}>İptal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.mkConfirmBtn, loading && { opacity: 0.6 }]}
+              onPress={onConfirm}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.mkConfirmText}>Onayla</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+// ─── WordRow ──────────────────────────────────────────────────
 
 function WordRow({
   word,
@@ -355,24 +515,18 @@ function SwipeableWordRow({
 }) {
   const swipeRef = useRef<any>(null);
   const removeAnim = useSharedValue(1);
-  const hintAnim = useSharedValue(0);
 
-  // Swipe hint: briefly slide left then bounce back on first render
+  // Swipe hint: actually open the swipeable to reveal buttons, then close
   useEffect(() => {
     if (hintDelay == null) return;
-    const timer = setTimeout(() => {
-      hintAnim.value = withSequence(
-        withTiming(-52, { duration: 220, easing: Easing.out(Easing.ease) }),
-        withTiming(0, { duration: 300, easing: Easing.inOut(Easing.ease) }),
-      );
-    }, hintDelay);
-    return () => clearTimeout(timer);
+    const openTimer  = setTimeout(() => { swipeRef.current?.openRight(); }, hintDelay);
+    const closeTimer = setTimeout(() => { swipeRef.current?.close();     }, hintDelay + 800);
+    return () => { clearTimeout(openTimer); clearTimeout(closeTimer); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: removeAnim.value,
-    transform: [{ translateX: hintAnim.value }],
   }));
 
   const handleDelete = useCallback(() => {
@@ -560,6 +714,7 @@ export default function ListScreen({ listId }: { listId: number }) {
   const { mutate: toggleKnown } = useMarkKnown();
   const { mutate: removeWord } = useRemoveWordFromList();
   const { mutate: generateSubList, isPending: generating } = useCreateSubListFromUnknown();
+  const { mutate: markKnownBatch, isPending: marking } = useMarkKnownBatch();
 
   // listId=-1 için knownWordsData'yı ListDetailDTO formatına çevir
   const knownWordsAsDetail = useMemo<typeof list>(() => {
@@ -577,11 +732,19 @@ export default function ListScreen({ listId }: { listId: number }) {
 
   // ─── State ────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [filter, setFilter] = useState<Filter>('all');
+  const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
+  const [showMarkModal, setShowMarkModal] = useState(false);
   const [cardIndex, setCardIndex] = useState(0);
   const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
   const knownInitialized = useRef(false);
+  const hintShown = useRef(false);
+
+  // Mark hint as shown after enough time for all 3 rows to complete
+  useEffect(() => {
+    const timer = setTimeout(() => { hintShown.current = true; }, 2200);
+    return () => clearTimeout(timer);
+  }, []);
 
   // ─── Init known IDs once ───────────────────────────────────
   useEffect(() => {
@@ -594,12 +757,12 @@ export default function ListScreen({ listId }: { listId: number }) {
   // ─── Filtered words ───────────────────────────────────────
   const filteredWords = useMemo<ListWord[]>(() => {
     if (!effectiveList?.words) return [];
-    if (filter === 'all') return effectiveList.words;
-    return effectiveList.words.filter((w) => w.difficulty === filter);
-  }, [effectiveList?.words, filter]);
+    if (selectedLevels.size === 0) return effectiveList.words;
+    return effectiveList.words.filter((w) => w.difficulty && selectedLevels.has(w.difficulty));
+  }, [effectiveList?.words, selectedLevels]);
 
   // Reset card index on filter change
-  useEffect(() => { setCardIndex(0); }, [filter]);
+  useEffect(() => { setCardIndex(0); }, [selectedLevels]);
 
   // ─── Toggle known ─────────────────────────────────────────
   const handleToggle = useCallback((wordId: number) => {
@@ -617,10 +780,31 @@ export default function ListScreen({ listId }: { listId: number }) {
     removeWord({ listId, wordId });
   }, [removeWord, listId]);
 
+  // ─── Mark known batch ─────────────────────────────────────
+  const wordsToMark = useMemo(
+    () => (effectiveList?.words ?? []).filter(
+      (w) => w.difficulty && selectedLevels.has(w.difficulty) && !knownIds.has(w.id),
+    ),
+    [effectiveList?.words, selectedLevels, knownIds],
+  );
+
+  const handleMarkKnown = useCallback(() => {
+    const ids = wordsToMark.map((w) => w.id);
+    if (ids.length === 0) { setShowMarkModal(false); return; }
+    markKnownBatch(ids, {
+      onSuccess: () => {
+        setShowMarkModal(false);
+        setSelectedLevels(new Set());
+        setKnownIds((prev) => new Set([...prev, ...ids]));
+      },
+    });
+  }, [wordsToMark, markKnownBatch]);
+
   // ─── Generate sub-list from unknowns ─────────────────────
+  // Tüm liste kelimeleri üzerinden (filtreden bağımsız) — generateSubList zaten tüm listeyi işliyor
   const unknownCount = useMemo(
-    () => filteredWords.filter((w) => !knownIds.has(w.id)).length,
-    [filteredWords, knownIds],
+    () => (effectiveList?.words ?? []).filter((w) => !knownIds.has(w.id)).length,
+    [effectiveList?.words, knownIds],
   );
 
   const handleGenerateSubList = useCallback(() => {
@@ -793,13 +977,23 @@ export default function ListScreen({ listId }: { listId: number }) {
           contentContainerStyle={styles.chipScroll}
         >
           {FILTERS.map((f) => {
-            const active = filter === f;
+            const active = f === 'all' ? selectedLevels.size === 0 : selectedLevels.has(f);
             const color = DIFF_COLORS[f];
             return (
               <TouchableOpacity
                 key={f}
                 style={[styles.chip, { borderColor: color, backgroundColor: active ? color + '33' : 'transparent' }]}
-                onPress={() => setFilter(f)}
+                onPress={() => {
+                  if (f === 'all') {
+                    setSelectedLevels(new Set());
+                  } else {
+                    setSelectedLevels((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(f)) { next.delete(f); } else { next.add(f); }
+                      return next;
+                    });
+                  }
+                }}
                 activeOpacity={0.75}
               >
                 <Text style={[styles.chipText, { color: active ? color : c.TEXT_S }]}>
@@ -827,14 +1021,14 @@ export default function ListScreen({ listId }: { listId: number }) {
                 onToggle={() => handleToggle(item.id)}
                 onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
                 onRemove={!isKnownList && !isSystemList ? () => handleRemove(item.id) : undefined}
-                hintDelay={index < 3 ? 700 + index * 200 : undefined}
+                hintDelay={!hintShown.current && index < 3 ? 700 + index * 200 : undefined}
                 styles={styles}
                 c={c}
               />
             )}
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             showsVerticalScrollIndicator={false}
-            ListFooterComponent={<View style={{ height: 16 }} />}
+            ListFooterComponent={() => <View style={{ height: 16 }} />}
           />
         ) : (
           /* ── FLASHCARD VIEW ──────────────────────────────── */
@@ -911,20 +1105,39 @@ export default function ListScreen({ listId }: { listId: number }) {
           </View>
         )}
 
-        {/* Alt-liste CTA — sadece normal listeler için, bilinmeyen kelime varsa */}
-        {!isKnownList && viewMode === 'list' && unknownCount > 0 && (
+        {/* ── Unified footer CTA ───────────────────────────── */}
+        {!isKnownList && !isSystemList && viewMode === 'list' && (selectedLevels.size > 0 || unknownCount > 0) && (
           <View style={styles.ctaBar}>
-            <TouchableOpacity
-              style={[styles.ctaBtn, generating && styles.ctaBtnDis]}
-              onPress={handleGenerateSubList}
-              disabled={generating}
-              activeOpacity={0.85}
-            >
-              {generating
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.ctaText}>{t('createSubListCta', { count: unknownCount })}</Text>
-              }
-            </TouchableOpacity>
+            {/* Sol: Bilinen olarak işaretle — sadece seviye seçiliyse */}
+            {selectedLevels.size > 0 && (
+              <TouchableOpacity
+                style={[styles.ctaBtn, styles.ctaBtnOutline]}
+                onPress={() => setShowMarkModal(true)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="checkmark-circle-outline" size={15} color={c.PURPLE} />
+                <Text style={styles.ctaTextOutline} numberOfLines={1}>
+                  {[...selectedLevels].sort().join(' · ')} → Bilinen
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Sağ: Alt-liste oluştur — bilinmeyen kelime varsa */}
+            {unknownCount > 0 && (
+              <TouchableOpacity
+                style={[styles.ctaBtn, generating && styles.ctaBtnDis]}
+                onPress={handleGenerateSubList}
+                disabled={generating}
+                activeOpacity={0.85}
+              >
+                {generating
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.ctaText} numberOfLines={1}>
+                      {t('createSubListCta', { count: unknownCount })}
+                    </Text>
+                }
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -935,6 +1148,17 @@ export default function ListScreen({ listId }: { listId: number }) {
         wordId={addModal?.wordId ?? 0}
         wordName={addModal?.wordName ?? ''}
         onClose={() => setAddModal(null)}
+      />
+
+      <MarkKnownModal
+        visible={showMarkModal}
+        levels={[...selectedLevels].sort()}
+        wordCount={wordsToMark.length}
+        onClose={() => setShowMarkModal(false)}
+        onConfirm={handleMarkKnown}
+        loading={marking}
+        styles={styles}
+        c={c}
       />
     </View>
   );

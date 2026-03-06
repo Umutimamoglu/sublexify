@@ -208,7 +208,17 @@ function ContinueLearningCard({
       activeOpacity={0.85}
       onPress={onPress}
     >
-      <View style={[styles.continueOverlay, { backgroundColor: accent + '22' }]} />
+      {item.posterUrl ? (
+        <Image
+          source={{ uri: item.posterUrl }}
+          style={styles.continueOverlay}
+          resizeMode="cover"
+        />
+      ) : (
+        <View style={[styles.continueOverlay, { backgroundColor: accent + '22' }]} />
+      )}
+      {/* Gradient-like dark overlay for text readability */}
+      <View style={[styles.continueOverlay, { backgroundColor: 'rgba(0,0,0,0.45)' }]} />
       <View style={styles.continueContent}>
         <Text style={styles.continueEpisode}>{episodeLabel(item)}</Text>
         <Text style={styles.continueTitle} numberOfLines={1}>{item.title}</Text>

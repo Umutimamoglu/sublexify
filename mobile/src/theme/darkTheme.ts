@@ -25,7 +25,7 @@ export const darkTheme: Theme = {
     // Marka/aksiyon
     primary:          Palette.brand400,
     primaryHover:     Palette.brand300,
-    primarySubtle:    '#0E2A45',
+    primarySubtle:    '#1E1040',
 
     // Kenarlıklar
     borderDefault:    Palette.gray700,

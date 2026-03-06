@@ -5,15 +5,15 @@
 // ============================================================
 
 export const Palette = {
-  // Brand (mavi)
-  brand50:  '#EFF8FF',
-  brand100: '#DBEFFE',
-  brand200: '#B9DFFE',
-  brand300: '#7CC8FD',
-  brand400: '#38AAFA',
-  brand500: '#0E8CE8',
-  brand600: '#026BB5',
-  brand700: '#0256A0',
+  // Brand (mor)
+  brand50:  '#F5F0FF',
+  brand100: '#EDE5FF',
+  brand200: '#D5C4FF',
+  brand300: '#B89BF8',
+  brand400: '#9B6FF3',
+  brand500: '#7C4CED',
+  brand600: '#6338D6',
+  brand700: '#4B25B5',
 
   // Nötr gri skalası
   gray50:  '#F8FAFC',
