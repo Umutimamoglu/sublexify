@@ -12,7 +12,7 @@ const SeriesDetailPage = () => {
 
     useEffect(() => {
         const fetchMedia = async () => {
-            const data = await MediaService.getAllMedia();
+            const data = await MediaService.getAllMedia(1);
             setMediaList(data);
             setLoading(false);
         };

@@ -82,7 +82,7 @@ const ContinueLearning = () => {
         const fetchContinueLearning = async () => {
             try {
                 // For now use default limit of 5
-                const data = await MediaService.getContinueLearning();
+                const data = await MediaService.getContinueLearning(1);
                 setMediaList(data);
             } catch (err) {
                 console.error('Failed to fetch continue learning media', err);
@@ -115,12 +115,12 @@ const CategoryIcon = ({ icon: Icon, color }: { icon: any, color: string }) => (
 );
 
 import { useEffect, useState } from 'react';
-import WordListService, { type WordList } from '@/services/WordListService';
+import WordListService, { type WordListDTO } from '@/services/WordListService';
 import { BookOpen, ChevronRight } from 'lucide-react';
 
 const FeaturedLists = () => {
     const navigate = useNavigate();
-    const [lists, setLists] = useState<WordList[]>([]);
+    const [lists, setLists] = useState<WordListDTO[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

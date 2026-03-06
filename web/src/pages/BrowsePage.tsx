@@ -14,7 +14,7 @@ const BrowsePage = () => {
     useEffect(() => {
         const fetchMedia = async () => {
             try {
-                const data = await MediaService.getAllMedia();
+                const data = await MediaService.getAllMedia(1);
                 setMediaList(data);
             } catch (err) {
                 console.error(err);

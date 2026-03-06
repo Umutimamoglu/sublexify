@@ -115,7 +115,7 @@ const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
                             {media.knownWordPercentage !== undefined && (
                                 <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                     <BookOpen className="w-3 h-3 text-indigo-500" />
-                                    %{media.knownWordPercentage} Uyum
+                                    %{Math.round(media.knownWordPercentage)} Uyum
                                 </span>
                             )}
                         </div>

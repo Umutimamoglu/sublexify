@@ -22,6 +22,7 @@ import Reanimated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  withSequence,
   runOnJS,
   interpolate,
   Extrapolation,
@@ -112,8 +113,8 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     cardExample: { color: c.TEXT_S, fontSize: 13, fontStyle: 'italic', textAlign: 'center', lineHeight: 20 },
     flipHint: { color: c.TEXT_S, fontSize: 11, opacity: 0.5, marginTop: 6 },
     cardKnownBtn: { position: 'absolute', top: 14, right: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-    cardListBtn:  { position: 'absolute', top: 14, left: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-    cardTtsBtn:   { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+    cardListBtn: { position: 'absolute', top: 14, left: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    cardTtsBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
 
     // Back
     cardBack: { backgroundColor: c.SURFACE2 },
@@ -163,12 +164,12 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     progressText: { color: c.TEXT_S, fontSize: 13, marginTop: 14, textAlign: 'center' },
 
     // Add-to-list button on row
-    listBtn:     { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+    listBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
     listBtnText: { color: c.TEXT_S, fontSize: 16 },
 
     // TTS button on row
-    ttsBtn:      { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
-    ttsBtnText:  { fontSize: 12 },
+    ttsBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
+    ttsBtnText: { fontSize: 12 },
 
     // Remove button on row
     removeBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#EF444418', alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
@@ -235,9 +236,32 @@ function WordRow({
     </View>
   );
 }
+const ACTION_BTN_SIZE = 46; // Buton boyutu
+const ACTION_BTN_GAP = 10;  // Butonlar arası boşluk
+const ACTION_BTN_TOTAL_WIDTH = ACTION_BTN_SIZE + ACTION_BTN_GAP;
 
-// ─── RightActions (swipe buttons with stagger animation) ──────
-const BTN_W = 68;
+const actionStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center', // Stretch yerine center kullanıyoruz, böylece blok olmazlar
+    height: '100%',
+    paddingRight: 16, // Sağ kenardan boşluk
+    gap: ACTION_BTN_GAP,
+  },
+  btn: {
+    width: ACTION_BTN_SIZE,
+    height: ACTION_BTN_SIZE,
+    borderRadius: 14, // iOS tarzı yumuşak köşe (squircle)
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Premium yüzen hissiyat için hafif gölge
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    elevation: 3, // Android gölgesi
+  },
+});
 
 function RightActions({
   progress,
@@ -253,49 +277,55 @@ function RightActions({
   onTts: () => void;
   onRemove?: () => void;
   onClose: () => void;
-  styles: Styles;
+  styles: Styles; // Orijinal stilleri tip hatası almamak için tutuyoruz ama kendi stillerimizi kullanacağız
   c: Palette;
 }) {
   const count = onRemove ? 3 : 2;
 
+  // Animasyonları yeni boyutlara ve boşluklara göre ayarladık
   const addStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(progress.value, [0, 1], [count * BTN_W, 0], Extrapolation.CLAMP) }],
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [count * ACTION_BTN_TOTAL_WIDTH, 0], Extrapolation.CLAMP) }],
   }));
   const ttsStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(progress.value, [0, 1], [(count - 1) * BTN_W, 0], Extrapolation.CLAMP) }],
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [(count - 1) * ACTION_BTN_TOTAL_WIDTH, 0], Extrapolation.CLAMP) }],
   }));
   const delStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(progress.value, [0, 1], [BTN_W, 0], Extrapolation.CLAMP) }],
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [ACTION_BTN_TOTAL_WIDTH, 0], Extrapolation.CLAMP) }],
   }));
 
   return (
-    <View style={styles.swipeActions}>
+    <View style={actionStyles.container}>
+      {/* 1. Ekleme Butonu (Primary Renk) */}
       <Reanimated.View style={addStyle}>
         <TouchableOpacity
-          style={[styles.swipeAction, styles.swipeActionAdd]}
+          style={[actionStyles.btn, { backgroundColor: c.PURPLE }]}
           onPress={() => { onClose(); onAddToList(); }}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          <Ionicons name="bookmark-outline" size={22} color="#fff" />
+          <Ionicons name="bookmark" size={20} color="#fff" />
         </TouchableOpacity>
       </Reanimated.View>
+
+      {/* 2. Seslendirme Butonu (Soft Arka Plan) */}
       <Reanimated.View style={ttsStyle}>
         <TouchableOpacity
-          style={[styles.swipeAction, styles.swipeActionTts]}
+          style={[actionStyles.btn, { backgroundColor: c.SURFACE2, borderWidth: 1, borderColor: c.BORDER }]}
           onPress={() => { onClose(); onTts(); }}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
         >
-          <Ionicons name="volume-high-outline" size={22} color={c.TEXT_P} />
+          <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
         </TouchableOpacity>
       </Reanimated.View>
+
+      {/* 3. Silme Butonu (Kırmızı) - Eğer onRemove gönderilmişse */}
       {!!onRemove && (
         <Reanimated.View style={delStyle}>
           <TouchableOpacity
-            style={[styles.swipeAction, styles.swipeActionDel]}
+            style={[actionStyles.btn, { backgroundColor: '#EF4444' }]}
             onPress={() => { onClose(); onRemove(); }}
-            activeOpacity={0.8}
+            activeOpacity={0.7}
           >
-            <Ionicons name="trash-outline" size={22} color="#fff" />
+            <Ionicons name="trash" size={20} color="#fff" />
           </TouchableOpacity>
         </Reanimated.View>
       )}
@@ -310,6 +340,7 @@ function SwipeableWordRow({
   onToggle,
   onAddToList,
   onRemove,
+  hintDelay,
   styles,
   c,
 }: {
@@ -318,15 +349,30 @@ function SwipeableWordRow({
   onToggle: () => void;
   onAddToList: () => void;
   onRemove?: () => void;
+  hintDelay?: number;
   styles: Styles;
   c: Palette;
 }) {
-  const swipeRef   = useRef<any>(null);
+  const swipeRef = useRef<any>(null);
   const removeAnim = useSharedValue(1);
+  const hintAnim = useSharedValue(0);
 
-  // Only opacity — avoids height measurement and overflow issues in worklets
+  // Swipe hint: briefly slide left then bounce back on first render
+  useEffect(() => {
+    if (hintDelay == null) return;
+    const timer = setTimeout(() => {
+      hintAnim.value = withSequence(
+        withTiming(-52, { duration: 220, easing: Easing.out(Easing.ease) }),
+        withTiming(0, { duration: 300, easing: Easing.inOut(Easing.ease) }),
+      );
+    }, hintDelay);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const containerStyle = useAnimatedStyle(() => ({
     opacity: removeAnim.value,
+    transform: [{ translateX: hintAnim.value }],
   }));
 
   const handleDelete = useCallback(() => {
@@ -774,13 +820,14 @@ export default function ListScreen({ listId }: { listId: number }) {
           <FlatList
             data={filteredWords}
             keyExtractor={(item) => String(item.id)}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <SwipeableWordRow
                 word={item}
                 isKnown={knownIds.has(item.id)}
                 onToggle={() => handleToggle(item.id)}
                 onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
                 onRemove={!isKnownList && !isSystemList ? () => handleRemove(item.id) : undefined}
+                hintDelay={index < 3 ? 700 + index * 200 : undefined}
                 styles={styles}
                 c={c}
               />

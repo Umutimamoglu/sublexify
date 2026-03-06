@@ -37,19 +37,19 @@ const DIFF_COLORS: Record<string, string> = {
 function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
   const pad = isTablet ? 32 : 16;
   return StyleSheet.create({
-    root:     { flex: 1, backgroundColor: c.BG },
+    root: { flex: 1, backgroundColor: c.BG },
     safeArea: { flex: 1, backgroundColor: c.BG },
 
     // Header
-    header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 14 },
+    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 14 },
     headerTitle: { flex: 1, color: c.TEXT_P, fontSize: 22, fontWeight: '800' },
-    addBtn:      { width: 36, height: 36, borderRadius: 18, backgroundColor: c.PURPLE, alignItems: 'center', justifyContent: 'center' },
-    addBtnText:  { color: '#fff', fontSize: 22, lineHeight: 26 },
+    addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.PURPLE, alignItems: 'center', justifyContent: 'center' },
+    addBtnText: { color: '#fff', fontSize: 22, lineHeight: 26 },
 
     // Bilinen kelimeler card
-    knownCard:      { marginHorizontal: pad, marginBottom: 8, padding: 16, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
+    knownCard: { marginHorizontal: pad, marginBottom: 8, padding: 16, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
     knownCardTitle: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
-    knownCardSub:   { color: c.TEXT_S, fontSize: 12, marginTop: 4 },
+    knownCardSub: { color: c.TEXT_S, fontSize: 12, marginTop: 4 },
     knownCardBadge: { marginTop: 8, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: c.PURPLE + '22' },
     knownCardBadgeText: { color: c.PURPLE, fontSize: 12, fontWeight: '700' },
 
@@ -57,32 +57,32 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     sectionLabel: { color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, paddingHorizontal: pad, paddingTop: 14, paddingBottom: 8 },
 
     // List card
-    listCard:      { marginHorizontal: pad, marginBottom: 10, padding: 14, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
-    listCardRow:   { flexDirection: 'row', alignItems: 'flex-start' },
-    listCardInfo:  { flex: 1 },
-    listCardName:  { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
+    listCard: { marginHorizontal: pad, marginBottom: 10, padding: 14, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
+    listCardRow: { flexDirection: 'row', alignItems: 'flex-start' },
+    listCardInfo: { flex: 1 },
+    listCardName: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
     listCardStats: { color: c.TEXT_S, fontSize: 12, marginTop: 4 },
-    deleteBtn:     { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EF444422', alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
-    lockIcon:      { fontSize: 16, marginLeft: 10 },
+    deleteBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EF444422', alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
+    lockIcon: { fontSize: 16, marginLeft: 10 },
 
     // CEFR mini bar
-    levelBar:     { flexDirection: 'row', height: 5, borderRadius: 3, overflow: 'hidden', marginTop: 10 },
+    levelBar: { flexDirection: 'row', height: 5, borderRadius: 3, overflow: 'hidden', marginTop: 10 },
     levelSegment: { height: '100%' },
 
     // Empty / center
-    center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
     emptyIcon: { fontSize: 40 },
     emptyText: { color: c.TEXT_S, fontSize: 15 },
 
     // Modal
-    overlay:     { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' },
-    modalSheet:  { backgroundColor: c.SURFACE, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, gap: 14 },
-    modalTitle:  { color: c.TEXT_P, fontSize: 17, fontWeight: '800' },
-    modalInput:  {
+    overlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' },
+    modalSheet: { backgroundColor: c.SURFACE, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, gap: 14 },
+    modalTitle: { color: c.TEXT_P, fontSize: 17, fontWeight: '800' },
+    modalInput: {
       backgroundColor: c.SURFACE2, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
       color: c.TEXT_P, fontSize: 15, borderWidth: 1, borderColor: c.BORDER,
     },
-    modalBtns:   { flexDirection: 'row', gap: 10 },
+    modalBtns: { flexDirection: 'row', gap: 10 },
     modalCancel: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: c.SURFACE2, alignItems: 'center' },
     modalCreate: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: c.PURPLE, alignItems: 'center' },
     modalCancelText: { color: c.TEXT_S, fontWeight: '600' },
@@ -246,7 +246,7 @@ export default function ListsTabScreen() {
 
   const [showCreate, setShowCreate] = useState(false);
 
-  const { data: rawLists = [], isLoading }        = useLists();
+  const { data: rawLists = [], isLoading } = useLists();
   const systemLists = useMemo(
     () => rawLists.filter((l) => l.isSystem),
     [rawLists],
@@ -257,9 +257,9 @@ export default function ListsTabScreen() {
     ),
     [rawLists],
   );
-  const { data: knownWords = [] }                = useKnownWords();
+  const { data: knownWords = [] } = useKnownWords();
   const { mutate: createList, isPending: creating } = useCreateList();
-  const { mutate: deleteList }                   = useDeleteList();
+  const { mutate: deleteList } = useDeleteList();
 
   const handleCreate = useCallback((name: string) => {
     createList(name, {
@@ -345,7 +345,7 @@ export default function ListsTabScreen() {
                     key={item.id}
                     item={item}
                     onPress={() => router.push(`/list/${item.id}` as any)}
-                    onDelete={() => {}}
+                    onDelete={() => { }}
                     styles={styles}
                     c={c}
                   />

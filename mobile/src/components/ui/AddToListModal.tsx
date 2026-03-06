@@ -27,33 +27,33 @@ type Palette = {
 
 function makeStyles(c: Palette) {
   return StyleSheet.create({
-    overlay:    { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' },
-    sheet:      {
+    overlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' },
+    sheet: {
       backgroundColor: c.SURFACE,
       borderTopLeftRadius: 20, borderTopRightRadius: 20,
       paddingTop: 16, paddingBottom: 32, maxHeight: '75%',
     },
-    handle:     { width: 36, height: 4, borderRadius: 2, backgroundColor: c.BORDER, alignSelf: 'center', marginBottom: 16 },
-    header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
-    headerTitle:{ flex: 1, color: c.TEXT_P, fontSize: 16, fontWeight: '800' },
-    closeBtn:   { padding: 4 },
-    closeText:  { color: c.TEXT_S, fontSize: 20 },
+    handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: c.BORDER, alignSelf: 'center', marginBottom: 16 },
+    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
+    headerTitle: { flex: 1, color: c.TEXT_P, fontSize: 16, fontWeight: '800' },
+    closeBtn: { padding: 4 },
+    closeText: { color: c.TEXT_S, fontSize: 20 },
 
     // List items
-    listItem:   {
+    listItem: {
       flexDirection: 'row', alignItems: 'center',
       paddingHorizontal: 20, paddingVertical: 14,
       borderBottomWidth: 1, borderBottomColor: c.BORDER,
     },
     listItemAdded: { backgroundColor: c.PURPLE + '0d' },
-    listInfo:   { flex: 1 },
-    listName:   { color: c.TEXT_P, fontSize: 14, fontWeight: '600' },
-    listCount:  { color: c.TEXT_S, fontSize: 12, marginTop: 2 },
-    checkCircle:{
+    listInfo: { flex: 1 },
+    listName: { color: c.TEXT_P, fontSize: 14, fontWeight: '600' },
+    listCount: { color: c.TEXT_S, fontSize: 12, marginTop: 2 },
+    checkCircle: {
       width: 28, height: 28, borderRadius: 14, borderWidth: 2,
       alignItems: 'center', justifyContent: 'center',
     },
-    checkText:  { fontSize: 13, fontWeight: '900' },
+    checkText: { fontSize: 13, fontWeight: '900' },
 
     // Create section
     createToggle: {
@@ -61,13 +61,13 @@ function makeStyles(c: Palette) {
       paddingHorizontal: 20, paddingVertical: 14,
     },
     createToggleText: { color: c.PURPLE, fontSize: 14, fontWeight: '700' },
-    createRow:  { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingBottom: 8 },
-    createInput:{
+    createRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingBottom: 8 },
+    createInput: {
       flex: 1, backgroundColor: c.SURFACE2, borderRadius: 10,
       paddingHorizontal: 12, paddingVertical: 10,
       color: c.TEXT_P, fontSize: 14, borderWidth: 1, borderColor: c.BORDER,
     },
-    createBtn:  {
+    createBtn: {
       backgroundColor: c.PURPLE, borderRadius: 10,
       paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center',
     },
@@ -75,11 +75,11 @@ function makeStyles(c: Palette) {
     createBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
     // Done button
-    doneWrap:   { paddingHorizontal: 20, paddingTop: 12 },
-    doneBtn:    { backgroundColor: c.SURFACE2, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-    doneBtnText:{ color: c.TEXT_P, fontWeight: '700', fontSize: 14 },
+    doneWrap: { paddingHorizontal: 20, paddingTop: 12 },
+    doneBtn: { backgroundColor: c.SURFACE2, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+    doneBtnText: { color: c.TEXT_P, fontWeight: '700', fontSize: 14 },
 
-    emptyText:  { color: c.TEXT_S, fontSize: 14, textAlign: 'center', padding: 24 },
+    emptyText: { color: c.TEXT_S, fontSize: 14, textAlign: 'center', padding: 24 },
   });
 }
 
@@ -116,8 +116,10 @@ function ListRow({
       ) : (
         <View style={[
           styles.checkCircle,
-          { borderColor: isAdded ? c.PURPLE : c.BORDER,
-            backgroundColor: isAdded ? c.PURPLE + '22' : 'transparent' },
+          {
+            borderColor: isAdded ? c.PURPLE : c.BORDER,
+            backgroundColor: isAdded ? c.PURPLE + '22' : 'transparent'
+          },
         ]}>
           {isAdded && (
             <Text style={[styles.checkText, { color: c.PURPLE }]}>✓</Text>
@@ -135,10 +137,10 @@ export default function AddToListModal({
   wordName,
   onClose,
 }: {
-  visible:  boolean;
-  wordId:   number;
+  visible: boolean;
+  wordId: number;
   wordName: string;
-  onClose:  () => void;
+  onClose: () => void;
 }) {
   const { t } = useTranslation('lists');
   const { t: tCommon } = useTranslation('common');
@@ -154,15 +156,15 @@ export default function AddToListModal({
   }), [theme]);
   const styles = useMemo(() => makeStyles(c), [c]);
 
-  const [addedIds,     setAddedIds]     = useState<Set<number>>(new Set());
-  const [pendingId,    setPendingId]    = useState<number | null>(null);
-  const [showCreate,   setShowCreate]   = useState(false);
-  const [newListName,  setNewListName]  = useState('');
+  const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
+  const [pendingId, setPendingId] = useState<number | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newListName, setNewListName] = useState('');
 
-  const { data: lists = [],        isLoading: listsLoading  } = useLists();
-  const { data: containingIds = []                           } = useListsContainingWord(wordId);
-  const { mutate: addWord                                    } = useAddWordToList();
-  const { mutate: createList, isPending: creating            } = useCreateList();
+  const { data: lists = [], isLoading: listsLoading } = useLists();
+  const { data: containingIds = [] } = useListsContainingWord(wordId);
+  const { mutate: addWord } = useAddWordToList();
+  const { mutate: createList, isPending: creating } = useCreateList();
 
   // Sync containingIds into addedIds when modal opens / data arrives
   useEffect(() => {
