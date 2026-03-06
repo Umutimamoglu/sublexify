@@ -114,7 +114,7 @@ public class MediaController {
 
         MediaDTO media = mediaService.getMediaById(id, userId);
         MediaWordsResponseDTO wordsResponse = mediaService.getMediaWords(id, userId,
-                onlyUnknown != null && onlyUnknown);
+                onlyUnknown != null && onlyUnknown, null);
 
         try {
             com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
