@@ -18,6 +18,7 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useLists, useCreateList, useDeleteList } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
+import { Ionicons } from '@expo/vector-icons';
 import type { WordListDTO } from '@/src/types/api';
 
 type Palette = {
@@ -62,7 +63,7 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     listCardName:  { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
     listCardStats: { color: c.TEXT_S, fontSize: 12, marginTop: 4 },
     deleteBtn:     { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EF444422', alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
-    deleteBtnText: { fontSize: 14 },
+    lockIcon:      { fontSize: 16, marginLeft: 10 },
 
     // CEFR mini bar
     levelBar:     { flexDirection: 'row', height: 5, borderRadius: 3, overflow: 'hidden', marginTop: 10 },
@@ -131,7 +132,7 @@ function ListCard({
   onPress: () => void;
   onDelete: () => void;
   styles: Styles;
-  c: typeof DARK;
+  c: Palette;
 }) {
   const { t } = useTranslation('lists');
   const unknownPct = item.totalWords > 0
@@ -147,9 +148,13 @@ function ListCard({
             {t('wordCount', { count: item.totalWords })} · {t('wordStatsPct', { pct: unknownPct })}
           </Text>
         </View>
-        <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} activeOpacity={0.7}>
-          <Text style={styles.deleteBtnText}>🗑</Text>
-        </TouchableOpacity>
+        {item.isSystem ? (
+          <Text style={styles.lockIcon}>🔒</Text>
+        ) : (
+          <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} activeOpacity={0.7}>
+            <Ionicons name="trash-outline" size={16} color="#EF4444" />
+          </TouchableOpacity>
+        )}
       </View>
       {item.levelCounts && item.totalWords > 0 && (
         <CefrMiniBar levelCounts={item.levelCounts} total={item.totalWords} styles={styles} />
@@ -172,7 +177,7 @@ function CreateModal({
   onCreate: (name: string) => void;
   creating: boolean;
   styles: Styles;
-  c: typeof DARK;
+  c: Palette;
 }) {
   const { t } = useTranslation('lists');
   const { t: tCommon } = useTranslation('common');
@@ -242,8 +247,14 @@ export default function ListsTabScreen() {
   const [showCreate, setShowCreate] = useState(false);
 
   const { data: rawLists = [], isLoading }        = useLists();
-  const lists = useMemo(
-    () => [...rawLists].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+  const systemLists = useMemo(
+    () => rawLists.filter((l) => l.isSystem),
+    [rawLists],
+  );
+  const personalLists = useMemo(
+    () => [...rawLists.filter((l) => !l.isSystem)].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    ),
     [rawLists],
   );
   const { data: knownWords = [] }                = useKnownWords();
@@ -288,7 +299,7 @@ export default function ListsTabScreen() {
           </View>
         ) : (
           <FlatList
-            data={lists}
+            data={personalLists}
             keyExtractor={(item) => String(item.id)}
             ListHeaderComponent={() => (
               <>
@@ -299,9 +310,7 @@ export default function ListsTabScreen() {
                   activeOpacity={0.75}
                 >
                   <Text style={styles.knownCardTitle}>{t('knownWords')}</Text>
-                  <Text style={styles.knownCardSub}>
-                    {t('knownWordsSubtitle')}
-                  </Text>
+                  <Text style={styles.knownCardSub}>{t('knownWordsSubtitle')}</Text>
                   <View style={styles.knownCardBadge}>
                     <Text style={styles.knownCardBadgeText}>
                       {t('wordCount', { count: knownWords.length })}
@@ -309,9 +318,8 @@ export default function ListsTabScreen() {
                   </View>
                 </TouchableOpacity>
 
-                {lists.length > 0 && (
-                  <Text style={styles.sectionLabel}>{t('personalLists')}</Text>
-                )}
+                {/* Kişisel Listeler başlığı */}
+                <Text style={styles.sectionLabel}>{t('personalLists')}</Text>
               </>
             )}
             renderItem={({ item }) => (
@@ -324,11 +332,26 @@ export default function ListsTabScreen() {
               />
             )}
             ListEmptyComponent={() => (
-              <View style={styles.center}>
+              <View style={[styles.center, { paddingVertical: 32 }]}>
                 <Text style={styles.emptyIcon}>📋</Text>
                 <Text style={styles.emptyText}>{t('noPersonalLists')}</Text>
               </View>
             )}
+            ListFooterComponent={systemLists.length > 0 ? () => (
+              <>
+                <Text style={styles.sectionLabel}>{t('curatedLists')}</Text>
+                {systemLists.map((item) => (
+                  <ListCard
+                    key={item.id}
+                    item={item}
+                    onPress={() => router.push(`/list/${item.id}` as any)}
+                    onDelete={() => {}}
+                    styles={styles}
+                    c={c}
+                  />
+                ))}
+              </>
+            ) : null}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 24 }}
           />

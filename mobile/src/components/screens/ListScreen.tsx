@@ -26,8 +26,10 @@ import Reanimated, {
   interpolate,
   Extrapolation,
   Easing,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,9 +37,10 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
-import { useListDetail, useRemoveWordFromList, useCreateSubListFromUnknown } from '@/src/api/queries/lists.queries';
+import { useListDetail, useLists, useRemoveWordFromList, useCreateSubListFromUnknown } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
+import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import type { ListWord, Difficulty } from '@/src/types/api';
 
@@ -177,6 +180,13 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     ctaBtnDis: { opacity: 0.4 },
     ctaText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
+    // Swipe-to-reveal actions
+    swipeActions: { flexDirection: 'row', alignItems: 'stretch' },
+    swipeAction: { width: 68, alignItems: 'center', justifyContent: 'center' },
+    swipeActionAdd: { backgroundColor: c.PURPLE },
+    swipeActionTts: { backgroundColor: c.SURFACE2 },
+    swipeActionDel: { backgroundColor: '#EF4444' },
+
     // Empty/loading
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
     emptyText: { color: c.TEXT_S, fontSize: 15 },
@@ -188,6 +198,113 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
 type Styles = ReturnType<typeof makeStyles>;
 
 function WordRow({
+  word,
+  isKnown,
+  onToggle,
+  styles,
+  c,
+}: {
+  word: ListWord;
+  isKnown: boolean;
+  onToggle: () => void;
+  styles: Styles;
+  c: Palette;
+}) {
+  const meaning = word.definition?.meanings?.[0]?.definition;
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowInfo}>
+        <Text style={styles.rowWord}>{word.word}</Text>
+        {!!meaning && (
+          <Text style={styles.rowMeaning} numberOfLines={2}>{meaning}</Text>
+        )}
+      </View>
+      <TouchableOpacity
+        style={[
+          styles.checkBtn,
+          {
+            borderColor: isKnown ? c.PURPLE : c.TEXT_S,
+            backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
+          },
+        ]}
+        onPress={onToggle}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ─── RightActions (swipe buttons with stagger animation) ──────
+const BTN_W = 68;
+
+function RightActions({
+  progress,
+  onAddToList,
+  onTts,
+  onRemove,
+  onClose,
+  styles,
+  c,
+}: {
+  progress: SharedValue<number>;
+  onAddToList: () => void;
+  onTts: () => void;
+  onRemove?: () => void;
+  onClose: () => void;
+  styles: Styles;
+  c: Palette;
+}) {
+  const count = onRemove ? 3 : 2;
+
+  const addStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [count * BTN_W, 0], Extrapolation.CLAMP) }],
+  }));
+  const ttsStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [(count - 1) * BTN_W, 0], Extrapolation.CLAMP) }],
+  }));
+  const delStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [BTN_W, 0], Extrapolation.CLAMP) }],
+  }));
+
+  return (
+    <View style={styles.swipeActions}>
+      <Reanimated.View style={addStyle}>
+        <TouchableOpacity
+          style={[styles.swipeAction, styles.swipeActionAdd]}
+          onPress={() => { onClose(); onAddToList(); }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="bookmark-outline" size={22} color="#fff" />
+        </TouchableOpacity>
+      </Reanimated.View>
+      <Reanimated.View style={ttsStyle}>
+        <TouchableOpacity
+          style={[styles.swipeAction, styles.swipeActionTts]}
+          onPress={() => { onClose(); onTts(); }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="volume-high-outline" size={22} color={c.TEXT_P} />
+        </TouchableOpacity>
+      </Reanimated.View>
+      {!!onRemove && (
+        <Reanimated.View style={delStyle}>
+          <TouchableOpacity
+            style={[styles.swipeAction, styles.swipeActionDel]}
+            onPress={() => { onClose(); onRemove(); }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="trash-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+        </Reanimated.View>
+      )}
+    </View>
+  );
+}
+
+// ─── SwipeableWordRow ─────────────────────────────────────────
+function SwipeableWordRow({
   word,
   isKnown,
   onToggle,
@@ -204,44 +321,61 @@ function WordRow({
   styles: Styles;
   c: Palette;
 }) {
-  const meaning = word.definition?.meanings?.[0]?.definition;
+  const swipeRef   = useRef<any>(null);
+  const removeAnim = useSharedValue(1);
+
+  // Only opacity — avoids height measurement and overflow issues in worklets
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: removeAnim.value,
+  }));
+
+  const handleDelete = useCallback(() => {
+    console.log('[handleDelete] called, onRemove:', !!onRemove);
+    if (!onRemove) return;
+    try {
+      swipeRef.current?.close();
+      // Fade out animation; call onRemove via setTimeout after animation completes
+      removeAnim.value = withTiming(0, { duration: 260, easing: Easing.inOut(Easing.ease) });
+      setTimeout(() => {
+        console.log('[handleDelete] setTimeout fired, calling onRemove');
+        onRemove();
+      }, 290);
+    } catch (e) {
+      console.error('[handleDelete] error:', e);
+      onRemove(); // fallback: remove without animation
+    }
+  }, [onRemove, removeAnim]);
+
+  const renderRightActions = (progress: SharedValue<number>) => (
+    <RightActions
+      progress={progress}
+      onAddToList={onAddToList}
+      onTts={() => Speech.speak(word.word, { language: 'en-US' })}
+      onRemove={onRemove ? handleDelete : undefined}
+      onClose={() => swipeRef.current?.close()}
+      styles={styles}
+      c={c}
+    />
+  );
+
   return (
-    <View style={styles.row}>
-      <View style={styles.rowInfo}>
-        <Text style={styles.rowWord}>{word.word}</Text>
-        {!!meaning && (
-          <Text style={styles.rowMeaning} numberOfLines={2}>{meaning}</Text>
-        )}
-      </View>
-      <TouchableOpacity style={styles.listBtn} onPress={onAddToList} activeOpacity={0.7}>
-        <Text style={styles.listBtnText}>+</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.ttsBtn, { borderColor: c.BORDER }]}
-        onPress={() => Speech.speak(word.word, { language: 'en-US' })}
-        activeOpacity={0.7}
+    <Reanimated.View style={containerStyle}>
+      <ReanimatedSwipeable
+        ref={swipeRef}
+        renderRightActions={renderRightActions}
+        rightThreshold={40}
+        friction={2}
+        overshootRight={false}
       >
-        <Text style={styles.ttsBtnText}>🔊</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[
-          styles.checkBtn,
-          {
-            borderColor: isKnown ? c.PURPLE : c.TEXT_S,
-            backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
-          },
-        ]}
-        onPress={onToggle}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
-      </TouchableOpacity>
-      {!!onRemove && (
-        <TouchableOpacity style={styles.removeBtn} onPress={onRemove} activeOpacity={0.7}>
-          <Text style={styles.removeBtnText}>🗑</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+        <WordRow
+          word={word}
+          isKnown={isKnown}
+          onToggle={onToggle}
+          styles={styles}
+          c={c}
+        />
+      </ReanimatedSwipeable>
+    </Reanimated.View>
   );
 }
 
@@ -373,6 +507,8 @@ export default function ListScreen({ listId }: { listId: number }) {
 
   // ─── Data ─────────────────────────────────────────────────
   const isKnownList = listId === -1;
+  const { data: allLists = [] } = useLists();
+  const isSystemList = useMemo(() => allLists.some((l) => l.id === listId && l.isSystem), [allLists, listId]);
   const { data: list, isLoading: listLoading } = useListDetail(listId);
   const { data: knownWordsData = [], isLoading: knownLoading } = useKnownWords();
   const { mutate: toggleKnown } = useMarkKnown();
@@ -431,16 +567,9 @@ export default function ListScreen({ listId }: { listId: number }) {
   }, [knownIds, toggleKnown]);
 
   // ─── Remove word from list ────────────────────────────────
-  const handleRemove = useCallback((wordId: number, wordName: string) => {
-    Alert.alert(
-      t('removeWordTitle'),
-      t('removeWordMessage', { name: wordName }),
-      [
-        { text: tCommon('actions.cancel'), style: 'cancel' },
-        { text: tCommon('actions.remove'), style: 'destructive', onPress: () => removeWord({ listId, wordId }) },
-      ],
-    );
-  }, [removeWord, listId, t, tCommon]);
+  const handleRemove = useCallback((wordId: number) => {
+    removeWord({ listId, wordId });
+  }, [removeWord, listId]);
 
   // ─── Generate sub-list from unknowns ─────────────────────
   const unknownCount = useMemo(
@@ -646,12 +775,12 @@ export default function ListScreen({ listId }: { listId: number }) {
             data={filteredWords}
             keyExtractor={(item) => String(item.id)}
             renderItem={({ item }) => (
-              <WordRow
+              <SwipeableWordRow
                 word={item}
                 isKnown={knownIds.has(item.id)}
                 onToggle={() => handleToggle(item.id)}
                 onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
-                onRemove={!isKnownList ? () => handleRemove(item.id, item.word) : undefined}
+                onRemove={!isKnownList && !isSystemList ? () => handleRemove(item.id) : undefined}
                 styles={styles}
                 c={c}
               />

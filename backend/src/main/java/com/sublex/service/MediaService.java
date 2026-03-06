@@ -38,13 +38,12 @@ public class MediaService {
     }
 
     /**
-     * Get all media — movies directly, episodes deduplicated by imdbId (one card per series)
+     * Get all media with level distribution and known-word percentage — 4 batch queries, no N+1
      */
     public List<MediaDTO> getAllMedia(Long userId) {
         List<Media> all = mediaRepository.findAll();
-        List<MediaDTO> result = new ArrayList<>();
 
-        // Fetch all word counts at once to avoid N+1
+        // Batch 1: total word counts per media
         Map<Long, Integer> wordCounts = mediaWordRepository.countAllByMediaId()
                 .stream()
                 .collect(Collectors.toMap(
@@ -52,9 +51,48 @@ public class MediaService {
                         obj -> ((Long) obj[1]).intValue()
                 ));
 
+        // Batch 2: level counts per media  →  Map<mediaId, Map<difficulty, count>>
+        Map<Long, Map<String, Long>> levelCountsByMedia = new java.util.HashMap<>();
+        for (Object[] row : mediaWordRepository.findLevelCountsAllMedia()) {
+            Long   mediaId = (Long)   row[0];
+            String diff    = (String) row[1];
+            Long   count   = (Long)   row[2];
+            levelCountsByMedia.computeIfAbsent(mediaId, k -> new LinkedHashMap<>()).put(diff, count);
+        }
+
+        // Batch 3: known-word counts per media for this user
+        Map<Long, Integer> knownCountByMedia = new java.util.HashMap<>();
+        if (userId != null) {
+            for (Object[] row : mediaWordRepository.countKnownWordsPerMedia(userId)) {
+                Long mediaId    = (Long) row[0];
+                Long knownCount = (Long) row[1];
+                knownCountByMedia.put(mediaId, knownCount.intValue());
+            }
+        }
+
+        List<MediaDTO> result = new ArrayList<>();
         for (Media media : all) {
             MediaDTO dto = convertToBasicDTO(media);
-            dto.setTotalWords(wordCounts.getOrDefault(media.getId(), 0));
+            int total    = wordCounts.getOrDefault(media.getId(), 0);
+            dto.setTotalWords(total);
+
+            // Level distribution
+            Map<String, Long> levelCounts = levelCountsByMedia.getOrDefault(
+                    media.getId(), java.util.Collections.emptyMap());
+            dto.setLevelCounts(levelCounts);
+
+            // Dominant difficulty level
+            levelCounts.entrySet().stream()
+                    .max(java.util.Map.Entry.comparingByValue())
+                    .map(java.util.Map.Entry::getKey)
+                    .ifPresent(dto::setDifficultyLevel);
+
+            // Known-word percentage
+            if (total > 0) {
+                int known = knownCountByMedia.getOrDefault(media.getId(), 0);
+                dto.setKnownWordPercentage((double) known / total * 100);
+            }
+
             result.add(dto);
         }
         return result;
@@ -177,6 +215,23 @@ public class MediaService {
                 .collect(Collectors.groupingBy(com.sublex.model.Word::getDifficulty, Collectors.counting()));
         dto.setLevelCounts(levelCounts);
 
+        // Dominant difficulty level
+        levelCounts.entrySet().stream()
+                .max(java.util.Map.Entry.comparingByValue())
+                .map(java.util.Map.Entry::getKey)
+                .ifPresent(dto::setDifficultyLevel);
+
+        // Known-word percentage
+        if (userId != null && totalWords > 0) {
+            Set<Long> knownWordIds = userKnownWordRepository.findByUserId(userId).stream()
+                    .map(ukw -> ukw.getWord().getId())
+                    .collect(Collectors.toSet());
+            long knownCount = mediaWords.stream()
+                    .filter(mw -> knownWordIds.contains(mw.getWord().getId()))
+                    .count();
+            dto.setKnownWordPercentage((double) knownCount / totalWords * 100);
+        }
+
         return dto;
     }
 
@@ -194,6 +249,7 @@ public class MediaService {
         dto.setDefinition(mediaWord.getWord().getDefinition());
         dto.setDifficulty(mediaWord.getWord().getDifficulty());
         dto.setIsEnriched(mediaWord.getWord().getIsEnriched());
+        dto.setIsProperNoun(mediaWord.getWord().getIsProperNoun());
 
         return dto;
     }

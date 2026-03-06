@@ -213,9 +213,9 @@ export default function AddToListModal({
     });
   }, [newListName, createList, addWord, wordId]);
 
-  // All user lists (already filtered by backend)
+  // Only user-created lists — system/curated lists are locked
   const customLists = useMemo(
-    () => lists,
+    () => lists.filter((l) => !l.isSystem),
     [lists],
   );
 

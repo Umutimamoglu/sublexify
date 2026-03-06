@@ -68,6 +68,7 @@ export type MediaDTO = {
 export type MediaWordsResponseDTO = {
   mediaId: number;
   totalWords: number;
+  unknownWords: number;
   levelCounts: Record<string, number>;
   words: WordDTO[];
 };
@@ -85,6 +86,7 @@ export type WordListDTO = {
   unknownWords: number;
   levelCounts: Record<string, number>;
   createdAt: string;
+  isSystem?: boolean;
 };
 
 export type ApiError = {

@@ -91,6 +91,10 @@ public class WordService {
         dto.setLanguage(word.getLanguage());
         dto.setFrequency(totalFrequency);
         dto.setIsKnown(isKnown);
+        dto.setDefinition(word.getDefinition());
+        dto.setDifficulty(word.getDifficulty());
+        dto.setIsEnriched(word.getIsEnriched());
+        dto.setIsProperNoun(word.getIsProperNoun());
 
         return dto;
     }

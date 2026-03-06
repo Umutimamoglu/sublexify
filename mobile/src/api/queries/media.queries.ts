@@ -13,6 +13,7 @@ export const mediaKeys = {
 export function useMedia() {
   return useQuery<MediaDTO[]>({
     queryKey: mediaKeys.all,
+    staleTime: 0,
     queryFn:  async () => {
       const res = await apiClient.get<MediaDTO[]>(`${ENDPOINTS.media.list}?userId=1`);
       return res.data;

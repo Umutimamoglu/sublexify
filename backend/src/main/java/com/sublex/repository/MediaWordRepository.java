@@ -34,4 +34,15 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
 
        @Query("SELECT mw.media.id, COUNT(mw) FROM MediaWord mw GROUP BY mw.media.id")
        List<Object[]> countAllByMediaId();
+
+       @Query("SELECT mw.media.id, mw.word.difficulty, COUNT(mw) FROM MediaWord mw " +
+                     "WHERE mw.word.difficulty IS NOT NULL " +
+                     "GROUP BY mw.media.id, mw.word.difficulty")
+       List<Object[]> findLevelCountsAllMedia();
+
+       @Query("SELECT mw.media.id, COUNT(DISTINCT mw.word.id) FROM MediaWord mw " +
+                     "WHERE mw.word.id IN " +
+                     "(SELECT ukw.word.id FROM UserKnownWord ukw WHERE ukw.user.id = :userId) " +
+                     "GROUP BY mw.media.id")
+       List<Object[]> countKnownWordsPerMedia(@Param("userId") Long userId);
 }

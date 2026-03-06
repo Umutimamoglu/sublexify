@@ -297,9 +297,13 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const knownPct    = media?.knownWordPercentage ?? 0;
   const levelCounts = media?.levelCounts ?? {};
   const totalWords  = media?.totalWords ?? 0;
-  const unknownCount = wordData
-    ? wordData.words.filter((w) => !knownIds.has(w.id)).length
-    : 0;
+  // Derive from media (fast, from useMediaDetail) so it shows before words load
+  const unknownCount = useMemo(() => {
+    if (media && media.totalWords > 0 && media.knownWordPercentage != null) {
+      return Math.round(media.totalWords * (1 - media.knownWordPercentage / 100));
+    }
+    return wordData?.unknownWords ?? 0;
+  }, [media, wordData?.unknownWords]);
 
   const isLoading = mediaLoading || wordsLoading;
 
@@ -353,7 +357,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
       {/* Progress */}
       <View style={styles.progressWrap}>
         <View style={styles.progressLabel}>
-          <Text style={styles.progressText}>{t('wordCount', { count: totalWords })}</Text>
+          <Text style={styles.progressText}>{t('wordCount', { count: totalWords })} · {unknownCount} {t('unknownWords')}</Text>
           <Text style={styles.progressPct}>{t('wordStatsPct', { pct: Math.round(knownPct) })}</Text>
         </View>
         <View style={styles.progressBar}>
@@ -403,8 +407,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         })}
       </ScrollView>
     </View>
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [media, onlyUnknown, filter, knownPct, levelCounts, totalWords, isDark]);
+  ), [media, onlyUnknown, filter, knownPct, levelCounts, totalWords, unknownCount, isDark, styles, c, t, tCommon]);
 
   // ─── Render ───────────────────────────────────────────────
   return (

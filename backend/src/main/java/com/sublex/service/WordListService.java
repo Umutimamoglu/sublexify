@@ -244,6 +244,7 @@ public class WordListService {
                 dto.setDefinition(word.getDefinition());
                 dto.setDifficulty(word.getDifficulty());
                 dto.setIsEnriched(word.getIsEnriched());
+                dto.setIsProperNoun(word.getIsProperNoun());
                 return dto;
         }
 

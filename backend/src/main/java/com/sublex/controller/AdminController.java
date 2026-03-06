@@ -49,11 +49,44 @@ public class AdminController {
 
     // ... (other methods unchanged) ...
 
+    @PostMapping("/words/mark-proper-noun")
+    @Operation(summary = "Marks specific words as proper nouns")
+    @Transactional
+    public ResponseEntity<String> markProperNoun(@RequestBody java.util.List<Long> wordIds) {
+        List<com.sublex.model.Word> words = wordRepository.findAllById(wordIds);
+        words.forEach(w -> w.setIsProperNoun(true));
+        wordRepository.saveAll(words);
+        return ResponseEntity.ok("Marked " + words.size() + " words as proper nouns.");
+    }
+
     @PostMapping("/word-analysis/trigger")
     @Operation(summary = "Triggers async word analysis job manually")
     public ResponseEntity<String> triggerWordAnalysis() {
         wordAnalysisService.triggerAnalysis();
         return ResponseEntity.ok("Word analysis triggered.");
+    }
+
+    @PostMapping("/word-analysis/reset-failed")
+    @Operation(summary = "Resets all permanently FAILED words back to PENDING and triggers analysis")
+    @Transactional
+    public ResponseEntity<String> resetFailedWords() {
+        List<com.sublex.model.Word> failedWords = wordRepository.findAll().stream()
+                .filter(w -> "FAILED".equals(w.getStatus()) && w.getRetryCount() != null && w.getRetryCount() >= 3)
+                .toList();
+
+        int count = failedWords.size();
+        for (com.sublex.model.Word w : failedWords) {
+            w.setStatus("PENDING");
+            w.setRetryCount(0);
+        }
+        wordRepository.saveAll(failedWords);
+
+        log.info("Reset {} permanently FAILED words back to PENDING", count);
+
+        // Trigger analysis in background
+        Thread.startVirtualThread(() -> wordAnalysisService.triggerAnalysis());
+
+        return ResponseEntity.ok("Reset " + count + " failed words. Analysis triggered.");
     }
 
     @DeleteMapping("/words/all")

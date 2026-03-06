@@ -17,12 +17,18 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useTheme } from '@/src/context/ThemeContext';
 import { DifficultyBadge } from '@/src/components/ui';
 import { useMedia, useContinueLearning } from '@/src/api/queries/media.queries';
-import { useStandardLists } from '@/src/api/queries/lists.queries';
+import { useLists } from '@/src/api/queries/lists.queries';
 import { useUserStats } from '@/src/api/queries/user.queries';
 import type { MediaDTO, WordListDTO } from '@/src/types/api';
 
 const STREAK_BG = '#7f1d1d';
 const STREAK_T  = '#fca5a5';
+
+const CEFR_COLORS: Record<string, string> = {
+  A1: '#34D399', A2: '#4ADE80',
+  B1: '#FBBF24', B2: '#FB923C',
+  C1: '#EF4444', C2: '#A855F7',
+};
 
 const CARD_R = 14;
 
@@ -134,7 +140,9 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     poster: { width: '100%', height: 155 },
     posterPlaceholder: { height: 155, alignItems: 'center', justifyContent: 'center' },
     posterLetter: { fontSize: 52, fontWeight: '900', opacity: 0.7 },
-    mediaTitle: { color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: 8, paddingHorizontal: 6 },
+    cefrBar: { flexDirection: 'row', height: 4, overflow: 'hidden' },
+    mediaTitle: { color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center', paddingTop: 6, paddingHorizontal: 6 },
+    mediaStats: { color: '#aaaacc', fontSize: 10, textAlign: 'center', paddingHorizontal: 6, paddingTop: 3, paddingBottom: 8 },
 
     // Filter chips
     filterRow: { flexDirection: 'row', paddingHorizontal: pad, paddingBottom: 12, gap: 8 },
@@ -220,15 +228,19 @@ function MediaBrowseCard({
   styles: Styles;
   onPress: () => void;
 }) {
+  const { t } = useTranslation('discover');
   const { darkBg, lightBg, accent } = cardAccent(item.id);
   const title = seriesTitle(item);
   const diff = (item.difficultyLevel as any) ?? '-';
+
+  const cefrTotal = Object.values(item.levelCounts ?? {}).reduce((a, b) => a + b, 0);
+  const unknownCount = item.totalWords > 0 && item.knownWordPercentage != null
+    ? Math.round(item.totalWords * (1 - item.knownWordPercentage / 100))
+    : item.totalWords;
+
   return (
     <TouchableOpacity
-      style={[
-        styles.mediaCard,
-        { backgroundColor: isDark ? darkBg : lightBg },
-      ]}
+      style={[styles.mediaCard, { backgroundColor: isDark ? darkBg : lightBg }]}
       activeOpacity={0.85}
       onPress={onPress}
     >
@@ -239,12 +251,27 @@ function MediaBrowseCard({
         <Image source={{ uri: item.posterUrl }} style={styles.poster} resizeMode="cover" />
       ) : (
         <View style={[styles.posterPlaceholder, { backgroundColor: accent + '22' }]}>
-          <Text style={[styles.posterLetter, { color: accent }]}>
-            {title.charAt(0)}
-          </Text>
+          <Text style={[styles.posterLetter, { color: accent }]}>{title.charAt(0)}</Text>
         </View>
       )}
+
+      {/* CEFR dağılım çubuğu */}
+      {cefrTotal > 0 && (
+        <View style={styles.cefrBar}>
+          {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const).map((lv) => {
+            const count = item.levelCounts?.[lv] ?? 0;
+            if (count === 0) return null;
+            return (
+              <View key={lv} style={{ flex: count / cefrTotal, height: 4, backgroundColor: CEFR_COLORS[lv] }} />
+            );
+          })}
+        </View>
+      )}
+
       <Text style={styles.mediaTitle} numberOfLines={2}>{title}</Text>
+      <Text style={styles.mediaStats}>
+        {item.totalWords} {t('words')} · {unknownCount} {t('unknownWords')}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -306,7 +333,8 @@ export default function DiscoverScreen() {
 
   const { data: continueMedia = [], isLoading: continueLoading } = useContinueLearning(5);
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
-  const { data: standardLists = [], isLoading: listsLoading } = useStandardLists();
+  const { data: allLists = [], isLoading: listsLoading } = useLists();
+  const systemLists = useMemo(() => allLists.filter((l) => l.isSystem), [allLists]);
   const { data: userStats, isLoading: knownLoading } = useUserStats();
 
   const browsedMedia = useMemo(
@@ -439,7 +467,7 @@ export default function DiscoverScreen() {
             ) : (
               <View style={styles.listsGrid}>
                 <KnownWordsCard count={userStats?.totalKnownWords ?? 0} loading={knownLoading} styles={styles} onPress={() => router.push('/list/-1' as any)} />
-                {standardLists.map((item) => (
+                {systemLists.map((item) => (
                   <ListCard key={item.id} item={item} styles={styles} onPress={() => router.push(`/list/${item.id}` as any)} />
                 ))}
               </View>

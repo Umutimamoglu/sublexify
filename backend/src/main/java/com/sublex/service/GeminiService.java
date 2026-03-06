@@ -62,7 +62,16 @@ public class GeminiService implements AIService {
                                - Eğer fiil çekimiyse (örn: 'is meeting' -> meet), kökünü fiil olarak bul.
                                - Eğer kelime kesme işareti veya tire içeriyorsa (örn: 'don't', 'long-term'), bunu tek bir bütün olarak ele al ve bağlama göre en uygun kökü bul (örn: 'don't' -> 'do', 'long-term' -> 'long-term').
                             2. Kelimenin zorluk seviyesini (A1-C2) belirle.
-                            3. Eğer kelime bir özel isimse 'is_proper_noun: true' olarak işaretle.
+                            3. Özel isim tespiti (is_proper_noun):
+                               Aşağıdaki kategorilere giren kelimeleri MUTLAKA 'is_proper_noun: true' olarak işaretle:
+                               - Kişi adları ve soyadları (örn: belushi, poitier, stevens, clark, morgan, brady)
+                               - Şehir, eyalet, ülke ve yer adları (örn: omaha, danville, paris, brooklyn)
+                               - Marka ve şirket adları (örn: porsche, purina, playboy, nike)
+                               - Film, dizi, karakter adları (örn: bambi, terminator, gandalf)
+                               - Uydurma/kurgu özel isimleri (örn: friesenstinlender, lecroix)
+                               DİKKAT: Kelimeler küçük harfle yazılmış olabilir, bu özel isim olmadığı anlamına GELMEZ.
+                               Bağlam cümlesine ve genel bilgine dayanarak karar ver.
+                               Sadece emin olduklarını işaretle, emin değilsen false bırak.
 
                             Girdi JSON:
                             %s

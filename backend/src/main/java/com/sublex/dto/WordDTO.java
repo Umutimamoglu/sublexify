@@ -18,4 +18,5 @@ public class WordDTO {
     private com.sublex.model.WordDefinition definition;
     private String difficulty;
     private Boolean isEnriched;
+    private Boolean isProperNoun;
 }
