@@ -65,6 +65,46 @@ const MediaDetailPage = () => {
         }
     };
 
+    const handleMarkBatchAsKnown = async () => {
+        if (!id || selectedLevels.length === 0) return;
+
+        const count = wordData?.words.filter(w =>
+            !w.isKnown && selectedLevels.includes(w.difficulty || '')
+        ).length || 0;
+
+        if (count === 0) {
+            alert('Bu seviyelerde işaretlenecek yeni kelime bulunamadı.');
+            return;
+        }
+
+        const confirmMessage = `⚠️ Bildiklerine Ekle\n\nSeçili olan ${count} adet ${selectedLevels.join(' & ')} seviyesi kelimeyi bildiklerim listesine eklemek istediğinize emin misiniz? Bu işlem ilerleme durumunuzu toplu olarak değiştirecektir.`;
+
+        if (window.confirm(confirmMessage)) {
+            try {
+                await api.post('/words/mark-known-batch', null, {
+                    params: {
+                        userId,
+                        mediaId: id,
+                        levels: selectedLevels.join(',')
+                    }
+                });
+
+                // Update local state
+                if (wordData) {
+                    setWordData({
+                        ...wordData,
+                        words: wordData.words.map(w =>
+                            selectedLevels.includes(w.difficulty || '') ? { ...w, isKnown: true } : w
+                        )
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to mark batch as known', err);
+                alert('İşlem sırasında bir hata oluştu.');
+            }
+        }
+    };
+
     const handleGenerateList = async () => {
         if (!id || isGeneratingList) return;
 
@@ -207,12 +247,23 @@ const MediaDetailPage = () => {
                     })}
 
                     {selectedLevels.length > 0 && (
-                        <button
-                            onClick={() => setSelectedLevels([])}
-                            className="text-xs text-gray-400 hover:text-indigo-500 transition-colors ml-2"
-                        >
-                            Clear levels
-                        </button>
+                        <>
+                            <button
+                                onClick={handleMarkBatchAsKnown}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-white dark:text-emerald-400 text-xs font-bold rounded-lg shadow-sm transition-all ml-4 border border-emerald-700/20 dark:border-emerald-500/20"
+                            >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {selectedLevels.length === 1
+                                    ? `Tüm ${selectedLevels[0]} Seviyesini Bildiklerime Ekle`
+                                    : `Tüm ${selectedLevels.join(' & ')} Seviyelerini Bildiklerime Ekle`}
+                            </button>
+                            <button
+                                onClick={() => setSelectedLevels([])}
+                                className="text-xs text-gray-400 hover:text-indigo-500 transition-colors ml-2"
+                            >
+                                Clear levels
+                            </button>
+                        </>
                     )}
                 </div>
 

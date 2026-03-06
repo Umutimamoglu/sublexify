@@ -17,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class OpenAIService implements AIService {
 
@@ -25,7 +24,19 @@ public class OpenAIService implements AIService {
         private String apiKey;
 
         private final ObjectMapper objectMapper = new ObjectMapper();
-        private final RestClient restClient = RestClient.create();
+        private final RestClient restClient;
+
+        public OpenAIService(@Value("${OPENAI_API_KEY}") String apiKey) {
+                this.apiKey = apiKey;
+                this.restClient = RestClient.builder()
+                                .requestFactory(new org.springframework.http.client.SimpleClientHttpRequestFactory() {
+                                        {
+                                                setConnectTimeout(60000);
+                                                setReadTimeout(60000);
+                                        }
+                                })
+                                .build();
+        }
 
         private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
         private static final String MODEL = "gpt-5-mini";

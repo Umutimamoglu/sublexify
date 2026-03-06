@@ -50,6 +50,36 @@ public class UserKnownWordService {
     }
 
     /**
+     * Mark multiple words as known for a specific media and levels
+     */
+    @Transactional
+    public void markWordsAsKnownByMediaAndLevels(Long userId, Long mediaId, List<String> levels) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        List<Word> words = wordRepository.findByMediaIdAndDifficultyIn(mediaId, levels);
+        List<Long> existingWordIds = userKnownWordRepository.findByUserId(userId)
+                .stream()
+                .map(ukw -> ukw.getWord().getId())
+                .collect(Collectors.toList());
+
+        List<UserKnownWord> newKnownWords = words.stream()
+                .filter(w -> !existingWordIds.contains(w.getId()))
+                .map(w -> {
+                    UserKnownWord ukw = new UserKnownWord();
+                    ukw.setUser(user);
+                    ukw.setWord(w);
+                    ukw.setMarkedAt(LocalDateTime.now());
+                    return ukw;
+                })
+                .collect(Collectors.toList());
+
+        if (!newKnownWords.isEmpty()) {
+            userKnownWordRepository.saveAll(newKnownWords);
+        }
+    }
+
+    /**
      * Unmark a word (remove from known words)
      */
     @Transactional
@@ -71,6 +101,9 @@ public class UserKnownWordService {
                     dto.setLanguage(ukw.getWord().getLanguage());
                     dto.setFrequency(0); // Not relevant for known words list
                     dto.setIsKnown(true);
+                    dto.setDifficulty(ukw.getWord().getDifficulty());
+                    dto.setIsEnriched(ukw.getWord().getIsEnriched());
+                    dto.setIsProperNoun(ukw.getWord().getIsProperNoun());
                     return dto;
                 })
                 .collect(Collectors.toList());

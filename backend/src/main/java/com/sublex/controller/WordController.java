@@ -69,6 +69,20 @@ public class WordController {
     }
 
     /**
+     * POST /api/words/mark-known-batch?userId=1&mediaId=123&levels=A1,A2
+     * Mark multiple words as known by media and levels
+     */
+    @PostMapping("/mark-known-batch")
+    public ResponseEntity<Void> markAsKnownBatch(
+            @RequestParam Long userId,
+            @RequestParam Long mediaId,
+            @RequestParam List<String> levels) {
+
+        userKnownWordService.markWordsAsKnownByMediaAndLevels(userId, mediaId, levels);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * DELETE /api/words/{id}/mark-known?userId=1
      * Unmark word as known
      */

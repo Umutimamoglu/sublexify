@@ -108,6 +108,9 @@ public interface WordRepository extends JpaRepository<Word, Long> {
         @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND mw.word.isEnriched = true AND (mw.word.needsReEnrichment = false OR mw.word.needsReEnrichment IS NULL) AND (mw.word.isVerified = false OR mw.word.isVerified IS NULL) ORDER BY mw.word.enrichedAt ASC LIMIT :limit")
         List<Word> findTopEnrichedWordsByMediaId(@Param("mediaId") Long mediaId, @Param("limit") int limit);
 
+        @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND mw.word.difficulty IN :levels")
+        List<Word> findByMediaIdAndDifficultyIn(@Param("mediaId") Long mediaId, @Param("levels") List<String> levels);
+
         @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND mw.word.isEnriched = true AND mw.word.needsReEnrichment = true ORDER BY mw.word.id ASC")
         List<Word> findByMediaIdAndNeedsReEnrichmentTrue(@Param("mediaId") Long mediaId);
 
