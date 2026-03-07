@@ -1,0 +1,14 @@
+{
+  "title": "Progress",
+  "dueToday": "Due Today",
+  "totalStudied": "Studied",
+  "mastered": "Mastered",
+  "dueTodayDesc": "Words due for review today",
+  "totalStudiedDesc": "Total words you have studied",
+  "masteredDesc": "Words answered correctly 5+ times",
+  "noProgress": "No study sessions yet",
+  "noProgressDesc": "Start studying from your lists",
+  "goToLists": "Go to Lists",
+  "stats": "Statistics",
+  "words": "words"
+}

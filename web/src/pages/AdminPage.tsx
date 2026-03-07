@@ -3,7 +3,6 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import MediaService from '@/services/MediaService';
 import type { TmdbMedia, TmdbSeasonDetails } from '@/services/MediaService';
-import PipelineControlPanel from '@/components/PipelineControlPanel';
 import JudgeReviewPanel from '@/components/JudgeReviewPanel';
 
 const AdminPage = () => {
@@ -369,9 +368,6 @@ const AdminPage = () => {
     return (
         <div className="max-w-4xl mx-auto pb-20">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Admin Dashboard</h1>
-
-            {/* Pipeline Control Panel */}
-            <PipelineControlPanel />
 
             {/* Judge Review Panel */}
             <JudgeReviewPanel />

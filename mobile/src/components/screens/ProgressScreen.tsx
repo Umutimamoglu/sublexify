@@ -1,0 +1,191 @@
+import React, { useMemo } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useTheme } from '@/src/context/ThemeContext';
+import { useTranslation } from '@/src/i18n/useTranslation';
+import { useResponsive } from '@/src/hooks/useResponsive';
+import { useProgressStats } from '@/src/api/queries/progress.queries';
+
+type Palette = {
+  BG: string; SURFACE: string; SURFACE2: string;
+  TEXT_P: string; TEXT_S: string; BORDER: string;
+  PURPLE: string;
+};
+
+function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
+  const pad = isTablet ? 32 : 16;
+
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.BG },
+    safeArea: { flex: 1, backgroundColor: c.BG },
+
+    header: {
+      paddingHorizontal: pad, paddingTop: 20, paddingBottom: 12,
+    },
+    headerTitle: { color: c.TEXT_P, fontSize: 26, fontWeight: '900' },
+
+    separator: { height: 1, backgroundColor: isDark ? '#ffffff0f' : '#e0e0ea', marginBottom: 24 },
+
+    body: { flex: 1, paddingHorizontal: pad },
+
+    // Stat cards
+    statsGrid: {
+      flexDirection: isTablet ? 'row' : 'column',
+      gap: 12,
+    },
+    statCard: {
+      flex: isTablet ? 1 : undefined,
+      backgroundColor: c.SURFACE,
+      borderRadius: 18, padding: 20,
+      borderWidth: 1,
+      borderColor: isDark ? '#ffffff0f' : c.BORDER,
+      flexDirection: 'row', alignItems: 'center', gap: 16,
+    },
+    statIconBox: {
+      width: 48, height: 48, borderRadius: 14,
+      backgroundColor: c.PURPLE + '22',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    statIcon: { fontSize: 22 },
+    statInfo: { flex: 1 },
+    statValue: { color: c.PURPLE, fontSize: 28, fontWeight: '900' },
+    statLabel: { color: c.TEXT_P, fontSize: 14, fontWeight: '700', marginTop: 2 },
+    statDesc: { color: c.TEXT_S, fontSize: 12, marginTop: 3, lineHeight: 16 },
+
+    // Section label
+    sectionLabel: {
+      color: c.TEXT_S, fontSize: 11, fontWeight: '700',
+      letterSpacing: 1.2, textTransform: 'uppercase',
+      marginBottom: 16, marginTop: 28,
+    },
+
+    // Empty state
+    emptyBox: {
+      flex: 1, alignItems: 'center', justifyContent: 'center',
+      gap: 14, paddingHorizontal: pad,
+    },
+    emptyIcon: { fontSize: 64 },
+    emptyTitle: { color: c.TEXT_P, fontSize: 20, fontWeight: '800', textAlign: 'center' },
+    emptyDesc: { color: c.TEXT_S, fontSize: 15, textAlign: 'center', lineHeight: 22 },
+    goBtn: {
+      marginTop: 8, backgroundColor: c.PURPLE, borderRadius: 14,
+      paddingHorizontal: 32, paddingVertical: 14,
+    },
+    goBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  });
+}
+
+// ─── Stat card ─────────────────────────────────────────────────────────────────
+function StatCard({
+  icon, value, label, desc, styles,
+}: {
+  icon: string; value: number; label: string; desc: string; styles: ReturnType<typeof makeStyles>;
+}) {
+  return (
+    <View style={styles.statCard}>
+      <View style={styles.statIconBox}>
+        <Text style={styles.statIcon}>{icon}</Text>
+      </View>
+      <View style={styles.statInfo}>
+        <Text style={styles.statValue}>{value}</Text>
+        <Text style={styles.statLabel}>{label}</Text>
+        <Text style={styles.statDesc}>{desc}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
+export default function ProgressScreen() {
+  const { theme, isDark } = useTheme();
+  const { t } = useTranslation('progress');
+  const { isTablet } = useResponsive();
+  const router = useRouter();
+
+  const c: Palette = {
+    BG: theme.colors.background,
+    SURFACE: theme.colors.surface,
+    SURFACE2: theme.colors.surfaceVariant ?? theme.colors.surface,
+    TEXT_P: theme.colors.textPrimary,
+    TEXT_S: theme.colors.textSecondary,
+    BORDER: theme.colors.border,
+    PURPLE: theme.colors.primary,
+  };
+
+  const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
+
+  const { data: stats, isLoading } = useProgressStats();
+
+  const hasData = stats && (stats.totalStudied > 0 || stats.masteredWords > 0 || stats.dueToday > 0);
+
+  return (
+    <View style={styles.root}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={c.BG} />
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{t('title')}</Text>
+        </View>
+        <View style={styles.separator} />
+
+        {isLoading ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            <ActivityIndicator color={c.PURPLE} size="large" />
+          </View>
+        ) : !hasData ? (
+          /* Empty state */
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyIcon}>📊</Text>
+            <Text style={styles.emptyTitle}>{t('noProgress')}</Text>
+            <Text style={styles.emptyDesc}>{t('noProgressDesc')}</Text>
+            <TouchableOpacity
+              style={styles.goBtn}
+              onPress={() => router.push('/(tabs)/lists' as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.goBtnText}>{t('goToLists')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          /* Stats */
+          <View style={styles.body}>
+            <Text style={styles.sectionLabel}>{t('stats')}</Text>
+            <View style={styles.statsGrid}>
+              <StatCard
+                icon="🎯"
+                value={stats.dueToday}
+                label={t('dueToday')}
+                desc={t('dueTodayDesc')}
+                styles={styles}
+              />
+              <StatCard
+                icon="📚"
+                value={stats.totalStudied}
+                label={t('totalStudied')}
+                desc={t('totalStudiedDesc')}
+                styles={styles}
+              />
+              <StatCard
+                icon="⭐"
+                value={stats.masteredWords}
+                label={t('mastered')}
+                desc={t('masteredDesc')}
+                styles={styles}
+              />
+            </View>
+          </View>
+        )}
+
+      </SafeAreaView>
+    </View>
+  );
+}

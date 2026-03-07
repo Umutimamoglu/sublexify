@@ -61,6 +61,7 @@ export type MediaDTO = {
   // userId ile çekildiğinde gelen ek alanlar
   knownWordPercentage?: number | null;
   difficultyLevel?: string | null;
+  overallDifficulty?: 'EASY' | 'MEDIUM' | 'HARD' | null;
   levelCounts?: Record<string, number> | null;
 };
 
@@ -110,4 +111,28 @@ export type ListDetailDTO = {
   name: string;
   words: ListWord[];
   createdAt: string;
+};
+
+// ─── Study Mode ───────────────────────────────────────────────
+export type QuestionType = 'MULTIPLE_CHOICE' | 'FILL_IN_THE_BLANKS' | 'LISTENING';
+
+export type StudyQuestionDTO = {
+  wordId: number;
+  word: string;
+  questionType: QuestionType;
+  choices: string[];
+  contextSentence: string | null;
+  correctAnswer: string;
+};
+
+export type StudyResultDTO = {
+  wordId: number;
+  isCorrect: boolean;
+};
+
+// ─── Progress ─────────────────────────────────────────────────
+export type ProgressStatsDTO = {
+  totalStudied: number;
+  masteredWords: number;
+  dueToday: number;
 };

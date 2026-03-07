@@ -1,0 +1,14 @@
+{
+  "title": "İlerleme",
+  "dueToday": "Bugün Tekrar",
+  "totalStudied": "Çalışılan",
+  "mastered": "Ustalaşılan",
+  "dueTodayDesc": "Bugün tekrar edilmesi gereken kelimeler",
+  "totalStudiedDesc": "Toplam çalışılan kelime sayısı",
+  "masteredDesc": "5+ kez doğru bilinen kelimeler",
+  "noProgress": "Henüz çalışma kaydın yok",
+  "noProgressDesc": "Liste sayfasından çalışmaya başla",
+  "goToLists": "Listelere Git",
+  "stats": "İstatistikler",
+  "words": "kelime"
+}

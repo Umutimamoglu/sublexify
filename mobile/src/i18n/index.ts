@@ -9,12 +9,16 @@ import enDiscover from './locales/en/discover.json';
 import enVocabulary from './locales/en/vocabulary.json';
 import enLists from './locales/en/lists.json';
 import enProfile from './locales/en/profile.json';
+import enStudy from './locales/en/study.json';
+import enProgress from './locales/en/progress.json';
 
 import trCommon from './locales/tr/common.json';
 import trDiscover from './locales/tr/discover.json';
 import trVocabulary from './locales/tr/vocabulary.json';
 import trLists from './locales/tr/lists.json';
 import trProfile from './locales/tr/profile.json';
+import trStudy from './locales/tr/study.json';
+import trProgress from './locales/tr/progress.json';
 
 const LANGUAGE_KEY = '@sublex/language';
 
@@ -35,13 +39,13 @@ export async function initI18n() {
   if (!i18n.isInitialized) {
     await i18n.use(initReactI18next).init({
       resources: {
-        en: { common: enCommon, discover: enDiscover, vocabulary: enVocabulary, lists: enLists, profile: enProfile },
-        tr: { common: trCommon, discover: trDiscover, vocabulary: trVocabulary, lists: trLists, profile: trProfile },
+        en: { common: enCommon, discover: enDiscover, vocabulary: enVocabulary, lists: enLists, profile: enProfile, study: enStudy, progress: enProgress },
+        tr: { common: trCommon, discover: trDiscover, vocabulary: trVocabulary, lists: trLists, profile: trProfile, study: trStudy, progress: trProgress },
       },
       lng,
       fallbackLng: 'en',
       defaultNS: 'common',
-      ns: ['common', 'discover', 'vocabulary', 'lists', 'profile'],
+      ns: ['common', 'discover', 'vocabulary', 'lists', 'profile', 'study', 'progress'],
       interpolation: { escapeValue: false },
       compatibilityJSON: 'v4',
     });

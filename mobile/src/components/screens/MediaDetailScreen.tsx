@@ -42,6 +42,10 @@ const DIFF_COLORS: Record<string, string> = {
   C1: '#EF4444', C2: '#9333EA',
 };
 
+const OVERALL_DIFF_BG: Record<string, string>   = { EASY: '#22C55E22', MEDIUM: '#F59E0B22', HARD: '#EF444422' };
+const OVERALL_DIFF_TEXT: Record<string, string>  = { EASY: '#22C55E',   MEDIUM: '#F59E0B',   HARD: '#EF4444'   };
+const OVERALL_DIFF_LABEL: Record<string, string> = { EASY: 'Kolay',     MEDIUM: 'Orta',      HARD: 'Zor'       };
+
 type Filter = 'all' | Difficulty;
 const FILTERS: Filter[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
@@ -432,6 +436,13 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
             {!!media?.voteAverage && (
               <View style={styles.heroBadge}>
                 <Text style={styles.heroBadgeText}>⭐ {media.voteAverage.toFixed(1)}</Text>
+              </View>
+            )}
+            {!!media?.overallDifficulty && (
+              <View style={[styles.heroBadge, { backgroundColor: OVERALL_DIFF_BG[media.overallDifficulty] }]}>
+                <Text style={[styles.heroBadgeText, { color: OVERALL_DIFF_TEXT[media.overallDifficulty] }]}>
+                  {OVERALL_DIFF_LABEL[media.overallDifficulty]}
+                </Text>
               </View>
             )}
           </View>

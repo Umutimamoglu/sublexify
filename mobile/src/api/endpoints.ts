@@ -30,4 +30,11 @@ export const ENDPOINTS = {
     login:    '/auth/login',
     register: '/auth/register',
   },
+  study: {
+    nextBatch: '/study/next-batch',
+    result:    '/study/result',
+  },
+  progress: {
+    stats: '/progress/stats',
+  },
 } as const;

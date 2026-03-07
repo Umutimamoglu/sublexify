@@ -67,6 +67,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: t('tabs.progress'),
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="bar-chart-outline" color={color} size={size} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

@@ -3,7 +3,8 @@
     "discover": "Discover",
     "vocabulary": "Vocabulary",
     "lists": "Lists",
-    "profile": "Profile"
+    "profile": "Profile",
+    "progress": "Progress"
   },
   "actions": {
     "save": "Save",

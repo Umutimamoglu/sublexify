@@ -219,6 +219,7 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
             }}
           />
         )}
+
       </SafeAreaView>
     </View>
   );

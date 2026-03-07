@@ -126,4 +126,69 @@ public class MediaServiceTest {
         assertEquals(100, result.get(0).getTotalWords());
         assertEquals(100.0, result.get(0).getKnownWordPercentage(), 0.01);
     }
+
+    @Test
+    void testCalculateOverallDifficulty_Easy() {
+        Long userId = 1L;
+        when(mediaRepository.findAll()).thenReturn(Arrays.asList(testMedia));
+        
+        when(mediaWordRepository.countAllByMediaId())
+                .thenReturn(Collections.singletonList(new Object[]{1L, 100L})); // Total 100 words
+                
+        // 86 easy words out of 100 (> 85%) -> EASY
+        when(mediaWordRepository.findLevelCountsAllMedia())
+                .thenReturn(Arrays.asList(
+                    new Object[]{1L, "A1", 40L},
+                    new Object[]{1L, "A2", 46L}
+                ));
+
+        List<MediaDTO> result = mediaService.getAllMedia(userId);
+
+        assertEquals(1, result.size());
+        assertEquals("EASY", result.get(0).getOverallDifficulty());
+    }
+
+    @Test
+    void testCalculateOverallDifficulty_Hard() {
+        Long userId = 1L;
+        when(mediaRepository.findAll()).thenReturn(Arrays.asList(testMedia));
+        
+        when(mediaWordRepository.countAllByMediaId())
+                .thenReturn(Collections.singletonList(new Object[]{1L, 100L})); // Total 100 words
+                
+        // 6 hard words out of 100 (> 5%) -> HARD
+        when(mediaWordRepository.findLevelCountsAllMedia())
+                .thenReturn(Arrays.asList(
+                    new Object[]{1L, "C1", 4L},
+                    new Object[]{1L, "C2", 2L}
+                ));
+
+        List<MediaDTO> result = mediaService.getAllMedia(userId);
+
+        assertEquals(1, result.size());
+        assertEquals("HARD", result.get(0).getOverallDifficulty());
+    }
+
+    @Test
+    void testCalculateOverallDifficulty_Medium() {
+        Long userId = 1L;
+        when(mediaRepository.findAll()).thenReturn(Arrays.asList(testMedia));
+        
+        when(mediaWordRepository.countAllByMediaId())
+                .thenReturn(Collections.singletonList(new Object[]{1L, 100L})); // Total 100 words
+                
+        // 50 easy words (<= 85%), 4 hard words (<= 5%) -> MEDIUM
+        when(mediaWordRepository.findLevelCountsAllMedia())
+                .thenReturn(Arrays.asList(
+                    new Object[]{1L, "A1", 20L},
+                    new Object[]{1L, "A2", 30L},
+                    new Object[]{1L, "B1", 46L},
+                    new Object[]{1L, "C1", 4L}
+                ));
+
+        List<MediaDTO> result = mediaService.getAllMedia(userId);
+
+        assertEquals(1, result.size());
+        assertEquals("MEDIUM", result.get(0).getOverallDifficulty());
+    }
 }

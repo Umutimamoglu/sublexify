@@ -24,6 +24,12 @@ const cefrColors: Record<string, string> = {
     C2: 'bg-purple-500',
 };
 
+const difficultyConfig: Record<string, { label: string; color: string }> = {
+    EASY: { label: 'Kolay', color: 'bg-emerald-500 text-white' },
+    MEDIUM: { label: 'Orta', color: 'bg-amber-500 text-white' },
+    HARD: { label: 'Zor', color: 'bg-rose-500 text-white' }
+};
+
 const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
     const config = typeConfig[media.type] || typeConfig.OTHER;
 
@@ -59,9 +65,14 @@ const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
                     )}
 
                     <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-black/60 text-white backdrop-blur-md">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-black/60 text-white backdrop-blur-md shadow-sm">
                             {media.type === 'EPISODE' && media.tmdbId ? 'SERIES' : media.type}
                         </span>
+                        {media.overallDifficulty && difficultyConfig[media.overallDifficulty] && (
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md backdrop-blur-md shadow-sm ${difficultyConfig[media.overallDifficulty].color}`}>
+                                {difficultyConfig[media.overallDifficulty].label}
+                            </span>
+                        )}
                     </div>
 
                     {media.knownWordPercentage !== undefined && (

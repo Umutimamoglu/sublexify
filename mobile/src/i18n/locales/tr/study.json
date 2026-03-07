@@ -1,0 +1,24 @@
+{
+  "title": "Çalışma Modu",
+  "question": "{{current}} / {{total}}",
+  "questionTypes": {
+    "MULTIPLE_CHOICE": "Doğru çeviriyi seç",
+    "FILL_IN_THE_BLANKS": "Boşluğu doldur",
+    "LISTENING": "Kelimeyi dinle, çeviriyi seç"
+  },
+  "checkAnswer": "Kontrol Et",
+  "next": "Sonraki",
+  "correct": "Doğru!",
+  "wrong": "Yanlış",
+  "correctAnswer": "Doğru cevap: {{answer}}",
+  "sessionComplete": "Oturum Tamamlandı",
+  "score": "{{correct}} / {{total}} doğru",
+  "finish": "Bitir",
+  "noQuestions": "Çalışılacak kelime yok",
+  "noQuestionsDesc": "Bu liste için bugün tekrar zamanı gelmedi.",
+  "studyList": "Kelimeleri Çalış",
+  "listen": "Dinle",
+  "typeAnswer": "Cevabını yaz...",
+  "correct_count": "Doğru",
+  "wrong_count": "Yanlış"
+}

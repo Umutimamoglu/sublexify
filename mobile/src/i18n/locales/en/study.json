@@ -1,0 +1,24 @@
+{
+  "title": "Study Mode",
+  "question": "{{current}} / {{total}}",
+  "questionTypes": {
+    "MULTIPLE_CHOICE": "Choose the correct translation",
+    "FILL_IN_THE_BLANKS": "Fill in the blank",
+    "LISTENING": "Listen and choose the correct translation"
+  },
+  "checkAnswer": "Check Answer",
+  "next": "Next",
+  "correct": "Correct!",
+  "wrong": "Wrong",
+  "correctAnswer": "Correct answer: {{answer}}",
+  "sessionComplete": "Session Complete",
+  "score": "{{correct}} / {{total}} correct",
+  "finish": "Finish",
+  "noQuestions": "No words to study",
+  "noQuestionsDesc": "No words are due for review in this list today.",
+  "studyList": "Study Words",
+  "listen": "Listen",
+  "typeAnswer": "Type your answer...",
+  "correct_count": "Correct",
+  "wrong_count": "Wrong"
+}

@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, LayoutGrid, Settings, Sun, Moon, BookOpen, Menu, X, Shield } from 'lucide-react';
+import { Home, LayoutGrid, Settings, Sun, Moon, BookOpen, Menu, X, Shield, TrendingUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/utils/cn';
 
@@ -34,6 +34,7 @@ const MainLayout = () => {
         { name: 'Discover', path: '/', icon: Home },
         { name: 'Lists', path: '/lists', icon: BookOpen },
         { name: 'Library', path: '/library', icon: LayoutGrid },
+        { name: 'Progress', path: '/progress', icon: TrendingUp },
         { name: 'Settings', path: '/settings', icon: Settings },
         { name: 'Admin', path: '/admin', icon: Shield },
     ];

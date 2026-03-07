@@ -5,6 +5,12 @@ interface MediaHeaderProps {
     media: Media;
 }
 
+const difficultyConfig: Record<string, { label: string; color: string }> = {
+    EASY: { label: 'Kolay', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+    MEDIUM: { label: 'Orta', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+    HARD: { label: 'Zor', color: 'bg-rose-500/20 text-rose-300 border-rose-500/30' }
+};
+
 const MediaHeader = ({ media }: MediaHeaderProps) => {
     return (
         <div className="relative rounded-3xl overflow-hidden mb-8 shadow-2xl bg-gray-900 group">
@@ -43,6 +49,12 @@ const MediaHeader = ({ media }: MediaHeaderProps) => {
                             <Languages className="w-3.5 h-3.5" />
                             {media.language.toUpperCase()}
                         </span>
+
+                        {media.overallDifficulty && difficultyConfig[media.overallDifficulty] && (
+                            <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider backdrop-blur-md border ${difficultyConfig[media.overallDifficulty].color}`}>
+                                {difficultyConfig[media.overallDifficulty].label}
+                            </span>
+                        )}
 
                         {media.voteAverage && (
                             <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-yellow-500/10 text-yellow-200 border border-yellow-500/20 backdrop-blur-md">

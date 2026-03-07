@@ -28,6 +28,8 @@ public class MediaDTO {
 
     // Personalized difficulty fields
     private Double knownWordPercentage;
-    private String difficultyLevel;
+    private String difficultyLevel; // e.g. B2, C1 -> dominant level
+    private String overallDifficulty; // EASY, MEDIUM, HARD
     private Map<String, Long> levelCounts;
 }
+

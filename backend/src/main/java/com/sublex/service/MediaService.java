@@ -87,6 +87,9 @@ public class MediaService {
                     .map(java.util.Map.Entry::getKey)
                     .ifPresent(dto::setDifficultyLevel);
 
+            // Overall difficulty calculation
+            dto.setOverallDifficulty(calculateOverallDifficulty(levelCounts, total));
+
             // Known-word percentage
             if (total > 0) {
                 int known = knownCountByMedia.getOrDefault(media.getId(), 0);
@@ -226,6 +229,9 @@ public class MediaService {
                 .map(java.util.Map.Entry::getKey)
                 .ifPresent(dto::setDifficultyLevel);
 
+        // Overall difficulty calculation
+        dto.setOverallDifficulty(calculateOverallDifficulty(levelCounts, totalWords));
+
         // Known-word percentage
         if (userId != null && totalWords > 0) {
             Set<Long> knownWordIds = userKnownWordRepository.findByUserId(userId).stream()
@@ -262,9 +268,33 @@ public class MediaService {
     /**
      * Get subtitle content for a specific media
      */
+    /**
+     * Get subtitle content for a specific media
+     */
     public String getSubtitleContent(Long id) {
         Media media = mediaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + id));
         return media.getSubtitleContent();
+    }
+
+    /**
+     * Calculate overall difficulty (EASY, MEDIUM, HARD) based on level distributions
+     */
+    private String calculateOverallDifficulty(Map<String, Long> levelCounts, int totalWords) {
+        if (totalWords == 0) return "MEDIUM";
+
+        long easyCount = levelCounts.getOrDefault("A1", 0L) + levelCounts.getOrDefault("A2", 0L);
+        long hardCount = levelCounts.getOrDefault("C1", 0L) + levelCounts.getOrDefault("C2", 0L);
+
+        double easyRatio = (double) easyCount / totalWords;
+        double hardRatio = (double) hardCount / totalWords;
+
+        if (easyRatio > 0.85) { // If more than 85% of distinct words are A1/A2
+            return "EASY";
+        } else if (hardRatio > 0.05) { // If more than 5% of distinct words are C1/C2
+            return "HARD";
+        } else {
+            return "MEDIUM";
+        }
     }
 }

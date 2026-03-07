@@ -81,6 +81,10 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     toggleActive: { backgroundColor: c.PURPLE },
     toggleIcon: { fontSize: 15 },
 
+    // Study button (header)
+    studyBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1.5, borderColor: c.PURPLE, backgroundColor: c.PURPLE + '15' },
+    studyBtnText: { color: c.PURPLE, fontSize: 12, fontWeight: '700' as const },
+
     // Chips
     chipScrollWrap: { flexShrink: 0, flexGrow: 0 },
     chipScroll: { paddingHorizontal: pad, paddingBottom: 12, flexGrow: 0 },
@@ -689,6 +693,7 @@ export default function ListScreen({ listId }: { listId: number }) {
   const router = useRouter();
   const { t } = useTranslation('lists');
   const { t: tCommon } = useTranslation('common');
+  const { t: tStudy } = useTranslation('study');
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const { isTablet } = useResponsive();
@@ -953,6 +958,16 @@ export default function ListScreen({ listId }: { listId: number }) {
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title} numberOfLines={1}>{effectiveList?.name ?? '...'}</Text>
+          {!isKnownList && !isSystemList && (
+            <TouchableOpacity
+              style={styles.studyBtn}
+              onPress={() => router.push(`/study/${listId}` as any)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="school-outline" size={13} color={c.PURPLE} />
+              <Text style={styles.studyBtnText}>{tStudy('studyList')}</Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.toggleRow}>
             <TouchableOpacity
               style={[styles.toggleBtn, viewMode === 'list' && styles.toggleActive]}

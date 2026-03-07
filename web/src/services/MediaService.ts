@@ -18,6 +18,7 @@ export interface Media {
     createdAt: string;
     knownWordPercentage?: number;
     difficultyLevel?: string;
+    overallDifficulty?: string;
     levelCounts?: Record<string, number>;
 }
 

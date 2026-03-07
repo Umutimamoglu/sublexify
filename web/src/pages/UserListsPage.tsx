@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import WordListService, { type WordListDTO, type WordListWordsResponseDTO } from '@/services/WordListService';
 import WordCard from '@/components/features/WordCard';
-import { Loader2, Plus, Trash2, ChevronRight, Book, Star, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock } from 'lucide-react';
+import { Loader2, Plus, Trash2, ChevronRight, Book, Star, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock, PlayCircle } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import api from '@/services/api';
+import { useNavigate } from 'react-router-dom';
 
 const UserListsPage = () => {
     const [lists, setLists] = useState<WordListDTO[]>([]);
@@ -11,6 +12,7 @@ const UserListsPage = () => {
     const [wordsLoading, setWordsLoading] = useState(false);
     const [selectedList, setSelectedList] = useState<WordListDTO | null>(null);
     const [wordData, setWordData] = useState<WordListWordsResponseDTO | null>(null);
+    const navigate = useNavigate();
     
     // Filters
     const [filterUnknown, setFilterUnknown] = useState(false);
@@ -322,6 +324,13 @@ const UserListsPage = () => {
                                             </div>
                                             
                                             <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => navigate(`/study/${selectedList.id}`)}
+                                                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all hover:scale-105"
+                                                >
+                                                    <PlayCircle className="w-5 h-5 fill-white/20" />
+                                                    Study List
+                                                </button>
                                                 <button
                                                     onClick={() => setFilterUnknown(!filterUnknown)}
                                                     className={cn(
