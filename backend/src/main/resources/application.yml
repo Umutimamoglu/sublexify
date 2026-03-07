@@ -4,13 +4,13 @@ server:
 spring:
   application:
     name: sublex-backend
-  
+
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?reWriteBatchedInserts=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
-  
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -23,7 +23,7 @@ spring:
           batch_size: 50
           order_inserts: true
           order_updates: true
-  
+
   servlet:
     multipart:
       max-file-size: 50MB
@@ -44,7 +44,7 @@ application:
   security:
     jwt:
       secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-      expiration: 86400000 # 24 hours
+      expiration: 2592000000 # 30 days (beta — long-lived tokens)
   opensubtitles:
     api-key: ${OPENSUBTITLES_API_KEY}
     user-agent: ${OPENSUBTITLES_USER_AGENT}

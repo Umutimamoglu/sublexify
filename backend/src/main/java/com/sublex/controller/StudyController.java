@@ -5,6 +5,7 @@ import com.sublex.dto.StudyResultDTO;
 import com.sublex.service.StudyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,16 +19,18 @@ public class StudyController {
 
     @GetMapping("/next-batch")
     public ResponseEntity<List<StudyQuestionDTO>> getNextBatch(
-            @RequestParam Long userId,
+            Authentication authentication,
             @RequestParam Long listId,
             @RequestParam(defaultValue = "10") Integer size) {
+        Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(studyService.getNextBatch(userId, listId, size));
     }
 
     @PostMapping("/result")
     public ResponseEntity<Void> processStudyResults(
-            @RequestParam Long userId,
+            Authentication authentication,
             @RequestBody List<StudyResultDTO> results) {
+        Long userId = (Long) authentication.getPrincipal();
         studyService.processStudyResults(userId, results);
         return ResponseEntity.ok().build();
     }

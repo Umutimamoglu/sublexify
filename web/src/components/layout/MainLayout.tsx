@@ -1,9 +1,18 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, LayoutGrid, Settings, Sun, Moon, BookOpen, Menu, X, Shield, TrendingUp } from 'lucide-react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, LayoutGrid, Settings, Sun, Moon, BookOpen, Menu, X, Shield, TrendingUp, LogOut, LogIn, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/utils/cn';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const MainLayout = () => {
+
+    const { isAuthenticated, user, clearAuth } = useAuthStore();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        clearAuth();
+        navigate('/login');
+    };
 
     const [isDark, setIsDark] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -86,6 +95,30 @@ const MainLayout = () => {
                             >
                                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                             </button>
+
+                            {isAuthenticated ? (
+                                <div className="hidden md:flex items-center gap-2">
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                                        <User className="w-4 h-4 text-indigo-500" />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user?.name}</span>
+                                    </div>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-all"
+                                        title="Çıkış Yap"
+                                    >
+                                        <LogOut className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <Link
+                                    to="/login"
+                                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/25"
+                                >
+                                    <LogIn className="w-4 h-4" />
+                                    Giriş Yap
+                                </Link>
+                            )}
 
                             {/* Mobile menu button */}
                             <button

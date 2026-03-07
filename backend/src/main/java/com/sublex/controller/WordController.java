@@ -5,6 +5,7 @@ import com.sublex.service.UserKnownWordService;
 import com.sublex.service.WordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,8 +26,8 @@ public class WordController {
     public ResponseEntity<List<WordDTO>> searchWords(
             @RequestParam String q,
             @RequestParam(defaultValue = "en") String language,
-            @RequestParam(required = false) Long userId) {
-
+            Authentication authentication) {
+        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
         return ResponseEntity.ok(wordService.searchWords(q, language, userId));
     }
 
@@ -37,8 +38,8 @@ public class WordController {
     @GetMapping("/{id}")
     public ResponseEntity<WordDTO> getWordById(
             @PathVariable Long id,
-            @RequestParam(required = false) Long userId) {
-
+            Authentication authentication) {
+        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
         return ResponseEntity.ok(wordService.getWordById(id, userId));
     }
 
@@ -50,8 +51,8 @@ public class WordController {
     public ResponseEntity<List<WordDTO>> getFrequentWords(
             @RequestParam(defaultValue = "en") String language,
             @RequestParam(defaultValue = "100") Integer limit,
-            @RequestParam(required = false) Long userId) {
-
+            Authentication authentication) {
+        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
         return ResponseEntity.ok(wordService.getFrequentWords(language, limit, userId));
     }
 
@@ -62,8 +63,8 @@ public class WordController {
     @PostMapping("/{id}/mark-known")
     public ResponseEntity<Void> markAsKnown(
             @PathVariable Long id,
-            @RequestParam Long userId) {
-
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
         userKnownWordService.markWordAsKnown(userId, id);
         return ResponseEntity.ok().build();
     }
@@ -74,10 +75,10 @@ public class WordController {
      */
     @PostMapping("/mark-known-batch")
     public ResponseEntity<Void> markAsKnownBatch(
-            @RequestParam Long userId,
+            Authentication authentication,
             @RequestParam Long mediaId,
             @RequestParam List<String> levels) {
-
+        Long userId = (Long) authentication.getPrincipal();
         userKnownWordService.markWordsAsKnownByMediaAndLevels(userId, mediaId, levels);
         return ResponseEntity.ok().build();
     }
@@ -89,8 +90,8 @@ public class WordController {
     @DeleteMapping("/{id}/mark-known")
     public ResponseEntity<Void> unmarkAsKnown(
             @PathVariable Long id,
-            @RequestParam Long userId) {
-
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
         userKnownWordService.unmarkWordAsKnown(userId, id);
         return ResponseEntity.ok().build();
     }

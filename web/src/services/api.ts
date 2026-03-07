@@ -2,15 +2,15 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
-    // headers: {
-    //     'Content-Type': 'application/json',
-    // },
 });
 
-// Request interceptor
+// Request interceptor — attach JWT token
 api.interceptors.request.use(
     (config) => {
-        // Auth token logic removed
+        const token = localStorage.getItem('sublex-token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
     },
     (error) => {
@@ -18,10 +18,18 @@ api.interceptors.request.use(
     }
 );
 
-// Response interceptor
+// Response interceptor — handle 401 (token expired/invalid)
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('sublex-token');
+            localStorage.removeItem('sublex-user');
+            // Redirect to login if not already there
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
+        }
         return Promise.reject(error);
     }
 );

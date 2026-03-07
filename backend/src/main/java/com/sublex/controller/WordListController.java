@@ -6,6 +6,7 @@ import com.sublex.model.WordList;
 import com.sublex.service.WordListService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -19,17 +20,10 @@ public class WordListController {
 
     private final WordListService wordListService;
 
-    // Hardcoded user ID since auth is disabled
-    private final Long CURRENT_USER_ID = 1L;
-
     @GetMapping
-    public ResponseEntity<List<WordListDTO>> getUserLists() {
-        List<WordListDTO> userLists = wordListService.getUserLists(CURRENT_USER_ID);
-        // Note: Known words list is currently handled specially or returned as a
-        // WordListDTO
-        // In the interest of unification, we could add it to the userLists or return it
-        // separately
-
+    public ResponseEntity<List<WordListDTO>> getUserLists(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        List<WordListDTO> userLists = wordListService.getUserLists(userId);
         return ResponseEntity.ok(userLists);
     }
 
@@ -39,18 +33,20 @@ public class WordListController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<WordListDTO> getListById(@PathVariable Long id) {
-        return ResponseEntity.ok(wordListService.convertToDTO(wordListService.getListById(id), CURRENT_USER_ID));
+    public ResponseEntity<WordListDTO> getListById(@PathVariable Long id, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(wordListService.convertToDTO(wordListService.getListById(id), userId));
     }
 
     @PostMapping
-    public ResponseEntity<WordListDTO> createList(@RequestBody String name) {
+    public ResponseEntity<WordListDTO> createList(@RequestBody String name, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
         // Simple string body for name, might want a DTO later but this works for simple
         // string
         // Removing quotes if sent as JSON string
         String listName = name.replaceAll("^\"|\"$", "");
         return ResponseEntity.ok(
-                wordListService.convertToDTO(wordListService.createList(CURRENT_USER_ID, listName), CURRENT_USER_ID));
+                wordListService.convertToDTO(wordListService.createList(userId, listName), userId));
     }
 
     @PostMapping("/{id}/words/{wordId}")
@@ -60,8 +56,9 @@ public class WordListController {
     }
 
     @GetMapping("/containing-word/{wordId}")
-    public ResponseEntity<List<Long>> getListsContainingWord(@PathVariable Long wordId) {
-        return ResponseEntity.ok(wordListService.getListsContainingWord(CURRENT_USER_ID, wordId));
+    public ResponseEntity<List<Long>> getListsContainingWord(@PathVariable Long wordId, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(wordListService.getListsContainingWord(userId, wordId));
     }
 
     @DeleteMapping("/{id}")
@@ -77,19 +74,23 @@ public class WordListController {
     }
 
     @PostMapping("/generate/unknown")
-    public ResponseEntity<WordListDTO> generateUnknownWordsList(@RequestParam Long mediaId) {
-        return ResponseEntity.ok(wordListService.createUnknownWordsList(CURRENT_USER_ID, mediaId));
+    public ResponseEntity<WordListDTO> generateUnknownWordsList(@RequestParam Long mediaId, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(wordListService.createUnknownWordsList(userId, mediaId));
     }
 
     @GetMapping("/{id}/words")
     public ResponseEntity<WordListWordsResponseDTO> getListWords(
             @PathVariable Long id,
-            @RequestParam(required = false) Boolean onlyUnknown) {
-        return ResponseEntity.ok(wordListService.getListWords(id, CURRENT_USER_ID, onlyUnknown != null && onlyUnknown));
+            @RequestParam(required = false) Boolean onlyUnknown,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(wordListService.getListWords(id, userId, onlyUnknown != null && onlyUnknown));
     }
 
     @PostMapping("/{id}/generate/unknown")
-    public ResponseEntity<WordListDTO> createSubListFromUnknown(@PathVariable Long id) {
-        return ResponseEntity.ok(wordListService.createSubListFromUnknown(CURRENT_USER_ID, id));
+    public ResponseEntity<WordListDTO> createSubListFromUnknown(@PathVariable Long id, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(wordListService.createSubListFromUnknown(userId, id));
     }
 }
