@@ -360,6 +360,78 @@ function MarkKnownModal({
   );
 }
 
+// ─── QuizTypeModal ────────────────────────────────────────────
+function QuizTypeModal({
+  visible,
+  selectedTypes,
+  onToggleType,
+  onClose,
+  onConfirm,
+  styles,
+  c,
+}: {
+  visible: boolean;
+  selectedTypes: Set<string>;
+  onToggleType: (type: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+  styles: Styles;
+  c: Palette;
+}) {
+  const types = [
+    { id: 'MULTIPLE_CHOICE', label: 'Çoktan Seçmeli' },
+    { id: 'FILL_IN_THE_BLANKS', label: 'Boşluk Doldurma' },
+    { id: 'LISTENING', label: 'Dinleme' },
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.mkOverlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity style={styles.mkSheet} activeOpacity={1}>
+          <Text style={styles.mkTitle}>Pratik Türlerini Seçin</Text>
+          <Text style={[styles.mkWarningText, { marginBottom: 10 }]}>En az bir pratik türü seçmelisiniz.</Text>
+
+          <View style={{ gap: 12, marginBottom: 10 }}>
+            {types.map((t) => {
+              const checked = selectedTypes.has(t.id);
+              return (
+                <TouchableOpacity
+                  key={t.id}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 12,
+                    padding: 16, borderRadius: 12, borderWidth: 1,
+                    borderColor: checked ? c.PURPLE : c.BORDER,
+                    backgroundColor: checked ? c.PURPLE + '15' : c.SURFACE2,
+                  }}
+                  onPress={() => onToggleType(t.id)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={checked ? "checkbox" : "square-outline"} size={22} color={checked ? c.PURPLE : c.TEXT_S} />
+                  <Text style={{ flex: 1, color: c.TEXT_P, fontSize: 16, fontWeight: '600' }}>{t.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.mkBtnRow}>
+            <TouchableOpacity style={styles.mkCancelBtn} onPress={onClose} activeOpacity={0.8}>
+              <Text style={styles.mkCancelText}>İptal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.mkConfirmBtn, selectedTypes.size === 0 && { opacity: 0.5 }]}
+              onPress={onConfirm}
+              disabled={selectedTypes.size === 0}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.mkConfirmText}>Başla</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
 // ─── WordRow ──────────────────────────────────────────────────
 
 function WordRow({
@@ -523,10 +595,10 @@ function SwipeableWordRow({
   // Swipe hint: actually open the swipeable to reveal buttons, then close
   useEffect(() => {
     if (hintDelay == null) return;
-    const openTimer  = setTimeout(() => { swipeRef.current?.openRight(); }, hintDelay);
-    const closeTimer = setTimeout(() => { swipeRef.current?.close();     }, hintDelay + 800);
+    const openTimer = setTimeout(() => { swipeRef.current?.openRight(); }, hintDelay);
+    const closeTimer = setTimeout(() => { swipeRef.current?.close(); }, hintDelay + 800);
     return () => { clearTimeout(openTimer); clearTimeout(closeTimer); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const containerStyle = useAnimatedStyle(() => ({
@@ -588,7 +660,7 @@ function FlashCardBack({
   word,
   isKnown,
   onToggle,
-  onFlipBack,
+  onFlipBack, // Parent component'te hata vermemesi için prop'u tutuyoruz, ancak butonu kaldırdık.
   styles,
   c,
   animStyle,
@@ -603,6 +675,7 @@ function FlashCardBack({
 }) {
   const { t } = useTranslation('lists');
   const def = word.definition;
+
   return (
     <Reanimated.View style={[styles.card, styles.cardBack, animStyle]}>
       <ScrollView style={styles.cardBackInner} showsVerticalScrollIndicator={false}>
@@ -668,22 +741,32 @@ function FlashCardBack({
           </>
         )}
 
-        <View style={{ height: 60 }} />
+        {/* Butonun ScrollView içeriğinin üstüne binmemesi için alt boşluk */}
+        <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* Known toggle */}
+      {/* YENİ ALT BUTON: Bilinenlere Ekle / Çıkar (Eski Flip butonunun yerinde) */}
       <TouchableOpacity
-        style={[styles.cardKnownBtn, { position: 'absolute', top: 14, left: 14, borderColor: isKnown ? c.PURPLE : c.TEXT_S, backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent' }]}
+        style={[
+          styles.cardFlipBackBtn, // Alt konuma yerleşmesi için eski flip butonunun stilini baz alıyoruz
+          {
+            borderColor: isKnown ? c.PURPLE : c.TEXT_S,
+            backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
+            borderWidth: 1,
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }
+        ]}
         onPress={onToggle}
         activeOpacity={0.7}
       >
-        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S, marginRight: 8 }]}>✓</Text>
+        <Text style={{ color: isKnown ? c.PURPLE : c.TEXT_S, fontWeight: 'bold' }}>
+          {isKnown ? "Biliniyor" : "Öğrenildi İşaretle"}
+        </Text>
       </TouchableOpacity>
 
-      {/* Flip back */}
-      <TouchableOpacity style={styles.cardFlipBackBtn} onPress={onFlipBack}>
-        <Text style={styles.cardFlipBackText}>{t('flipBack')}</Text>
-      </TouchableOpacity>
     </Reanimated.View>
   );
 }
@@ -739,6 +822,8 @@ export default function ListScreen({ listId }: { listId: number }) {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
   const [showMarkModal, setShowMarkModal] = useState(false);
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [selectedQuizTypes, setSelectedQuizTypes] = useState<Set<string>>(new Set(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']));
   const [cardIndex, setCardIndex] = useState(0);
   const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
@@ -826,6 +911,22 @@ export default function ListScreen({ listId }: { listId: number }) {
       ],
     );
   }, [generateSubList, listId, unknownCount, t, tCommon]);
+
+  // ─── Quiz Type Selection ───────────────────────────────────
+  const handleToggleQuizType = useCallback((type: string) => {
+    setSelectedQuizTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }, []);
+
+  const handleStartStudy = useCallback(() => {
+    setShowQuizModal(false);
+    const typesStr = Array.from(selectedQuizTypes).join(',');
+    router.push(`/study/${listId}?types=${typesStr}` as any);
+  }, [listId, selectedQuizTypes, router]);
 
   // ─── Flashcard animations (Reanimated 4 + Gesture Handler) ──
   const cardX = useSharedValue(0);
@@ -961,7 +1062,7 @@ export default function ListScreen({ listId }: { listId: number }) {
           {!isKnownList && !isSystemList && (
             <TouchableOpacity
               style={styles.studyBtn}
-              onPress={() => router.push(`/study/${listId}` as any)}
+              onPress={() => setShowQuizModal(true)}
               activeOpacity={0.85}
             >
               <Ionicons name="school-outline" size={13} color={c.PURPLE} />
@@ -1148,8 +1249,8 @@ export default function ListScreen({ listId }: { listId: number }) {
                 {generating
                   ? <ActivityIndicator color="#fff" size="small" />
                   : <Text style={styles.ctaText} numberOfLines={1}>
-                      {t('createSubListCta', { count: unknownCount })}
-                    </Text>
+                    {t('createSubListCta', { count: unknownCount })}
+                  </Text>
                 }
               </TouchableOpacity>
             )}
@@ -1172,6 +1273,16 @@ export default function ListScreen({ listId }: { listId: number }) {
         onClose={() => setShowMarkModal(false)}
         onConfirm={handleMarkKnown}
         loading={marking}
+        styles={styles}
+        c={c}
+      />
+
+      <QuizTypeModal
+        visible={showQuizModal}
+        selectedTypes={selectedQuizTypes}
+        onToggleType={handleToggleQuizType}
+        onClose={() => setShowQuizModal(false)}
+        onConfirm={handleStartStudy}
         styles={styles}
         c={c}
       />

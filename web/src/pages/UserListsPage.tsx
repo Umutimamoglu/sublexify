@@ -25,6 +25,10 @@ const UserListsPage = () => {
     const [activeTab, setActiveTab] = useState<'lists' | 'rankings'>('lists');
     const [frequentWords, setFrequentWords] = useState<(any)[]>([]);
 
+    // Quiz Type Modal State
+    const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+    const [selectedQuizTypes, setSelectedQuizTypes] = useState<string[]>(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']);
+
     // Mock userId
     const userId = 1;
 
@@ -325,7 +329,7 @@ const UserListsPage = () => {
                                             
                                             <div className="flex items-center gap-2">
                                                 <button
-                                                    onClick={() => navigate(`/study/${selectedList.id}`)}
+                                                    onClick={() => setIsQuizModalOpen(true)}
                                                     className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all hover:scale-105"
                                                 >
                                                     <PlayCircle className="w-5 h-5 fill-white/20" />
@@ -485,6 +489,59 @@ const UserListsPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* Quiz Type Selection Modal */}
+            {isQuizModalOpen && selectedList && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-[#161822] rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-200 dark:border-gray-800">
+                        <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">Start Practice</h3>
+                        <p className="text-gray-500 mb-6">Which exercises would you like to do? Select at least one.</p>
+                        
+                        <div className="space-y-3 mb-8">
+                            {[
+                                { id: 'MULTIPLE_CHOICE', label: 'Çoktan Seçmeli (Multiple Choice)' },
+                                { id: 'FILL_IN_THE_BLANKS', label: 'Boşluk Doldurma (Fill in)' },
+                                { id: 'LISTENING', label: 'Dinleme (Listening)' }
+                            ].map(type => (
+                                <label key={type.id} className="flex items-center gap-3 p-4 rounded-xl border-2 border-transparent bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                                    <input 
+                                        type="checkbox" 
+                                        className="w-5 h-5 accent-indigo-600 disabled:opacity-50"
+                                        checked={selectedQuizTypes.includes(type.id)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedQuizTypes([...selectedQuizTypes, type.id]);
+                                            } else {
+                                                setSelectedQuizTypes(selectedQuizTypes.filter(t => t !== type.id));
+                                            }
+                                        }}
+                                    />
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">{type.label}</span>
+                                </label>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setIsQuizModalOpen(false)}
+                                className="flex-1 py-3 px-4 rounded-xl text-gray-500 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setIsQuizModalOpen(false);
+                                    navigate(`/study/${selectedList.id}?types=${selectedQuizTypes.join(',')}`);
+                                }}
+                                disabled={selectedQuizTypes.length === 0}
+                                className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Start
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

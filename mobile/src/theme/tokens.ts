@@ -31,6 +31,7 @@ export const Palette = {
   success500: '#22C55E',
   warning500: '#F59E0B',
   error500:   '#EF4444',
+  teal500:    '#238DA0',
 
   // CEFR Zorluk seviyeleri (A1=en kolay, C2=en zor)
   diffA1: '#22C55E',

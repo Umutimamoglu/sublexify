@@ -7,7 +7,7 @@ export interface StudyQuestion {
     exampleSentence: string;
     difficulty: string;
     questionType: 'MULTIPLE_CHOICE' | 'FILL_IN_THE_BLANKS' | 'LISTENING';
-    options?: string[];
+    choices?: string[];
 }
 
 export interface StudyResult {
@@ -16,9 +16,9 @@ export interface StudyResult {
 }
 
 const StudyService = {
-    getNextBatch: async (userId: number, listId: number, size: number = 10): Promise<StudyQuestion[]> => {
+    getNextBatch: async (userId: number, listId: number, size: number = 10, types?: string[]): Promise<StudyQuestion[]> => {
         const response = await api.get<StudyQuestion[]>('/study/next-batch', {
-            params: { userId, listId, size },
+            params: { userId, listId, size, types: types?.join(',') },
         });
         return response.data;
     },

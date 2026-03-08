@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/context/ThemeContext';
+import { Palette as TokenPalette } from '@/src/theme/tokens';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useProgressStats } from '@/src/api/queries/progress.queries';
@@ -28,9 +30,15 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     safeArea: { flex: 1, backgroundColor: c.BG },
 
     header: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
       paddingHorizontal: pad, paddingTop: 20, paddingBottom: 12,
     },
-    headerTitle: { color: c.TEXT_P, fontSize: 26, fontWeight: '900' },
+    backBtn: {
+      width: 36, height: 36, borderRadius: 10,
+      backgroundColor: isDark ? '#ffffff10' : '#00000008',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    headerTitle: { color: c.TEXT_P, fontSize: 26, fontWeight: '900', flex: 1 },
 
     separator: { height: 1, backgroundColor: isDark ? '#ffffff0f' : '#e0e0ea', marginBottom: 24 },
 
@@ -51,12 +59,12 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     },
     statIconBox: {
       width: 48, height: 48, borderRadius: 14,
-      backgroundColor: c.PURPLE + '22',
+      backgroundColor: TokenPalette.teal500 + '22',
       alignItems: 'center', justifyContent: 'center',
     },
     statIcon: { fontSize: 22 },
     statInfo: { flex: 1 },
-    statValue: { color: c.PURPLE, fontSize: 28, fontWeight: '900' },
+    statValue: { color: TokenPalette.teal500, fontSize: 28, fontWeight: '900' },
     statLabel: { color: c.TEXT_P, fontSize: 14, fontWeight: '700', marginTop: 2 },
     statDesc: { color: c.TEXT_S, fontSize: 12, marginTop: 3, lineHeight: 16 },
 
@@ -105,20 +113,21 @@ function StatCard({
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function ProgressScreen() {
-  const { theme, isDark } = useTheme();
+  const { theme, colorScheme } = useTheme();
+  const isDark = colorScheme === 'dark';
   const { t } = useTranslation('progress');
   const { isTablet } = useResponsive();
   const router = useRouter();
 
-  const c: Palette = {
+  const c = useMemo<Palette>(() => ({
     BG: theme.colors.background,
     SURFACE: theme.colors.surface,
-    SURFACE2: theme.colors.surfaceVariant ?? theme.colors.surface,
+    SURFACE2: theme.colors.surfaceSubtle,
     TEXT_P: theme.colors.textPrimary,
     TEXT_S: theme.colors.textSecondary,
-    BORDER: theme.colors.border,
+    BORDER: theme.colors.borderDefault,
     PURPLE: theme.colors.primary,
-  };
+  }), [theme]);
 
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
@@ -133,6 +142,9 @@ export default function ProgressScreen() {
 
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={18} color={c.TEXT_P} />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('title')}</Text>
         </View>
         <View style={styles.separator} />

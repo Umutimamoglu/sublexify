@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -173,8 +173,9 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function StudyScreen({ listId }: { listId: number }) {
-  const { theme, isDark } = useTheme();
+export default function StudyScreen({ listId, types }: { listId: number; types?: string[] }) {
+  const { theme, colorScheme } = useTheme();
+  const isDark = colorScheme === 'dark';
   const { t } = useTranslation('study');
   const { isTablet } = useResponsive();
   const router = useRouter();
@@ -182,16 +183,16 @@ export default function StudyScreen({ listId }: { listId: number }) {
   const c: Palette = {
     BG: theme.colors.background,
     SURFACE: theme.colors.surface,
-    SURFACE2: theme.colors.surfaceVariant ?? theme.colors.surface,
+    SURFACE2: theme.colors.surfaceSubtle,
     TEXT_P: theme.colors.textPrimary,
     TEXT_S: theme.colors.textSecondary,
-    BORDER: theme.colors.border,
+    BORDER: theme.colors.borderDefault,
     PURPLE: theme.colors.primary,
   };
 
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
-  const { data: questions = [], isLoading } = useStudyBatch(listId);
+  const { data: questions = [], isLoading } = useStudyBatch(listId, types);
   const { mutate: submitResults, isPending: submitting } = useSubmitStudyResults();
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -201,6 +202,12 @@ export default function StudyScreen({ listId }: { listId: number }) {
   const [fillValue, setFillValue] = useState('');
   const [fillFocused, setFillFocused] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+
+  const handleNextRef = useRef<() => void>(null);
+
+  useEffect(() => {
+    handleNextRef.current = handleNext;
+  });
 
   const question = questions[currentIndex];
   const total = questions.length;
@@ -216,6 +223,11 @@ export default function StudyScreen({ listId }: { listId: number }) {
     setRevealed(true);
     const isCorrect = choice === question.correctAnswer;
     setAnswers((prev) => [...prev, { wordId: question.wordId, isCorrect }]);
+    if (isCorrect) {
+      setTimeout(() => {
+        handleNextRef.current?.();
+      }, 1000); // Wait 1 second before auto-advancing
+    }
   }, [revealed, question]);
 
   const handleFillCheck = useCallback(() => {
@@ -223,6 +235,11 @@ export default function StudyScreen({ listId }: { listId: number }) {
     const isCorrect = fillValue.trim().toLowerCase() === question.correctAnswer.toLowerCase();
     setRevealed(true);
     setAnswers((prev) => [...prev, { wordId: question.wordId, isCorrect }]);
+    if (isCorrect) {
+      setTimeout(() => {
+        handleNextRef.current?.();
+      }, 1000); // Wait 1 second before auto-advancing
+    }
   }, [fillValue, revealed, question]);
 
   const handleNext = useCallback(() => {
@@ -312,29 +329,33 @@ export default function StudyScreen({ listId }: { listId: number }) {
               {question && t(`questionTypes.${question.questionType}`)}
             </Text>
 
-            {/* Word / sentence card */}
-            {question?.questionType === 'FILL_IN_THE_BLANKS' ? (
-              <View style={styles.sentenceCard}>
-                <Text style={styles.sentenceText}>
-                  {question.contextSentence ?? question.word}
+            {/* Top Card */}
+            {question?.questionType === 'LISTENING' ? (
+              <View style={[styles.wordCard, { paddingVertical: 40, gap: 16 }]}>
+                <TouchableOpacity
+                  style={{
+                    width: 72, height: 72, borderRadius: 36,
+                    backgroundColor: c.PURPLE + '20',
+                    alignItems: 'center', justifyContent: 'center', alignSelf: 'center'
+                  }}
+                  onPress={handleListen} activeOpacity={0.8}
+                >
+                  <Ionicons name="volume-high" size={36} color={c.PURPLE} />
+                </TouchableOpacity>
+                <Text style={{ color: c.TEXT_S, textAlign: 'center', fontSize: 16 }}>
+                  Dinlemek için tıklayın
                 </Text>
               </View>
             ) : (
               <View style={styles.wordCard}>
-                <Text style={styles.wordText}>{question?.definition}</Text>
+                <Text style={styles.wordText} adjustsFontSizeToFit numberOfLines={4}>
+                  {question?.definition}
+                </Text>
               </View>
             )}
 
-            {/* Listen button (LISTENING type) */}
-            {question?.questionType === 'LISTENING' && (
-              <TouchableOpacity style={styles.listenBtn} onPress={handleListen} activeOpacity={0.8}>
-                <Ionicons name="volume-high-outline" size={18} color={c.PURPLE} />
-                <Text style={styles.listenText}>{t('listen')}</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Choices (MULTIPLE_CHOICE / LISTENING) */}
-            {question?.questionType !== 'FILL_IN_THE_BLANKS' && (
+            {/* Choices (MULTIPLE_CHOICE) */}
+            {question?.questionType === 'MULTIPLE_CHOICE' && (
               <View style={styles.choicesGrid}>
                 {question?.choices?.map((choice) => {
                   const isSelected = selectedChoice === choice;
@@ -363,8 +384,8 @@ export default function StudyScreen({ listId }: { listId: number }) {
               </View>
             )}
 
-            {/* Fill in the blanks input */}
-            {question?.questionType === 'FILL_IN_THE_BLANKS' && !revealed && (
+            {/* Text Input (FILL_IN_THE_BLANKS / LISTENING) */}
+            {(question?.questionType === 'FILL_IN_THE_BLANKS' || question?.questionType === 'LISTENING') && !revealed && (
               <View style={styles.fillRow}>
                 <TextInput
                   style={[styles.fillInput, fillFocused && styles.fillInputFocused]}
@@ -410,17 +431,19 @@ export default function StudyScreen({ listId }: { listId: number }) {
                   )}
                 </View>
 
-                <TouchableOpacity
-                  style={[styles.nextBtn, submitting && { opacity: 0.6 }]}
-                  onPress={handleNext}
-                  disabled={submitting}
-                  activeOpacity={0.85}
-                >
-                  {submitting
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.nextText}>{t('next')}</Text>
-                  }
-                </TouchableOpacity>
+                {(!answers[answers.length - 1]?.isCorrect || currentIndex === questions.length - 1) && (
+                  <TouchableOpacity
+                    style={[styles.nextBtn, submitting && { opacity: 0.6 }]}
+                    onPress={handleNext}
+                    disabled={submitting}
+                    activeOpacity={0.85}
+                  >
+                    {submitting
+                      ? <ActivityIndicator color="#fff" />
+                      : <Text style={styles.nextText}>{t('next')}</Text>
+                    }
+                  </TouchableOpacity>
+                )}
               </>
             )}
 

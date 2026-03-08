@@ -45,6 +45,7 @@ export default function RootLayout() {
                 <Stack.Screen name="media/[id]" />
                 <Stack.Screen name="show/[imdbId]" />
                 <Stack.Screen name="word/[id]" />
+                <Stack.Screen name="progress" />
               </Stack>
             </AuthProvider>
           </ThemeProvider>

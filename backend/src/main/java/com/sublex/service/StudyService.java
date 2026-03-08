@@ -30,7 +30,7 @@ public class StudyService {
     private final WordRepository wordRepository;
     private final UserRepository userRepository;
 
-    public List<StudyQuestionDTO> getNextBatch(Long userId, Long listId, int size) {
+    public List<StudyQuestionDTO> getNextBatch(Long userId, Long listId, int size, List<String> types) {
         WordList list = wordListRepository.findById(listId)
                 .orElseThrow(() -> new RuntimeException("List not found"));
 
@@ -63,8 +63,9 @@ public class StudyService {
         List<Word> batch = allWords.stream().limit(size).collect(Collectors.toList());
         
         List<StudyQuestionDTO> questions = new ArrayList<>();
+        java.util.Random rnd = new java.util.Random();
         for (Word word : batch) {
-            String questionType = determineQuestionType(getProgress(progresses, word.getId()));
+            String questionType = determineQuestionType(getProgress(progresses, word.getId()), types, rnd);
             
             String definitionText = "No definition available";
             String exampleSentence = null;
@@ -114,7 +115,28 @@ public class StudyService {
         return (double) (p.getSuccessCount() + 1) / (p.getReviewCount() + 2);
     }
 
-    private String determineQuestionType(UserWordProgress p) {
+    private String determineQuestionType(UserWordProgress p, List<String> types, java.util.Random rnd) {
+        if (types != null && !types.isEmpty()) {
+            List<String> parsedTypes = new ArrayList<>();
+            for (String t : types) {
+                if (t == null || t.trim().isEmpty()) continue;
+                if (t.contains(",")) {
+                    for (String splitT : t.split(",")) {
+                        String s = splitT.trim();
+                        if (!s.isEmpty()) parsedTypes.add(s);
+                    }
+                } else {
+                    parsedTypes.add(t.trim());
+                }
+            }
+            if (!parsedTypes.isEmpty()) {
+                String chosen = parsedTypes.get(rnd.nextInt(parsedTypes.size()));
+                // System.out.println("Parsed types: " + parsedTypes + " -> Chosen: " + chosen);
+                return chosen;
+            }
+        }
+        
+        // Default SRS logic if no types are provided or if provided list was empty
         if (p == null || p.getSuccessCount() < 2) {
             return "MULTIPLE_CHOICE";
         } else if (p.getSuccessCount() < 5) {

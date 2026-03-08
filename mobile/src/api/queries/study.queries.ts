@@ -4,15 +4,16 @@ import { ENDPOINTS } from '@/src/api/endpoints';
 import type { StudyQuestionDTO, StudyResultDTO } from '@/src/types/api';
 
 export const studyKeys = {
-  batch: (listId: number) => ['study', 'batch', listId] as const,
+  batch: (listId: number, types?: string[]) => ['study', 'batch', listId, types] as const,
 };
 
-export function useStudyBatch(listId: number) {
+export function useStudyBatch(listId: number, types?: string[]) {
   return useQuery<StudyQuestionDTO[]>({
-    queryKey: studyKeys.batch(listId),
+    queryKey: studyKeys.batch(listId, types),
     queryFn: async () => {
+      const typesQuery = types && types.length > 0 ? `&types=${types.join(',')}` : '';
       const res = await apiClient.get<StudyQuestionDTO[]>(
-        `${ENDPOINTS.study.nextBatch}?userId=1&listId=${listId}&size=10`,
+        `${ENDPOINTS.study.nextBatch}?userId=1&listId=${listId}&size=10${typesQuery}`,
       );
       return res.data;
     },

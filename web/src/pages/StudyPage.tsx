@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import StudyService, { StudyQuestion, StudyResult } from '@/services/StudyService';
 import { Loader2, X, Check, ArrowRight, Volume2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 const StudyPage = () => {
     const { listId } = useParams<{ listId: string }>();
+    const [searchParams] = useSearchParams();
+    const typesParam = searchParams.get('types');
     const navigate = useNavigate();
     const userId = 1; // sprint 4 auth mock
 
@@ -21,15 +23,21 @@ const StudyPage = () => {
     // For specific question types
     const [fillInAnswer, setFillInAnswer] = useState('');
     
+    const handleNextRef = useRef<() => void>(null);
+    
     useEffect(() => {
         loadBatch();
     }, [listId]);
+
+    useEffect(() => {
+        handleNextRef.current = handleNext;
+    });
 
     const loadBatch = async () => {
         if (!listId) return;
         setLoading(true);
         try {
-            const batch = await StudyService.getNextBatch(userId, Number(listId), 10);
+            const batch = await StudyService.getNextBatch(userId, Number(listId), 10, typesParam ? typesParam.split(',') : undefined);
             setQuestions(batch);
             setCurrentIndex(0);
             setResults([]);
@@ -52,6 +60,14 @@ const StudyPage = () => {
             wordId: currentQ.wordId,
             isCorrect
         }]);
+
+        if (isCorrect) {
+            setTimeout(() => {
+                if (handleNextRef.current) {
+                    handleNextRef.current();
+                }
+            }, 1000); // Wait 1 second before auto-advancing
+        }
     };
 
     const handleNext = async () => {
@@ -65,7 +81,7 @@ const StudyPage = () => {
             try {
                 await StudyService.processStudyResults(userId, results);
                 // After saving, load next batch or go back
-                const nextBatch = await StudyService.getNextBatch(userId, Number(listId), 10);
+                const nextBatch = await StudyService.getNextBatch(userId, Number(listId), 10, typesParam ? typesParam.split(',') : undefined);
                 if (nextBatch.length > 0) {
                     setQuestions(nextBatch);
                     setCurrentIndex(0);
@@ -152,7 +168,7 @@ const StudyPage = () => {
                 <div className="mt-auto">
                     {currentQ.questionType === 'MULTIPLE_CHOICE' && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {currentQ.options?.map((opt, i) => (
+                            {currentQ.choices?.map((opt, i) => (
                                 <button
                                     key={i}
                                     onClick={() => handleAnswer(opt === currentQ.word)}
@@ -200,7 +216,6 @@ const StudyPage = () => {
                     )}
                 </div>
 
-                {/* Feedback & Next Button */}
                 {isCurrentAnswered && (
                     <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between animate-in fade-in slide-in-from-bottom-4">
                         <div className="flex items-center gap-3">
@@ -227,14 +242,16 @@ const StudyPage = () => {
                             })()}
                         </div>
                         
-                        <button
-                            onClick={handleNext}
-                            disabled={saving}
-                            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/25"
-                        >
-                            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : (currentIndex === questions.length - 1 ? 'Finish' : 'Next')}
-                            {!saving && <ArrowRight className="w-5 h-5" />}
-                        </button>
+                        {(!results[results.length - 1]?.isCorrect || currentIndex === questions.length - 1) && (
+                            <button
+                                onClick={handleNext}
+                                disabled={saving}
+                                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/25"
+                            >
+                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : (currentIndex === questions.length - 1 ? 'Finish' : 'Next')}
+                                {!saving && <ArrowRight className="w-5 h-5" />}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
