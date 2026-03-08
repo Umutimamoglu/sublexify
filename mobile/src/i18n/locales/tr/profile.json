@@ -11,7 +11,10 @@
   "language": "Dil",
   "languageEn": "İngilizce",
   "languageTr": "Türkçe",
+  "knownWordsDesc": "öğrendiğin kelimeler",
+  "totalWordsDesc": "uygulamadaki toplam kelime",
   "account": "Hesap",
   "signOut": "Çıkış Yap",
+  "signOutDesc": "Hesabından çıkış yapılacak",
   "version": "Sürüm"
 }

@@ -11,7 +11,10 @@
   "language": "Language",
   "languageEn": "English",
   "languageTr": "Turkish",
+  "knownWordsDesc": "words you've learned",
+  "totalWordsDesc": "words available in the app",
   "account": "Account",
   "signOut": "Sign Out",
+  "signOutDesc": "You will be logged out of your account",
   "version": "Version"
 }
