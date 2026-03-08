@@ -660,24 +660,30 @@ function FlashCardBack({
   word,
   isKnown,
   onToggle,
-  onFlipBack, // Parent component'te hata vermemesi için prop'u tutuyoruz, ancak butonu kaldırdık.
+  onFlipBack,
+  onButtonPressIn,
+  onButtonPressOut,
   styles,
   c,
   animStyle,
+  pointerEvents,
 }: {
   word: ListWord;
   isKnown: boolean;
   onToggle: () => void;
   onFlipBack: () => void;
+  onButtonPressIn: () => void;
+  onButtonPressOut: () => void;
   styles: Styles;
   c: Palette;
   animStyle: any;
+  pointerEvents: 'auto' | 'none';
 }) {
   const { t } = useTranslation('lists');
   const def = word.definition;
 
   return (
-    <Reanimated.View style={[styles.card, styles.cardBack, animStyle]}>
+    <Reanimated.View style={[styles.card, styles.cardBack, animStyle]} pointerEvents={pointerEvents}>
       <ScrollView style={styles.cardBackInner} showsVerticalScrollIndicator={false}>
         <Text style={styles.cardBackWord}>{word.word}</Text>
 
@@ -745,26 +751,17 @@ function FlashCardBack({
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* YENİ ALT BUTON: Bilinenlere Ekle / Çıkar (Eski Flip butonunun yerinde) */}
       <TouchableOpacity
-        style={[
-          styles.cardFlipBackBtn, // Alt konuma yerleşmesi için eski flip butonunun stilini baz alıyoruz
-          {
-            borderColor: isKnown ? c.PURPLE : c.TEXT_S,
-            backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
-            borderWidth: 1,
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }
-        ]}
+        style={[styles.cardKnownBtn, {
+          borderColor: isKnown ? c.PURPLE : c.TEXT_S,
+          backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
+        }]}
         onPress={onToggle}
+        onPressIn={onButtonPressIn}
+        onPressOut={onButtonPressOut}
         activeOpacity={0.7}
       >
-        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S, marginRight: 8 }]}>✓</Text>
-        <Text style={{ color: isKnown ? c.PURPLE : c.TEXT_S, fontWeight: 'bold' }}>
-          {isKnown ? "Biliniyor" : "Öğrenildi İşaretle"}
-        </Text>
+        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
       </TouchableOpacity>
 
     </Reanimated.View>
@@ -827,6 +824,7 @@ export default function ListScreen({ listId }: { listId: number }) {
   const [cardIndex, setCardIndex] = useState(0);
   const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
+  const [isFlippedState, setIsFlippedState] = useState(false);
   const knownInitialized = useRef(false);
   const hintShown = useRef(false);
 
@@ -945,6 +943,7 @@ export default function ListScreen({ listId }: { listId: number }) {
   useEffect(() => {
     flipProgress.value = 0;
     isFlipped.value = false;
+    setIsFlippedState(false);
   }, [cardIndex]);
 
   const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
@@ -976,6 +975,7 @@ export default function ListScreen({ listId }: { listId: number }) {
     const next = !isFlipped.value;
     isFlipped.value = next;
     flipProgress.value = withTiming(next ? 1 : 0, { duration: 380, easing: Easing.inOut(Easing.ease) });
+    setIsFlippedState(next);
   }, [flipProgress, isFlipped]);
 
   // Gestures
@@ -1154,7 +1154,7 @@ export default function ListScreen({ listId }: { listId: number }) {
                 <Reanimated.View style={[styles.cardStack, cardContainerStyle]}>
 
                   {/* Front */}
-                  <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]}>
+                  <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]} pointerEvents={isFlippedState ? 'none' : 'auto'}>
                     <Text style={styles.cardBigWord}>{currentWord.word}</Text>
                     <TouchableOpacity
                       style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
@@ -1207,9 +1207,12 @@ export default function ListScreen({ listId }: { listId: number }) {
                     isKnown={knownIds.has(currentWord.id)}
                     onToggle={() => handleToggle(currentWord.id)}
                     onFlipBack={doFlip}
+                    onButtonPressIn={() => { buttonActiveRef.current = true; }}
+                    onButtonPressOut={() => { buttonActiveRef.current = false; }}
                     styles={styles}
                     c={c}
                     animStyle={backAnimStyle}
+                    pointerEvents={isFlippedState ? 'auto' : 'none'}
                   />
                 </Reanimated.View>
               </GestureDetector>
