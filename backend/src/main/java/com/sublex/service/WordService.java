@@ -37,6 +37,7 @@ public class WordService {
 
         Set<Long> finalKnownWordIds = knownWordIds;
         return words.stream()
+                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                 .map(word -> convertToDTO(word, finalKnownWordIds.contains(word.getId())))
                 .collect(Collectors.toList());
     }

@@ -129,7 +129,9 @@ public class MediaService {
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
-        List<MediaWord> mediaWords = mediaWordRepository.findByMediaId(mediaId);
+        List<MediaWord> mediaWords = mediaWordRepository.findByMediaId(mediaId).stream()
+                .filter(mw -> !Boolean.TRUE.equals(mw.getWord().getIsProperNoun()))
+                .collect(Collectors.toList());
 
         // Get user's known words if userId provided
         Set<Long> knownWordIds = Set.of();
@@ -197,7 +199,10 @@ public class MediaService {
      * Convert Media entity to DTO with personalized difficulty
      */
     private MediaDTO convertToDTO(Media media, Long userId) {
-        int totalWords = mediaWordRepository.countByMediaId(media.getId());
+        List<MediaWord> mediaWords = mediaWordRepository.findByMediaId(media.getId()).stream()
+                .filter(mw -> !Boolean.TRUE.equals(mw.getWord().getIsProperNoun()))
+                .collect(Collectors.toList());
+        int totalWords = mediaWords.size();
 
         MediaDTO dto = new MediaDTO();
         dto.setId(media.getId());
@@ -216,7 +221,6 @@ public class MediaService {
         dto.setCreatedAt(media.getCreatedAt());
 
         // Calculate level counts (A1, A2, B1, B2, C1, C2)
-        List<MediaWord> mediaWords = mediaWordRepository.findByMediaId(media.getId());
         java.util.Map<String, Long> levelCounts = mediaWords.stream()
                 .map(MediaWord::getWord)
                 .filter(w -> w.getDifficulty() != null)

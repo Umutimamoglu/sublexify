@@ -115,6 +115,7 @@ public class WordListService {
                 // Filter for unknown words
                 List<Word> unknownWords = mediaWords.stream()
                                 .map(MediaWord::getWord)
+                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .filter(word -> !knownWordIds.contains(word.getId()))
                                 .collect(Collectors.toList());
 
@@ -157,17 +158,23 @@ public class WordListService {
 
                 // Filter and convert to DTOs
                 List<WordDTO> words = wordList.getWords().stream()
+                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .map(word -> convertToWordDTO(word, knownWordIds.contains(word.getId())))
                                 .filter(w -> !onlyUnknown || !w.getIsKnown())
                                 .collect(Collectors.toList());
 
                 // Calculate stats
-                int totalWords = wordList.getWords().size();
+                long properNounCount = wordList.getWords().stream()
+                                .filter(word -> Boolean.TRUE.equals(word.getIsProperNoun()))
+                                .count();
+                int totalWords = (int) (wordList.getWords().size() - properNounCount);
                 int unknownCount = (int) wordList.getWords().stream()
+                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .filter(word -> !knownWordIds.contains(word.getId()))
                                 .count();
 
                 java.util.Map<String, Long> levelCounts = wordList.getWords().stream()
+                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .filter(w -> w.getDifficulty() != null)
                                 .collect(Collectors.groupingBy(Word::getDifficulty, Collectors.counting()));
 
@@ -194,6 +201,7 @@ public class WordListService {
                                 .collect(Collectors.toSet());
 
                 List<Word> unknownWords = sourceList.getWords().stream()
+                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .filter(word -> !knownWordIds.contains(word.getId()))
                                 .collect(Collectors.toList());
 
@@ -213,7 +221,10 @@ public class WordListService {
                 dto.setCreatedAt(list.getCreatedAt());
                 dto.setIsSystem(list.getIsSystem());
 
-                int totalWords = list.getWords().size();
+                long properNounCount = list.getWords().stream()
+                                .filter(word -> Boolean.TRUE.equals(word.getIsProperNoun()))
+                                .count();
+                int totalWords = (int) (list.getWords().size() - properNounCount);
                 dto.setTotalWords(totalWords);
 
                 if (userId != null) {
@@ -222,12 +233,14 @@ public class WordListService {
                                         .collect(Collectors.toSet());
 
                         long unknownCount = list.getWords().stream()
+                                        .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                         .filter(word -> !knownWordIds.contains(word.getId()))
                                         .count();
                         dto.setUnknownWords((int) unknownCount);
                 }
 
                 java.util.Map<String, Long> levelCounts = list.getWords().stream()
+                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .filter(w -> w.getDifficulty() != null)
                                 .collect(Collectors.groupingBy(Word::getDifficulty, Collectors.counting()));
                 dto.setLevelCounts(levelCounts);
@@ -263,6 +276,7 @@ public class WordListService {
 
                 Set<Word> words = knownWords.stream()
                                 .map(UserKnownWord::getWord)
+                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .collect(Collectors.toSet());
 
                 wordList.setWords(words);

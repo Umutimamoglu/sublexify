@@ -22,6 +22,7 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
 
        @Query("SELECT mw FROM MediaWord mw " +
                      "WHERE mw.media.id = :mediaId " +
+                     "AND (mw.word.isProperNoun IS NULL OR mw.word.isProperNoun = false) " +
                      "AND mw.word.id NOT IN " +
                      "(SELECT ukw.word.id FROM UserKnownWord ukw WHERE ukw.user.id = :userId) " +
                      "ORDER BY mw.count DESC")
@@ -32,17 +33,19 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
        @org.springframework.transaction.annotation.Transactional
        void deleteByMediaId(Long mediaId);
 
-       @Query("SELECT mw.media.id, COUNT(mw) FROM MediaWord mw GROUP BY mw.media.id")
+       @Query("SELECT mw.media.id, COUNT(mw) FROM MediaWord mw WHERE mw.word.isProperNoun IS NULL OR mw.word.isProperNoun = false GROUP BY mw.media.id")
        List<Object[]> countAllByMediaId();
 
        @Query("SELECT mw.media.id, mw.word.difficulty, COUNT(mw) FROM MediaWord mw " +
                      "WHERE mw.word.difficulty IS NOT NULL " +
+                     "AND (mw.word.isProperNoun IS NULL OR mw.word.isProperNoun = false) " +
                      "GROUP BY mw.media.id, mw.word.difficulty")
        List<Object[]> findLevelCountsAllMedia();
 
        @Query("SELECT mw.media.id, COUNT(DISTINCT mw.word.id) FROM MediaWord mw " +
                      "WHERE mw.word.id IN " +
                      "(SELECT ukw.word.id FROM UserKnownWord ukw WHERE ukw.user.id = :userId) " +
+                     "AND (mw.word.isProperNoun IS NULL OR mw.word.isProperNoun = false) " +
                      "GROUP BY mw.media.id")
        List<Object[]> countKnownWordsPerMedia(@Param("userId") Long userId);
 }

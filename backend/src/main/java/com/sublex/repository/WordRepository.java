@@ -128,6 +128,6 @@ public interface WordRepository extends JpaRepository<Word, Long> {
     @Query(value = "UPDATE word w SET global_frequency = (SELECT COALESCE(SUM(mw.count), 0) FROM media_word mw WHERE mw.word_id = w.id)", nativeQuery = true)
     void updateGlobalFrequencies();
 
-    @Query("SELECT w FROM Word w WHERE w.language = :language AND w.globalFrequency > 0 ORDER BY w.globalFrequency DESC")
+    @Query("SELECT w FROM Word w WHERE w.language = :language AND w.globalFrequency > 0 AND (w.isProperNoun IS NULL OR w.isProperNoun = false) ORDER BY w.globalFrequency DESC")
     List<Word> findTopFrequentWords(@Param("language") String language, org.springframework.data.domain.Pageable pageable);
 }
