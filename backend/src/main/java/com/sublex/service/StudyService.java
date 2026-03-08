@@ -78,12 +78,13 @@ public class StudyService {
                 .wordId(word.getId())
                 .word(word.getWord())
                 .definition(definitionText)
-                .exampleSentence(exampleSentence)
+                .contextSentence(exampleSentence)
                 .questionType(questionType)
                 .difficulty(word.getDifficulty())
+                .correctAnswer(word.getWord())
                 .build();
-                
-            if ("MULTIPLE_CHOICE".equals(questionType)) {
+
+            if ("MULTIPLE_CHOICE".equals(questionType) || "LISTENING".equals(questionType)) {
                 List<String> options = new ArrayList<>();
                 options.add(word.getWord());
                 List<Word> distractors = new ArrayList<>(allWords);
@@ -94,10 +95,10 @@ public class StudyService {
                     }
                 }
                 while (options.size() < 4) {
-                    options.add("dummy_" + options.size()); 
+                    options.add("dummy_" + options.size());
                 }
                 Collections.shuffle(options);
-                dto.setOptions(options);
+                dto.setChoices(options);
             }
             questions.add(dto);
         }

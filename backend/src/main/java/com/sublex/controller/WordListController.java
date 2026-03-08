@@ -23,7 +23,9 @@ public class WordListController {
     @GetMapping
     public ResponseEntity<List<WordListDTO>> getUserLists(Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
+        org.slf4j.LoggerFactory.getLogger(WordListController.class).info("Fetching lists for user: {}", userId);
         List<WordListDTO> userLists = wordListService.getUserLists(userId);
+        org.slf4j.LoggerFactory.getLogger(WordListController.class).info("Found {} lists for user: {}", userLists.size(), userId);
         return ResponseEntity.ok(userLists);
     }
 

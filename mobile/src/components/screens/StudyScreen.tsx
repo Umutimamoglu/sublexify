@@ -321,7 +321,7 @@ export default function StudyScreen({ listId }: { listId: number }) {
               </View>
             ) : (
               <View style={styles.wordCard}>
-                <Text style={styles.wordText}>{question?.word}</Text>
+                <Text style={styles.wordText}>{question?.definition}</Text>
               </View>
             )}
 
@@ -336,7 +336,7 @@ export default function StudyScreen({ listId }: { listId: number }) {
             {/* Choices (MULTIPLE_CHOICE / LISTENING) */}
             {question?.questionType !== 'FILL_IN_THE_BLANKS' && (
               <View style={styles.choicesGrid}>
-                {question?.choices.map((choice) => {
+                {question?.choices?.map((choice) => {
                   const isSelected = selectedChoice === choice;
                   const isCorrect = isCorrectChoice(choice);
                   const choiceStyle = revealed
