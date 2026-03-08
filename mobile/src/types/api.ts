@@ -119,6 +119,7 @@ export type QuestionType = 'MULTIPLE_CHOICE' | 'FILL_IN_THE_BLANKS' | 'LISTENING
 export type StudyQuestionDTO = {
   wordId: number;
   word: string;
+  definition: string;
   questionType: QuestionType;
   choices: string[];
   contextSentence: string | null;
