@@ -51,7 +51,6 @@ public class JwtUtils {
             getClaims(token);
             return true;
         } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(JwtUtils.class).error("JWT Validation failed: {}", e.getMessage());
             return false;
         }
     }

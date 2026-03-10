@@ -38,22 +38,16 @@ apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log(`[API AUTH] Attached Token: Bearer ${token.substring(0, 15)}...`);
-  } else {
-    console.log(`[API AUTH] No Token Found in Store!`);
   }
-  console.log(`[API ${config.method?.toUpperCase()}] Req: ${config.baseURL}${config.url}`);
   return config;
 });
 
 // 401 gelirse auth'u temizle
 apiClient.interceptors.response.use(
   (res) => {
-    console.log(`[API RES] ${res.config.url} -> Status: ${res.status}`);
     return res;
   },
   (err) => {
-    console.log(`[API ERR] ${err.config?.url} ->`, err.message, err.response?.data);
     if (err.response?.status === 401 || err.response?.status === 403) {
       useAuthStore.getState().clearAuth();
     }
