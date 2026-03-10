@@ -131,9 +131,6 @@ public class GeminiService implements AIService {
                 "response_mime_type", "application/json"));
 
         try {
-            String jsonBody = objectMapper.writeValueAsString(requestBodyMap);
-            log.info("DEBUG GEMINI REQUEST BODY: {}", jsonBody);
-
             String response = restClient.post()
                     .uri(GEMINI_BASE_URL + model + ":generateContent?key=" + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -145,7 +142,6 @@ public class GeminiService implements AIService {
                 log.error("Gemini returned null response body");
                 return null;
             }
-            log.info("DEBUG RAW GEMINI RESPONSE: {}", response);
 
             Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
             List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseMap.get("candidates");
@@ -163,7 +159,7 @@ public class GeminiService implements AIService {
                 return null;
 
             String rawText = (String) parts.get(0).get("text");
-            System.out.println("DEBUG RAW GEMINI RESPONSE: " + rawText);
+
             return rawText;
 
         } catch (Exception e) {
