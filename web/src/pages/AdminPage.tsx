@@ -4,6 +4,7 @@ import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Downloa
 import MediaService from '@/services/MediaService';
 import type { TmdbMedia, TmdbSeasonDetails } from '@/services/MediaService';
 import JudgeReviewPanel from '@/components/JudgeReviewPanel';
+import PipelineControlPanel from '@/components/PipelineControlPanel';
 
 const AdminPage = () => {
     const [files, setFiles] = useState<File[]>([]);
@@ -371,6 +372,11 @@ const AdminPage = () => {
 
             {/* Judge Review Panel */}
             <JudgeReviewPanel />
+
+            {/* Pipeline Control Panel */}
+            <div className="mb-8">
+                <PipelineControlPanel />
+            </div>
 
             {/* Stats Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

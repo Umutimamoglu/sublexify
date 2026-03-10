@@ -16,14 +16,49 @@ public class ProgressService {
     private final UserWordProgressRepository userWordProgressRepository;
 
     public ProgressStatsDTO getStats(Long userId) {
-        Long total = userWordProgressRepository.countByUserId(userId);
+        Long totalLearnt = userWordProgressRepository.countByUserId(userId);
+        Long totalStudied = userWordProgressRepository.countWordsStudiedByUserId(userId);
         Long highRetention = userWordProgressRepository.countHighRetentionWordsByUserId(userId);
         Long toReview = userWordProgressRepository.countWordsToReviewByUserId(userId);
-        
+
         return ProgressStatsDTO.builder()
-                .totalWordsStudied(total != null ? total : 0)
+                .totalWordsLearnt(totalLearnt != null ? totalLearnt : 0)
+                .totalWordsStudied(totalStudied != null ? totalStudied : 0)
                 .highRetentionWords(highRetention != null ? highRetention : 0)
                 .wordsToReviewToday(toReview != null ? toReview : 0)
                 .build();
+    }
+
+    public List<com.sublex.dto.WordDTO> getLearntWords(Long userId) {
+        return mapToWordDTOs(userWordProgressRepository.findLearntWordsByUserId(userId));
+    }
+
+    public List<com.sublex.dto.WordDTO> getStudiedWords(Long userId) {
+        return mapToWordDTOs(userWordProgressRepository.findStudiedWordsByUserId(userId));
+    }
+
+    public List<com.sublex.dto.WordDTO> getDueWords(Long userId) {
+        return mapToWordDTOs(userWordProgressRepository.findDueWordsByUserId(userId));
+    }
+
+    public List<com.sublex.dto.WordDTO> getMasteredWords(Long userId) {
+        return mapToWordDTOs(userWordProgressRepository.findMasteredWordsByUserId(userId));
+    }
+
+    private List<com.sublex.dto.WordDTO> mapToWordDTOs(List<UserWordProgress> progressList) {
+        return progressList.stream()
+                .map(p -> {
+                    com.sublex.model.Word word = p.getWord();
+                    com.sublex.dto.WordDTO dto = new com.sublex.dto.WordDTO();
+                    dto.setId(word.getId());
+                    dto.setWord(word.getWord());
+                    dto.setLanguage(word.getLanguage());
+                    dto.setDifficulty(word.getDifficulty());
+                    dto.setIsKnown(true);
+                    dto.setIsEnriched(word.getIsEnriched());
+                    dto.setIsProperNoun(word.getIsProperNoun());
+                    return dto;
+                })
+                .collect(java.util.stream.Collectors.toList());
     }
 }

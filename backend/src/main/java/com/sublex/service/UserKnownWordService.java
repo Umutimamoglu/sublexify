@@ -4,9 +4,12 @@ import com.sublex.dto.WordDTO;
 import com.sublex.model.User;
 import com.sublex.model.UserKnownWord;
 import com.sublex.model.Word;
+import com.sublex.model.UserWordProgress;
 import com.sublex.repository.UserKnownWordRepository;
 import com.sublex.repository.UserRepository;
 import com.sublex.repository.WordRepository;
+import com.sublex.repository.WordListRepository;
+import com.sublex.repository.UserWordProgressRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +28,8 @@ public class UserKnownWordService {
     private final UserRepository userRepository;
     private final WordRepository wordRepository;
     private final UserKnownWordRepository userKnownWordRepository;
+    private final WordListRepository wordListRepository;
+    private final UserWordProgressRepository userWordProgressRepository;
 
     /**
      * Mark a word as known by user
@@ -47,6 +53,8 @@ public class UserKnownWordService {
         userKnownWord.setMarkedAt(LocalDateTime.now());
 
         userKnownWordRepository.save(userKnownWord);
+
+        initProgressIfEligible(user, word);
     }
 
     /**
@@ -76,6 +84,26 @@ public class UserKnownWordService {
 
         if (!newKnownWords.isEmpty()) {
             userKnownWordRepository.saveAll(newKnownWords);
+            for (UserKnownWord ukw : newKnownWords) {
+                initProgressIfEligible(user, ukw.getWord());
+            }
+        }
+    }
+
+    private void initProgressIfEligible(User user, Word word) {
+        boolean inCustomList = wordListRepository.existsByUserIdAndIsSystemFalseAndWordId(user.getId(), word.getId());
+        if (inCustomList) {
+            Optional<UserWordProgress> opt = userWordProgressRepository.findByUserIdAndWordId(user.getId(),
+                    word.getId());
+            if (opt.isEmpty()) {
+                UserWordProgress p = new UserWordProgress();
+                p.setUser(user);
+                p.setWord(word);
+                p.setReviewCount(0);
+                p.setSuccessCount(0);
+                p.setNextReviewDate(LocalDateTime.now().plusDays(1));
+                userWordProgressRepository.save(p);
+            }
         }
     }
 

@@ -8,6 +8,7 @@ import AdminPage from '@/pages/AdminPage';
 import UserListsPage from '@/pages/UserListsPage';
 import StudyPage from '@/pages/StudyPage';
 import ProgressDashboard from '@/pages/ProgressDashboard';
+import MasteredWordsPage from '@/pages/MasteredWordsPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -33,6 +34,7 @@ function App() {
             <Route path="lists" element={<UserListsPage />} />
             <Route path="study/:listId" element={<StudyPage />} />
             <Route path="progress" element={<ProgressDashboard />} />
+            <Route path="progress/mastered" element={<MasteredWordsPage />} />
             <Route path="admin" element={<AdminPage />} />
           </Route>
 

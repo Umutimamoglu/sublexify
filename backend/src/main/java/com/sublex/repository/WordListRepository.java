@@ -16,4 +16,9 @@ public interface WordListRepository extends JpaRepository<WordList, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT wl.id FROM WordList wl JOIN wl.words w WHERE wl.user.id = :userId AND w.id = :wordId")
     List<Long> findListIdsByUserIdAndWordId(Long userId, Long wordId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT CASE WHEN COUNT(wl) > 0 THEN true ELSE false END FROM WordList wl JOIN wl.words w WHERE wl.user.id = :userId AND wl.isSystem = false AND w.id = :wordId")
+    boolean existsByUserIdAndIsSystemFalseAndWordId(
+            @org.springframework.data.repository.query.Param("userId") Long userId,
+            @org.springframework.data.repository.query.Param("wordId") Long wordId);
 }

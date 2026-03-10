@@ -11,6 +11,7 @@ import com.sublex.repository.UserRepository;
 import com.sublex.repository.UserWordProgressRepository;
 import com.sublex.repository.WordListRepository;
 import com.sublex.repository.WordRepository;
+import com.sublex.repository.UserKnownWordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,8 @@ public class StudyServiceTest {
     private WordRepository wordRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private UserKnownWordRepository userKnownWordRepository;
 
     @InjectMocks
     private StudyService studyService;
@@ -91,19 +94,20 @@ public class StudyServiceTest {
 
         when(wordListRepository.findById(100L)).thenReturn(Optional.of(testWordList));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () ->
-            studyService.getNextBatch(1L, 100L, 5, null)
-        );
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> studyService.getNextBatch(1L, 100L, 5, null));
         assertEquals("Unauthorized", exception.getMessage());
     }
 
     @Test
     void testGetNextBatch_DeterminesQuestionTypes() {
         Word word2 = new Word();
-        word2.setId(11L); word2.setWord("banana");
-        
+        word2.setId(11L);
+        word2.setWord("banana");
+
         Word word3 = new Word();
-        word3.setId(12L); word3.setWord("cherry");
+        word3.setId(12L);
+        word3.setWord("cherry");
 
         testWordList.setWords(Set.of(testWord, word2, word3));
         when(wordListRepository.findById(100L)).thenReturn(Optional.of(testWordList));
@@ -112,16 +116,19 @@ public class StudyServiceTest {
         UserWordProgress prog2 = UserWordProgress.builder().word(word2).successCount(3).build(); // FILL_IN_THE_BLANKS
         UserWordProgress prog3 = UserWordProgress.builder().word(word3).successCount(6).build(); // LISTENING
 
-        when(userWordProgressRepository.findByUserIdAndWordIdIn(1L, List.of(10L, 11L, 12L)))
+        when(userWordProgressRepository.findByUserIdAndWordIdIn(eq(1L), any()))
                 .thenReturn(Arrays.asList(prog1, prog2, prog3));
 
         List<StudyQuestionDTO> batch = studyService.getNextBatch(1L, 100L, 5, null);
         assertEquals(3, batch.size());
 
         for (StudyQuestionDTO q : batch) {
-            if (q.getWord().equals("apple")) assertEquals("MULTIPLE_CHOICE", q.getQuestionType());
-            if (q.getWord().equals("banana")) assertEquals("FILL_IN_THE_BLANKS", q.getQuestionType());
-            if (q.getWord().equals("cherry")) assertEquals("LISTENING", q.getQuestionType());
+            if (q.getWord().equals("apple"))
+                assertEquals("MULTIPLE_CHOICE", q.getQuestionType());
+            if (q.getWord().equals("banana"))
+                assertEquals("FILL_IN_THE_BLANKS", q.getQuestionType());
+            if (q.getWord().equals("cherry"))
+                assertEquals("LISTENING", q.getQuestionType());
         }
     }
 
@@ -136,6 +143,8 @@ public class StudyServiceTest {
                 .build();
         when(userWordProgressRepository.findByUserIdAndWordId(1L, 10L))
                 .thenReturn(Optional.of(existingProgress));
+        when(userKnownWordRepository.existsByUserIdAndWordId(1L, 10L)).thenReturn(true);
+        when(wordListRepository.existsByUserIdAndIsSystemFalseAndWordId(1L, 10L)).thenReturn(true);
 
         StudyResultDTO result = new StudyResultDTO(10L, true);
 
@@ -160,6 +169,8 @@ public class StudyServiceTest {
                 .build();
         when(userWordProgressRepository.findByUserIdAndWordId(1L, 10L))
                 .thenReturn(Optional.of(existingProgress));
+        when(userKnownWordRepository.existsByUserIdAndWordId(1L, 10L)).thenReturn(true);
+        when(wordListRepository.existsByUserIdAndIsSystemFalseAndWordId(1L, 10L)).thenReturn(true);
 
         StudyResultDTO result = new StudyResultDTO(10L, false);
 

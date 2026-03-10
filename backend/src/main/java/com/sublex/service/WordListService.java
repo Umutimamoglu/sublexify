@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,10 +27,12 @@ public class WordListService {
         private final MediaWordRepository mediaWordRepository;
         private final UserKnownWordRepository userKnownWordRepository;
         private final UserMediaProgressService userMediaProgressService;
+        private final UserWordProgressRepository userWordProgressRepository;
 
         public List<WordListDTO> getUserLists(Long userId) {
+                Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
                 return wordListRepository.findAllByUserId(userId).stream()
-                                .map(list -> convertToDTO(list, userId))
+                                .map(list -> convertToDTO(list, userId, knownWordIds))
                                 .collect(Collectors.toList());
         }
 
@@ -64,6 +67,21 @@ public class WordListService {
 
                 wordList.getWords().add(word);
                 wordListRepository.save(wordList);
+
+                boolean isKnown = userKnownWordRepository.existsByUserIdAndWordId(wordList.getUser().getId(), wordId);
+                if (isKnown) {
+                        Optional<UserWordProgress> opt = userWordProgressRepository
+                                        .findByUserIdAndWordId(wordList.getUser().getId(), wordId);
+                        if (opt.isEmpty()) {
+                                UserWordProgress p = new UserWordProgress();
+                                p.setUser(wordList.getUser());
+                                p.setWord(word);
+                                p.setReviewCount(0);
+                                p.setSuccessCount(0);
+                                p.setNextReviewDate(LocalDateTime.now().plusDays(1));
+                                userWordProgressRepository.save(p);
+                        }
+                }
         }
 
         @Transactional
@@ -133,16 +151,16 @@ public class WordListService {
 
                 WordList savedList = wordListRepository.save(wordList);
 
-                // Record progress
                 userMediaProgressService.recordProgress(userId, mediaId, "STARTED");
 
-                return convertToDTO(savedList, userId);
+                return convertToDTO(savedList, userId, knownWordIds);
         }
 
         @Transactional(readOnly = true)
         public List<WordListDTO> getStandardLists() {
+                Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(1L);
                 return wordListRepository.findAllByUserId(1L).stream()
-                                .map(list -> convertToDTO(list, 1L)) // Default system user ID
+                                .map(list -> convertToDTO(list, 1L, knownWordIds)) // Default system user ID
                                 .collect(Collectors.toList());
         }
 
@@ -151,39 +169,26 @@ public class WordListService {
                 WordList wordList = wordListRepository.findById(listId)
                                 .orElseThrow(() -> new RuntimeException("List not found: " + listId));
 
-                // Get user's known words
-                Set<Long> knownWordIds = userKnownWordRepository.findByUserId(userId).stream()
-                                .map(ukw -> ukw.getWord().getId())
-                                .collect(Collectors.toSet());
+                // Get user's known words once
+                Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
 
-                // Filter and convert to DTOs
+                // Filter and convert to DTOs, and calculate stats in a single pass if possible
+                // But for now, let's at least share the knownWordIds set
                 List<WordDTO> words = wordList.getWords().stream()
                                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .map(word -> convertToWordDTO(word, knownWordIds.contains(word.getId())))
                                 .filter(w -> !onlyUnknown || !w.getIsKnown())
                                 .collect(Collectors.toList());
 
-                // Calculate stats
-                long properNounCount = wordList.getWords().stream()
-                                .filter(word -> Boolean.TRUE.equals(word.getIsProperNoun()))
-                                .count();
-                int totalWords = (int) (wordList.getWords().size() - properNounCount);
-                int unknownCount = (int) wordList.getWords().stream()
-                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
-                                .filter(word -> !knownWordIds.contains(word.getId()))
-                                .count();
-
-                java.util.Map<String, Long> levelCounts = wordList.getWords().stream()
-                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
-                                .filter(w -> w.getDifficulty() != null)
-                                .collect(Collectors.groupingBy(Word::getDifficulty, Collectors.counting()));
-
                 WordListWordsResponseDTO response = new WordListWordsResponseDTO();
-                response.setList(convertToDTO(wordList, userId));
+                response.setList(convertToDTO(wordList, userId, knownWordIds));
                 response.setWords(words);
-                response.setTotalWords(totalWords);
-                response.setUnknownWords(unknownCount);
-                response.setLevelCounts(levelCounts);
+
+                // Use the stats already calculated in convertToDTO via the response.setList
+                // call
+                response.setTotalWords(response.getList().getTotalWords());
+                response.setUnknownWords(response.getList().getUnknownWords());
+                response.setLevelCounts(response.getList().getLevelCounts());
 
                 return response;
         }
@@ -211,38 +216,39 @@ public class WordListService {
                 newList.getWords().addAll(unknownWords);
 
                 WordList saved = wordListRepository.save(newList);
-                return convertToDTO(saved, userId);
+                return convertToDTO(saved, userId, knownWordIds);
         }
 
-        public WordListDTO convertToDTO(WordList list, Long userId) {
+        public WordListDTO convertToDTO(WordList list, Long userId, Set<Long> knownWordIds) {
                 WordListDTO dto = new WordListDTO();
                 dto.setId(list.getId());
                 dto.setName(list.getName());
                 dto.setCreatedAt(list.getCreatedAt());
                 dto.setIsSystem(list.getIsSystem());
 
-                long properNounCount = list.getWords().stream()
-                                .filter(word -> Boolean.TRUE.equals(word.getIsProperNoun()))
-                                .count();
-                int totalWords = (int) (list.getWords().size() - properNounCount);
-                dto.setTotalWords(totalWords);
+                // Single pass over words to calculate all stats
+                int totalWords = 0;
+                int unknownWords = 0;
+                java.util.Map<String, Long> levelCounts = new java.util.HashMap<>();
 
-                if (userId != null) {
-                        Set<Long> knownWordIds = userKnownWordRepository.findByUserId(userId).stream()
-                                        .map(ukw -> ukw.getWord().getId())
-                                        .collect(Collectors.toSet());
+                for (Word word : list.getWords()) {
+                        if (Boolean.TRUE.equals(word.getIsProperNoun())) {
+                                continue;
+                        }
 
-                        long unknownCount = list.getWords().stream()
-                                        .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
-                                        .filter(word -> !knownWordIds.contains(word.getId()))
-                                        .count();
-                        dto.setUnknownWords((int) unknownCount);
+                        totalWords++;
+
+                        if (knownWordIds != null && !knownWordIds.contains(word.getId())) {
+                                unknownWords++;
+                        }
+
+                        if (word.getDifficulty() != null) {
+                                levelCounts.merge(word.getDifficulty(), 1L, Long::sum);
+                        }
                 }
 
-                java.util.Map<String, Long> levelCounts = list.getWords().stream()
-                                .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
-                                .filter(w -> w.getDifficulty() != null)
-                                .collect(Collectors.groupingBy(Word::getDifficulty, Collectors.counting()));
+                dto.setTotalWords(totalWords);
+                dto.setUnknownWords(unknownWords);
                 dto.setLevelCounts(levelCounts);
 
                 return dto;

@@ -261,9 +261,11 @@ public class GeminiService implements AIService {
                         });
                 log.info("Gemini Worker parsed {} definitions", definitions.size());
 
-                Map<String, WordDefinition> result = new HashMap<>();
-                for (int i = 0; i < Math.min(words.size(), definitions.size()); i++) {
-                    result.put(words.get(i).getWord(), definitions.get(i));
+                Map<String, WordDefinition> result = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                for (WordDefinition def : definitions) {
+                    if (def.getWord() != null) {
+                        result.put(def.getWord(), def);
+                    }
                 }
                 return result;
             } catch (Exception e) {
@@ -368,11 +370,11 @@ public class GeminiService implements AIService {
                         new com.fasterxml.jackson.core.type.TypeReference<List<com.sublex.model.WordDefinition>>() {
                         });
 
-                Map<String, com.sublex.model.WordDefinition> result = new HashMap<>();
-                // Note: We'll map them by the original word requested to help SpecialistService
-                // find them
-                for (int i = 0; i < Math.min(words.size(), definitions.size()); i++) {
-                    result.put(words.get(i).getWord(), definitions.get(i));
+                Map<String, com.sublex.model.WordDefinition> result = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                for (com.sublex.model.WordDefinition def : definitions) {
+                    if (def.getWord() != null) {
+                        result.put(def.getWord(), def);
+                    }
                 }
                 return result;
 
