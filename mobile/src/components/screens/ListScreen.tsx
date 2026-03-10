@@ -128,10 +128,10 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     meaningBlock: { marginBottom: 12 },
     meaningDef: { color: c.TEXT_P, fontSize: 13, lineHeight: 19, marginTop: 3 },
     meaningEx: { color: c.TEXT_S, fontSize: 12, fontStyle: 'italic', marginTop: 3, lineHeight: 17 },
-    verbGrid: { flexDirection: 'row', gap: 6 },
-    verbCell: { flex: 1, backgroundColor: c.SURFACE, borderRadius: 8, padding: 8, alignItems: 'center' },
+    verbGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    verbCell: { minWidth: '47%', flexGrow: 1, backgroundColor: c.SURFACE, borderRadius: 8, padding: 8, alignItems: 'center' },
     verbLabel: { color: c.TEXT_S, fontSize: 10, fontWeight: '700' },
-    verbValue: { color: c.TEXT_P, fontSize: 12, fontWeight: '600', marginTop: 2 },
+    verbValue: { color: c.TEXT_P, fontSize: 12, fontWeight: '600', marginTop: 2, textAlign: 'center' },
     phrasalBlock: { marginBottom: 10 },
     phrasalPhrase: { color: c.PURPLE, fontSize: 13, fontWeight: '700' },
     phrasalDef: { color: c.TEXT_P, fontSize: 13, marginTop: 2 },
@@ -626,7 +626,7 @@ function SwipeableWordRow({
     <RightActions
       progress={progress}
       onAddToList={onAddToList}
-      onTts={() => Speech.speak(word.word, { language: 'en-US' })}
+      onTts={() => { Speech.stop(); Speech.speak(word.word, { language: 'en-US' }); }}
       onRemove={onRemove ? handleDelete : undefined}
       onClose={() => swipeRef.current?.close()}
       styles={styles}
@@ -1158,7 +1158,7 @@ export default function ListScreen({ listId }: { listId: number }) {
                     <Text style={styles.cardBigWord}>{currentWord.word}</Text>
                     <TouchableOpacity
                       style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
-                      onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
+                      onPress={() => { Speech.stop(); Speech.speak(currentWord.word, { language: 'en-US' }); }}
                       onPressIn={() => { buttonActiveRef.current = true; }}
                       onPressOut={() => { buttonActiveRef.current = false; }}
                       activeOpacity={0.7}

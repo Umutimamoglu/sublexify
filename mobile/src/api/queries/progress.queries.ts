@@ -15,3 +15,13 @@ export function useProgressStats() {
     staleTime: 60 * 1000,
   });
 }
+
+export function useCategoryWords(category: 'learnt' | 'studied' | 'due' | 'mastered') {
+  return useQuery<any[]>({
+    queryKey: ['progress', category],
+    queryFn: async () => {
+      const res = await apiClient.get<any[]>(ENDPOINTS.progress[category]);
+      return res.data;
+    },
+  });
+}

@@ -29,9 +29,13 @@ public class WordListService {
         private final UserMediaProgressService userMediaProgressService;
         private final UserWordProgressRepository userWordProgressRepository;
 
+        public Set<Long> getKnownWordIds(Long userId) {
+                return userKnownWordRepository.findWordIdsByUserId(userId);
+        }
+
         public List<WordListDTO> getUserLists(Long userId) {
                 Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
-                return wordListRepository.findAllByUserId(userId).stream()
+                return wordListRepository.findAllByUserIdWithWords(userId).stream()
                                 .map(list -> convertToDTO(list, userId, knownWordIds))
                                 .collect(Collectors.toList());
         }
@@ -159,7 +163,7 @@ public class WordListService {
         @Transactional(readOnly = true)
         public List<WordListDTO> getStandardLists() {
                 Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(1L);
-                return wordListRepository.findAllByUserId(1L).stream()
+                return wordListRepository.findAllByUserIdWithWords(1L).stream()
                                 .map(list -> convertToDTO(list, 1L, knownWordIds)) // Default system user ID
                                 .collect(Collectors.toList());
         }
@@ -217,6 +221,11 @@ public class WordListService {
 
                 WordList saved = wordListRepository.save(newList);
                 return convertToDTO(saved, userId, knownWordIds);
+        }
+
+        public WordListDTO convertToDTO(WordList list, Long userId) {
+                Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
+                return convertToDTO(list, userId, knownWordIds);
         }
 
         public WordListDTO convertToDTO(WordList list, Long userId, Set<Long> knownWordIds) {

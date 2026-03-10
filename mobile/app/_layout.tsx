@@ -4,14 +4,25 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { I18nextProvider } from 'react-i18next';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider } from '@/src/context/ThemeContext';
 import { AuthProvider } from '@/src/context/AuthContext';
 import { initI18n } from '@/src/i18n';
 import i18n from '@/src/i18n';
 import { queryClient } from '@/src/api/queryClient';
+import { apiClient } from '@/src/api/client';
+import { ENDPOINTS } from '@/src/api/endpoints';
+import { useAuthStore } from '@/src/store/authStore';
 
 SplashScreen.preventAutoHideAsync();
+
+const persister = createAsyncStoragePersister({
+  storage: AsyncStorage,
+  key: 'sublex-query-cache',
+  throttleTime: 1000,
+});
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
@@ -20,8 +31,33 @@ export default function RootLayout() {
     async function prepare() {
       try {
         await initI18n();
+
+        // Auth varsa kritik verileri splash süresinde önceden yükle
+        const { isAuthenticated } = useAuthStore.getState();
+        if (isAuthenticated) {
+          await Promise.allSettled([
+            queryClient.prefetchQuery({
+              queryKey: ['media'],
+              queryFn: () =>
+                apiClient.get(`${ENDPOINTS.media.list}?userId=1`).then((r) => r.data),
+              staleTime: 1000 * 60 * 30,
+            }),
+            queryClient.prefetchQuery({
+              queryKey: ['lists'],
+              queryFn: () =>
+                apiClient.get(ENDPOINTS.lists.list).then((r) => r.data),
+              staleTime: 1000 * 60 * 5,
+            }),
+            queryClient.prefetchQuery({
+              queryKey: ['user', 'stats'],
+              queryFn: () =>
+                apiClient.get(ENDPOINTS.user.stats).then((r) => r.data),
+              staleTime: 1000 * 60 * 5,
+            }),
+          ]);
+        }
       } catch (e) {
-        console.warn('i18n init failed:', e);
+        console.warn('App prepare failed:', e);
       } finally {
         setReady(true);
         await SplashScreen.hideAsync();
@@ -35,7 +71,10 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <I18nextProvider i18n={i18n}>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 }}
+        >
           <ThemeProvider>
             <AuthProvider>
               <Stack screenOptions={{ headerShown: false }}>
@@ -49,7 +88,7 @@ export default function RootLayout() {
               </Stack>
             </AuthProvider>
           </ThemeProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </I18nextProvider>
     </GestureHandlerRootView>
   );

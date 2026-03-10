@@ -1,28 +1,78 @@
 import { useEffect, useState } from 'react';
-import { Loader2, ArrowLeft, Star, Volume2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Loader2, ArrowLeft, Star, Volume2, TrendingUp, Brain, CalendarDays } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import ProgressService from '@/services/ProgressService';
 import { Word } from '@/services/WordListService';
 
-const MasteredWordsPage = () => {
+type CategoryType = 'learnt' | 'studied' | 'due' | 'mastered';
+
+const CATEGORY_CONFIG = {
+    learnt: {
+        title: 'Öğrenilen Kelimeler',
+        description: 'Tüm öğrenme havuzundaki kelimeler.',
+        icon: Brain,
+        color: 'text-blue-500',
+        bgColor: 'bg-blue-500/10',
+        fill: '',
+        fetch: ProgressService.getLearntWords
+    },
+    studied: {
+        title: 'Çalışılan Kelimeler',
+        description: 'En az bir kere test ettiğin kelimeler.',
+        icon: TrendingUp,
+        color: 'text-purple-500',
+        bgColor: 'bg-purple-500/10',
+        fill: '',
+        fetch: ProgressService.getStudiedWords
+    },
+    mastered: {
+        title: 'Mastered Words',
+        description: 'You have mastered these words so far. Keep it up!',
+        icon: Star,
+        color: 'text-emerald-500',
+        bgColor: 'bg-emerald-500/10',
+        fill: 'fill-emerald-500',
+        fetch: ProgressService.getMasteredWords
+    },
+    due: {
+        title: 'Reviews Due',
+        description: 'Kelimeler tekrar edilmeyi bekliyor.',
+        icon: CalendarDays,
+        color: 'text-rose-500',
+        bgColor: 'bg-rose-500/10',
+        fill: '',
+        fetch: ProgressService.getDueWords
+    }
+};
+
+const ProgressCategoryPage = () => {
+    const { category } = useParams<{ category: CategoryType }>();
     const [words, setWords] = useState<Word[]>([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    const config = CATEGORY_CONFIG[category as CategoryType];
+
     useEffect(() => {
+        if (!config) {
+            navigate('/progress', { replace: true });
+            return;
+        }
+
         const fetchWords = async () => {
+            setLoading(true);
             try {
-                const data = await ProgressService.getMasteredWords();
+                const data = await config.fetch();
                 setWords(data);
             } catch (error) {
-                console.error("Failed to fetch mastered words", error);
+                console.error(`Failed to fetch ${category} words`, error);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchWords();
-    }, []);
+    }, [category, config, navigate]);
 
     const playAudio = (text: string) => {
         const utterance = new SpeechSynthesisUtterance(text);
@@ -38,6 +88,10 @@ const MasteredWordsPage = () => {
         );
     }
 
+    if (!config) return null;
+
+    const Icon = config.icon;
+
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <div className="flex items-center gap-4 mb-8">
@@ -49,11 +103,11 @@ const MasteredWordsPage = () => {
                 </button>
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                        <Star className="w-8 h-8 text-yellow-500 fill-yellow-500" />
-                        Mastered Words
+                        <Icon className={`w-8 h-8 ${config.color} ${config.fill}`} />
+                        {config.title}
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        You have mastered {words.length} words so far. Keep it up!
+                        {category === 'mastered' ? config.description.replace('these words', `${words.length} words`) : `${words.length} kelime bulunuyor.`}
                     </p>
                 </div>
             </div>
@@ -70,7 +124,7 @@ const MasteredWordsPage = () => {
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white capitalize">{word.word}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Mastered</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{config.title}</p>
                             </div>
                         </div>
                         <button 
@@ -84,11 +138,11 @@ const MasteredWordsPage = () => {
 
                 {words.length === 0 && (
                     <div className="col-span-full py-20 text-center">
-                        <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Star className="w-10 h-10 text-gray-400" />
+                        <div className={`w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4`}>
+                            <Icon className="w-10 h-10 text-gray-400" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">No mastered words yet</h3>
-                        <p className="text-gray-500 dark:text-gray-400 mt-2">Study more to build your long-term memory!</p>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Henüz kelime yok</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mt-2">Daha fazla kelime çalışarak listeyi doldurabilirsiniz!</p>
                     </div>
                 )}
             </div>
@@ -96,4 +150,4 @@ const MasteredWordsPage = () => {
     );
 };
 
-export default MasteredWordsPage;
+export default ProgressCategoryPage;

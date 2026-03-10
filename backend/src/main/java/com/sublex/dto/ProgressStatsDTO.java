@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ProgressStatsDTO {
+    private long totalWordsLearnt;
     private long totalWordsStudied;
     private long highRetentionWords;
     private long wordsToReviewToday;

@@ -93,11 +93,12 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
 // ─── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({
-  icon, value, label, desc, styles,
+  icon, value, label, desc, styles, onPress
 }: {
   icon: string; value: number; label: string; desc: string; styles: ReturnType<typeof makeStyles>;
+  onPress?: () => void;
 }) {
-  return (
+  const CardContent = (
     <View style={styles.statCard}>
       <View style={styles.statIconBox}>
         <Text style={styles.statIcon}>{icon}</Text>
@@ -109,6 +110,16 @@ function StatCard({
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={{ width: '100%' }}>
+        {CardContent}
+      </TouchableOpacity>
+    );
+  }
+
+  return CardContent;
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
@@ -133,7 +144,7 @@ export default function ProgressScreen() {
 
   const { data: stats, isLoading } = useProgressStats();
 
-  const hasData = stats && (stats.totalStudied > 0 || stats.masteredWords > 0 || stats.dueToday > 0);
+  const hasData = stats && (stats.totalWordsLearnt > 0 || stats.totalWordsStudied > 0 || stats.highRetentionWords > 0 || stats.wordsToReviewToday > 0);
 
   return (
     <View style={styles.root}>
@@ -174,24 +185,35 @@ export default function ProgressScreen() {
             <View style={styles.statsGrid}>
               <StatCard
                 icon="🎯"
-                value={stats.dueToday}
+                value={stats.wordsToReviewToday}
                 label={t('dueToday')}
                 desc={t('dueTodayDesc')}
                 styles={styles}
+                onPress={() => router.push('/progress/due' as any)}
               />
               <StatCard
-                icon="📚"
-                value={stats.totalStudied}
+                icon="📖"
+                value={stats.totalWordsLearnt}
+                label={t('totalLearnt')}
+                desc={t('totalLearntDesc')}
+                styles={styles}
+                onPress={() => router.push('/progress/learnt' as any)}
+              />
+              <StatCard
+                icon="✏️"
+                value={stats.totalWordsStudied}
                 label={t('totalStudied')}
                 desc={t('totalStudiedDesc')}
                 styles={styles}
+                onPress={() => router.push('/progress/studied' as any)}
               />
               <StatCard
                 icon="⭐"
-                value={stats.masteredWords}
+                value={stats.highRetentionWords}
                 label={t('mastered')}
                 desc={t('masteredDesc')}
                 styles={styles}
+                onPress={() => router.push('/progress/mastered' as any)}
               />
             </View>
           </View>

@@ -15,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/lists")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173") // Allow frontend access
+ // Allow frontend access
 public class WordListController {
 
     private final WordListService wordListService;
@@ -25,7 +25,8 @@ public class WordListController {
         Long userId = (Long) authentication.getPrincipal();
         org.slf4j.LoggerFactory.getLogger(WordListController.class).info("Fetching lists for user: {}", userId);
         List<WordListDTO> userLists = wordListService.getUserLists(userId);
-        org.slf4j.LoggerFactory.getLogger(WordListController.class).info("Found {} lists for user: {}", userLists.size(), userId);
+        org.slf4j.LoggerFactory.getLogger(WordListController.class).info("Found {} lists for user: {}",
+                userLists.size(), userId);
         return ResponseEntity.ok(userLists);
     }
 
@@ -37,18 +38,17 @@ public class WordListController {
     @GetMapping("/{id}")
     public ResponseEntity<WordListDTO> getListById(@PathVariable Long id, Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
-        return ResponseEntity.ok(wordListService.convertToDTO(wordListService.getListById(id), userId));
+        java.util.Set<Long> knownWordIds = wordListService.getKnownWordIds(userId);
+        return ResponseEntity.ok(wordListService.convertToDTO(wordListService.getListById(id), userId, knownWordIds));
     }
 
     @PostMapping
     public ResponseEntity<WordListDTO> createList(@RequestBody String name, Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
-        // Simple string body for name, might want a DTO later but this works for simple
-        // string
-        // Removing quotes if sent as JSON string
         String listName = name.replaceAll("^\"|\"$", "");
+        java.util.Set<Long> knownWordIds = wordListService.getKnownWordIds(userId);
         return ResponseEntity.ok(
-                wordListService.convertToDTO(wordListService.createList(userId, listName), userId));
+                wordListService.convertToDTO(wordListService.createList(userId, listName), userId, knownWordIds));
     }
 
     @PostMapping("/{id}/words/{wordId}")
@@ -76,7 +76,8 @@ public class WordListController {
     }
 
     @PostMapping("/generate/unknown")
-    public ResponseEntity<WordListDTO> generateUnknownWordsList(@RequestParam Long mediaId, Authentication authentication) {
+    public ResponseEntity<WordListDTO> generateUnknownWordsList(@RequestParam Long mediaId,
+            Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(wordListService.createUnknownWordsList(userId, mediaId));
     }

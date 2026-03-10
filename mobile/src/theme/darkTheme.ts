@@ -41,9 +41,10 @@ export const darkTheme: Theme = {
     // Tab bar
     tabActive:        Palette.brand400,
     tabInactive:      Palette.gray500,
-    tabBackground:    Palette.gray900,
-    tabBorder:        Palette.gray700,
+    tabBackground:    Palette.gray900 as any,
+    tabBorder:        Palette.gray700 as any,
 
-    overlay:          'rgba(0,0,0,0.6)',
+    overlay:          'rgba(0,0,0,0.6)' as any,
   },
+
 };

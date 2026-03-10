@@ -1,10 +1,11 @@
 {
   "title": "Progress",
   "dueToday": "Due Today",
+  "totalLearnt": "Learnt",
+  "totalLearntDesc": "Total words in your portfolio",
   "totalStudied": "Studied",
+  "totalStudiedDesc": "Words reviewed at least once",
   "mastered": "Mastered",
-  "dueTodayDesc": "Words due for review today",
-  "totalStudiedDesc": "Total words you have studied",
   "masteredDesc": "Words answered correctly 5+ times",
   "noProgress": "No study sessions yet",
   "noProgressDesc": "Start studying from your lists",

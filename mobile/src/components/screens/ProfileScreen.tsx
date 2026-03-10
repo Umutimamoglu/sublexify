@@ -242,8 +242,8 @@ export default function ProfileScreen() {
   const isLoading = loadingUser || loadingProgress;
   const known = userStats?.totalKnownWords ?? 0;
   const total = userStats?.totalWords ?? 0;
-  const mastered = progress?.masteredWords ?? 0;
-  const dueToday = progress?.dueToday ?? 0;
+  const mastered = progress?.highRetentionWords ?? 0;
+  const dueToday = progress?.wordsToReviewToday ?? 0;
 
   const progressPct = total > 0 ? Math.min(known / total, 1) : 0;
   const cefr = getCefrBadge(known, total);

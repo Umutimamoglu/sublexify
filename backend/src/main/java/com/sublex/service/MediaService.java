@@ -32,16 +32,76 @@ public class MediaService {
      * Get recent media for user (Continue Learning)
      */
     public List<MediaDTO> getRecentMediaForUser(Long userId, int limit) {
-        return userMediaProgressService.getRecentMediaForUser(userId, limit).stream()
-                .map(media -> convertToDTO(media, userId))
-                .collect(Collectors.toList());
+        List<Media> recentMedia = userMediaProgressService.getRecentMediaForUser(userId, limit);
+        if (recentMedia.isEmpty()) return new ArrayList<>();
+
+        // Collect IDs for batch querying
+        List<Long> mediaIds = recentMedia.stream().map(Media::getId).collect(Collectors.toList());
+
+        // Batch 1: total word counts per media
+        Map<Long, Integer> wordCounts = mediaWordRepository.countAllByMediaId()
+                .stream()
+                .filter(obj -> mediaIds.contains((Long) obj[0]))
+                .collect(Collectors.toMap(
+                        obj -> (Long) obj[0],
+                        obj -> ((Long) obj[1]).intValue()
+                ));
+
+        // Batch 2: level counts per media
+        Map<Long, Map<String, Long>> levelCountsByMedia = new java.util.HashMap<>();
+        for (Object[] row : mediaWordRepository.findLevelCountsAllMedia()) {
+            Long mediaId = (Long) row[0];
+            if (mediaIds.contains(mediaId)) {
+                String diff = (String) row[1];
+                Long count = (Long) row[2];
+                levelCountsByMedia.computeIfAbsent(mediaId, k -> new LinkedHashMap<>()).put(diff, count);
+            }
+        }
+
+        // Batch 3: known-word counts per media
+        Map<Long, Integer> knownCountByMedia = new java.util.HashMap<>();
+        if (userId != null) {
+            for (Object[] row : mediaWordRepository.countKnownWordsPerMedia(userId)) {
+                Long mediaId = (Long) row[0];
+                if (mediaIds.contains(mediaId)) {
+                    Long knownCount = (Long) row[1];
+                    knownCountByMedia.put(mediaId, knownCount.intValue());
+                }
+            }
+        }
+
+        List<MediaDTO> result = new ArrayList<>();
+        for (Media media : recentMedia) {
+            MediaDTO dto = convertToBasicDTO(media);
+            int total = wordCounts.getOrDefault(media.getId(), 0);
+            dto.setTotalWords(total);
+
+            Map<String, Long> levelCounts = levelCountsByMedia.getOrDefault(
+                    media.getId(), java.util.Collections.emptyMap());
+            dto.setLevelCounts(levelCounts);
+
+            levelCounts.entrySet().stream()
+                    .max(java.util.Map.Entry.comparingByValue())
+                    .map(java.util.Map.Entry::getKey)
+                    .ifPresent(dto::setDifficultyLevel);
+
+            dto.setOverallDifficulty(calculateOverallDifficulty(levelCounts, total));
+
+            if (total > 0) {
+                int known = knownCountByMedia.getOrDefault(media.getId(), 0);
+                dto.setKnownWordPercentage((double) known / total * 100);
+            }
+
+            result.add(dto);
+        }
+        return result;
     }
 
     /**
      * Get all media with level distribution and known-word percentage — 4 batch queries, no N+1
      */
     public List<MediaDTO> getAllMedia(Long userId) {
-        List<Media> all = mediaRepository.findAll();
+        List<com.sublex.repository.MediaProjection> all = mediaRepository.findAllProjectedBy();
 
         // Batch 1: total word counts per media
         Map<Long, Integer> wordCounts = mediaWordRepository.countAllByMediaId()
@@ -71,7 +131,7 @@ public class MediaService {
         }
 
         List<MediaDTO> result = new ArrayList<>();
-        for (Media media : all) {
+        for (com.sublex.repository.MediaProjection media : all) {
             MediaDTO dto = convertToBasicDTO(media);
             int total    = wordCounts.getOrDefault(media.getId(), 0);
             dto.setTotalWords(total);
@@ -174,10 +234,25 @@ public class MediaService {
         return response;
     }
 
-    /**
-     * Lightweight conversion — no extra DB queries, used for list endpoints
-     */
     private MediaDTO convertToBasicDTO(Media media) {
+        MediaDTO dto = new MediaDTO();
+        dto.setId(media.getId());
+        dto.setTitle(media.getTitle());
+        dto.setImdbId(media.getImdbId());
+        dto.setType(media.getType().toString());
+        dto.setLanguage(media.getLanguage());
+        dto.setOverview(media.getOverview());
+        dto.setPosterUrl(media.getPosterUrl());
+        dto.setBackdropUrl(media.getBackdropUrl());
+        dto.setTmdbId(media.getTmdbId());
+        dto.setSeasonNumber(media.getSeasonNumber());
+        dto.setEpisodeNumber(media.getEpisodeNumber());
+        dto.setVoteAverage(media.getVoteAverage());
+        dto.setCreatedAt(media.getCreatedAt());
+        return dto;
+    }
+
+    private MediaDTO convertToBasicDTO(com.sublex.repository.MediaProjection media) {
         MediaDTO dto = new MediaDTO();
         dto.setId(media.getId());
         dto.setTitle(media.getTitle());

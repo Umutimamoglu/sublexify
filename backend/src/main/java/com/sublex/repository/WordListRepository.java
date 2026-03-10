@@ -10,6 +10,9 @@ import java.util.List;
 public interface WordListRepository extends JpaRepository<WordList, Long> {
     List<WordList> findAllByUserId(Long userId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT DISTINCT wl FROM WordList wl LEFT JOIN FETCH wl.words WHERE wl.user.id = :userId")
+    List<WordList> findAllByUserIdWithWords(@org.springframework.data.repository.query.Param("userId") Long userId);
+
     java.util.Optional<WordList> findByNameAndUserId(String name, Long userId);
 
     java.util.Optional<WordList> findByName(String name);

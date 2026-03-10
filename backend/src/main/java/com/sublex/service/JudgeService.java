@@ -109,9 +109,10 @@ public class JudgeService {
             Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
             List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-            String content = (String) message.get("content");
+            String rawContent = (String) message.get("content");
+            String cleanContent = rawContent.replace("```json", "").replace("```", "").trim();
 
-            return objectMapper.readValue(content, WordDefinition.class);
+            return objectMapper.readValue(cleanContent, WordDefinition.class);
 
         } catch (Exception e) {
             log.error("Judge (GPT-5-mini) failed for word '{}'. Error: {}", word, e.getMessage());

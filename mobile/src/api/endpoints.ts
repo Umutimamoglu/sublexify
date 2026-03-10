@@ -35,6 +35,10 @@ export const ENDPOINTS = {
     result:    '/study/result',
   },
   progress: {
-    stats: '/progress/stats',
+    stats:    '/progress/stats',
+    mastered: '/progress/words/mastered',
+    learnt:   '/progress/words/learnt',
+    studied:  '/progress/words/studied',
+    due:      '/progress/words/due',
   },
 } as const;

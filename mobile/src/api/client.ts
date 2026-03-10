@@ -4,13 +4,27 @@ import Constants from 'expo-constants';
 import { useAuthStore } from '@/src/store/authStore';
 
 function getDevHost(): string {
-  const hostUri = Constants.expoConfig?.hostUri; // "192.168.x.x:8081" on real device
-  if (hostUri) return hostUri.split(':')[0];
-  return Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+  // 1. .env overridable
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // 2. Try Expo hostUri (LAN IP from Bundler)
+  const hostUri = Constants.expoConfig?.hostUri; 
+  if (hostUri) {
+    const ip = hostUri.split(':')[0];
+    if (ip !== '127.0.0.1' && ip !== 'localhost') {
+      return `http://${ip}:8080/api`;
+    }
+  }
+
+  // 3. Physical devices need the actual LAN IP of the computer, emulators use their bridge
+  const fallbackIp = Platform.OS === 'android' ? '10.0.2.2' : '192.168.1.102';
+  return `http://${fallbackIp}:8080/api`;
 }
 
 const BASE_URL = __DEV__
-  ? `http://${getDevHost()}:8080/api`
+  ? getDevHost()
   : 'https://api.sublex.app/api'; // production URL
 
 export const apiClient = axios.create({
@@ -24,15 +38,23 @@ apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log(`[API AUTH] Attached Token: Bearer ${token.substring(0, 15)}...`);
+  } else {
+    console.log(`[API AUTH] No Token Found in Store!`);
   }
+  console.log(`[API ${config.method?.toUpperCase()}] Req: ${config.baseURL}${config.url}`);
   return config;
 });
 
 // 401 gelirse auth'u temizle
 apiClient.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    console.log(`[API RES] ${res.config.url} -> Status: ${res.status}`);
+    return res;
+  },
   (err) => {
-    if (err.response?.status === 401) {
+    console.log(`[API ERR] ${err.config?.url} ->`, err.message, err.response?.data);
+    if (err.response?.status === 401 || err.response?.status === 403) {
       useAuthStore.getState().clearAuth();
     }
     return Promise.reject(err);

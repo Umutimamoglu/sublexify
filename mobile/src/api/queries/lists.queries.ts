@@ -22,6 +22,7 @@ export function useLists() {
 export function useStandardLists() {
   return useQuery<WordListDTO[]>({
     queryKey: listKeys.standard,
+    staleTime: Infinity, // Sabit listeler değişmez
     queryFn:  async () => {
       const res = await apiClient.get<WordListDTO[]>(ENDPOINTS.lists.standard);
       return res.data;

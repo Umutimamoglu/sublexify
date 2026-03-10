@@ -1,10 +1,10 @@
 {
   "title": "İlerleme",
   "dueToday": "Bugün Tekrar",
+  "totalLearnt": "Öğrenilen",
+  "totalLearntDesc": "Portföyunüzdeki toplam kelime sayısı",
   "totalStudied": "Çalışılan",
-  "mastered": "Ustalaşılan",
-  "dueTodayDesc": "Bugün tekrar edilmesi gereken kelimeler",
-  "totalStudiedDesc": "Toplam çalışılan kelime sayısı",
+  "totalStudiedDesc": "En az bir kez antrenman yapılan kelimeler",
   "masteredDesc": "5+ kez doğru bilinen kelimeler",
   "noProgress": "Henüz çalışma kaydın yok",
   "noProgressDesc": "Liste sayfasından çalışmaya başla",

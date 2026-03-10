@@ -62,9 +62,19 @@ export const lightTheme = {
     size:       FontSize,
     lineHeight: LineHeight,
   },
-  spacing:  Spacing,
-  radii:    Radii,
+  spacing: Spacing,
+  radii: Radii,
   shadows:  Shadow,
-} as const;
+};
 
-export type Theme = typeof lightTheme;
+export type Theme = {
+  colors: Record<string, string>;
+  fonts: {
+    family: typeof FontFamily;
+    size: typeof FontSize;
+    lineHeight: typeof LineHeight;
+  };
+  spacing: typeof Spacing;
+  radii: typeof Radii;
+  shadows: typeof Shadow;
+};

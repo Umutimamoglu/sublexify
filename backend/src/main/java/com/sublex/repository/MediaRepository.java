@@ -9,8 +9,9 @@ import java.util.List;
 
 @Repository
 public interface MediaRepository extends JpaRepository<Media, Long> {
-
     List<Media> findByLanguage(String language);
+
+    List<MediaProjection> findAllProjectedBy();
 
     List<Media> findByType(MediaType type);
 

@@ -6,6 +6,7 @@ import com.sublex.service.MediaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -21,7 +22,8 @@ public class MediaController {
      * Get all available media
      */
     @GetMapping
-    public ResponseEntity<List<MediaDTO>> getAllMedia(@RequestParam(required = false) Long userId) {
+    public ResponseEntity<List<MediaDTO>> getAllMedia(Authentication authentication) {
+        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
         return ResponseEntity.ok(mediaService.getAllMedia(userId));
     }
 
@@ -31,12 +33,14 @@ public class MediaController {
      */
     @GetMapping("/continue-learning")
     public ResponseEntity<List<MediaDTO>> getContinueLearning(
-            @RequestParam(required = false) Long userId,
+            Authentication authentication,
             @RequestParam(defaultValue = "10") Integer limit) {
 
-        // For now, use hardcoded user ID 1L if not provided
-        Long idToUse = (userId != null) ? userId : 1L;
-        return ResponseEntity.ok(mediaService.getRecentMediaForUser(idToUse, limit));
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(mediaService.getRecentMediaForUser(userId, limit));
     }
 
     /**
@@ -55,7 +59,8 @@ public class MediaController {
     @GetMapping("/{id}")
     public ResponseEntity<MediaDTO> getMediaById(
             @PathVariable Long id,
-            @RequestParam(required = false) Long userId) {
+            Authentication authentication) {
+        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
         return ResponseEntity.ok(mediaService.getMediaById(id, userId));
     }
 
@@ -70,9 +75,9 @@ public class MediaController {
     public ResponseEntity<MediaWordsResponseDTO> getMediaWords(
             @PathVariable Long id,
             @RequestParam(required = false) Boolean onlyUnknown,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) String sortBy) {
-
+            @RequestParam(required = false) String sortBy,
+            Authentication authentication) {
+        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
         return ResponseEntity.ok(mediaService.getMediaWords(id, userId, onlyUnknown != null && onlyUnknown, sortBy));
     }
 
