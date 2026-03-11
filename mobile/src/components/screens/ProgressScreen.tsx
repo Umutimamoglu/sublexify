@@ -59,12 +59,11 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     },
     statIconBox: {
       width: 48, height: 48, borderRadius: 14,
-      backgroundColor: TokenPalette.teal500 + '22',
       alignItems: 'center', justifyContent: 'center',
     },
     statIcon: { fontSize: 22 },
     statInfo: { flex: 1 },
-    statValue: { color: TokenPalette.teal500, fontSize: 28, fontWeight: '900' },
+    statValue: { fontSize: 28, fontWeight: '900' },
     statLabel: { color: c.TEXT_P, fontSize: 14, fontWeight: '700', marginTop: 2 },
     statDesc: { color: c.TEXT_S, fontSize: 12, marginTop: 3, lineHeight: 16 },
 
@@ -93,18 +92,19 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
 // ─── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({
-  icon, value, label, desc, styles, onPress
+  icon, value, label, desc, styles, color, onPress
 }: {
   icon: string; value: number; label: string; desc: string; styles: ReturnType<typeof makeStyles>;
+  color: string;
   onPress?: () => void;
 }) {
   const CardContent = (
-    <View style={styles.statCard}>
-      <View style={styles.statIconBox}>
+    <View style={[styles.statCard, { borderColor: `${color}40` }]}>
+      <View style={[styles.statIconBox, { backgroundColor: `${color}22` }]}>
         <Text style={styles.statIcon}>{icon}</Text>
       </View>
       <View style={styles.statInfo}>
-        <Text style={styles.statValue}>{value}</Text>
+        <Text style={[styles.statValue, { color }]}>{value}</Text>
         <Text style={styles.statLabel}>{label}</Text>
         <Text style={styles.statDesc}>{desc}</Text>
       </View>
@@ -189,6 +189,7 @@ export default function ProgressScreen() {
                 label={t('dueToday')}
                 desc={t('dueTodayDesc')}
                 styles={styles}
+                color="#F43F5E"
                 onPress={() => router.push('/progress/due' as any)}
               />
               <StatCard
@@ -197,6 +198,7 @@ export default function ProgressScreen() {
                 label={t('totalLearnt')}
                 desc={t('totalLearntDesc')}
                 styles={styles}
+                color="#4F46E5"
                 onPress={() => router.push('/progress/learnt' as any)}
               />
               <StatCard
@@ -205,6 +207,7 @@ export default function ProgressScreen() {
                 label={t('totalStudied')}
                 desc={t('totalStudiedDesc')}
                 styles={styles}
+                color="#D946EF"
                 onPress={() => router.push('/progress/studied' as any)}
               />
               <StatCard
@@ -213,6 +216,7 @@ export default function ProgressScreen() {
                 label={t('mastered')}
                 desc={t('masteredDesc')}
                 styles={styles}
+                color="#10B981"
                 onPress={() => router.push('/progress/mastered' as any)}
               />
             </View>

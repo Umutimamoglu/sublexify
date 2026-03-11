@@ -128,10 +128,10 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     meaningBlock: { marginBottom: 12 },
     meaningDef: { color: c.TEXT_P, fontSize: 13, lineHeight: 19, marginTop: 3 },
     meaningEx: { color: c.TEXT_S, fontSize: 12, fontStyle: 'italic', marginTop: 3, lineHeight: 17 },
-    verbGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    verbCell: { minWidth: '47%', flexGrow: 1, backgroundColor: c.SURFACE, borderRadius: 8, padding: 8, alignItems: 'center' },
+    verbGrid: { flexDirection: 'row', gap: 6 },
+    verbCell: { flex: 1, backgroundColor: c.SURFACE, borderRadius: 8, padding: 8, alignItems: 'center' },
     verbLabel: { color: c.TEXT_S, fontSize: 10, fontWeight: '700' },
-    verbValue: { color: c.TEXT_P, fontSize: 12, fontWeight: '600', marginTop: 2, textAlign: 'center' },
+    verbValue: { color: c.TEXT_P, fontSize: 12, fontWeight: '600', marginTop: 2 },
     phrasalBlock: { marginBottom: 10 },
     phrasalPhrase: { color: c.PURPLE, fontSize: 13, fontWeight: '700' },
     phrasalDef: { color: c.TEXT_P, fontSize: 13, marginTop: 2 },
@@ -626,7 +626,7 @@ function SwipeableWordRow({
     <RightActions
       progress={progress}
       onAddToList={onAddToList}
-      onTts={() => { Speech.stop(); Speech.speak(word.word, { language: 'en-US' }); }}
+      onTts={() => Speech.speak(word.word, { language: 'en-US' })}
       onRemove={onRemove ? handleDelete : undefined}
       onClose={() => swipeRef.current?.close()}
       styles={styles}
@@ -660,30 +660,24 @@ function FlashCardBack({
   word,
   isKnown,
   onToggle,
-  onFlipBack,
-  onButtonPressIn,
-  onButtonPressOut,
+  onFlipBack, // Parent component'te hata vermemesi için prop'u tutuyoruz, ancak butonu kaldırdık.
   styles,
   c,
   animStyle,
-  pointerEvents,
 }: {
   word: ListWord;
   isKnown: boolean;
   onToggle: () => void;
   onFlipBack: () => void;
-  onButtonPressIn: () => void;
-  onButtonPressOut: () => void;
   styles: Styles;
   c: Palette;
   animStyle: any;
-  pointerEvents: 'auto' | 'none';
 }) {
   const { t } = useTranslation('lists');
   const def = word.definition;
 
   return (
-    <Reanimated.View style={[styles.card, styles.cardBack, animStyle]} pointerEvents={pointerEvents}>
+    <Reanimated.View style={[styles.card, styles.cardBack, animStyle]}>
       <ScrollView style={styles.cardBackInner} showsVerticalScrollIndicator={false}>
         <Text style={styles.cardBackWord}>{word.word}</Text>
 
@@ -751,17 +745,26 @@ function FlashCardBack({
         <View style={{ height: 80 }} />
       </ScrollView>
 
+      {/* YENİ ALT BUTON: Bilinenlere Ekle / Çıkar (Eski Flip butonunun yerinde) */}
       <TouchableOpacity
-        style={[styles.cardKnownBtn, {
-          borderColor: isKnown ? c.PURPLE : c.TEXT_S,
-          backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
-        }]}
+        style={[
+          styles.cardFlipBackBtn, // Alt konuma yerleşmesi için eski flip butonunun stilini baz alıyoruz
+          {
+            borderColor: isKnown ? c.PURPLE : c.TEXT_S,
+            backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
+            borderWidth: 1,
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }
+        ]}
         onPress={onToggle}
-        onPressIn={onButtonPressIn}
-        onPressOut={onButtonPressOut}
         activeOpacity={0.7}
       >
-        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S, marginRight: 8 }]}>✓</Text>
+        <Text style={{ color: isKnown ? c.PURPLE : c.TEXT_S, fontWeight: 'bold' }}>
+          {isKnown ? "Biliniyor" : "Öğrenildi İşaretle"}
+        </Text>
       </TouchableOpacity>
 
     </Reanimated.View>
@@ -824,7 +827,6 @@ export default function ListScreen({ listId }: { listId: number }) {
   const [cardIndex, setCardIndex] = useState(0);
   const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
-  const [isFlippedState, setIsFlippedState] = useState(false);
   const knownInitialized = useRef(false);
   const hintShown = useRef(false);
 
@@ -943,7 +945,6 @@ export default function ListScreen({ listId }: { listId: number }) {
   useEffect(() => {
     flipProgress.value = 0;
     isFlipped.value = false;
-    setIsFlippedState(false);
   }, [cardIndex]);
 
   const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
@@ -975,7 +976,6 @@ export default function ListScreen({ listId }: { listId: number }) {
     const next = !isFlipped.value;
     isFlipped.value = next;
     flipProgress.value = withTiming(next ? 1 : 0, { duration: 380, easing: Easing.inOut(Easing.ease) });
-    setIsFlippedState(next);
   }, [flipProgress, isFlipped]);
 
   // Gestures
@@ -1154,11 +1154,11 @@ export default function ListScreen({ listId }: { listId: number }) {
                 <Reanimated.View style={[styles.cardStack, cardContainerStyle]}>
 
                   {/* Front */}
-                  <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]} pointerEvents={isFlippedState ? 'none' : 'auto'}>
+                  <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]}>
                     <Text style={styles.cardBigWord}>{currentWord.word}</Text>
                     <TouchableOpacity
                       style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
-                      onPress={() => { Speech.stop(); Speech.speak(currentWord.word, { language: 'en-US' }); }}
+                      onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
                       onPressIn={() => { buttonActiveRef.current = true; }}
                       onPressOut={() => { buttonActiveRef.current = false; }}
                       activeOpacity={0.7}
@@ -1207,12 +1207,9 @@ export default function ListScreen({ listId }: { listId: number }) {
                     isKnown={knownIds.has(currentWord.id)}
                     onToggle={() => handleToggle(currentWord.id)}
                     onFlipBack={doFlip}
-                    onButtonPressIn={() => { buttonActiveRef.current = true; }}
-                    onButtonPressOut={() => { buttonActiveRef.current = false; }}
                     styles={styles}
                     c={c}
                     animStyle={backAnimStyle}
-                    pointerEvents={isFlippedState ? 'auto' : 'none'}
                   />
                 </Reanimated.View>
               </GestureDetector>

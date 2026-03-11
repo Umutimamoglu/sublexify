@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/src/components/ui/Text';
 import { useCategoryWords } from '@/src/api/queries/progress.queries';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -13,28 +14,28 @@ const CATEGORY_CONFIG = {
   learnt: {
     title: 'Öğrenilen Kelimeler',
     icon: 'book-outline' as const,
-    color: '#3B82F6',
+    color: '#4F46E5', // Indigo Blue
     emptyTitle: 'Henüz kelime yok',
     emptyDesc: 'Listelerinize kelime ekleyerek öğrenmeye başlayın!',
   },
   studied: {
     title: 'Çalışılan Kelimeler',
     icon: 'trending-up-outline' as const,
-    color: '#A855F7',
+    color: '#D946EF', // Neon Purple/Magenta
     emptyTitle: 'Henüz çalışılan kelime yok',
     emptyDesc: 'Kelime testlerini çözerek bu listeyi doldurun!',
   },
   due: {
     title: 'Tekrar Bekleyenler',
     icon: 'calendar-outline' as const,
-    color: '#F43F5E',
+    color: '#F43F5E', // Rose Red
     emptyTitle: 'Tekrar yok',
     emptyDesc: 'Bugün için tekrar edilecek kelimeniz bulunmuyor.',
   },
   mastered: {
     title: 'Ustalaşılan Kelimeler',
     icon: 'star-outline' as const,
-    color: '#10B981',
+    color: '#10B981', // Emerald Green
     emptyTitle: 'Henüz ustalaşılan kelime yok',
     emptyDesc: 'Testlerde başarılı oldukça kelimeler buraya düşecek!',
   },
@@ -42,10 +43,12 @@ const CATEGORY_CONFIG = {
 
 export default function CategoryWordsScreen() {
   const { category } = useLocalSearchParams<{ category: CategoryType }>();
+  const router = useRouter();
   const config = CATEGORY_CONFIG[category];
 
   const { data: words, isLoading } = useCategoryWords(category);
-  const { theme } = useTheme();
+  const { theme, colorScheme } = useTheme();
+  const isDark = colorScheme === 'dark';
 
   const backgroundColor = theme.colors.background;
   const cardColor = theme.colors.surface;
@@ -60,28 +63,43 @@ export default function CategoryWordsScreen() {
     Speech.speak(text, { language: 'en-US', rate: 0.9 });
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={[styles.card, { backgroundColor: cardColor, borderColor: `${config.color}30` }]}>
-      <View style={styles.cardLeft}>
-        <View style={[styles.difficultyBadge, { backgroundColor: `${config.color}15` }]}>
-          <Text style={[styles.difficultyText, { color: config.color }]}>
-            {item.difficulty?.substring(0, 2) || 'A1'}
-          </Text>
+  const renderItem = ({ item }: { item: any }) => {
+    const meaning = item.definition?.meanings?.[0]?.definition;
+    const diffText = item.difficulty ? item.difficulty.substring(0, 2) : 'A1';
+
+    return (
+      <View style={styles.row}>
+        <View style={styles.rowInfo}>
+          <Text style={[styles.rowWord, { color: textPrimary }]}>{item.word}</Text>
+          {!!meaning && (
+            <Text style={[styles.rowMeaning, { color: textSecondary }]} numberOfLines={2}>
+              {meaning}
+            </Text>
+          )}
+          <View style={styles.rowMeta}>
+            <View style={[styles.diffBadge, { backgroundColor: `${config.color}22` }]}>
+              <Text style={[styles.diffText, { color: config.color }]}>{diffText}</Text>
+            </View>
+            <Text style={[styles.categoryLabel, { color: textSecondary }]}>
+              {config.title}
+            </Text>
+          </View>
         </View>
-        <View>
-          <Text style={[styles.wordText, { color: textPrimary }]}>{item.word}</Text>
-          <Text style={[styles.categoryLabel, { color: textSecondary }]}>{config.title}</Text>
-        </View>
+        <TouchableOpacity
+          style={[
+            styles.audioBtn,
+            {
+              borderColor: textSecondary,
+            },
+          ]}
+          onPress={() => playAudio(item.word)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="volume-medium" size={16} color={textSecondary} />
+        </TouchableOpacity>
       </View>
-      <Ionicons 
-        name="volume-medium" 
-        size={24} 
-        color={config.color} 
-        onPress={() => playAudio(item.word)} 
-        style={styles.audioIcon}
-      />
-    </View>
-  );
+    );
+  };
 
   if (isLoading) {
     return (
@@ -101,14 +119,21 @@ export default function CategoryWordsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
-      <Stack.Screen 
-        options={{ 
-          title: config.title,
-          headerStyle: { backgroundColor: cardColor },
-          headerTintColor: config.color,
-          headerTitleStyle: { fontWeight: 'bold' }
-        }} 
-      />
+      <SafeAreaView edges={['top']} style={{ backgroundColor: cardColor }}>
+        <View style={styles.customHeader}>
+          <TouchableOpacity 
+            style={[styles.backBtn, { backgroundColor: isDark ? '#ffffff10' : '#00000008' }]} 
+            onPress={() => router.back()} 
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={18} color={textPrimary} />
+          </TouchableOpacity>
+          <Text style={[styles.customHeaderTitle, { color: textPrimary }]}>
+            {config.title}
+          </Text>
+        </View>
+        <View style={styles.separator} />
+      </SafeAreaView>
       <FlatList
         data={words}
         keyExtractor={(item) => item.id.toString()}
@@ -139,17 +164,34 @@ export default function CategoryWordsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContent: { padding: 16 },
-  header: { alignItems: 'center', marginBottom: 24, marginTop: 8 },
+  
+  // Custom Header
+  customHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  backBtn: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  customHeaderTitle: { fontSize: 20, fontWeight: '900', flex: 1 },
+  separator: { height: 1, backgroundColor: '#8882', marginBottom: 0 },
+
+  listContent: { paddingBottom: 24 },
+  header: { alignItems: 'center', marginBottom: 24, paddingHorizontal: 16, paddingTop: 28 },
   iconContainer: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  headerCount: { fontSize: 16, opacity: 0.7 },
-  card: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1 },
-  cardLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  difficultyBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  difficultyText: { fontWeight: 'bold', fontSize: 14 },
-  wordText: { fontSize: 18, fontWeight: 'bold', textTransform: 'capitalize' },
-  categoryLabel: { fontSize: 12, opacity: 0.6, marginTop: 2 },
-  audioIcon: { padding: 8 },
+  headerCount: { fontSize: 16, opacity: 0.7, fontWeight: '700' },
+  
+  // Standard WordRow Styles
+  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
+  rowInfo: { flex: 1 },
+  rowWord: { fontSize: 15, fontWeight: '700', textTransform: 'capitalize' },
+  rowMeaning: { fontSize: 12, marginTop: 3, lineHeight: 17 },
+  rowMeta: { flexDirection: 'row', gap: 8, marginTop: 6, alignItems: 'center' },
+  diffBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+  diffText: { fontSize: 10, fontWeight: '800' },
+  categoryLabel: { fontSize: 10, opacity: 0.6, fontWeight: '600' },
+
+  // Audio button mimicking checkBtn
+  audioBtn: { 
+    width: 34, height: 34, borderRadius: 17, borderWidth: 1, 
+    alignItems: 'center', justifyContent: 'center', marginLeft: 10 
+  },
+
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 64 },
   emptyTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 16 },
   emptyDesc: { fontSize: 14, opacity: 0.6, textAlign: 'center', marginTop: 8, maxWidth: 250 },

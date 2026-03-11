@@ -15,6 +15,7 @@ import {
   useLists,
   useListsContainingWord,
   useAddWordToList,
+  useRemoveWordFromList,
   useCreateList,
 } from '@/src/api/queries/lists.queries';
 import type { WordListDTO } from '@/src/types/api';
@@ -164,6 +165,7 @@ export default function AddToListModal({
   const { data: lists = [], isLoading: listsLoading } = useLists();
   const { data: containingIds = [] } = useListsContainingWord(wordId);
   const { mutate: addWord } = useAddWordToList();
+  const { mutate: removeWord } = useRemoveWordFromList();
   const { mutate: createList, isPending: creating } = useCreateList();
 
   // Sync containingIds into addedIds when modal opens / data arrives
@@ -183,20 +185,38 @@ export default function AddToListModal({
     }
   }, [visible]);
 
-  const handleAddToList = useCallback((listId: number) => {
-    if (addedIds.has(listId)) return; // already added — no toggle/remove here
+  const handleToggleList = useCallback((listId: number) => {
     setPendingId(listId);
-    addWord(
-      { listId, wordId },
-      {
-        onSuccess: () => {
-          setAddedIds((prev) => new Set([...prev, listId]));
-          setPendingId(null);
+    if (addedIds.has(listId)) {
+      // Remove
+      removeWord(
+        { listId, wordId },
+        {
+          onSuccess: () => {
+            setAddedIds((prev) => {
+              const next = new Set(prev);
+              next.delete(listId);
+              return next;
+            });
+            setPendingId(null);
+          },
+          onError: () => setPendingId(null),
+        }
+      );
+    } else {
+      // Add
+      addWord(
+        { listId, wordId },
+        {
+          onSuccess: () => {
+            setAddedIds((prev) => new Set([...prev, listId]));
+            setPendingId(null);
+          },
+          onError: () => setPendingId(null),
         },
-        onError: () => setPendingId(null),
-      },
-    );
-  }, [addedIds, addWord, wordId]);
+      );
+    }
+  }, [addedIds, addWord, removeWord, wordId]);
 
   const handleCreateAndAdd = useCallback(() => {
     const name = newListName.trim();
@@ -252,7 +272,7 @@ export default function AddToListModal({
                   item={item}
                   isAdded={addedIds.has(item.id)}
                   isPending={pendingId === item.id}
-                  onPress={() => handleAddToList(item.id)}
+                  onPress={() => handleToggleList(item.id)}
                   styles={styles}
                   c={c}
                 />

@@ -86,8 +86,28 @@ export function useAddWordToList() {
       await apiClient.post(ENDPOINTS.lists.wordItem(listId, wordId));
       return { listId, wordId };
     },
+    onMutate: async ({ listId }) => {
+      await qc.cancelQueries({ queryKey: listKeys.all });
+      const previousLists = qc.getQueryData<WordListDTO[]>(listKeys.all);
+      
+      qc.setQueryData<WordListDTO[]>(listKeys.all, (old) => {
+        if (!old) return old;
+        return old.map(list => 
+          list.id === listId 
+            ? { ...list, totalWords: list.totalWords + 1, unknownWords: list.unknownWords + 1 }
+            : list
+        );
+      });
+      return { previousLists };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousLists) {
+        qc.setQueryData(listKeys.all, context.previousLists);
+      }
+    },
     onSuccess: ({ listId }) => {
       qc.invalidateQueries({ queryKey: listKeys.detail(listId) });
+      qc.invalidateQueries({ queryKey: listKeys.all });
     },
   });
 }
@@ -98,6 +118,30 @@ export function useRemoveWordFromList() {
     mutationFn: async ({ listId, wordId }: { listId: number; wordId: number }) => {
       await apiClient.delete(ENDPOINTS.lists.wordItem(listId, wordId));
       return { listId, wordId };
+    },
+    onMutate: async ({ listId }) => {
+      await qc.cancelQueries({ queryKey: listKeys.all });
+      const previousLists = qc.getQueryData<WordListDTO[]>(listKeys.all);
+      
+      qc.setQueryData<WordListDTO[]>(listKeys.all, (old) => {
+        if (!old) return old;
+        return old.map(list => 
+          list.id === listId 
+            ? { 
+                ...list, 
+                totalWords: Math.max(0, list.totalWords - 1), 
+                // We optimistically decrease unknownWords too as a safe guess
+                unknownWords: Math.max(0, list.unknownWords - 1) 
+              }
+            : list
+        );
+      });
+      return { previousLists };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousLists) {
+        qc.setQueryData(listKeys.all, context.previousLists);
+      }
     },
     onSuccess: ({ listId }) => {
       qc.invalidateQueries({ queryKey: listKeys.detail(listId) });
