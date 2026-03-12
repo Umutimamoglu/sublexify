@@ -9,6 +9,10 @@ import {
   ActivityIndicator,
   TextInput,
 } from 'react-native';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Reanimated, { runOnJS } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
@@ -100,52 +104,75 @@ function WordRow({
   word,
   isKnown,
   onToggle,
+  onLongPress,
+  onPressOut,
   styles,
   c,
 }: {
   word: WordDTO;
   isKnown: boolean;
   onToggle: () => void;
+  onLongPress?: () => void;
+  onPressOut?: () => void;
   styles: Styles;
   c: Palette;
 }) {
+  const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
   const meaning = word.definition?.meanings?.[0]?.definition;
   const diffColor = word.difficulty ? DIFF_COLORS[word.difficulty] : null;
 
+  const tapGesture = Gesture.Tap()
+    .maxDistance(8)
+    .onEnd(() => { runOnJS(onToggle)(); });
+
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(400)
+    .onStart(() => {
+      runOnJS(triggerLight)();
+      if (onLongPress) runOnJS(onLongPress)();
+    })
+    .onEnd(() => {
+      // Stay open until user taps background
+    });
+
+  const rowGesture = Gesture.Simultaneous(tapGesture, longPressGesture);
+
   return (
-    <View style={styles.row}>
-      <View style={styles.rowInfo}>
-        <Text style={styles.rowWord}>{word.word}</Text>
-        {!!meaning && (
-          <Text style={styles.rowMeaning} numberOfLines={2}>{meaning}</Text>
-        )}
-        {(!!word.difficulty || !!word.frequency) && (
-          <View style={styles.rowMeta}>
-            {!!diffColor && (
-              <View style={[styles.diffBadge, { backgroundColor: diffColor + '22' }]}>
-                <Text style={[styles.diffText, { color: diffColor }]}>{word.difficulty}</Text>
-              </View>
-            )}
-            {!!word.frequency && word.frequency > 1 && (
-              <Text style={{ color: c.TEXT_S, fontSize: 11 }}>×{word.frequency}</Text>
-            )}
-          </View>
-        )}
+    <GestureDetector gesture={rowGesture}>
+      <View style={styles.row}>
+        <View style={styles.rowInfo}>
+          <Text style={styles.rowWord}>{word.word}</Text>
+          {!!meaning && (
+            <Text style={styles.rowMeaning} numberOfLines={2}>{meaning}</Text>
+          )}
+          {(!!word.difficulty || !!word.frequency) && (
+            <View style={styles.rowMeta}>
+              {!!diffColor && (
+                <View style={[styles.diffBadge, { backgroundColor: diffColor + '22' }]}>
+                  <Text style={[styles.diffText, { color: diffColor }]}>{word.difficulty}</Text>
+                </View>
+              )}
+              {!!word.frequency && word.frequency > 1 && (
+                <Text style={{ color: c.TEXT_S, fontSize: 11 }}>×{word.frequency}</Text>
+              )}
+            </View>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.checkBtn,
+            {
+              borderColor: isKnown ? c.PURPLE : c.TEXT_S,
+              backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
+            },
+          ]}
+          onPress={onToggle}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={[
-          styles.checkBtn,
-          {
-            borderColor: isKnown ? c.PURPLE : c.TEXT_S,
-            backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
-          },
-        ]}
-        onPress={onToggle}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
-      </TouchableOpacity>
-    </View>
+    </GestureDetector>
   );
 }
 
@@ -168,6 +195,7 @@ export default function VocabularyScreen() {
 
   const [query, setQuery] = useState('');
   const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
+  const [previewWord, setPreviewWord] = useState<WordDTO | null>(null);
   const knownInitialized = useRef(false);
 
   const { data: knownWordsData = [] }        = useKnownWords();
@@ -269,29 +297,24 @@ export default function VocabularyScreen() {
                 word={item}
                 isKnown={knownIds.has(item.id)}
                 onToggle={() => handleToggle(item.id)}
+                onLongPress={() => setPreviewWord(item)}
                 styles={styles}
                 c={c}
               />
             )}
             ItemSeparatorComponent={() => <View style={styles.separator} />}
-            ListEmptyComponent={() => (
-              <View style={styles.center}>
-                <Text style={styles.emptyIcon}>
-                  {isSearching ? '🔎' : '📚'}
-                </Text>
-                <Text style={styles.emptyText}>
-                  {isSearching
-                    ? t('noSearchResults', { query })
-                    : t('noWords')}
-                </Text>
-              </View>
-            )}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 24 }}
           />
         )}
-
       </SafeAreaView>
+
+      <WordPreviewOverlay 
+        word={previewWord as any}
+        visible={!!previewWord}
+        onClose={() => setPreviewWord(null)}
+        isDark={isDark}
+        c={c}
+      />
     </View>
   );
 }

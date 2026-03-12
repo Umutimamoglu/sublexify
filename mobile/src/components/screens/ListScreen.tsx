@@ -43,6 +43,8 @@ import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries';
 import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
+import { FlashCardBack } from '@/src/components/ui/FlashCard';
+import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import type { ListWord, Difficulty } from '@/src/types/api';
 
 type Palette = {
@@ -576,6 +578,8 @@ function SwipeableWordRow({
   onToggle,
   onAddToList,
   onRemove,
+  onLongPress,
+  onPressOut,
   hintDelay,
   styles,
   c,
@@ -585,6 +589,8 @@ function SwipeableWordRow({
   onToggle: () => void;
   onAddToList: () => void;
   onRemove?: () => void;
+  onLongPress?: () => void;
+  onPressOut?: () => void;
   hintDelay?: number;
   styles: Styles;
   c: Palette;
@@ -622,6 +628,24 @@ function SwipeableWordRow({
     }
   }, [onRemove, removeAnim]);
 
+  const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
+
+  const tapGesture = Gesture.Tap()
+    .maxDistance(8)
+    .onEnd(() => { runOnJS(onToggle)(); });
+
+  const longPressGesture = Gesture.LongPress()
+    .minDuration(400)
+    .onStart(() => {
+      runOnJS(triggerLight)();
+      if (onLongPress) runOnJS(onLongPress)();
+    })
+    .onEnd(() => {
+      // Stay open until user taps background
+    });
+
+  const rowGesture = Gesture.Simultaneous(tapGesture, longPressGesture);
+
   const renderRightActions = (progress: SharedValue<number>) => (
     <RightActions
       progress={progress}
@@ -643,133 +667,23 @@ function SwipeableWordRow({
         friction={2}
         overshootRight={false}
       >
-        <WordRow
-          word={word}
-          isKnown={isKnown}
-          onToggle={onToggle}
-          styles={styles}
-          c={c}
-        />
+        <GestureDetector gesture={rowGesture}>
+          <View>
+            <WordRow
+              word={word}
+              isKnown={isKnown}
+              onToggle={onToggle}
+              styles={styles}
+              c={c}
+            />
+          </View>
+        </GestureDetector>
       </ReanimatedSwipeable>
     </Reanimated.View>
   );
 }
 
-// ─── FlashCardBack ────────────────────────────────────────────
-function FlashCardBack({
-  word,
-  isKnown,
-  onToggle,
-  onFlipBack, // Parent component'te hata vermemesi için prop'u tutuyoruz, ancak butonu kaldırdık.
-  styles,
-  c,
-  animStyle,
-}: {
-  word: ListWord;
-  isKnown: boolean;
-  onToggle: () => void;
-  onFlipBack: () => void;
-  styles: Styles;
-  c: Palette;
-  animStyle: any;
-}) {
-  const { t } = useTranslation('lists');
-  const def = word.definition;
-
-  return (
-    <Reanimated.View style={[styles.card, styles.cardBack, animStyle]}>
-      <ScrollView style={styles.cardBackInner} showsVerticalScrollIndicator={false}>
-        <Text style={styles.cardBackWord}>{word.word}</Text>
-
-        {word.difficulty && (
-          <View style={[styles.diffBadge, {
-            backgroundColor: DIFF_COLORS[word.difficulty] + '22',
-            borderColor: DIFF_COLORS[word.difficulty],
-          }]}>
-            <Text style={[styles.diffBadgeText, { color: DIFF_COLORS[word.difficulty] }]}>
-              {word.difficulty}
-            </Text>
-          </View>
-        )}
-
-        {!def ? (
-          <View style={styles.unenrichedBox}>
-            <Text style={styles.unenrichedIcon}>⏳</Text>
-            <Text style={styles.unenrichedText}>{t('notEnriched')}</Text>
-          </View>
-        ) : (
-          <>
-            {/* Meanings */}
-            {def.meanings?.map((m, i) => (
-              <View key={i} style={styles.meaningBlock}>
-                <View style={styles.posBadge}>
-                  <Text style={styles.posBadgeText}>{m.pos}</Text>
-                </View>
-                <Text style={styles.meaningDef}>{m.definition}</Text>
-                {!!m.example && <Text style={styles.meaningEx}>{m.example}</Text>}
-              </View>
-            ))}
-
-            {/* Verb Forms */}
-            {def.verb_forms && (
-              <>
-                <Text style={styles.sectionLabel}>{t('verbForms')}</Text>
-                <View style={styles.verbGrid}>
-                  {(['v1', 'v2', 'v3', 'ing'] as const).map((key) => (
-                    <View key={key} style={styles.verbCell}>
-                      <Text style={styles.verbLabel}>{key.toUpperCase()}</Text>
-                      <Text style={styles.verbValue}>{def.verb_forms![key]}</Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {/* Phrasal Verbs */}
-            {def.phrasal_verbs?.length ? (
-              <>
-                <Text style={styles.sectionLabel}>{t('phrasalVerbs')}</Text>
-                {def.phrasal_verbs.map((pv, i) => (
-                  <View key={i} style={styles.phrasalBlock}>
-                    <Text style={styles.phrasalPhrase}>{pv.phrase}</Text>
-                    <Text style={styles.phrasalDef}>{pv.definition}</Text>
-                    {!!pv.example && <Text style={styles.phrasalEx}>{pv.example}</Text>}
-                  </View>
-                ))}
-              </>
-            ) : null}
-          </>
-        )}
-
-        {/* Butonun ScrollView içeriğinin üstüne binmemesi için alt boşluk */}
-        <View style={{ height: 80 }} />
-      </ScrollView>
-
-      {/* YENİ ALT BUTON: Bilinenlere Ekle / Çıkar (Eski Flip butonunun yerinde) */}
-      <TouchableOpacity
-        style={[
-          styles.cardFlipBackBtn, // Alt konuma yerleşmesi için eski flip butonunun stilini baz alıyoruz
-          {
-            borderColor: isKnown ? c.PURPLE : c.TEXT_S,
-            backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
-            borderWidth: 1,
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }
-        ]}
-        onPress={onToggle}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S, marginRight: 8 }]}>✓</Text>
-        <Text style={{ color: isKnown ? c.PURPLE : c.TEXT_S, fontWeight: 'bold' }}>
-          {isKnown ? "Biliniyor" : "Öğrenildi İşaretle"}
-        </Text>
-      </TouchableOpacity>
-
-    </Reanimated.View>
-  );
-}
+// ─── FLASHCARD BACK MOVED TO UI/FLASHCARD.TSX ─────────────────
 
 // ─── Main Screen ──────────────────────────────────────────────
 export default function ListScreen({ listId }: { listId: number }) {
@@ -825,8 +739,10 @@ export default function ListScreen({ listId }: { listId: number }) {
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [selectedQuizTypes, setSelectedQuizTypes] = useState<Set<string>>(new Set(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']));
   const [cardIndex, setCardIndex] = useState(0);
+  const [isFlippedState, setIsFlippedState] = useState(false);
   const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
+  const [previewWord, setPreviewWord] = useState<ListWord | null>(null);
   const knownInitialized = useRef(false);
   const hintShown = useRef(false);
 
@@ -945,6 +861,7 @@ export default function ListScreen({ listId }: { listId: number }) {
   useEffect(() => {
     flipProgress.value = 0;
     isFlipped.value = false;
+    setIsFlippedState(false);
   }, [cardIndex]);
 
   const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
@@ -975,6 +892,7 @@ export default function ListScreen({ listId }: { listId: number }) {
     if (buttonActiveRef.current) return;
     const next = !isFlipped.value;
     isFlipped.value = next;
+    setIsFlippedState(next);
     flipProgress.value = withTiming(next ? 1 : 0, { duration: 380, easing: Easing.inOut(Easing.ease) });
   }, [flipProgress, isFlipped]);
 
@@ -1137,6 +1055,7 @@ export default function ListScreen({ listId }: { listId: number }) {
                 onToggle={() => handleToggle(item.id)}
                 onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
                 onRemove={!isKnownList && !isSystemList ? () => handleRemove(item.id) : undefined}
+                onLongPress={() => setPreviewWord(item)}
                 hintDelay={!hintShown.current && index < 3 ? 700 + index * 200 : undefined}
                 styles={styles}
                 c={c}
@@ -1154,7 +1073,7 @@ export default function ListScreen({ listId }: { listId: number }) {
                 <Reanimated.View style={[styles.cardStack, cardContainerStyle]}>
 
                   {/* Front */}
-                  <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]}>
+                  <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]} pointerEvents={isFlippedState ? 'none' : 'auto'}>
                     <Text style={styles.cardBigWord}>{currentWord.word}</Text>
                     <TouchableOpacity
                       style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
@@ -1206,10 +1125,12 @@ export default function ListScreen({ listId }: { listId: number }) {
                     word={currentWord}
                     isKnown={knownIds.has(currentWord.id)}
                     onToggle={() => handleToggle(currentWord.id)}
-                    onFlipBack={doFlip}
+                    onButtonPressIn={() => { buttonActiveRef.current = true; }}
+                    onButtonPressOut={() => { buttonActiveRef.current = false; }}
                     styles={styles}
                     c={c}
                     animStyle={backAnimStyle}
+                    pointerEvents={isFlippedState ? 'auto' : 'none'}
                   />
                 </Reanimated.View>
               </GestureDetector>
@@ -1284,6 +1205,14 @@ export default function ListScreen({ listId }: { listId: number }) {
         onClose={() => setShowQuizModal(false)}
         onConfirm={handleStartStudy}
         styles={styles}
+        c={c}
+      />
+
+      <WordPreviewOverlay 
+        word={previewWord}
+        visible={!!previewWord}
+        onClose={() => setPreviewWord(null)}
+        isDark={isDark}
         c={c}
       />
     </View>
