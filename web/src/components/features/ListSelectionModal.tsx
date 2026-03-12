@@ -63,6 +63,7 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
         try {
             await WordListService.addWordToList(listId, wordId);
             setAddedLists(prev => new Set(prev).add(listId));
+            window.dispatchEvent(new CustomEvent('list-words-changed'));
         } catch (error) {
             console.error("Failed to add word to list", error);
         }
@@ -76,6 +77,7 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
                 next.delete(listId);
                 return next;
             });
+            window.dispatchEvent(new CustomEvent('list-words-changed'));
         } catch (error) {
             console.error("Failed to remove word from list", error);
         }

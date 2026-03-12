@@ -34,6 +34,10 @@ const UserListsPage = () => {
 
     useEffect(() => {
         fetchLists();
+        
+        const handleListChange = () => fetchLists();
+        window.addEventListener('list-words-changed', handleListChange);
+        return () => window.removeEventListener('list-words-changed', handleListChange);
     }, []);
 
     useEffect(() => {
