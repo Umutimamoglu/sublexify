@@ -15,4 +15,6 @@ public class WordAnalysisResultDTO {
 
     @JsonProperty("is_proper_noun")
     private Boolean isProperNoun;
+
+    private String language;
 }

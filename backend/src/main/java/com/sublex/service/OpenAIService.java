@@ -88,6 +88,17 @@ public class OpenAIService implements AIService {
                           "meanings": [{ "pos": "...", "definition": "...", "example": "..." }],
                           "phrasal_verbs": [{ "phrase": "...", "definition": "...", "example": "..." }]
                         }
+
+                        ### LEXICOGRAPHICAL COMPLETENESS RULES:
+                        1. **MEANING COMPLETENESS (CRITICAL)**:
+                           - Provide all primary meanings of the word across different Parts of Speech IF they are common.
+                           - Example: 'will' -> [modal] gelecek zaman eki, [noun] irade, [noun] vasiyet. (TÜMÜ TÜRKÇE OLMALI).
+                        2. **HIGH-FREQUENCY MULTI-POS WORDS**:
+                           - For common words (can, may, might, will, bound, present, etc.), provide all primary POS meanings.
+                        3. **PAST PARTICIPLE ADJECTIVES**:
+                           - For words like 'titled', 'troubled', include both the specific adjective and verb-result meanings.
+                        4. **STRICT TURKISH DEFINITION**:
+                           - Every 'definition' MUST be written in fluent Turkish. NO ENGLISH definitions.
                         """;
 
         @Override

@@ -42,7 +42,7 @@ public class GeminiService implements AIService {
     // current flash preview/model
     public static final String SHERIFF_MODEL = "gemini-3-flash-preview";
     public static final String PIPELINE_MODEL = "gemini-2.5-pro";
-    public static final String SPECIALIST_MODEL = "gemini-2.5-pro";
+ public static final String SPECIALIST_MODEL = "gemini-3.1-pro-preview";
     public static final String ANALYSIS_MODEL = "gemini-2.5-flash";
     private static final String DEFAULT_MODEL = PIPELINE_MODEL;
 
@@ -63,23 +63,27 @@ public class GeminiService implements AIService {
                                - Eğer kelime kesme işareti veya tire içeriyorsa (örn: 'don't', 'long-term'), bunu tek bir bütün olarak ele al ve bağlama göre en uygun kökü bul (örn: 'don't' -> 'do', 'long-term' -> 'long-term').
                             2. Kelimenin zorluk seviyesini (A1-C2) belirle.
                             3. Özel isim tespiti (is_proper_noun):
-                               Aşağıdaki kategorilere giren kelimeleri MUTLAKA 'is_proper_noun: true' olarak işaretle:
-                               - Kişi adları ve soyadları (örn: belushi, poitier, stevens, clark, morgan, brady)
-                               - Şehir, eyalet, ülke ve yer adları (örn: omaha, danville, paris, brooklyn)
-                               - Marka ve şirket adları (örn: porsche, purina, playboy, nike)
-                               - Film, dizi, karakter adları (örn: bambi, terminator, gandalf)
-                               - Uydurma/kurgu özel isimleri (örn: friesenstinlender, lecroix)
-                               DİKKAT: Kelimeler küçük harfle yazılmış olabilir, bu özel isim olmadığı anlamına GELMEZ.
-                               Bağlam cümlesine ve genel bilgine dayanarak karar ver.
-                               Sadece emin olduklarını işaretle, emin değilsen false bırak.
+                               Aşağıdaki kategorilere giren ve İngilizcede başka yaygın bir sözlük anlamı (fiil, sıfat, genel isim vb.) BULUNMAYAN kelimeleri MUTLAKA 'is_proper_noun: true' olarak işaretle:
+                                - Kişi adları ve soyadları (örn: belushi, poitier, stevens, clark, morgan, brady, stearn, kurtz, jasper, levi, rockwell)
+                                - Şehir, eyalet, ülke ve yer adları (örn: omaha, danville, paris, brooklyn)
+                                - Marka, şirket ve müzik grubu adları (örn: porsche, purina, playboy, nike, radiohead)
+                                - Film, dizi, karakter adları (örn: bambi, terminator, gandalf, elric)
+                                - Uydurma/kurgu özel isimleri (örn: friesenstinlender, lecroix)
+                                DİKKAT: Kelimeler küçük harfle yazılmış olabilir. 
+                                ALTIN KURAL: Eğer bir kelimenin yaygın bir sözlük anlamı varsa (örn: 'hefty', 'scotch', 'will', 'can', 'bridge') ve bağlamda bir özel isim olarak KESİN olarak (büyük harfle başlama, unvan eşlik etmesi vb.) kullanılmıyorsa özel isim İŞARETLEME.
+                                HYPHENATED INTEGRITY: Treat long hyphenated strings (e.g., 'married-to-the-job', 'once-in-a-lifetime') as a SINGLE concept/word. Do not break them up into fragments.
+                            4. Dil Tespiti (language):
+                               Kelimenin hangi dilde olduğunu tespit et.
+                               - Eğer kelime İngilizce ise veya yaygın bir İngilizce alıntı kelime (loanword - örn: café, taco, sushi) ise 'en' olarak işaretle.
+                               - Eğer kelime KESİN olarak başka bir dilde (İspanyolca, Fransızca, Vietnamca, Almanca vb.) ve İngilizce sözlüklerde yaygın değilse, o dilin ISO kodunu ver (es, fr, vi, de, it vb.).
 
                             Girdi JSON:
                             %s
 
                             Çıktıyı şu JSON formatında bir liste olarak ver:
                             [
-                              { "word": "meeting", "root": "meeting", "difficulty": "B1", "is_proper_noun": false },
-                              { "word": "ran", "root": "run", "difficulty": "A1", "is_proper_noun": false }
+                              { "word": "meeting", "root": "meeting", "difficulty": "B1", "is_proper_noun": false, "language": "en" },
+                              { "word": "mija", "root": "mija", "difficulty": "A1", "is_proper_noun": false, "language": "es" }
                             ]
                             Sadece JSON dizisi döndür.
                             """,
@@ -131,6 +135,7 @@ public class GeminiService implements AIService {
                 "response_mime_type", "application/json"));
 
         try {
+            String jsonBody = objectMapper.writeValueAsString(requestBodyMap);
             String response = restClient.post()
                     .uri(GEMINI_BASE_URL + model + ":generateContent?key=" + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -209,9 +214,26 @@ public class GeminiService implements AIService {
                    - You MUST prioritize the meaning that fits the provided 'CONTEXT'.
                    - For example, if 'squash' is provided with a cooking context, do NOT define it as a sport.
                    - If 'terminator' has a movie context, do NOT provide obscure astronomical definitions.
-                4. **NO NULL LISTS (CRITICAL)**:
+                4. **PROPER NOUN LABELING**:
+                   - Every word identified as a Name, Place, Brand, or Person MUST have `pos: "proper noun"`.
+                5. **NO NULL LISTS (CRITICAL)**:
                    - If there are no `phrasal_verbs` or `meanings` to add, you MUST return an empty list `[]`.
                    - Do NOT use `null` for list fields.
+
+                ### LEXICOGRAPHICAL COMPLETENESS RULES:
+                1. **MEANING COMPLETENESS**:
+                   - Provide all primary meanings of the word across different Parts of Speech IF they are common.
+                   - Example: 'will' -> [modal] gelecek zaman eki, [noun] irade, [noun] vasiyet. (TÜMÜ TÜRKÇE OLMALI).
+                2. **HIGH-FREQUENCY MULTI-POS WORDS**:
+                   - For common words (can, may, might, will, bound, present, etc.), always provide at least one noun and one verb/adjective meaning if applicable.
+                3. **PAST PARTICIPLE ADJECTIVES**:
+                   - Check for words used as adjectives that are also past participles (e.g., 'titled', 'troubled', 'titled').
+                   - Include both the specific adjective meaning (örn: 'titled' -> asilzade ünvanı olan) and the verb's result meaning (örn: 'titled' -> başlık verilmiş).
+                4. **HYPHENATED INTEGRITY**:
+                   - If the word is a hyphenated phrase (e.g., 'married-to-the-job', 'once-in-a-lifetime'), you MUST provide the meaning for the WHOLE phrase.
+                   - Do NOT define individual parts.
+                5. **STRICT TURKISH DEFINITION**:
+                   - Even in these rules, all definitions MUST be in Turkish.
 
                 ### JSON STRUCTURE:
                 Return a JSON array of objects:
@@ -302,7 +324,11 @@ public class GeminiService implements AIService {
                 5. **STRICT VERB FORM KEYS (CRITICAL)**:
                    - You MUST use keys `v1`, `v2`, `v3`, and `ing` for the `verb_forms` object.
                    - Do NOT use `present`, `past`, `participle`. Use `v1`, `v2`, `v3`, `ing`.
-                6. **NO NULL LISTS (CRITICAL)**:
+                6. **PROPER NOUN LABELING**:
+                   - Every word identified as a Name, Place, Brand, or Person MUST have `pos: "proper noun"`.
+                7. **PROPER NOUN LABELING**:
+                   - Every word identified as a Name, Place, Brand, or Person MUST have `pos: "proper noun"`.
+                8. **NO NULL LISTS (CRITICAL)**:
                    - If there are no `phrasal_verbs` or `meanings` to add, you MUST return an empty list `[]`.
                    - Do NOT use `null` for list fields.
 
@@ -403,7 +429,9 @@ public class GeminiService implements AIService {
                 6. **STRICT VERB FORM KEYS (CRITICAL)**:
                    - You MUST use keys `v1`, `v2`, `v3`, and `ing` for the `verb_forms` object.
                    - Do NOT use `present`, `past`, `participle`. Use `v1`, `v2`, `v3`, `ing`.
-                7. **NO NULL LISTS (CRITICAL)**:
+                7. **PROPER NOUN LABELING**:
+                   - Every word identified as a Name, Place, Brand, or Person MUST have `pos: "proper noun"`.
+                8. **NO NULL LISTS (CRITICAL)**:
                    - If there are no `phrasal_verbs` or `meanings` to add, you MUST return an empty list `[]`.
                    - Do NOT use `null` for list fields.
 

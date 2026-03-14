@@ -141,7 +141,7 @@ public class PipelineService {
                 def.setWord(word.getWord());
                 def.setDifficulty("A1");
                 com.sublex.model.WordDefinition.Meaning meaning = new com.sublex.model.WordDefinition.Meaning();
-                meaning.setPos("noun");
+                meaning.setPos("proper noun");
                 meaning.setDefinition("A proper noun (Name, Place, etc.)");
                 meaning.setExample(word.getContextSentence() != null ? word.getContextSentence() : "");
                 def.getMeanings().add(meaning);

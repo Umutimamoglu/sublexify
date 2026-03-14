@@ -21,7 +21,7 @@ public class SubtitleParser {
     // Örn: "café", "long-term", "don't" tek token olarak yakalanır.
     // Max 2 hyphen/apostrophe segments: captures 'long-term', 'don't', 'well-to-do'
     // but NOT 'hotshot-chef-at-the-big-fancy' (which becomes individual tokens)
-    private static final Pattern WORD_PATTERN = Pattern.compile("[\\p{L}]+(?:[''\\-][\\p{L}]+){0,2}");
+    private static final Pattern WORD_PATTERN = Pattern.compile("[\\p{L}]+(?:[''\\-][\\p{L}]+){0,10}");
 
     /**
      * Data holder for word analysis

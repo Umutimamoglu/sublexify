@@ -156,6 +156,9 @@ public class WordAnalysisService {
                     // Update fields
                     word.setDifficulty(result.getDifficulty());
                     word.setIsProperNoun(result.getIsProperNoun());
+                    if (result.getLanguage() != null && !result.getLanguage().isEmpty()) {
+                        word.setLanguage(result.getLanguage());
+                    }
 
                     // Link Root
                     if (result.getRoot() != null && !result.getRoot().equalsIgnoreCase(word.getWord())) {
