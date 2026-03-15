@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
                 // Admin endpoints
+                .requestMatchers("/api/admin/word-analysis/trigger").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                 // Everything else requires authentication

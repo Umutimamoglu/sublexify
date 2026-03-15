@@ -205,6 +205,7 @@ public class PipelineService {
                                     word.setDifficulty(def.getDifficulty());
                                     word.setIsEnriched(true);
                                     word.setNeedsReEnrichment(false);
+                                    word.setAuditNotes(null);
                                     word.setEnrichedAt(batchTime);
                                 } else {
                                     log.warn("Worker returned NULL definition for word: {}", word.getWord());

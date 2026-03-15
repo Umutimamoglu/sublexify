@@ -62,9 +62,13 @@ public class AdminController {
     @PostMapping("/word-analysis/trigger")
     @Operation(summary = "Triggers async word analysis job manually")
     public ResponseEntity<String> triggerWordAnalysis() {
-        wordAnalysisService.triggerAnalysis();
-        return ResponseEntity.ok("Word analysis triggered.");
+        log.info("Starting word analysis asynchronously");
+        Thread.startVirtualThread(() -> {
+            wordAnalysisService.triggerAnalysis();
+        });
+        return ResponseEntity.ok("Word analysis triggered in background.");
     }
+
 
     @PostMapping("/word-analysis/reset-failed")
     @Operation(summary = "Resets all permanently FAILED words back to PENDING and triggers analysis")

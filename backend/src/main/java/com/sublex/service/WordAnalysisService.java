@@ -33,7 +33,7 @@ public class WordAnalysisService {
     private final GeminiService geminiService;
     private final TransactionTemplate transactionTemplate;
 
-    private static final int BATCH_SIZE = 50; // Process 50 words at a time
+    private static final int BATCH_SIZE = 20; // Process 20 words at a time to avoid heavy transaction timeouts
 
     // Debounce: wait 30 seconds after the last subtitle event before triggering analysis
     private final ScheduledExecutorService debounceScheduler = Executors.newSingleThreadScheduledExecutor();
@@ -110,76 +110,98 @@ public class WordAnalysisService {
         Map<String, WordAnalysisResultDTO> resultMap = results.stream()
                 .collect(Collectors.toMap(r -> r.getWord().toLowerCase(), r -> r, (a, b) -> a));
 
-        transactionTemplate.execute(status -> {
-            // 1. Collect and Prepare Root Words
-            java.util.Set<String> rootWordsToResolve = new java.util.HashSet<>();
-            for (Word word : words) {
-                WordAnalysisResultDTO result = resultMap.get(word.getWord().toLowerCase());
-                if (result != null && result.getRoot() != null) {
-                    String root = result.getRoot();
-                    if (!root.equalsIgnoreCase(word.getWord())) {
-                        rootWordsToResolve.add(root);
-                    }
-                }
-            }
+        log.info("Starting individual processing for batch of {} words", words.size());
 
-            Map<String, Word> rootWordMap = new HashMap<>(); // wordText -> WordEntity
-            if (!rootWordsToResolve.isEmpty()) {
-                // Fetch existing roots
-                String language = words.get(0).getLanguage(); // Assuming batch has same language
-                List<Word> existingRoots = wordRepository.findByWordInAndLanguage(rootWordsToResolve, language);
-                existingRoots.forEach(w -> rootWordMap.put(w.getWord().toLowerCase(), w));
-
-                // Create missing roots
-                List<Word> newRoots = new ArrayList<>();
-                for (String rootText : rootWordsToResolve) {
-                    if (!rootWordMap.containsKey(rootText.toLowerCase())) {
-                        newRoots.add(Word.builder()
-                                .word(rootText)
-                                .language(language)
-                                .status("PENDING") // Pending analysis for the root itself
-                                .build());
-                    }
-                }
-
-                if (!newRoots.isEmpty()) {
-                    List<Word> savedRoots = wordRepository.saveAll(newRoots);
-                    savedRoots.forEach(w -> rootWordMap.put(w.getWord().toLowerCase(), w));
-                }
-            }
-
-            // 2. Update Words
-            for (Word word : words) {
-                WordAnalysisResultDTO result = resultMap.get(word.getWord().toLowerCase());
-
-                if (result != null) {
-                    // Update fields
-                    word.setDifficulty(result.getDifficulty());
-                    word.setIsProperNoun(result.getIsProperNoun());
-                    if (result.getLanguage() != null && !result.getLanguage().isEmpty()) {
-                        word.setLanguage(result.getLanguage());
-                    }
-
-                    // Link Root
-                    if (result.getRoot() != null && !result.getRoot().equalsIgnoreCase(word.getWord())) {
-                        Word root = rootWordMap.get(result.getRoot().toLowerCase());
-                        if (root != null) {
-                            word.setRootWord(root);
-
-                            // MERGE LOGIC: Move counts from this word to the root word for all media
-                            mergeMediaWordCounts(word, root);
-                        }
-                    }
-
-                    word.setStatus("PROCESSED");
-                    word.setRetryCount(0); // Reset retry count on success
-                } else {
-                    // Result missing for this specific word
+        for (Word word : words) {
+            try {
+                processSingleWord(word, resultMap.get(word.getWord().toLowerCase()));
+            } catch (Exception e) {
+                log.error("Failed to process single word: {}", word.getWord(), e);
+                // Mark only this word as failed
+                transactionTemplate.execute(status -> {
                     markAsFailed(word);
+                    wordRepository.save(word);
+                    return null;
+                });
+            }
+        }
+    }
+
+    private void processSingleWord(Word word, WordAnalysisResultDTO result) {
+        if (result == null) {
+            transactionTemplate.execute(status -> {
+                markAsFailed(word);
+                wordRepository.save(word);
+                return null;
+            });
+            return;
+        }
+
+        transactionTemplate.execute(status -> {
+            boolean languageChanged = false;
+            String originalWord = word.getWord();
+            String originalLanguage = word.getLanguage();
+            
+            // Check if language changed
+            if (result.getLanguage() != null && !result.getLanguage().isEmpty() && !result.getLanguage().equalsIgnoreCase(word.getLanguage())) {
+                String newLanguage = result.getLanguage();
+                
+                // Check for collision
+                Optional<Word> collisionOpt = wordRepository.findByWordAndLanguage(word.getWord(), newLanguage);
+                if (collisionOpt.isPresent()) {
+                    Word existingWord = collisionOpt.get();
+                    log.info("Collision detected for word '{}': changing {} -> {}. Merging into existing ID {}", 
+                             word.getWord(), word.getLanguage(), newLanguage, existingWord.getId());
+                    
+                    // Transfer all media counts to the existing word
+                    mergeMediaWordCounts(word.getId(), existingWord.getId());
+                    
+                    // Skip setting root or updates for this word, just mark it for deletion
+                    word.setStatus("DELETED"); // Or just delete it
+                    wordRepository.delete(word);
+                    return null;
                 }
+                
+                word.setLanguage(newLanguage);
+                languageChanged = true;
             }
 
-            wordRepository.saveAll(words);
+            // Update other fields
+            word.setDifficulty(result.getDifficulty());
+            word.setIsProperNoun(result.getIsProperNoun());
+
+            // Link Root
+            if (result.getRoot() != null && !result.getRoot().equalsIgnoreCase(word.getWord())) {
+                String rootText = result.getRoot();
+                String language = word.getLanguage(); // Use (potentially updated) language
+                
+                // Fetch or Create Root
+                Optional<Word> rootOpt = wordRepository.findByWordAndLanguage(rootText, language);
+                Word root;
+                if (rootOpt.isPresent()) {
+                    root = rootOpt.get();
+                } else {
+                    root = Word.builder()
+                            .word(rootText)
+                            .language(language)
+                            .status("PENDING")
+                            .build();
+                    root = wordRepository.saveAndFlush(root);
+                }
+                word.setRootWord(root);
+            }
+
+            word.setStatus("PROCESSED");
+            word.setRetryCount(0);
+            
+            // Save Word
+            wordRepository.saveAndFlush(word);
+
+            // NOW Merge Media Counts for Root Binding
+            if (word.getRootWord() != null) {
+                mergeMediaWordCounts(word.getId(), word.getRootWord().getId());
+            }
+            
             return null;
         });
     }
@@ -189,28 +211,11 @@ public class WordAnalysisService {
     /**
      * Merges MediaWord counts from an inflected word to its root word.
      */
-    private void mergeMediaWordCounts(Word inflectedWord, Word rootWord) {
-        List<com.sublex.model.MediaWord> inflectedAssociations = mediaWordRepository
-                .findByWordId(inflectedWord.getId());
-
-        for (com.sublex.model.MediaWord infAssociation : inflectedAssociations) {
-            Optional<com.sublex.model.MediaWord> rootAssociation = mediaWordRepository.findByMediaIdAndWordId(
-                    infAssociation.getMedia().getId(),
-                    rootWord.getId());
-
-            if (rootAssociation.isPresent()) {
-                // Add count to existing root association
-                com.sublex.model.MediaWord rootMW = rootAssociation.get();
-                rootMW.setCount(rootMW.getCount() + infAssociation.getCount());
-                mediaWordRepository.save(rootMW);
-                // Delete inflected association
-                mediaWordRepository.delete(infAssociation);
-            } else {
-                // Re-link inflected association to root word
-                infAssociation.setWord(rootWord);
-                mediaWordRepository.save(infAssociation);
-            }
-        }
+    private void mergeMediaWordCounts(Long inflectedId, Long rootId) {
+        // Use the optimized native sequence instead of the Java loop
+        mediaWordRepository.updateExistingCounts(inflectedId, rootId);
+        mediaWordRepository.moveUniqueAssociations(inflectedId, rootId);
+        mediaWordRepository.deleteInflectedAfterMerge(inflectedId);
     }
 
     private void handleBatchFailure(List<Word> words) {
@@ -232,6 +237,7 @@ public class WordAnalysisService {
 
     // Public method to trigger manually
     public void triggerAnalysis() {
+        log.info("triggerAnalysis() called");
         int processedCount = 0;
         int maxBatches = 100; // Process up to 5000 words in one trigger
         int batchCount = 0;

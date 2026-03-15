@@ -214,8 +214,11 @@ public class GeminiService implements AIService {
                    - You MUST prioritize the meaning that fits the provided 'CONTEXT'.
                    - For example, if 'squash' is provided with a cooking context, do NOT define it as a sport.
                    - If 'terminator' has a movie context, do NOT provide obscure astronomical definitions.
-                4. **PROPER NOUN LABELING**:
-                   - Every word identified as a Name, Place, Brand, or Person MUST have `pos: "proper noun"`.
+                4. **NO PROPER NOUN FILTERING (BRAVE MODE)**:
+                   - These words have ALREADY passed a preliminary name filter.
+                   - Do NOT skip a word or provide a hollow definition just because it might be a name.
+                   - Words like 'Scotch', 'Hefty', 'Baller', 'Canon', 'Apple', 'Will' MUST be defined using their common English dictionary meanings.
+                   - Only use `pos: "proper noun"` if the word is STRICTLY a brand or person name with NO common dictionary meaning (e.g., 'Google', 'Statham').
                 5. **NO NULL LISTS (CRITICAL)**:
                    - If there are no `phrasal_verbs` or `meanings` to add, you MUST return an empty list `[]`.
                    - Do NOT use `null` for list fields.

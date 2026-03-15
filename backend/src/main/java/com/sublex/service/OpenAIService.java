@@ -97,7 +97,12 @@ public class OpenAIService implements AIService {
                            - For common words (can, may, might, will, bound, present, etc.), provide all primary POS meanings.
                         3. **PAST PARTICIPLE ADJECTIVES**:
                            - For words like 'titled', 'troubled', include both the specific adjective and verb-result meanings.
-                        4. **STRICT TURKISH DEFINITION**:
+                        4. **NO PROPER NOUN FILTERING (BRAVE MODE)**:
+                           - These words have ALREADY passed a preliminary name filter.
+                           - Do NOT skip a word or provide a hollow definition just because it might be a name.
+                           - Words like 'Scotch', 'Hefty', 'Baller', 'Canon', 'Apple', 'Will' MUST be defined using their common English dictionary meanings.
+                           - Only use `pos: "proper noun"` if the word is STRICTLY a brand or person name with NO common dictionary meaning.
+                        5. **STRICT TURKISH DEFINITION**:
                            - Every 'definition' MUST be written in fluent Turkish. NO ENGLISH definitions.
                         """;
 

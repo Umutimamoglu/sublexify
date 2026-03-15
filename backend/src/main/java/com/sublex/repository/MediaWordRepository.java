@@ -2,11 +2,14 @@ package com.sublex.repository;
 
 import com.sublex.model.MediaWord;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
@@ -16,7 +19,7 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
 
        List<MediaWord> findByWordId(Long wordId);
 
-       java.util.Optional<MediaWord> findByMediaIdAndWordId(Long mediaId, Long wordId);
+       Optional<MediaWord> findByMediaIdAndWordId(Long mediaId, Long wordId);
 
        int countByMediaId(Long mediaId);
 
@@ -29,8 +32,8 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
        List<MediaWord> findUnknownWordsByMediaAndUser(@Param("mediaId") Long mediaId,
                      @Param("userId") Long userId);
 
-       @org.springframework.data.jpa.repository.Modifying
-       @org.springframework.transaction.annotation.Transactional
+       @Modifying
+       @Transactional
        void deleteByMediaId(Long mediaId);
 
        @Query("SELECT mw.media.id, COUNT(mw) FROM MediaWord mw WHERE mw.word.isProperNoun IS NULL OR mw.word.isProperNoun = false GROUP BY mw.media.id")
@@ -48,4 +51,27 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
                      "AND (mw.word.isProperNoun IS NULL OR mw.word.isProperNoun = false) " +
                      "GROUP BY mw.media.id")
        List<Object[]> countKnownWordsPerMedia(@Param("userId") Long userId);
+
+       @Modifying
+       @Transactional
+       @Query(value = "UPDATE media_word mw " +
+                     "SET count = mw.count + src.count " +
+                     "FROM media_word src " +
+                     "WHERE mw.word_id = :rootId " +
+                     "AND src.word_id = :inflectedId " +
+                     "AND mw.media_id = src.media_id", nativeQuery = true)
+       void updateExistingCounts(@Param("inflectedId") Long inflectedId, @Param("rootId") Long rootId);
+
+       @Modifying
+       @Transactional
+       @Query(value = "UPDATE media_word " +
+                     "SET word_id = :rootId " +
+                     "WHERE word_id = :inflectedId " +
+                     "AND media_id NOT IN (SELECT media_id FROM media_word WHERE word_id = :rootId)", nativeQuery = true)
+       void moveUniqueAssociations(@Param("inflectedId") Long inflectedId, @Param("rootId") Long rootId);
+
+       @Modifying
+       @Transactional
+       @Query(value = "DELETE FROM media_word WHERE word_id = :inflectedId", nativeQuery = true)
+       void deleteInflectedAfterMerge(@Param("inflectedId") Long inflectedId);
 }
