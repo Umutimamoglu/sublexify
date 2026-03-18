@@ -94,6 +94,10 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     },
     statNum:    { color: c.TEXT_P, fontSize: 20, fontWeight: '800' },
     statLabel:  { color: c.TEXT_S, fontSize: 11 },
+
+    // Chips
+    chip: { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    chipText: { fontSize: 12, fontWeight: '700' },
   });
 }
 
@@ -177,8 +181,11 @@ function WordRow({
 }
 
 // ─── Main Screen ──────────────────────────────────────────────
+const FILTERS = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
+
 export default function VocabularyScreen() {
   const { t } = useTranslation('vocabulary');
+  const { t: tCommon } = useTranslation('common');
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const { isTablet } = useResponsive();
@@ -194,14 +201,19 @@ export default function VocabularyScreen() {
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
   const [query, setQuery] = useState('');
+  const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
+  const [onlyUnknown, setOnlyUnknown] = useState(false);
   const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
   const [previewWord, setPreviewWord] = useState<WordDTO | null>(null);
   const knownInitialized = useRef(false);
 
-  const { data: knownWordsData = [] }        = useKnownWords();
-  const { data: frequentWords = [], isLoading: freqLoading } = useFrequentWords(60);
-  const { data: searchResults = [], isLoading: searching }   = useWordSearch(query);
-  const { mutate: toggleKnown }              = useMarkKnown();
+  // Convert Set to Array for API
+  const difficultyList = useMemo(() => Array.from(selectedLevels), [selectedLevels]);
+
+  const { data: knownWordsData = [] } = useKnownWords();
+  const { data: frequentWords = [], isLoading: freqLoading } = useFrequentWords(difficultyList, onlyUnknown, 100);
+  const { data: searchResults = [], isLoading: searching } = useWordSearch(query);
+  const { mutate: toggleKnown } = useMarkKnown();
 
   // Init knownIds once from server data
   React.useEffect(() => {
@@ -221,15 +233,22 @@ export default function VocabularyScreen() {
     toggleKnown({ wordId, isKnown: currentlyKnown });
   }, [knownIds, toggleKnown]);
 
+  const toggleLevel = (lv: string) => {
+    if (lv === 'all') {
+      setSelectedLevels(new Set());
+      return;
+    }
+    const next = new Set(selectedLevels);
+    if (next.has(lv)) next.delete(lv);
+    else next.add(lv);
+    setSelectedLevels(next);
+  };
+
   const isSearching = query.trim().length >= 2;
   const displayWords: WordDTO[] = isSearching ? searchResults : frequentWords;
   const isLoading = isSearching ? searching : freqLoading;
 
   const knownCount = knownWordsData.length;
-  const knownFromFrequent = useMemo(
-    () => frequentWords.filter((w) => knownIds.has(w.id)).length,
-    [frequentWords, knownIds],
-  );
 
   return (
     <View style={styles.root}>
@@ -240,7 +259,7 @@ export default function VocabularyScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('title')}</Text>
+          <Text style={styles.headerTitle}>Kelime Havuzu</Text>
 
           {/* Search bar */}
           <View style={styles.searchWrap}>
@@ -263,6 +282,64 @@ export default function VocabularyScreen() {
           </View>
         </View>
 
+        {/* Filters — sadece arama yokken */}
+        {!isSearching && (
+          <View>
+            <FlatList
+              horizontal
+              data={['unknown', ...FILTERS]}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: isTablet ? 32 : 16, paddingBottom: 12, gap: 8 }}
+              renderItem={({ item: lv }) => {
+                if (lv === 'unknown') {
+                  return (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <TouchableOpacity
+                        onPress={() => setOnlyUnknown(!onlyUnknown)}
+                        activeOpacity={0.7}
+                        style={[
+                          styles.chip,
+                          {
+                            backgroundColor: onlyUnknown ? c.PURPLE : 'transparent',
+                            borderColor: onlyUnknown ? c.PURPLE : c.BORDER,
+                            width: 'auto',
+                            paddingHorizontal: 12
+                          }
+                        ]}
+                      >
+                        <Text style={[styles.chipText, { color: onlyUnknown ? '#fff' : c.TEXT_S }]}>
+                          Bilinmeyenler
+                        </Text>
+                      </TouchableOpacity>
+                      <View style={{ width: 1, height: 20, backgroundColor: c.BORDER, alignSelf: 'center', marginHorizontal: 4 }} />
+                    </View>
+                  );
+                }
+                const active = lv === 'all' ? selectedLevels.size === 0 : selectedLevels.has(lv as string);
+                const color = DIFF_COLORS[lv as string] || c.TEXT_S;
+                return (
+                  <TouchableOpacity
+                    onPress={() => toggleLevel(lv as string)}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: active ? color : 'transparent',
+                        borderColor: active ? color : c.BORDER,
+                      }
+                    ]}
+                  >
+                    <Text style={[styles.chipText, { color: active ? '#fff' : c.TEXT_S }]}>
+                      {lv === 'all' ? tCommon('actions.all') : lv}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+              keyExtractor={(item) => item}
+            />
+          </View>
+        )}
+
         {/* Stats strip — sadece arama yokken */}
         {!isSearching && (
           <View style={styles.statsStrip}>
@@ -271,8 +348,8 @@ export default function VocabularyScreen() {
               <Text style={styles.statLabel}>{t('statsKnown')}</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNum}>{knownFromFrequent}</Text>
-              <Text style={styles.statLabel}>{t('statsTop60')}</Text>
+              <Text style={styles.statNum}>{displayWords.length}</Text>
+              <Text style={styles.statLabel}>Gösterilen</Text>
             </View>
           </View>
         )}
@@ -289,7 +366,7 @@ export default function VocabularyScreen() {
               <Text style={styles.sectionLabel}>
                 {isSearching
                   ? t('searchResultsFor', { query })
-                  : t('frequentWords')}
+                  : 'Sık Geçen Kelimeler'}
               </Text>
             )}
             renderItem={({ item }) => (

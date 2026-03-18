@@ -135,6 +135,6 @@ export type StudyResultDTO = {
 export type ProgressStatsDTO = {
   totalWordsLearnt: number;
   totalWordsStudied: number;
-  highRetentionWords: number;
+  difficultWords: number;
   wordsToReviewToday: number;
 };

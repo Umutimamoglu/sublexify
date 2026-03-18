@@ -1,14 +1,13 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/context/ThemeContext';
-import { useSettingsStore } from '@/src/store/settingsStore';
+import { useSettingsStore, type ThemePreference } from '@/src/store/settingsStore';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { changeLanguage, type SupportedLanguage } from '@/src/i18n';
 import { useResponsive } from '@/src/hooks/useResponsive';
-import type { ThemePreference } from '@/src/store/settingsStore';
 
 type Palette = {
   BG: string; SURFACE: string;
@@ -40,20 +39,34 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
     separator: { height: 1, backgroundColor: isDark ? '#ffffff0f' : '#e0e0ea', marginBottom: 24 },
 
-    body: { paddingHorizontal: pad },
+    body: { paddingHorizontal: pad, paddingBottom: 40 },
 
     sectionLabel: {
       color: c.TEXT_S, fontSize: 11, fontWeight: '700',
       letterSpacing: 1.2, textTransform: 'uppercase',
-      marginBottom: 12, marginTop: 8,
+      marginBottom: 12, marginTop: 24,
     },
 
     card: {
       backgroundColor: c.SURFACE,
-      borderRadius: 18, padding: 20,
-      borderWidth: 1, borderColor: cardBorder, gap: 20,
+      borderRadius: 18,
+      borderWidth: 1, borderColor: cardBorder,
+      overflow: 'hidden',
     },
-    settingsRow: { gap: 10 },
+    
+    tile: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingHorizontal: 16, paddingVertical: 16, gap: 14,
+    },
+    tileDivider: { height: 1, backgroundColor: isDark ? '#ffffff08' : '#f0f0f5', marginHorizontal: 16 },
+    tileIconBox: {
+      width: 38, height: 38, borderRadius: 10,
+      backgroundColor: isDark ? '#2a2a35' : '#f0eeff',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    tileLabel: { flex: 1, color: c.TEXT_P, fontSize: 15, fontWeight: '500' },
+
+    settingsRow: { padding: 20, gap: 12 },
     rowLabel: { color: c.TEXT_S, fontSize: 12, fontWeight: '600', letterSpacing: 0.4 },
     chipRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
     chip: {
@@ -67,7 +80,31 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
   });
 }
 
-export default function LanguageScreen() {
+function SettingsTile({
+  icon, label, onPress, styles, isLast, isDark, c
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string; onPress: () => void;
+  styles: any;
+  isLast: boolean; isDark: boolean;
+  c: Palette;
+}) {
+  const iconColor = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)';
+  return (
+    <>
+      <TouchableOpacity style={styles.tile} onPress={onPress} activeOpacity={0.7}>
+        <View style={styles.tileIconBox as any}>
+          <Ionicons name={icon} size={20} color={iconColor} />
+        </View>
+        <Text style={styles.tileLabel}>{label}</Text>
+        <Ionicons name="chevron-forward" size={16} color={iconColor} />
+      </TouchableOpacity>
+      {!isLast && <View style={styles.tileDivider} />}
+    </>
+  );
+}
+
+export default function SettingsScreen() {
   const { theme, colorScheme, themePreference, setThemePreference } = useTheme();
   const isDark = colorScheme === 'dark';
   const { language, setLanguage } = useSettingsStore();
@@ -110,12 +147,36 @@ export default function LanguageScreen() {
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={18} color={c.TEXT_P} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('languagePreferences')}</Text>
+          <Text style={styles.headerTitle}>{t('settings')}</Text>
         </View>
         <View style={styles.separator} />
 
-        <View style={styles.body}>
-          <Text style={styles.sectionLabel}>{t('settings')}</Text>
+        <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
+          {/* ── Navigation Settings ── */}
+          <Text style={styles.sectionLabel}>{t('account')}</Text>
+          <View style={styles.card}>
+            <SettingsTile 
+              icon="person-outline" 
+              label={t('accountDetails')} 
+              onPress={() => router.push('/profile/account')}
+              styles={styles}
+              isLast={false}
+              isDark={isDark}
+              c={c}
+            />
+            <SettingsTile 
+              icon="notifications-outline" 
+              label={t('notifications')} 
+              onPress={() => router.push('/profile/notifications')}
+              styles={styles}
+              isLast={true}
+              isDark={isDark}
+              c={c}
+            />
+          </View>
+
+          {/* ── Visual & Language Settings ── */}
+          <Text style={styles.sectionLabel}>{t('languagePreferences')}</Text>
           <View style={styles.card}>
             <View style={styles.settingsRow}>
               <Text style={styles.rowLabel}>{t('theme')}</Text>
@@ -135,6 +196,8 @@ export default function LanguageScreen() {
               </View>
             </View>
 
+            <View style={[styles.tileDivider, { marginHorizontal: 0 }]} />
+
             <View style={styles.settingsRow}>
               <Text style={styles.rowLabel}>{t('language')}</Text>
               <View style={styles.chipRow}>
@@ -153,7 +216,7 @@ export default function LanguageScreen() {
               </View>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );

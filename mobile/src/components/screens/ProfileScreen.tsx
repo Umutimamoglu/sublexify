@@ -20,27 +20,6 @@ import { useUserStats } from '@/src/api/queries/user.queries';
 import { useProgressStats } from '@/src/api/queries/progress.queries';
 import { Palette as TokenPalette } from '@/src/theme/tokens';
 
-// ─── Daily Tips ────────────────────────────────────────────────────────────────
-const DAILY_TIPS: Record<string, string[]> = {
-  en: [
-    'Context is king. Learn words through your favorite movie scenes for better retention.',
-    'Review words before sleep — your brain consolidates memory during rest.',
-    'Try to use a new word in a sentence today, even just in your head.',
-    'Listening to content in your target language, even passively, helps enormously.',
-    'Spaced repetition is proven to be the most efficient memorization method.',
-    "Don't fear mistakes — making errors is how your brain builds fluency.",
-    'Set a small daily goal and stick to it. Consistency beats intensity.',
-  ],
-  tr: [
-    'Bağlam her şeydir. Kelimeleri favori film sahnelerin üzerinden öğren.',
-    'Uyumadan önce tekrar yap — beyin uyku sırasında hafızayı pekiştirir.',
-    'Bugün yeni bir kelimeyi bir cümlede kullanmayı dene.',
-    'Hedef dilindeki içeriklere pasif de olsa kulak ver.',
-    'Aralıklı tekrar, ezberlemenin en verimli yöntemi olarak kanıtlanmıştır.',
-    'Hata yapmaktan korkma — hatalar beynin akıcılık inşa etme yoludur.',
-    'Küçük günlük hedefler belirle ve ısrarcı ol. Tutarlılık, yoğunluktan önemlidir.',
-  ],
-};
 
 // ─── CEFR Helper ───────────────────────────────────────────────────────────────
 function getCefrBadge(known: number, total: number): { level: string; next: string } {
@@ -146,16 +125,6 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     },
     progressFill: { height: 8, borderRadius: 8, backgroundColor: TokenPalette.teal500 },
 
-    // ── Daily tip card ─────────────────────────────────────────────
-    tipCard: {
-      backgroundColor: isDark ? '#191825' : c.PURPLE + '0d',
-      borderRadius: 16, padding: 20,
-      borderWidth: 1, borderColor: isDark ? '#8b5cf610' : c.PURPLE + '20',
-      marginBottom: 12,
-    },
-    tipHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-    tipLabel: { color: c.PURPLE, fontSize: 11, fontWeight: '800', letterSpacing: 1.0, textTransform: 'uppercase' },
-    tipText: { color: isDark ? 'rgba(255,255,255,0.8)' : c.TEXT_P, fontSize: 14, lineHeight: 22 },
 
     // ── Settings section ───────────────────────────────────────────
     sectionLabel: {
@@ -163,23 +132,20 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
       letterSpacing: 1.5, textTransform: 'uppercase',
       marginTop: 20, marginBottom: 12,
     },
-    settingsCard: {
-      backgroundColor: c.SURFACE,
-      borderRadius: 16,
-      borderWidth: 1, borderColor: cardBorder,
-      overflow: 'hidden',
-    },
     tile: {
       flexDirection: 'row', alignItems: 'center',
-      paddingHorizontal: 16, paddingVertical: 16, gap: 14,
+      paddingHorizontal: 16, paddingVertical: 18, gap: 14,
+      backgroundColor: c.SURFACE,
+      borderRadius: 18,
+      borderWidth: 1, borderColor: cardBorder,
+      marginBottom: 10,
     },
-    tileDivider: { height: 1, backgroundColor: isDark ? '#ffffff08' : '#f0f0f5', marginHorizontal: 16 },
     tileIconBox: {
-      width: 38, height: 38, borderRadius: 10,
+      width: 40, height: 40, borderRadius: 12,
       backgroundColor: isDark ? '#2a2a35' : '#f0eeff',
       alignItems: 'center', justifyContent: 'center',
     },
-    tileLabel: { flex: 1, color: c.TEXT_P, fontSize: 15, fontWeight: '500' },
+    tileLabel: { flex: 1, color: c.TEXT_P, fontSize: 15, fontWeight: '600' },
 
     // ── Log out ────────────────────────────────────────────────────
     logOutBtn: {
@@ -194,25 +160,22 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
 // ─── Settings Tile ─────────────────────────────────────────────────────────────
 function SettingsTile({
-  icon, label, onPress, styles, isLast, isDark,
+  icon, label, onPress, styles, isDark,
 }: {
   icon: React.ComponentProps<typeof Ionicons>['name'];
   label: string; onPress: () => void;
   styles: ReturnType<typeof makeStyles>;
-  isLast: boolean; isDark: boolean;
+  isDark: boolean;
 }) {
   const iconColor = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)';
   return (
-    <>
-      <TouchableOpacity style={styles.tile} onPress={onPress} activeOpacity={0.7}>
-        <View style={styles.tileIconBox}>
-          <Ionicons name={icon} size={20} color={iconColor} />
-        </View>
-        <Text style={styles.tileLabel}>{label}</Text>
-        <Ionicons name="chevron-forward" size={16} color={iconColor} />
-      </TouchableOpacity>
-      {!isLast && <View style={styles.tileDivider} />}
-    </>
+    <TouchableOpacity style={styles.tile} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.tileIconBox}>
+        <Ionicons name={icon} size={20} color={iconColor} />
+      </View>
+      <Text style={styles.tileLabel}>{label}</Text>
+      <Ionicons name="chevron-forward" size={16} color={iconColor} />
+    </TouchableOpacity>
   );
 }
 
@@ -221,7 +184,7 @@ export default function ProfileScreen() {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const { user, logout } = useAuth();
-  const { t, i18n } = useTranslation('profile');
+  const { t } = useTranslation('profile');
   const { isTablet } = useResponsive();
   const router = useRouter();
 
@@ -242,29 +205,16 @@ export default function ProfileScreen() {
   const isLoading = loadingUser || loadingProgress;
   const known = userStats?.totalKnownWords ?? 0;
   const total = userStats?.totalWords ?? 0;
-  const mastered = progress?.highRetentionWords ?? 0;
+  const mastered = progress?.difficultWords ?? 0;
   const dueToday = progress?.wordsToReviewToday ?? 0;
 
   const progressPct = total > 0 ? Math.min(known / total, 1) : 0;
   const cefr = getCefrBadge(known, total);
 
-  const lang = (i18n.language?.split('-')[0] === 'tr') ? 'tr' : 'en';
-  const dailyTip = DAILY_TIPS[lang][new Date().getDay()];
-
   const initials = user?.name
     ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : '?';
 
-  const settingsTiles: {
-    icon: React.ComponentProps<typeof Ionicons>['name'];
-    label: string;
-    route: string;
-  }[] = [
-      { icon: 'bar-chart-outline', label: t('progress'), route: '/progress' },
-      { icon: 'person-outline', label: t('accountDetails'), route: '/profile/account' },
-      { icon: 'notifications-outline', label: t('notifications'), route: '/profile/notifications' },
-      { icon: 'language-outline', label: t('languagePreferences'), route: '/profile/language' },
-    ];
 
   return (
     <View style={styles.root}>
@@ -275,13 +225,7 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <View style={styles.headerSpacer} />
           <Text style={styles.headerTitle}>{t('title')}</Text>
-          <TouchableOpacity
-            style={styles.headerIconBtn}
-            onPress={() => router.push('/profile/language' as any)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="settings-outline" size={18} color={c.TEXT_P} />
-          </TouchableOpacity>
+          <View style={styles.headerSpacer} />
         </View>
         <View style={styles.separator} />
 
@@ -311,11 +255,11 @@ export default function ProfileScreen() {
               <View style={styles.statsRow}>
                 <View style={styles.statCard}>
                   <View style={styles.statIconRow}>
-                    <Ionicons name="star-outline" size={14} color={c.PURPLE} />
-                    <Text style={styles.statIconLabel}>{t('mastered')}</Text>
+                    <Ionicons name="alert-circle-outline" size={14} color="#f59e0b" />
+                    <Text style={styles.statIconLabel}>{t('difficultWords')}</Text>
                   </View>
                   <Text style={styles.statValue}>{mastered.toLocaleString()}</Text>
-                  <Text style={styles.statSub}>{t('masteredDesc')}</Text>
+                  <Text style={[styles.statSub, { color: '#f59e0b' }]}>{t('difficultDesc')}</Text>
                 </View>
 
                 <View style={styles.statCard}>
@@ -348,38 +292,32 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
-              {/* ── Daily Tip ── */}
-              <View style={styles.tipCard}>
-                <View style={styles.tipHeader}>
-                  <Ionicons name="bulb-outline" size={16} color={c.PURPLE} />
-                  <Text style={styles.tipLabel}>{t('dailyTip')}</Text>
-                </View>
-                <Text style={styles.tipText}>{dailyTip}</Text>
-              </View>
             </>
           )}
 
-          {/* ── Settings ── */}
+          {/* ── Main Menu ── */}
           <Text style={styles.sectionLabel}>{t('settings')}</Text>
-          <View style={styles.settingsCard}>
-            {settingsTiles.map((tile, i) => (
-              <SettingsTile
-                key={tile.route}
-                icon={tile.icon}
-                label={tile.label}
-                onPress={() => router.push(tile.route as any)}
-                styles={styles}
-                isLast={i === settingsTiles.length - 1}
-                isDark={isDark}
-              />
-            ))}
-          </View>
-
-          {/* ── Log Out ── */}
-          <TouchableOpacity style={styles.logOutBtn} onPress={logout} activeOpacity={0.7}>
-            <Ionicons name="log-out-outline" size={18} color={c.TEXT_S} />
-            <Text style={styles.logOutText}>{t('logOut').toUpperCase()}</Text>
-          </TouchableOpacity>
+          <SettingsTile
+            icon="bar-chart-outline"
+            label={t('progress')}
+            onPress={() => router.push('/progress')}
+            styles={styles}
+            isDark={isDark}
+          />
+          <SettingsTile
+            icon="settings-outline"
+            label={t('settings')}
+            onPress={() => router.push('/profile/settings')}
+            styles={styles}
+            isDark={isDark}
+          />
+          <SettingsTile
+            icon="log-out-outline"
+            label={t('logOut')}
+            onPress={logout}
+            styles={styles}
+            isDark={isDark}
+          />
 
         </ScrollView>
       </SafeAreaView>

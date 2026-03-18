@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,9 @@ import {
   StyleSheet,
   StatusBar,
   ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -39,6 +42,11 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
       alignItems: 'center', justifyContent: 'center',
     },
     headerTitle: { color: c.TEXT_P, fontSize: 26, fontWeight: '900', flex: 1 },
+    infoBtn: {
+      width: 36, height: 36, borderRadius: 10,
+      backgroundColor: isDark ? '#ffffff10' : '#00000008',
+      alignItems: 'center', justifyContent: 'center',
+    },
 
     separator: { height: 1, backgroundColor: isDark ? '#ffffff0f' : '#e0e0ea', marginBottom: 24 },
 
@@ -73,6 +81,30 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
       letterSpacing: 1.2, textTransform: 'uppercase',
       marginBottom: 16, marginTop: 28,
     },
+
+    // Modal
+    modalOverlay: {
+      flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: c.BG,
+      borderTopLeftRadius: 32, borderTopRightRadius: 32,
+      paddingTop: 8, paddingBottom: 40,
+      maxHeight: '85%',
+    },
+    modalHandle: {
+      width: 40, height: 4, backgroundColor: isDark ? '#ffffff20' : '#00000010',
+      borderRadius: 2, alignSelf: 'center', marginVertical: 12,
+    },
+    modalScroll: { paddingHorizontal: 24 },
+    modalTitle: { color: c.TEXT_P, fontSize: 22, fontWeight: '900', marginBottom: 24, marginTop: 8 },
+    helpItem: { marginBottom: 24, gap: 8 },
+    helpHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    helpIconBox: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    helpIconText: { fontSize: 16 },
+    helpLabel: { color: c.TEXT_P, fontSize: 16, fontWeight: '800' },
+    helpText: { color: c.TEXT_S, fontSize: 14, lineHeight: 22 },
 
     // Empty state
     emptyBox: {
@@ -130,6 +162,8 @@ export default function ProgressScreen() {
   const { isTablet } = useResponsive();
   const router = useRouter();
 
+  const [helpVisible, setHelpVisible] = useState(false);
+
   const c = useMemo<Palette>(() => ({
     BG: theme.colors.background,
     SURFACE: theme.colors.surface,
@@ -144,7 +178,14 @@ export default function ProgressScreen() {
 
   const { data: stats, isLoading } = useProgressStats();
 
-  const hasData = stats && (stats.totalWordsLearnt > 0 || stats.totalWordsStudied > 0 || stats.highRetentionWords > 0 || stats.wordsToReviewToday > 0);
+  const hasData = stats && (stats.totalWordsLearnt > 0 || stats.totalWordsStudied > 0 || stats.difficultWords > 0 || stats.wordsToReviewToday > 0);
+
+  const helpData = [
+    { icon: '🎯', color: '#F43F5E', label: t('dueTodayTitle'), text: t('dueTodayHelp') },
+    { icon: '📖', color: '#4F46E5', label: t('totalLearntTitle'), text: t('totalLearntHelp') },
+    { icon: '✏️', color: '#D946EF', label: t('totalStudiedTitle'), text: t('totalStudiedHelp') },
+    { icon: '⚡', color: '#F59E0B', label: t('difficultTitle'), text: t('difficultHelp') },
+  ];
 
   return (
     <View style={styles.root}>
@@ -157,6 +198,9 @@ export default function ProgressScreen() {
             <Ionicons name="arrow-back" size={18} color={c.TEXT_P} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('title')}</Text>
+          <TouchableOpacity style={styles.infoBtn} onPress={() => setHelpVisible(true)} activeOpacity={0.7}>
+            <Ionicons name="information-circle-outline" size={22} color={c.TEXT_P} />
+          </TouchableOpacity>
         </View>
         <View style={styles.separator} />
 
@@ -186,7 +230,7 @@ export default function ProgressScreen() {
               <StatCard
                 icon="🎯"
                 value={stats.wordsToReviewToday}
-                label={t('dueToday')}
+                label={t('dueTodayTitle')}
                 desc={t('dueTodayDesc')}
                 styles={styles}
                 color="#F43F5E"
@@ -195,7 +239,7 @@ export default function ProgressScreen() {
               <StatCard
                 icon="📖"
                 value={stats.totalWordsLearnt}
-                label={t('totalLearnt')}
+                label={t('totalLearntTitle')}
                 desc={t('totalLearntDesc')}
                 styles={styles}
                 color="#4F46E5"
@@ -204,24 +248,52 @@ export default function ProgressScreen() {
               <StatCard
                 icon="✏️"
                 value={stats.totalWordsStudied}
-                label={t('totalStudied')}
+                label={t('totalStudiedTitle')}
                 desc={t('totalStudiedDesc')}
                 styles={styles}
                 color="#D946EF"
                 onPress={() => router.push('/progress/studied' as any)}
               />
               <StatCard
-                icon="⭐"
-                value={stats.highRetentionWords}
-                label={t('mastered')}
-                desc={t('masteredDesc')}
+                icon="⚡"
+                value={stats.difficultWords}
+                label={t('difficultTitle')}
+                desc={t('difficultHelp')}
                 styles={styles}
-                color="#10B981"
-                onPress={() => router.push('/progress/mastered' as any)}
+                color="#F59E0B"
+                onPress={() => router.push('/progress/difficult' as any)}
               />
             </View>
           </View>
         )}
+
+        {/* Help Modal */}
+        <Modal
+          visible={helpVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setHelpVisible(false)}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setHelpVisible(false)}>
+            <Pressable style={styles.modalContent}>
+              <View style={styles.modalHandle} />
+              <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+                <Text style={styles.modalTitle}>{t('helpTitle')}</Text>
+                {helpData.map((item, idx) => (
+                  <View key={idx} style={styles.helpItem}>
+                    <View style={styles.helpHeader}>
+                      <View style={[styles.helpIconBox, { backgroundColor: `${item.color}22` }]}>
+                        <Text style={styles.helpIconText}>{item.icon}</Text>
+                      </View>
+                      <Text style={styles.helpLabel}>{item.label}</Text>
+                    </View>
+                    <Text style={styles.helpText}>{item.text}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </Pressable>
+          </Pressable>
+        </Modal>
 
       </SafeAreaView>
     </View>

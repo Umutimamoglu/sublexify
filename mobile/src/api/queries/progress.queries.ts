@@ -16,7 +16,7 @@ export function useProgressStats() {
   });
 }
 
-export function useCategoryWords(category: 'learnt' | 'studied' | 'due' | 'mastered') {
+export function useCategoryWords(category: 'learnt' | 'studied' | 'due' | 'difficult') {
   return useQuery<any[]>({
     queryKey: ['progress', category],
     queryFn: async () => {

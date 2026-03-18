@@ -1,14 +1,20 @@
 {
   "title": "İlerleme",
-  "dueToday": "Bugün Tekrar",
-  "totalLearnt": "Öğrenilen",
-  "totalLearntDesc": "Portföyunüzdeki toplam kelime sayısı",
-  "totalStudied": "Çalışılan",
+  "dueTodayTitle": "Bugün Tekrar",
+  "totalLearntTitle": "Öğrenilen",
+  "totalStudiedTitle": "Çalışılan",
+  "difficultTitle": "Zorlandığımız",
+  "totalLearntDesc": "Portföyünüzdeki toplam kelime sayısı",
   "totalStudiedDesc": "En az bir kez antrenman yapılan kelimeler",
-  "masteredDesc": "5+ kez doğru bilinen kelimeler",
+  "difficultDesc": "Sık gördüğün ama henüz öğrenemediğin kelimeler",
   "noProgress": "Henüz çalışma kaydın yok",
   "noProgressDesc": "Liste sayfasından çalışmaya başla",
   "goToLists": "Listelere Git",
   "stats": "İstatistikler",
-  "words": "kelime"
+  "words": "kelime",
+  "helpTitle": "İstatistik Rehberi",
+  "dueTodayHelp": "Hafıza algoritmamıza (SRS) göre tam şu an tekrar etmen gereken kelimelerdir. Unutmaya en yakın olduğun kelimeler burada toplanır.",
+  "totalLearntHelp": "Çalışmaya başladığın ve hafıza döngüne giren toplam benzersiz kelime sayısıdır.",
+  "totalStudiedHelp": "Kelimeleri ne kadar sık pratik ettiğini gösterir. Bir kelimeyi birden fazla kez çalışmak bu sayıyı artırır.",
+  "difficultHelp": "Çok sık karşılaştığın (5+ kez) ama henüz tam öğrenemediğin kelimelerdir. Bunlara ekstra odaklanman faydalı olabilir."
 }

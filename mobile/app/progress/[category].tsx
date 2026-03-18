@@ -8,7 +8,7 @@ import { useTheme } from '@/src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 
-type CategoryType = 'learnt' | 'studied' | 'due' | 'mastered';
+type CategoryType = 'learnt' | 'studied' | 'due' | 'difficult';
 
 const CATEGORY_CONFIG = {
   learnt: {
@@ -32,12 +32,12 @@ const CATEGORY_CONFIG = {
     emptyTitle: 'Tekrar yok',
     emptyDesc: 'Bugün için tekrar edilecek kelimeniz bulunmuyor.',
   },
-  mastered: {
-    title: 'Ustalaşılan Kelimeler',
-    icon: 'star-outline' as const,
-    color: '#10B981', // Emerald Green
-    emptyTitle: 'Henüz ustalaşılan kelime yok',
-    emptyDesc: 'Testlerde başarılı oldukça kelimeler buraya düşecek!',
+  difficult: {
+    title: 'Zorlandığımız Kelimeler',
+    icon: 'alert-circle-outline' as const,
+    color: '#F59E0B', // Amber/Orange
+    emptyTitle: 'Zorluk bulmaya hazır mısın?',
+    emptyDesc: 'Henüz "zor" olarak işaretlenecek kadar pratik yapmadın. Testleri çözdükçe sistem seni zorlayanları burada toplayacak.',
   },
 };
 
@@ -151,9 +151,18 @@ export default function CategoryWordsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name={config.icon} size={64} color={textSecondary} style={{ opacity: 0.5 }} />
+            <Ionicons name={config.icon} size={64} color={config.color} style={{ opacity: 0.3, marginBottom: 16 }} />
             <Text style={[styles.emptyTitle, { color: textPrimary }]}>{config.emptyTitle}</Text>
             <Text style={[styles.emptyDesc, { color: textSecondary }]}>{config.emptyDesc}</Text>
+            
+            <TouchableOpacity
+              style={[styles.goBtn, { backgroundColor: config.color }]}
+              onPress={() => router.push('/(tabs)/lists' as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.goBtnText}>Kelimeleri Çalış</Text>
+              <Ionicons name="arrow-forward" size={16} color="white" style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
           </View>
         }
       />
@@ -192,7 +201,21 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginLeft: 10 
   },
 
-  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 64 },
-  emptyTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 16 },
-  emptyDesc: { fontSize: 14, opacity: 0.6, textAlign: 'center', marginTop: 8, maxWidth: 250 },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 20, fontWeight: '900', marginTop: 0, textAlign: 'center' },
+  emptyDesc: { fontSize: 14, opacity: 0.6, textAlign: 'center', marginTop: 10, lineHeight: 20, maxWidth: 280 },
+  goBtn: { 
+    marginTop: 32, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 24, 
+    paddingVertical: 14, 
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4
+  },
+  goBtnText: { color: 'white', fontWeight: '900', fontSize: 16 },
 });

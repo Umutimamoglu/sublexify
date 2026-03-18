@@ -24,14 +24,16 @@ export function useWordSearch(query: string) {
   });
 }
 
-export function useFrequentWords(limit = 50) {
+export function useFrequentWords(difficulties?: string[], onlyUnknown = false, limit = 100) {
   return useQuery<WordDTO[]>({
-    queryKey: wordKeys.frequent,
+    queryKey: [...wordKeys.frequent, difficulties, onlyUnknown, limit],
     staleTime: 1000 * 60 * 60, // 1 saat
-    queryFn:  async () => {
-      const res = await apiClient.get<WordDTO[]>(
-        `${ENDPOINTS.words.frequent}?language=en&limit=${limit}&userId=1`,
-      );
+    queryFn: async () => {
+      let url = `${ENDPOINTS.words.frequent}?language=en&limit=${limit}&onlyUnknown=${onlyUnknown}&userId=1`;
+      if (difficulties && difficulties.length > 0) {
+        url += `&difficulties=${difficulties.join(',')}`;
+      }
+      const res = await apiClient.get<WordDTO[]>(url);
       return res.data;
     },
   });
