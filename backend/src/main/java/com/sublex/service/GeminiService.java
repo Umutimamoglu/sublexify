@@ -410,6 +410,62 @@ public class GeminiService implements AIService {
         return Map.of();
     }
 
+    @Override
+    public Map<String, Map<String, Object>> auditWordsBatch(List<Word> words) {
+        if (words == null || words.isEmpty()) {
+            return Map.of();
+        }
+
+        log.info("Gemini Sheriff auditing batch of {} words", words.size());
+
+        StringBuilder batchDetails = new StringBuilder();
+        for (int i = 0; i < words.size(); i++) {
+            Word w = words.get(i);
+            try {
+                String defJson = objectMapper.writeValueAsString(w.getDefinition());
+                batchDetails.append(String.format("%d. WORD: \"%s\", CONTEXT: \"%s\", DEFINITION: %s\n",
+                        i + 1, w.getWord(),
+                        w.getContextSentence() != null ? w.getContextSentence() : "No context",
+                        defJson));
+            } catch (Exception e) {
+                log.error("Error serializing definition for auditing: {}", w.getWord());
+            }
+        }
+
+        String systemPrompt = """
+                You are a Master Lexicographer and the strict Quality Assurance (QA) Auditor for a professional English-Turkish dictionary database.
+                Your sole purpose is to evaluate the provided "word", its "contextSentence", and its "current_definitions" against 4 strict criteria.
+
+                ### THE 4 CRITICAL CRITERIA:
+                1. PROPER NOUN TRAP (False Positives)
+                2. VALIDITY & NOISE CHECK (Foreign, Typos, Subtitle Glitches)
+                3. MEANING COMPLETENESS (Missing core meaning)
+                4. HALLUCINATION & OVER-HELPFULNESS CHECK
+
+                ### OUTPUT INSTRUCTIONS:
+                You must output a JSON object where each key is the word, and each value is an object:
+                {
+                  "problem_found": boolean,
+                  "step3_error": "Türkçe kısa ve net hata açıklaması (veya null)"
+                }
+                """;
+
+        String userPrompt = "Audit the following words:\n\n" + batchDetails.toString();
+
+        try {
+            String response = generateContent(systemPrompt, userPrompt, SHERIFF_MODEL);
+            if (response == null) {
+                return Map.of();
+            }
+
+            String cleanResponse = response.replace("```json", "").replace("```", "").trim();
+            return objectMapper.readValue(cleanResponse, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Map<String, Object>>>() {});
+        } catch (Exception e) {
+            log.error("Gemini batch audit failed", e);
+            return Map.of();
+        }
+    }
+
     public com.sublex.model.WordDefinition fixWord(String word, String auditNotes, String contextSentence) {
         log.info("Gemini Specialist fixing word: '{}' because: {}. Context: {}", word, auditNotes, contextSentence);
 

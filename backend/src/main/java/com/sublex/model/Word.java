@@ -91,6 +91,13 @@ public class Word {
     @Builder.Default
     private Integer globalFrequency = 0;
 
+    @Column(name = "problem_found")
+    @Builder.Default
+    private Boolean problemFound = false;
+
+    @Column(name = "step3_error", columnDefinition = "text")
+    private String step3Error;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

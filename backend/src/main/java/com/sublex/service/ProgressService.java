@@ -18,13 +18,13 @@ public class ProgressService {
     public ProgressStatsDTO getStats(Long userId) {
         Long totalLearnt = userWordProgressRepository.countByUserId(userId);
         Long totalStudied = userWordProgressRepository.countWordsStudiedByUserId(userId);
-        Long highRetention = userWordProgressRepository.countHighRetentionWordsByUserId(userId);
+        Long difficult = userWordProgressRepository.countDifficultWordsByUserId(userId);
         Long toReview = userWordProgressRepository.countWordsToReviewByUserId(userId);
 
         return ProgressStatsDTO.builder()
                 .totalWordsLearnt(totalLearnt != null ? totalLearnt : 0)
                 .totalWordsStudied(totalStudied != null ? totalStudied : 0)
-                .highRetentionWords(highRetention != null ? highRetention : 0)
+                .difficultWords(difficult != null ? difficult : 0)
                 .wordsToReviewToday(toReview != null ? toReview : 0)
                 .build();
     }
@@ -41,8 +41,8 @@ public class ProgressService {
         return mapToWordDTOs(userWordProgressRepository.findDueWordsByUserId(userId));
     }
 
-    public List<com.sublex.dto.WordDTO> getMasteredWords(Long userId) {
-        return mapToWordDTOs(userWordProgressRepository.findMasteredWordsByUserId(userId));
+    public List<com.sublex.dto.WordDTO> getDifficultWords(Long userId) {
+        return mapToWordDTOs(userWordProgressRepository.findDifficultWordsByUserId(userId));
     }
 
     private List<com.sublex.dto.WordDTO> mapToWordDTOs(List<UserWordProgress> progressList) {

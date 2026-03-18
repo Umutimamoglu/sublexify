@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -205,20 +206,109 @@ public class OpenAIService implements AIService {
         }
 
         @Override
-        public Map<String, WordDefinition> enrichWordsBatch(List<Word> words) {
-                Map<String, WordDefinition> results = new ConcurrentHashMap<>();
+        public Map<String, Map<String, Object>> auditWordsBatch(List<Word> words) {
+                Map<String, Map<String, Object>> results = new ConcurrentHashMap<>();
 
-                try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                String systemPrompt = """
+                                You are a Master Lexicographer and the strict Quality Assurance (QA) Auditor for a professional English-Turkish dictionary database. Your sole purpose is to evaluate the provided "word", its "contextSentence", and its "current_definitions" against 4 strict criteria. 
+                                
+                                You must act as a ruthless gatekeeper. If the entry has ANY of the following 4 flaws, you must flag it.
+                                
+                                ### THE 4 CRITICAL CRITERIA:
+                                
+                                1. PROPER NOUN TRAP (False Positives):
+                                - Is this word STRICTLY a specific person, place, or brand with absolutely NO common dictionary meaning? 
+                                - FAIL EXAMPLE: "Vivaldi", "Keldysh", "Stallone" -> FAIL (These are strictly proper nouns).
+                                - PASS EXAMPLE: "Tangerine", "Apple", "Left", "Hope" -> PASS (Even if capitalized or used as a name in the context, these are real, common dictionary words. Do NOT flag them).
+                                
+                                2. VALIDITY & NOISE CHECK (Foreign, Typos, Subtitle Glitches):
+                                - Is this a 100% valid, real English word or recognized slang?
+                                - FAIL EXAMPLE 1: Spanish/Foreign words ("nunca", "pasar", "mierda", "conmigo").
+                                - FAIL EXAMPLE 2: Subtitle sync noise or fragments ("frm", "sync", "wh-wh", "s-themed").
+                                - FAIL EXAMPLE 3: Obvious typos or misspellings ("libary", "thanaving").
+                                
+                                3. MEANING COMPLETENESS (The Root Overwrite Bug):
+                                - Do the current definitions MISS the absolute most common, fundamental meaning of the word?
+                                - FAIL EXAMPLE: If the word is "left" and the definition only says "past tense of leave" but completely misses the direction "sol", you must FAIL it. The core dictionary meaning must be present.
+                                
+                                4. HALLUCINATION & OVER-HELPFULNESS CHECK:
+                                - Did the previous AI invent a fake meaning for a typo, or provide a serious academic definition for a pop-culture joke/pun?
+                                - FAIL EXAMPLE: Inventing a slang definition for a typo like "weelong" (all week long).
+                                - FAIL EXAMPLE: Treating a joke like "brisketcase" (brisket + basketcase) as a legitimate historical/slang term instead of recognizing it as a situational pun.
+                                
+                                ### OUTPUT INSTRUCTIONS:
+                                You must output a JSON object where each key is the word, and each value is an object:
+                                {
+                                  "problem_found": boolean,
+                                  "step3_error": "Türkçe kısa ve net hata açıklaması (veya null)"
+                                }
+                                """;
+
+                StringBuilder userPromptBuilder = new StringBuilder("Audit the following words:\n\n");
+                for (Word w : words) {
+                        try {
+                                String defJson = objectMapper.writeValueAsString(w.getDefinition());
+                                userPromptBuilder.append(String.format("- Word: '%s'\n  Context: '%s'\n  Current Definition: %s\n\n",
+                                                w.getWord(),
+                                                w.getContextSentence() != null ? w.getContextSentence() : "No context",
+                                                defJson));
+                        } catch (Exception e) {
+                                log.error("Error serializing definition for auditing: {}", w.getWord());
+                        }
+                }
+
+                try {
+                        Map<String, Object> requestBody = Map.of(
+                                        "model", MODEL,
+                                        "messages", List.of(
+                                                        Map.of("role", "system", "content", systemPrompt),
+                                                        Map.of("role", "user", "content", userPromptBuilder.toString())),
+                                        "response_format", Map.of("type", "json_object"));
+
+                        String response = restClient.post()
+                                        .uri(OPENAI_URL)
+                                        .header("Authorization", "Bearer " + apiKey)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .body(requestBody)
+                                        .retrieve()
+                                        .body(String.class);
+
+                        Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
+                        List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+                        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                        String content = (String) message.get("content");
+
+                        Map<String, Map<String, Object>> auditResults = objectMapper.readValue(content, Map.class);
+                        return auditResults;
+
+                } catch (Exception e) {
+                        log.error("Batch audit failed", e);
+                        return Collections.emptyMap();
+                }
+        }
+
+        @Override
+        public Map<String, WordDefinition> enrichWordsBatch(List<Word> words) {
+                if (words == null || words.isEmpty()) {
+                        return Collections.emptyMap();
+                }
+
+                Map<String, WordDefinition> results = new ConcurrentHashMap<>();
+                log.info("Enriching batch of {} words via OpenAI", words.size());
+
+                // For now, since GPT-5-mini is fast and we want high quality, 
+                // we'll use virtual threads to parallelize individual enrichments
+                try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
                         for (Word word : words) {
                                 executor.submit(() -> {
-                                        WordDefinition def = enrichWord(word.getWord(), word.getDifficulty(),
-                                                        word.getContextSentence());
+                                        WordDefinition def = enrichWord(word.getWord(), word.getDifficulty(), word.getContextSentence());
                                         if (def != null) {
                                                 results.put(word.getWord(), def);
                                         }
                                 });
                         }
                 }
+
                 return results;
         }
 }

@@ -20,7 +20,7 @@ import java.util.Map;
 public class PipelineStatus {
 
     public enum Step {
-        IDLE, WORKER, SHERIFF, SPECIALIST, JUDGE, TRUSTED_ENRICHMENT, COMPLETE, FAILED
+        IDLE, WORKER, SHERIFF, SPECIALIST, JUDGE, AUDITOR, TRUSTED_ENRICHMENT, COMPLETE, FAILED
     }
 
     @Builder.Default

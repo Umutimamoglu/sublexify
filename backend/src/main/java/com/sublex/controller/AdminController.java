@@ -646,6 +646,58 @@ public class AdminController {
         return ResponseEntity.accepted().body("Trusted enrichment pipeline started for " + size + " words.");
     }
 
+    @PostMapping("/pipeline/auditor")
+    @Operation(summary = "Starts the Step 3 AI Auditor forRecently enriched words")
+    public ResponseEntity<String> startAuditor(@RequestParam(defaultValue = "100") int size) {
+        log.info("Starting AI Auditor for {} words", size);
+        pipelineService.startAuditor(size);
+        return ResponseEntity.accepted().body("AI Auditor started for " + size + " words.");
+    }
+
+    @GetMapping("/words/audit-problems")
+    @Operation(summary = "Returns words flagged by the Step 3 Auditor")
+    public ResponseEntity<org.springframework.data.domain.Page<com.sublex.model.Word>> getAuditProblems(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(wordRepository.findAll(
+                org.springframework.data.jpa.domain.Specification.where((root, query, cb) -> cb.equal(root.get("problemFound"), true)),
+                org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").descending())));
+    }
+
+    @PostMapping("/words/audit-resolve")
+    @Operation(summary = "Clears the Auditor flag for specific words")
+    @Transactional
+    public ResponseEntity<String> resolveAuditProblems(@RequestBody List<Long> wordIds) {
+        List<com.sublex.model.Word> words = wordRepository.findAllById(wordIds);
+        words.forEach(w -> {
+            w.setProblemFound(false);
+            w.setAuditNotes("Problem resolved/ignored by admin");
+        });
+        wordRepository.saveAll(words);
+        return ResponseEntity.ok("Successfully resolved audit flags for " + words.size() + " words.");
+    }
+
+    @PostMapping("/words/reset-definitions")
+    @Operation(summary = "Resets definitions and flags for specific words to trigger re-enrichment")
+    @Transactional
+    public ResponseEntity<String> resetDefinitions(@RequestBody List<Long> wordIds) {
+        List<com.sublex.model.Word> words = wordRepository.findAllById(wordIds);
+        words.forEach(w -> {
+            w.setDefinition(null);
+            w.setIsEnriched(false);
+            w.setEnrichedAt(null);
+            w.setNeedsReEnrichment(false);
+            w.setIsVerified(false);
+            w.setJudgeVerdict(null);
+            w.setJudgeStatus(null);
+            w.setProblemFound(false);
+            w.setStep3Error(null);
+            w.setAuditNotes("Reset by admin for re-enrichment");
+        });
+        wordRepository.saveAll(words);
+        return ResponseEntity.ok("Successfully reset " + words.size() + " words for re-enrichment.");
+    }
+
     @PostMapping("/media/{id}/pipeline/start")
     @Operation(summary = "Starts the full 4-step enrichment pipeline for a specific media")
     public ResponseEntity<String> startMediaPipeline(@PathVariable Long id,

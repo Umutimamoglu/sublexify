@@ -31,6 +31,7 @@ public class PipelineService {
     private final SpecialistService specialistService;
     private final JudgeService judgeService;
     private final GeminiService geminiService;
+    private final AuditorService auditorService;
 
     private final AtomicReference<PipelineStatus> currentStatus = new AtomicReference<>(
             PipelineStatus.builder().currentStep(PipelineStatus.Step.IDLE).build());
@@ -548,5 +549,44 @@ public class PipelineService {
                 .build());
 
         log.info("=== TRUSTED ENRICHMENT COMPLETE === Total time: {}ms", totalTime);
+    }
+
+    public void startAuditor(int limit) {
+        if (currentStatus.get().isRunning()) {
+            throw new RuntimeException("Pipeline is already running");
+        }
+        PipelineStatus initial = PipelineStatus.builder()
+                .currentStep(PipelineStatus.Step.AUDITOR)
+                .totalWords(limit)
+                .processedWords(0)
+                .running(true)
+                .startedAt(LocalDateTime.now())
+                .build();
+        currentStatus.set(initial);
+
+        Thread.startVirtualThread(() -> {
+            try {
+                long start = System.currentTimeMillis();
+                auditorService.auditRecentWords(limit, (done, total) -> {
+                    updateProgress(PipelineStatus.Step.AUDITOR, done, total);
+                });
+                long duration = System.currentTimeMillis() - start;
+                
+                currentStatus.updateAndGet(s -> s.toBuilder()
+                        .currentStep(PipelineStatus.Step.COMPLETE)
+                        .running(false)
+                        .completedAt(LocalDateTime.now())
+                        .progressPercent(100)
+                        .build());
+                log.info("=== AUDITOR COMPLETE === Total time: {}ms", duration);
+            } catch (Exception e) {
+                log.error("Auditor failed: {}", e.getMessage(), e);
+                currentStatus.updateAndGet(s -> s.toBuilder()
+                        .currentStep(PipelineStatus.Step.FAILED)
+                        .running(false)
+                        .completedAt(LocalDateTime.now())
+                        .build());
+            }
+        });
     }
 }

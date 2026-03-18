@@ -60,8 +60,12 @@ public class WordService {
     /**
      * Get most frequent words across all media
      */
-    public List<WordDTO> getFrequentWords(String language, Integer limit, Long userId) {
-        List<Word> words = wordRepository.findTopFrequentWords(language, PageRequest.of(0, limit));
+    public List<WordDTO> getFrequentWords(String language, List<String> difficulties, Integer limit, Long userId, boolean onlyUnknown) {
+        boolean applyDiffFilter = difficulties != null && !difficulties.isEmpty();
+        
+        // If we need 'onlyUnknown', we fetch more to ensure we still have enough words after filtering
+        int fetchLimit = onlyUnknown ? limit * 3 : limit;
+        List<Word> words = wordRepository.findTopFrequentWords(language, difficulties, applyDiffFilter, PageRequest.of(0, fetchLimit));
 
         Set<Long> knownWordIds = Set.of();
         if (userId != null) {
@@ -73,6 +77,8 @@ public class WordService {
         Set<Long> finalKnownWordIds = knownWordIds;
         return words.stream()
                 .map(word -> convertToDTO(word, finalKnownWordIds.contains(word.getId())))
+                .filter(w -> !onlyUnknown || !w.getIsKnown())
+                .limit(limit)
                 .collect(Collectors.toList());
     }
 

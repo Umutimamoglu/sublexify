@@ -5,13 +5,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface WordRepository extends JpaRepository<Word, Long> {
+public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificationExecutor<Word> {
 
         Optional<Word> findByWordAndLanguage(String word, String language);
 
@@ -128,6 +129,15 @@ public interface WordRepository extends JpaRepository<Word, Long> {
     @Query(value = "UPDATE word w SET global_frequency = (SELECT COALESCE(SUM(mw.count), 0) FROM media_word mw WHERE mw.word_id = w.id)", nativeQuery = true)
     void updateGlobalFrequencies();
 
-    @Query("SELECT w FROM Word w WHERE w.language = :language AND w.globalFrequency > 0 AND (w.isProperNoun IS NULL OR w.isProperNoun = false) ORDER BY w.globalFrequency DESC")
-    List<Word> findTopFrequentWords(@Param("language") String language, org.springframework.data.domain.Pageable pageable);
+    @Query("SELECT w FROM Word w WHERE w.language = :language AND w.globalFrequency > 0 " +
+           "AND (:applyDifficultyFilter = false OR w.difficulty IN :difficulties) " +
+           "AND (w.isProperNoun IS NULL OR w.isProperNoun = false) " +
+           "ORDER BY w.globalFrequency DESC")
+    List<Word> findTopFrequentWords(@Param("language") String language, 
+                                     @Param("difficulties") java.util.List<String> difficulties, 
+                                     @Param("applyDifficultyFilter") boolean applyDifficultyFilter,
+                                     org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT w FROM Word w WHERE w.language = 'en' AND w.isEnriched = true AND (w.problemFound = false OR w.problemFound IS NULL) ORDER BY w.id ASC")
+    List<Word> findWordsForAuditing(org.springframework.data.domain.Pageable pageable);
 }

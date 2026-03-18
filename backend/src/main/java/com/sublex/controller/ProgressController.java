@@ -40,9 +40,9 @@ public class ProgressController {
         return ResponseEntity.ok(progressService.getDueWords(userId));
     }
 
-    @GetMapping("/words/mastered")
-    public ResponseEntity<List<WordDTO>> getMasteredWords(org.springframework.security.core.Authentication authentication) {
+    @GetMapping("/words/difficult")
+    public ResponseEntity<List<WordDTO>> getDifficultWords(org.springframework.security.core.Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
-        return ResponseEntity.ok(progressService.getMasteredWords(userId));
+        return ResponseEntity.ok(progressService.getDifficultWords(userId));
     }
 }

@@ -26,9 +26,10 @@ public class WordController {
     public ResponseEntity<List<WordDTO>> searchWords(
             @RequestParam String q,
             @RequestParam(defaultValue = "en") String language,
+            @RequestParam(required = false) Long userId,
             Authentication authentication) {
-        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
-        return ResponseEntity.ok(wordService.searchWords(q, language, userId));
+        Long resolvedUserId = resolveUserId(userId, authentication);
+        return ResponseEntity.ok(wordService.searchWords(q, language, resolvedUserId));
     }
 
     /**
@@ -38,9 +39,10 @@ public class WordController {
     @GetMapping("/{id}")
     public ResponseEntity<WordDTO> getWordById(
             @PathVariable Long id,
+            @RequestParam(required = false) Long userId,
             Authentication authentication) {
-        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
-        return ResponseEntity.ok(wordService.getWordById(id, userId));
+        Long resolvedUserId = resolveUserId(userId, authentication);
+        return ResponseEntity.ok(wordService.getWordById(id, resolvedUserId));
     }
 
     /**
@@ -50,10 +52,20 @@ public class WordController {
     @GetMapping("/frequent")
     public ResponseEntity<List<WordDTO>> getFrequentWords(
             @RequestParam(defaultValue = "en") String language,
+            @RequestParam(required = false) List<String> difficulties,
             @RequestParam(defaultValue = "100") Integer limit,
+            @RequestParam(defaultValue = "false") boolean onlyUnknown,
+            @RequestParam(required = false) Long userId,
             Authentication authentication) {
-        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
-        return ResponseEntity.ok(wordService.getFrequentWords(language, limit, userId));
+        Long resolvedUserId = resolveUserId(userId, authentication);
+        return ResponseEntity.ok(wordService.getFrequentWords(language, difficulties, limit, resolvedUserId, onlyUnknown));
+    }
+
+    private Long resolveUserId(Long paramUserId, Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof Long) {
+            return (Long) authentication.getPrincipal();
+        }
+        return paramUserId;
     }
 
     /**

@@ -26,10 +26,18 @@ public interface AIService {
     WordDefinition enrichTrustedWord(String word, String difficulty, String contextSentence);
 
     /**
-     * Enriches a list of words in a single batch.
+     * Audits a list of words using the STEP 3 Quality Gate rules.
+     * 
+     * @param words List of Word objects with their current definitions
+     * @return Map of word strings to their audit results (problem_found, step3_error)
+     */
+    Map<String, Map<String, Object>> auditWordsBatch(List<Word> words);
+
+    /**
+     * Enriches a batch of words using AI.
      * 
      * @param words List of Word objects to enrich
-     * @return Map of word strings to their enriched definitions
+     * @return Map of word strings to their definitions
      */
     Map<String, WordDefinition> enrichWordsBatch(List<Word> words);
 }
