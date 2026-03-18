@@ -5,6 +5,7 @@ import MediaService from '@/services/MediaService';
 import type { TmdbMedia, TmdbSeasonDetails } from '@/services/MediaService';
 import JudgeReviewPanel from '@/components/JudgeReviewPanel';
 import PipelineControlPanel from '@/components/PipelineControlPanel';
+import AuditReviewPanel from '@/components/AuditReviewPanel';
 
 const AdminPage = () => {
     const [files, setFiles] = useState<File[]>([]);
@@ -377,6 +378,9 @@ const AdminPage = () => {
             <div className="mb-8">
                 <PipelineControlPanel />
             </div>
+
+            {/* AI Auditor Review Panel */}
+            <AuditReviewPanel />
 
             {/* Stats Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

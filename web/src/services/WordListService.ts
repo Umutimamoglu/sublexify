@@ -31,6 +31,8 @@ export interface Word {
     isVerified?: boolean;
     judgeStatus?: string;
     judgeApprovedAt?: string;
+    problemFound?: boolean;
+    step3Error?: string;
 }
 
 export interface WordListDTO {

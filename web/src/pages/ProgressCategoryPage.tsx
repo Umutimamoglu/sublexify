@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Loader2, ArrowLeft, Star, Volume2, TrendingUp, Brain, CalendarDays } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertCircle, Volume2, TrendingUp, Brain, CalendarDays } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ProgressService from '@/services/ProgressService';
 import { Word } from '@/services/WordListService';
 
-type CategoryType = 'learnt' | 'studied' | 'due' | 'mastered';
+type CategoryType = 'learnt' | 'studied' | 'due' | 'difficult';
 
 const CATEGORY_CONFIG = {
     learnt: {
         title: 'Öğrenilen Kelimeler',
         description: 'Tüm öğrenme havuzundaki kelimeler.',
+        emptyTitle: 'Henüz kelime yok',
         icon: Brain,
         color: 'text-blue-500',
         bgColor: 'bg-blue-500/10',
@@ -19,24 +20,27 @@ const CATEGORY_CONFIG = {
     studied: {
         title: 'Çalışılan Kelimeler',
         description: 'En az bir kere test ettiğin kelimeler.',
+        emptyTitle: 'Henüz çalışılan kelime yok',
         icon: TrendingUp,
         color: 'text-purple-500',
         bgColor: 'bg-purple-500/10',
         fill: '',
         fetch: ProgressService.getStudiedWords
     },
-    mastered: {
-        title: 'Mastered Words',
-        description: 'You have mastered these words so far. Keep it up!',
-        icon: Star,
-        color: 'text-emerald-500',
-        bgColor: 'bg-emerald-500/10',
-        fill: 'fill-emerald-500',
-        fetch: ProgressService.getMasteredWords
+    difficult: {
+        title: 'Zorlandığımız Kelimeler',
+        description: 'Çok sık karşılaştığın ama henüz öğrenemediğin kelimeler.',
+        emptyTitle: 'Zorluk bulmaya hazır mısın?',
+        icon: AlertCircle,
+        color: 'text-amber-500',
+        bgColor: 'bg-amber-500/10',
+        fill: '',
+        fetch: ProgressService.getDifficultWords
     },
     due: {
         title: 'Reviews Due',
         description: 'Kelimeler tekrar edilmeyi bekliyor.',
+        emptyTitle: 'Tekrar yok',
         icon: CalendarDays,
         color: 'text-rose-500',
         bgColor: 'bg-rose-500/10',
@@ -107,7 +111,7 @@ const ProgressCategoryPage = () => {
                         {config.title}
                     </h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        {category === 'mastered' ? config.description.replace('these words', `${words.length} words`) : `${words.length} kelime bulunuyor.`}
+                        {category === 'difficult' ? `${words.length} zorlu kelime bulunuyor.` : `${words.length} kelime bulunuyor.`}
                     </p>
                 </div>
             </div>
@@ -137,12 +141,20 @@ const ProgressCategoryPage = () => {
                 ))}
 
                 {words.length === 0 && (
-                    <div className="col-span-full py-20 text-center">
-                        <div className={`w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4`}>
-                            <Icon className="w-10 h-10 text-gray-400" />
+                    <div className="col-span-full py-20 text-center flex flex-col items-center">
+                        <div className={`w-20 h-20 ${config.bgColor} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                            <Icon className={`w-10 h-10 ${config.color}`} />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Henüz kelime yok</h3>
-                        <p className="text-gray-500 dark:text-gray-400 mt-2">Daha fazla kelime çalışarak listeyi doldurabilirsiniz!</p>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{config.emptyTitle || 'Henüz kelime yok'}</h3>
+                        <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-sm mx-auto">
+                            {config.description} Çalışmaya başlayarak bu listeyi doldurabilirsiniz!
+                        </p>
+                        <button
+                            onClick={() => navigate('/lists')}
+                            className={`mt-8 px-8 py-3 rounded-2xl font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-lg ${config.color.replace('text-', 'bg-')}`}
+                        >
+                            Kelimeleri Çalış →
+                        </button>
                     </div>
                 )}
             </div>

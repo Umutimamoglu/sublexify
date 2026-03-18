@@ -78,6 +78,7 @@ const PipelineControlPanel = () => {
             case 'SHERIFF': return 'text-purple-500 bg-purple-50 dark:bg-purple-900/20';
             case 'SPECIALIST': return 'text-cyan-500 bg-cyan-50 dark:bg-cyan-900/20';
             case 'JUDGE': return 'text-amber-500 bg-amber-50 dark:bg-amber-900/20';
+            case 'AUDITOR': return 'text-red-500 bg-red-50 dark:bg-red-900/20';
             case 'COMPLETE': return 'text-green-500 bg-green-50 dark:bg-green-900/20';
             case 'FAILED': return 'text-red-500 bg-red-50 dark:bg-red-900/20';
             default: return 'text-gray-500 bg-gray-50 dark:bg-gray-900/20';
@@ -116,8 +117,28 @@ const PipelineControlPanel = () => {
                             disabled={loading || status?.running}
                             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-900/20 flex items-center gap-2"
                         >
-                            {status?.running ? <Activity className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                            {status?.running ? 'Running...' : 'Start Pipeline'}
+                            {status?.running && status?.currentStep !== 'AUDITOR' ? <Activity className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                            {status?.running && status?.currentStep !== 'AUDITOR' ? 'Running...' : 'Start Pipeline'}
+                        </button>
+
+                        <button
+                            onClick={async () => {
+                                if (!window.confirm(`Start AI Auditor for ${batchSize} recently enriched words?`)) return;
+                                setActionLoading('auditor');
+                                try {
+                                    await PipelineAPI.startAuditor(batchSize);
+                                    fetchStatus();
+                                } catch (err) {
+                                    alert('Failed to start auditor');
+                                } finally {
+                                    setActionLoading(null);
+                                }
+                            }}
+                            disabled={loading || status?.running}
+                            className="px-6 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-900/20 flex items-center gap-2"
+                        >
+                            {status?.running && status?.currentStep === 'AUDITOR' ? <Activity className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                            {status?.running && status?.currentStep === 'AUDITOR' ? 'Auditing...' : 'Start Auditor'}
                         </button>
                     </div>
                 </div>

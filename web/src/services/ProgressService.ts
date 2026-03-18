@@ -4,7 +4,7 @@ import { Word } from './WordListService';
 export interface ProgressStats {
     totalWordsLearnt: number;
     totalWordsStudied: number;
-    highRetentionWords: number;
+    difficultWords: number;
     wordsToReviewToday: number;
 }
 
@@ -31,8 +31,8 @@ const ProgressService = {
     return response.data;
   },
 
-  getMasteredWords: async (): Promise<Word[]> => {
-    const response = await api.get('/progress/words/mastered');
+  getDifficultWords: async (): Promise<Word[]> => {
+    const response = await api.get('/progress/words/difficult');
     return response.data;
   },
 };

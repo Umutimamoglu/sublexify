@@ -276,7 +276,7 @@ export interface FailedWord {
 }
 
 export interface PipelineStatus {
-    currentStep: 'IDLE' | 'WORKER' | 'SHERIFF' | 'SPECIALIST' | 'JUDGE' | 'COMPLETE' | 'FAILED';
+    currentStep: 'IDLE' | 'WORKER' | 'SHERIFF' | 'SPECIALIST' | 'JUDGE' | 'AUDITOR' | 'COMPLETE' | 'FAILED';
     totalWords: number;
     processedWords: number;
     progressPercent: number;
@@ -335,6 +335,23 @@ const PipelineAPI = {
 
     triggerAnalysis: async (): Promise<string> => {
         const response = await api.post('/admin/word-analysis/trigger');
+        return response.data;
+    },
+
+    startAuditor: async (size: number): Promise<string> => {
+        const response = await api.post(`/admin/pipeline/auditor?size=${size}`);
+        return response.data;
+    },
+
+    getAuditProblems: async (page: number = 0, size: number = 20): Promise<Page<Word>> => {
+        const response = await api.get('/admin/words/audit-problems', {
+            params: { page, size }
+        });
+        return response.data;
+    },
+
+    resolveAuditProblems: async (wordIds: number[]): Promise<string> => {
+        const response = await api.post('/admin/words/audit-resolve', wordIds);
         return response.data;
     }
 };
