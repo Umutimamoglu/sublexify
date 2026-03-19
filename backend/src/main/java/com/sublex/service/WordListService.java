@@ -35,7 +35,8 @@ public class WordListService {
 
         public List<WordListDTO> getUserLists(Long userId) {
                 Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
-                return wordListRepository.findAllByUserIdWithWords(userId).stream()
+                // Kullanıcının kendi listelerini + sistem listelerini birlikte getir
+                return wordListRepository.findAllByUserIdOrSystem(userId).stream()
                                 .map(list -> convertToDTO(list, userId, knownWordIds))
                                 .collect(Collectors.toList());
         }

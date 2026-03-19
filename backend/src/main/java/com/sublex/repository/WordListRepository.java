@@ -13,6 +13,12 @@ public interface WordListRepository extends JpaRepository<WordList, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT wl FROM WordList wl LEFT JOIN FETCH wl.words WHERE wl.user.id = :userId")
     List<WordList> findAllByUserIdWithWords(@org.springframework.data.repository.query.Param("userId") Long userId);
 
+    /** Kullanıcının kendi listeleri + tüm sistem listeleri (isSystem=true) */
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT DISTINCT wl FROM WordList wl LEFT JOIN FETCH wl.words " +
+        "WHERE wl.user.id = :userId OR wl.isSystem = true")
+    List<WordList> findAllByUserIdOrSystem(@org.springframework.data.repository.query.Param("userId") Long userId);
+
     java.util.Optional<WordList> findByNameAndUserId(String name, Long userId);
 
     java.util.Optional<WordList> findByName(String name);

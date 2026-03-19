@@ -152,8 +152,6 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     filterChipActive: { backgroundColor: c.PURPLE, borderColor: c.PURPLE },
     filterChipText: { color: c.TEXT_S, fontSize: 13, fontWeight: '600' },
     filterChipTextActive: { color: '#ffffff' },
-    browseAllChip: { borderColor: c.PURPLE + '88', backgroundColor: c.PURPLE + '18' },
-    browseAllChipText: { color: c.PURPLE, fontSize: 13, fontWeight: '700' },
 
     listsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: pad, gap: 10 },
     listCard: {
@@ -344,7 +342,7 @@ export default function DiscoverScreen() {
     [c, isDark, isTablet],
   );
 
-  const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>('series');
   const [allMediaModalVisible, setAllMediaModalVisible] = useState(false);
   const [continueModalVisible, setContinueModalVisible] = useState(false);
 
@@ -435,11 +433,11 @@ export default function DiscoverScreen() {
             {/* Filter chips */}
             <View style={styles.filterRow}>
               <TouchableOpacity
-                style={[styles.filterChip, styles.browseAllChip]}
+                style={styles.filterChip}
                 onPress={() => setAllMediaModalVisible(true)}
                 activeOpacity={0.75}
               >
-                <Text style={styles.browseAllChipText}>{t('allContent')}</Text>
+                <Text style={styles.filterChipText}>{t('allContent')}</Text>
               </TouchableOpacity>
               {(['movie', 'series'] as MediaFilter[]).map((f) => {
                 const label = f === 'movie' ? t('movies') : t('series');

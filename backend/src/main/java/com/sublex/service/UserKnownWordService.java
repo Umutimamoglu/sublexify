@@ -127,11 +127,12 @@ public class UserKnownWordService {
                     dto.setId(ukw.getWord().getId());
                     dto.setWord(ukw.getWord().getWord());
                     dto.setLanguage(ukw.getWord().getLanguage());
-                    dto.setFrequency(0); // Not relevant for known words list
+                    dto.setFrequency(0);
                     dto.setIsKnown(true);
                     dto.setDifficulty(ukw.getWord().getDifficulty());
                     dto.setIsEnriched(ukw.getWord().getIsEnriched());
                     dto.setIsProperNoun(ukw.getWord().getIsProperNoun());
+                    dto.setDefinition(ukw.getWord().getDefinition());
                     return dto;
                 })
                 .collect(Collectors.toList());
