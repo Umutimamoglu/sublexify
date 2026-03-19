@@ -77,7 +77,7 @@ public class StudyServiceTest {
         when(userWordProgressRepository.findByUserIdAndWordIdIn(1L, java.util.Arrays.asList(10L)))
                 .thenReturn(java.util.Collections.emptyList()); // No previous progress (New word)
 
-        List<StudyQuestionDTO> batch = studyService.getNextBatch(1L, 100L, 5, null);
+        List<StudyQuestionDTO> batch = studyService.getNextBatch(1L, 100L, null, false, 5, null);
 
         assertEquals(1, batch.size());
         StudyQuestionDTO question = batch.get(0);
@@ -95,7 +95,7 @@ public class StudyServiceTest {
         when(wordListRepository.findById(100L)).thenReturn(Optional.of(testWordList));
 
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> studyService.getNextBatch(1L, 100L, 5, null));
+                () -> studyService.getNextBatch(1L, 100L, null, false, 5, null));
         assertEquals("Unauthorized", exception.getMessage());
     }
 
@@ -119,7 +119,7 @@ public class StudyServiceTest {
         when(userWordProgressRepository.findByUserIdAndWordIdIn(eq(1L), any()))
                 .thenReturn(Arrays.asList(prog1, prog2, prog3));
 
-        List<StudyQuestionDTO> batch = studyService.getNextBatch(1L, 100L, 5, null);
+        List<StudyQuestionDTO> batch = studyService.getNextBatch(1L, 100L, null, false, 5, null);
         assertEquals(3, batch.size());
 
         for (StudyQuestionDTO q : batch) {
