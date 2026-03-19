@@ -20,12 +20,15 @@ public class StudyController {
     @GetMapping("/next-batch")
     public ResponseEntity<List<StudyQuestionDTO>> getNextBatch(
             Authentication authentication,
-            @RequestParam(required = false) Long listId,
-            @RequestParam(required = false) List<String> difficulties,
-            @RequestParam(defaultValue = "false") boolean onlyUnknown,
-            @RequestParam(defaultValue = "10") Integer size,
-            @RequestParam(required = false) List<String> types) {
+            @RequestParam(name = "listId", required = false) Long listId,
+            @RequestParam(name = "difficulties", required = false) List<String> difficulties,
+            @RequestParam(name = "onlyUnknown", defaultValue = "false") boolean onlyUnknown,
+            @RequestParam(name = "size", defaultValue = "10") Integer size,
+            @RequestParam(name = "types", required = false) List<String> types) {
         Long userId = (Long) authentication.getPrincipal();
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(StudyController.class);
+        logger.info("Next batch request: userId={}, listId={}, difficulties={}, onlyUnknown={}, types={}", 
+            userId, listId, difficulties, onlyUnknown, types);
         return ResponseEntity.ok(studyService.getNextBatch(userId, listId, difficulties, onlyUnknown, size, types));
     }
 

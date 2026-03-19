@@ -17,13 +17,15 @@ export function useStudyBatch(
   return useQuery<StudyQuestionDTO[]>({
     queryKey: studyKeys.batch(listId, types, difficulties, onlyUnknown),
     queryFn: async () => {
-      const typesQuery = types && types.length > 0 ? `&types=${types.join(',')}` : '';
-      const diffsQuery = difficulties && difficulties.length > 0 ? `&difficulties=${difficulties.join(',')}` : '';
-      const unknownQuery = onlyUnknown ? `&onlyUnknown=true` : '';
-      const listIdQuery = listId ? `&listId=${listId}` : '';
-      
+      const params = new URLSearchParams();
+      params.append('size', '10');
+      if (listId) params.append('listId', listId.toString());
+      if (types && types.length > 0) params.append('types', types.join(','));
+      if (difficulties && difficulties.length > 0) params.append('difficulties', difficulties.join(','));
+      if (onlyUnknown) params.append('onlyUnknown', 'true');
+
       const res = await apiClient.get<StudyQuestionDTO[]>(
-        `${ENDPOINTS.study.nextBatch}?size=10${listIdQuery}${typesQuery}${diffsQuery}${unknownQuery}`,
+        `${ENDPOINTS.study.nextBatch}?${params.toString()}`,
       );
       return res.data;
     },
