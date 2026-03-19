@@ -1,0 +1,14 @@
+{
+  "title": "İçerik İsteği",
+  "searchPlaceholder": "Dizi veya Film ara...",
+  "movies": "Filmler",
+  "series": "Diziler",
+  "minChars": "Minimum 2 harf girin",
+  "selectedCount": "{{count}} İçerik Seçildi",
+  "submit": "İstek Gönder",
+  "success": "Başarılı",
+  "successDesc": "İstekleriniz bize ulaştı!",
+  "error": "Hata",
+  "errorDesc": "İstekler gönderilemedi.",
+  "confirm": "Tamam"
+}

@@ -1,0 +1,17 @@
+{
+  "title": "Geri Bildirim",
+  "category": "Kategori Seçin",
+  "bug": "Hata Bildir",
+  "suggestion": "Öneri",
+  "other": "Diğer",
+  "messageLabel": "Mesajınız",
+  "placeholder": "Sorun, öneri veya düşüncelerinizi buraya yazabilirsiniz...",
+  "submit": "Gönder",
+  "emptyWarning": "Lütfen bir mesaj yazın.",
+  "warning": "Uyarı",
+  "success": "Başarılı",
+  "successDesc": "Geri bildiriminiz iletildi. Teşekkürler!",
+  "error": "Hata",
+  "errorDesc": "Geri bildirim gönderilemedi. Lütfen sonra tekrar deneyin.",
+  "confirm": "Tamam"
+}

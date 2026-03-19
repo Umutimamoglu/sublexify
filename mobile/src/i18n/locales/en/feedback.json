@@ -1,0 +1,17 @@
+{
+  "title": "Feedback",
+  "category": "Select Category",
+  "bug": "Report Bug",
+  "suggestion": "Suggestion",
+  "other": "Other",
+  "messageLabel": "Your Message",
+  "placeholder": "You can write your issues, suggestions or thoughts here...",
+  "submit": "Send",
+  "emptyWarning": "Please enter a message.",
+  "warning": "Warning",
+  "success": "Success",
+  "successDesc": "Your feedback has been sent. Thank you!",
+  "error": "Error",
+  "errorDesc": "Failed to send feedback. Please try again later.",
+  "confirm": "OK"
+}

@@ -1,0 +1,14 @@
+{
+  "title": "Request Content",
+  "searchPlaceholder": "Search for movies or series...",
+  "movies": "Movies",
+  "series": "Series",
+  "minChars": "Enter at least 2 characters",
+  "selectedCount": "{{count}} Items Selected",
+  "submit": "Send Request",
+  "success": "Success",
+  "successDesc": "Your requests have been received!",
+  "error": "Error",
+  "errorDesc": "Failed to send requests.",
+  "confirm": "OK"
+}
