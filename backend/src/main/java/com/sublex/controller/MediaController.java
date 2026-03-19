@@ -1,3 +1,5 @@
+package com.sublex.controller;
+
 import com.sublex.dto.MediaDTO;
 import com.sublex.dto.MediaWordsResponseDTO;
 import com.sublex.service.MediaService;
