@@ -1,11 +1,10 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
   StatusBar,
   useWindowDimensions,
@@ -20,6 +19,8 @@ import { DifficultyBadge } from '@/src/components/ui';
 import { useMedia, useContinueLearning } from '@/src/api/queries/media.queries';
 import { useLists } from '@/src/api/queries/lists.queries';
 import { useUserStats } from '@/src/api/queries/user.queries';
+import { AllMediaModal } from '@/src/components/ui/AllMediaModal';
+import { ContinueLearningModal } from '@/src/components/ui/ContinueLearningModal';
 import type { MediaDTO, WordListDTO } from '@/src/types/api';
 
 const STREAK_BG = '#7f1d1d';
@@ -146,11 +147,13 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     mediaStats: { color: '#aaaacc', fontSize: 10, textAlign: 'center', paddingHorizontal: 6, paddingTop: 3, paddingBottom: 8 },
 
     // Filter chips
-    filterRow: { flexDirection: 'row', paddingHorizontal: pad, paddingBottom: 12, gap: 8 },
+    filterRow: { flexDirection: 'row', paddingHorizontal: pad, paddingBottom: 12, gap: 8, flexWrap: 'wrap' },
     filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: c.BORDER, backgroundColor: c.SURFACE2 },
     filterChipActive: { backgroundColor: c.PURPLE, borderColor: c.PURPLE },
     filterChipText: { color: c.TEXT_S, fontSize: 13, fontWeight: '600' },
     filterChipTextActive: { color: '#ffffff' },
+    browseAllChip: { borderColor: c.PURPLE + '88', backgroundColor: c.PURPLE + '18' },
+    browseAllChipText: { color: c.PURPLE, fontSize: 13, fontWeight: '700' },
 
     listsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: pad, gap: 10 },
     listCard: {
@@ -179,30 +182,6 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
     loader: { marginVertical: 20 },
 
-    // Search bar
-    searchBar: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      marginHorizontal: pad,
-      marginBottom: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 9,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: c.BORDER,
-      backgroundColor: c.SURFACE,
-      gap: 8,
-    },
-    searchInput: {
-      flex: 1,
-      color: c.TEXT_P,
-      fontSize: 15,
-      padding: 0,
-    },
-    searchClear: {
-      padding: 4,
-    },
-    searchClearText: { color: c.TEXT_S, fontSize: 14 },
   });
 }
 
@@ -366,31 +345,23 @@ export default function DiscoverScreen() {
   );
 
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchActive, setSearchActive] = useState(false);
-  const searchInputRef = useRef<TextInput>(null);
+  const [allMediaModalVisible, setAllMediaModalVisible] = useState(false);
+  const [continueModalVisible, setContinueModalVisible] = useState(false);
 
-  const { data: continueMedia = [], isLoading: continueLoading } = useContinueLearning(5);
+  const { data: continueMedia = [], isLoading: continueLoading } = useContinueLearning(50);
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
   const { data: allLists = [], isLoading: listsLoading } = useLists();
   const systemLists = useMemo(() => allLists.filter((l) => l.isSystem), [allLists]);
   const { data: userStats, isLoading: knownLoading } = useUserStats();
 
-  const browsedMedia = useMemo(() => {
-    const filtered = deduplicateMedia(allMedia, mediaFilter);
-    if (!searchQuery.trim()) return filtered;
-    const q = searchQuery.trim().toLowerCase();
-    return filtered.filter((m) => seriesTitle(m).toLowerCase().includes(q));
-  }, [allMedia, mediaFilter, searchQuery]);
+  const browsedMedia = useMemo(() => deduplicateMedia(allMedia, mediaFilter), [allMedia, mediaFilter]);
 
-  const openSearch = () => {
-    setSearchActive(true);
-    setTimeout(() => searchInputRef.current?.focus(), 50);
-  };
-
-  const closeSearch = () => {
-    setSearchActive(false);
-    setSearchQuery('');
+  const handleNavigate = (item: MediaDTO) => {
+    if (item.type === 'MOVIE') {
+      router.push(`/media/${item.id}` as any);
+    } else {
+      router.push(`/show/${item.imdbId}` as any);
+    }
   };
 
   return (
@@ -410,32 +381,12 @@ export default function DiscoverScreen() {
             <Text style={styles.headerGreeting}>Sublex</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.headerIconBtn} onPress={openSearch}>
-              <Text style={styles.headerIconText}>⌕</Text>
-            </TouchableOpacity>
+            <View style={styles.streakBadge}>
+              <Text style={styles.streakIcon}>🔥</Text>
+              <Text style={styles.streakCount}>6</Text>
+            </View>
           </View>
         </View>
-
-        {/* Search bar — visible when active */}
-        {searchActive && (
-          <View style={styles.searchBar}>
-            <Text style={[styles.headerIconText, { color: c.TEXT_S }]}>⌕</Text>
-            <TextInput
-              ref={searchInputRef}
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder={t('searchPlaceholder')}
-              placeholderTextColor={c.TEXT_S}
-              returnKeyType="search"
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity style={styles.searchClear} onPress={closeSearch}>
-              <Text style={styles.searchClearText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -445,9 +396,11 @@ export default function DiscoverScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('continueLearning')}</Text>
-              <TouchableOpacity>
-                <Text style={styles.viewAll}>{t('viewAll')}</Text>
-              </TouchableOpacity>
+              {continueMedia.length > 0 && (
+                <TouchableOpacity onPress={() => setContinueModalVisible(true)}>
+                  <Text style={styles.viewAll}>{t('viewAll')}</Text>
+                </TouchableOpacity>
+              )}
             </View>
             {continueLoading ? (
               <ActivityIndicator color={c.PURPLE} style={styles.loader} />
@@ -459,7 +412,7 @@ export default function DiscoverScreen() {
               </View>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>
-                {continueMedia.map((item, index) => (
+                {continueMedia.slice(0, 5).map((item, index) => (
                   <ContinueLearningCard
                     key={item.id}
                     item={item}
@@ -476,15 +429,20 @@ export default function DiscoverScreen() {
           {/* Browse Media */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                {searchActive && searchQuery.trim() ? `"${searchQuery.trim()}"` : t('browseMedia')}
-              </Text>
+              <Text style={styles.sectionTitle}>{t('browseMedia')}</Text>
             </View>
 
             {/* Filter chips */}
             <View style={styles.filterRow}>
-              {(['all', 'movie', 'series'] as MediaFilter[]).map((f) => {
-                const label = f === 'all' ? t('allContent') : f === 'movie' ? t('movies') : t('series');
+              <TouchableOpacity
+                style={[styles.filterChip, styles.browseAllChip]}
+                onPress={() => setAllMediaModalVisible(true)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.browseAllChipText}>{t('allContent')}</Text>
+              </TouchableOpacity>
+              {(['movie', 'series'] as MediaFilter[]).map((f) => {
+                const label = f === 'movie' ? t('movies') : t('series');
                 const active = mediaFilter === f;
                 return (
                   <TouchableOpacity
@@ -511,10 +469,8 @@ export default function DiscoverScreen() {
               </View>
             ) : browsedMedia.length === 0 ? (
               <View style={styles.emptyCard}>
-                <Text style={styles.emptyIcon}>{searchQuery.trim() ? '🔍' : '🎬'}</Text>
-                <Text style={styles.emptyTitle}>
-                  {searchQuery.trim() ? `"${searchQuery.trim()}" için sonuç yok` : t('noContent')}
-                </Text>
+                <Text style={styles.emptyIcon}>🎬</Text>
+                <Text style={styles.emptyTitle}>{t('noContent')}</Text>
               </View>
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>
@@ -554,6 +510,23 @@ export default function DiscoverScreen() {
         </ScrollView>
 
       </SafeAreaView>
+
+      {/* Continue Learning Modal */}
+      <ContinueLearningModal
+        visible={continueModalVisible}
+        onClose={() => setContinueModalVisible(false)}
+        media={continueMedia}
+        onNavigate={handleNavigate}
+      />
+
+      {/* All Media Modal */}
+      <AllMediaModal
+        visible={allMediaModalVisible}
+        onClose={() => setAllMediaModalVisible(false)}
+        allMedia={allMedia}
+        loading={mediaLoading}
+        onNavigate={handleNavigate}
+      />
     </View>
   );
 }

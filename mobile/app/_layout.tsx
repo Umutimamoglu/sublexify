@@ -26,20 +26,23 @@ const persister = createAsyncStoragePersister({
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
+  const { hasHydrated, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     async function prepare() {
       try {
         await initI18n();
 
+        // Wait for hydration if not already done
+        if (!hasHydrated) return;
+
         // Auth varsa kritik verileri splash süresinde önceden yükle
-        const { isAuthenticated } = useAuthStore.getState();
         if (isAuthenticated) {
           await Promise.allSettled([
             queryClient.prefetchQuery({
               queryKey: ['media'],
               queryFn: () =>
-                apiClient.get(`${ENDPOINTS.media.list}?userId=1`).then((r) => r.data),
+                apiClient.get(ENDPOINTS.media.list).then((r) => r.data),
               staleTime: 1000 * 60 * 30,
             }),
             queryClient.prefetchQuery({
@@ -56,17 +59,18 @@ export default function RootLayout() {
             }),
           ]);
         }
-      } catch (e) {
-        console.warn('App prepare failed:', e);
-      } finally {
+        
         setReady(true);
         await SplashScreen.hideAsync();
+      } catch (e) {
+        console.warn('App prepare failed:', e);
+        setReady(true);
       }
     }
     prepare();
-  }, []);
+  }, [hasHydrated, isAuthenticated]);
 
-  if (!ready) return null;
+  if (!ready || !hasHydrated) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -79,6 +83,7 @@ export default function RootLayout() {
             <AuthProvider>
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="index" />
+                <Stack.Screen name="onboarding" />
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="media/[id]" />

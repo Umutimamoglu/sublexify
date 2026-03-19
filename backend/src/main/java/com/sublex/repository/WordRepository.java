@@ -131,11 +131,14 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
 
     @Query("SELECT w FROM Word w WHERE w.language = :language AND w.globalFrequency > 0 " +
            "AND (:applyDifficultyFilter = false OR w.difficulty IN :difficulties) " +
+           "AND (:onlyUnknown = false OR :userId IS NULL OR NOT EXISTS (SELECT 1 FROM UserKnownWord ukw WHERE ukw.word.id = w.id AND ukw.user.id = :userId)) " +
            "AND (w.isProperNoun IS NULL OR w.isProperNoun = false) " +
            "ORDER BY w.globalFrequency DESC")
     List<Word> findTopFrequentWords(@Param("language") String language, 
                                      @Param("difficulties") java.util.List<String> difficulties, 
                                      @Param("applyDifficultyFilter") boolean applyDifficultyFilter,
+                                     @Param("onlyUnknown") boolean onlyUnknown,
+                                     @Param("userId") Long userId,
                                      org.springframework.data.domain.Pageable pageable);
 
     @Query("SELECT w FROM Word w WHERE w.language = 'en' AND w.isEnriched = true AND (w.problemFound = false OR w.problemFound IS NULL) ORDER BY w.id ASC")

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '@/src/api/client';
 import { ENDPOINTS } from '@/src/api/endpoints';
 import type { WordDTO, UserStatistics } from '@/src/types/api';
@@ -11,30 +11,36 @@ export const wordKeys = {
   frequent: ['words', 'frequent'] as const,
 };
 
-export function useWordSearch(query: string) {
+export function useWordSearch(query: string, difficulties?: string[], onlyUnknown = false) {
   return useQuery<WordDTO[]>({
-    queryKey: wordKeys.search(query),
+    queryKey: [...wordKeys.search(query), difficulties, onlyUnknown],
     queryFn:  async () => {
-      const res = await apiClient.get<WordDTO[]>(
-        `${ENDPOINTS.words.search}?q=${encodeURIComponent(query)}&language=en&userId=1`,
-      );
+      let url = `${ENDPOINTS.words.search}?q=${encodeURIComponent(query)}&language=en&onlyUnknown=${onlyUnknown}`;
+      if (difficulties && difficulties.length > 0) {
+        url += `&difficulties=${difficulties.join(',')}`;
+      }
+      const res = await apiClient.get<WordDTO[]>(url);
       return res.data;
     },
     enabled: query.trim().length >= 2,
   });
 }
 
-export function useFrequentWords(difficulties?: string[], onlyUnknown = false, limit = 100) {
-  return useQuery<WordDTO[]>({
-    queryKey: [...wordKeys.frequent, difficulties, onlyUnknown, limit],
+export function useFrequentWords(difficulties?: string[], onlyUnknown = false, size = 100) {
+  return useInfiniteQuery<WordDTO[]>({
+    queryKey: [...wordKeys.frequent, difficulties, onlyUnknown, size],
+    initialPageParam: 0,
     staleTime: 1000 * 60 * 60, // 1 saat
-    queryFn: async () => {
-      let url = `${ENDPOINTS.words.frequent}?language=en&limit=${limit}&onlyUnknown=${onlyUnknown}&userId=1`;
+    queryFn: async ({ pageParam = 0 }) => {
+      let url = `${ENDPOINTS.words.frequent}?language=en&page=${pageParam}&size=${size}&onlyUnknown=${onlyUnknown}`;
       if (difficulties && difficulties.length > 0) {
         url += `&difficulties=${difficulties.join(',')}`;
       }
       const res = await apiClient.get<WordDTO[]>(url);
       return res.data;
+    },
+    getNextPageParam: (lastPage: WordDTO[], allPages: WordDTO[][]) => {
+      return lastPage.length === size ? allPages.length : undefined;
     },
   });
 }
@@ -53,7 +59,7 @@ export function useMarkKnown() {
       isKnown: boolean;
       mediaId?: number;
     }) => {
-      const url = `${ENDPOINTS.words.markKnown(wordId)}?userId=1`;
+      const url = ENDPOINTS.words.markKnown(wordId);
       if (isKnown) {
         await apiClient.delete(url);
       } else {
@@ -98,6 +104,7 @@ export function useMarkKnown() {
       qc.invalidateQueries({ queryKey: userKeys.knownWords });
       qc.invalidateQueries({ queryKey: userKeys.stats });
       qc.invalidateQueries({ queryKey: ['progress', 'stats'] });
+      qc.invalidateQueries({ queryKey: wordKeys.frequent }); // Refresh frequent words
       if (mediaId) {
         qc.invalidateQueries({ queryKey: mediaKeys.words(mediaId) });
         qc.invalidateQueries({ queryKey: mediaKeys.detail(mediaId) });
@@ -111,7 +118,7 @@ export function useMarkKnownBatch() {
   return useMutation({
     mutationFn: async (wordIds: number[]) => {
       await Promise.all(
-        wordIds.map((id) => apiClient.post(`${ENDPOINTS.words.markKnown(id)}?userId=1`)),
+        wordIds.map((id) => apiClient.post(ENDPOINTS.words.markKnown(id))),
       );
       return wordIds;
     },
@@ -119,6 +126,7 @@ export function useMarkKnownBatch() {
       qc.invalidateQueries({ queryKey: userKeys.knownWords });
       qc.invalidateQueries({ queryKey: userKeys.stats });
       qc.invalidateQueries({ queryKey: ['progress', 'stats'] });
+      qc.invalidateQueries({ queryKey: wordKeys.frequent }); // Refresh frequent words
       qc.invalidateQueries({ queryKey: listKeys.all });
     },
   });

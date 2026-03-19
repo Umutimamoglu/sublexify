@@ -11,6 +11,7 @@ import {
   FlatList,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   StyleSheet,
   StatusBar,
   useWindowDimensions,
@@ -282,6 +283,17 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     mkConfirmBtn: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: c.PURPLE, alignItems: 'center' as const },
     mkCancelText: { color: c.TEXT_S, fontWeight: '600' as const, fontSize: 15 },
     mkConfirmText: { color: '#fff', fontWeight: '700' as const, fontSize: 15 },
+
+    // Search
+    searchRow: {
+      flexDirection: 'row' as const, alignItems: 'center' as const,
+      marginHorizontal: pad, marginBottom: 8,
+      paddingHorizontal: 12, paddingVertical: 9,
+      borderRadius: 12, borderWidth: 1,
+      borderColor: c.BORDER, backgroundColor: c.SURFACE2, gap: 8,
+    },
+    searchInput: { flex: 1, color: c.TEXT_P, fontSize: 15, padding: 0 },
+    searchClearText: { color: c.TEXT_S, fontSize: 14 },
 
     // Empty/loading
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
@@ -734,6 +746,9 @@ export default function ListScreen({ listId }: { listId: number }) {
 
   // ─── State ────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchActive, setSearchActive] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
   const [showMarkModal, setShowMarkModal] = useState(false);
   const [showQuizModal, setShowQuizModal] = useState(false);
@@ -763,9 +778,19 @@ export default function ListScreen({ listId }: { listId: number }) {
   // ─── Filtered words ───────────────────────────────────────
   const filteredWords = useMemo<ListWord[]>(() => {
     if (!effectiveList?.words) return [];
-    if (selectedLevels.size === 0) return effectiveList.words;
-    return effectiveList.words.filter((w) => w.difficulty && selectedLevels.has(w.difficulty));
-  }, [effectiveList?.words, selectedLevels]);
+    let words = effectiveList.words;
+    if (selectedLevels.size > 0) {
+      words = words.filter((w) => w.difficulty && selectedLevels.has(w.difficulty));
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      words = words.filter((w) =>
+        w.word.toLowerCase().includes(q) ||
+        w.definition?.meanings?.[0]?.definition?.toLowerCase().includes(q),
+      );
+    }
+    return words;
+  }, [effectiveList?.words, selectedLevels, searchQuery]);
 
   // Reset card index on filter change
   useEffect(() => { setCardIndex(0); }, [selectedLevels]);
@@ -987,6 +1012,20 @@ export default function ListScreen({ listId }: { listId: number }) {
               <Text style={styles.studyBtnText}>{tStudy('studyList')}</Text>
             </TouchableOpacity>
           )}
+          <TouchableOpacity
+            style={[styles.toggleBtn, searchActive && styles.toggleActive]}
+            onPress={() => {
+              if (searchActive) {
+                setSearchActive(false);
+                setSearchQuery('');
+              } else {
+                setSearchActive(true);
+                setTimeout(() => searchInputRef.current?.focus(), 50);
+              }
+            }}
+          >
+            <Ionicons name="search-outline" size={16} color={searchActive ? '#fff' : c.TEXT_S} />
+          </TouchableOpacity>
           <View style={styles.toggleRow}>
             <TouchableOpacity
               style={[styles.toggleBtn, viewMode === 'list' && styles.toggleActive]}
@@ -1002,6 +1041,29 @@ export default function ListScreen({ listId }: { listId: number }) {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Search bar */}
+        {searchActive && (
+          <View style={styles.searchRow}>
+            <Ionicons name="search-outline" size={16} color={c.TEXT_S} />
+            <TextInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Kelime ara..."
+              placeholderTextColor={c.TEXT_S}
+              returnKeyType="search"
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Text style={styles.searchClearText}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Difficulty Chips — her iki modda da görünür */}
         <ScrollView

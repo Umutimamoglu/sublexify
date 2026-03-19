@@ -24,7 +24,7 @@ public class WordService {
     /**
      * Search words by query string
      */
-    public List<WordDTO> searchWords(String query, String language, Long userId) {
+    public List<WordDTO> searchWords(String query, String language, List<String> difficulties, boolean onlyUnknown, Long userId) {
         List<Word> words = wordRepository.findByWordContainingAndLanguage(query.toLowerCase(), language);
 
         // Get known word IDs if user provided
@@ -35,9 +35,13 @@ public class WordService {
                     .collect(Collectors.toSet());
         }
 
+        boolean applyDiffFilter = difficulties != null && !difficulties.isEmpty();
         Set<Long> finalKnownWordIds = knownWordIds;
+
         return words.stream()
                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
+                .filter(word -> !applyDiffFilter || difficulties.contains(word.getDifficulty()))
+                .filter(word -> !onlyUnknown || !finalKnownWordIds.contains(word.getId()))
                 .map(word -> convertToDTO(word, finalKnownWordIds.contains(word.getId())))
                 .collect(Collectors.toList());
     }
@@ -60,12 +64,10 @@ public class WordService {
     /**
      * Get most frequent words across all media
      */
-    public List<WordDTO> getFrequentWords(String language, List<String> difficulties, Integer limit, Long userId, boolean onlyUnknown) {
+    public List<WordDTO> getFrequentWords(String language, List<String> difficulties, int page, int size, Long userId, boolean onlyUnknown) {
         boolean applyDiffFilter = difficulties != null && !difficulties.isEmpty();
         
-        // If we need 'onlyUnknown', we fetch more to ensure we still have enough words after filtering
-        int fetchLimit = onlyUnknown ? limit * 3 : limit;
-        List<Word> words = wordRepository.findTopFrequentWords(language, difficulties, applyDiffFilter, PageRequest.of(0, fetchLimit));
+        List<Word> words = wordRepository.findTopFrequentWords(language, difficulties, applyDiffFilter, onlyUnknown, userId, PageRequest.of(page, size));
 
         Set<Long> knownWordIds = Set.of();
         if (userId != null) {
@@ -77,8 +79,6 @@ public class WordService {
         Set<Long> finalKnownWordIds = knownWordIds;
         return words.stream()
                 .map(word -> convertToDTO(word, finalKnownWordIds.contains(word.getId())))
-                .filter(w -> !onlyUnknown || !w.getIsKnown())
-                .limit(limit)
                 .collect(Collectors.toList());
     }
 

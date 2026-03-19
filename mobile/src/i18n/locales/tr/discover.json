@@ -18,5 +18,10 @@
   "knownWords": "Bilinen Kelimeler",
   "noEpisodes": "Bölüm bulunamadı",
   "episodeCount": "{{count}} bölüm",
-  "episodeCount_plural": "{{count}} bölüm"
+  "episodeCount_plural": "{{count}} bölüm",
+  "allMediaTitle": "Tüm İçerikler",
+  "browseAll": "Tüm Liste",
+  "contentCount": "içerik",
+  "searchHint": "Dizi veya film adı yaz...",
+  "noSearchResult": "için sonuç bulunamadı"
 }

@@ -22,7 +22,7 @@ export function useKnownWords() {
   return useQuery<WordDTO[]>({
     queryKey: userKeys.knownWords,
     queryFn:  async () => {
-      const res = await apiClient.get<WordDTO[]>(`${ENDPOINTS.user.knownWords}?userId=1`);
+      const res = await apiClient.get<WordDTO[]>(ENDPOINTS.user.knownWords);
       return res.data;
     },
   });

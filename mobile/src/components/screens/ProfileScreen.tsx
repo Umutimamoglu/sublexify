@@ -273,7 +273,7 @@ export default function ProfileScreen() {
               </View>
 
               {/* ── Progress Card ── */}
-              <View style={styles.progressCard}>
+              <TouchableOpacity style={styles.progressCard} onPress={() => router.push('/list/-1' as any)} activeOpacity={0.75}>
                 <View style={styles.progressRow}>
                   <View>
                     <Text style={styles.progressTitle}>{t('wordMastery')}</Text>
@@ -290,7 +290,7 @@ export default function ProfileScreen() {
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${progressPct * 100}%` }]} />
                 </View>
-              </View>
+              </TouchableOpacity>
 
             </>
           )}
@@ -301,6 +301,13 @@ export default function ProfileScreen() {
             icon="bar-chart-outline"
             label={t('progress')}
             onPress={() => router.push('/progress')}
+            styles={styles}
+            isDark={isDark}
+          />
+          <SettingsTile
+            icon="compass-outline"
+            label={t('onboardingGuide', { defaultValue: 'Rehber' })}
+            onPress={() => router.push('/onboarding')}
             styles={styles}
             isDark={isDark}
           />

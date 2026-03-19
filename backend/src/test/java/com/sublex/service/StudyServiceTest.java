@@ -68,14 +68,14 @@ public class StudyServiceTest {
         testWordList = new WordList();
         testWordList.setId(100L);
         testWordList.setUser(testUser);
-        testWordList.setWords(Set.of(testWord));
+        testWordList.setWords(new java.util.HashSet<>(java.util.Arrays.asList(testWord)));
     }
 
     @Test
     void testGetNextBatch_Success() {
         when(wordListRepository.findById(100L)).thenReturn(Optional.of(testWordList));
-        when(userWordProgressRepository.findByUserIdAndWordIdIn(1L, List.of(10L)))
-                .thenReturn(Collections.emptyList()); // No previous progress (New word)
+        when(userWordProgressRepository.findByUserIdAndWordIdIn(1L, java.util.Arrays.asList(10L)))
+                .thenReturn(java.util.Collections.emptyList()); // No previous progress (New word)
 
         List<StudyQuestionDTO> batch = studyService.getNextBatch(1L, 100L, 5, null);
 
@@ -109,7 +109,7 @@ public class StudyServiceTest {
         word3.setId(12L);
         word3.setWord("cherry");
 
-        testWordList.setWords(Set.of(testWord, word2, word3));
+        testWordList.setWords(new java.util.HashSet<>(java.util.Arrays.asList(testWord, word2, word3)));
         when(wordListRepository.findById(100L)).thenReturn(Optional.of(testWordList));
 
         UserWordProgress prog1 = UserWordProgress.builder().word(testWord).successCount(1).build(); // MULTIPLE_CHOICE

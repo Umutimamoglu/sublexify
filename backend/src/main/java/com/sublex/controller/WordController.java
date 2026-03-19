@@ -26,10 +26,12 @@ public class WordController {
     public ResponseEntity<List<WordDTO>> searchWords(
             @RequestParam String q,
             @RequestParam(defaultValue = "en") String language,
+            @RequestParam(required = false) List<String> difficulties,
+            @RequestParam(defaultValue = "false") boolean onlyUnknown,
             @RequestParam(required = false) Long userId,
             Authentication authentication) {
         Long resolvedUserId = resolveUserId(userId, authentication);
-        return ResponseEntity.ok(wordService.searchWords(q, language, resolvedUserId));
+        return ResponseEntity.ok(wordService.searchWords(q, language, difficulties, onlyUnknown, resolvedUserId));
     }
 
     /**
@@ -53,12 +55,13 @@ public class WordController {
     public ResponseEntity<List<WordDTO>> getFrequentWords(
             @RequestParam(defaultValue = "en") String language,
             @RequestParam(required = false) List<String> difficulties,
-            @RequestParam(defaultValue = "100") Integer limit,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size,
             @RequestParam(defaultValue = "false") boolean onlyUnknown,
             @RequestParam(required = false) Long userId,
             Authentication authentication) {
         Long resolvedUserId = resolveUserId(userId, authentication);
-        return ResponseEntity.ok(wordService.getFrequentWords(language, difficulties, limit, resolvedUserId, onlyUnknown));
+        return ResponseEntity.ok(wordService.getFrequentWords(language, difficulties, page, size, resolvedUserId, onlyUnknown));
     }
 
     private Long resolveUserId(Long paramUserId, Authentication authentication) {

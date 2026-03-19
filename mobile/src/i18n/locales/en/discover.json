@@ -18,5 +18,10 @@
   "knownWords": "Known Words",
   "noEpisodes": "No episodes found",
   "episodeCount": "{{count}} episode",
-  "episodeCount_plural": "{{count}} episodes"
+  "episodeCount_plural": "{{count}} episodes",
+  "allMediaTitle": "All Content",
+  "browseAll": "Full List",
+  "contentCount": "items",
+  "searchHint": "Type a series or movie name...",
+  "noSearchResult": "not found"
 }

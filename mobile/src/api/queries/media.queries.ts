@@ -15,7 +15,7 @@ export function useMedia() {
     queryKey: mediaKeys.all,
     staleTime: 1000 * 60 * 30, // 30 dakika (katalog sık değişmez)
     queryFn:  async () => {
-      const res = await apiClient.get<MediaDTO[]>(`${ENDPOINTS.media.list}?userId=1`);
+      const res = await apiClient.get<MediaDTO[]>(ENDPOINTS.media.list);
       return res.data;
     },
   });
@@ -25,7 +25,7 @@ export function useMediaDetail(id: number) {
   return useQuery<MediaDTO>({
     queryKey: mediaKeys.detail(id),
     queryFn:  async () => {
-      const res = await apiClient.get<MediaDTO>(`${ENDPOINTS.media.detail(id)}?userId=1`);
+      const res = await apiClient.get<MediaDTO>(ENDPOINTS.media.detail(id));
       return res.data;
     },
     enabled: !!id,
@@ -37,7 +37,7 @@ export function useContinueLearning(limit = 5) {
     queryKey: mediaKeys.continueLearning,
     queryFn:  async () => {
       const res = await apiClient.get<MediaDTO[]>(
-        `${ENDPOINTS.media.continueLearning}?userId=1&limit=${limit}`,
+        `${ENDPOINTS.media.continueLearning}?limit=${limit}`,
       );
       return res.data;
     },
@@ -49,7 +49,7 @@ export function useMediaWords(mediaId: number, onlyUnknown = false) {
     queryKey: mediaKeys.words(mediaId, onlyUnknown),
     queryFn:  async () => {
       const res = await apiClient.get<MediaWordsResponseDTO>(
-        `${ENDPOINTS.media.words(mediaId)}?userId=1&onlyUnknown=${onlyUnknown}`,
+        `${ENDPOINTS.media.words(mediaId)}?onlyUnknown=${onlyUnknown}`,
       );
       return res.data;
     },

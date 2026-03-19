@@ -42,13 +42,17 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 gelirse auth'u temizle
+// 401 (Unauthorized) gelirse ve istekte token varsa auth'u temizle.
+// 403 (Forbidden) gelirse oturumu kapatmıyoruz, çünkü bu yetki hatasıdır (session bitmesi değil).
 apiClient.interceptors.response.use(
   (res) => {
     return res;
   },
   (err) => {
-    if (err.response?.status === 401 || err.response?.status === 403) {
+    const isAuthError = err.response?.status === 401;
+    const hasToken = !!err.config?.headers?.Authorization;
+
+    if (isAuthError && hasToken) {
       useAuthStore.getState().clearAuth();
     }
     return Promise.reject(err);

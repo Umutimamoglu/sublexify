@@ -13,7 +13,7 @@ export function useStudyBatch(listId: number, types?: string[]) {
     queryFn: async () => {
       const typesQuery = types && types.length > 0 ? `&types=${types.join(',')}` : '';
       const res = await apiClient.get<StudyQuestionDTO[]>(
-        `${ENDPOINTS.study.nextBatch}?userId=1&listId=${listId}&size=10${typesQuery}`,
+        `${ENDPOINTS.study.nextBatch}?listId=${listId}&size=10${typesQuery}`,
       );
       return res.data;
     },
@@ -26,7 +26,7 @@ export function useSubmitStudyResults() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (results: StudyResultDTO[]) => {
-      await apiClient.post(`${ENDPOINTS.study.result}?userId=1`, results);
+      await apiClient.post(ENDPOINTS.study.result, results);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['study'] });

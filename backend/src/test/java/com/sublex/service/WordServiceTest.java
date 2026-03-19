@@ -72,7 +72,7 @@ public class WordServiceTest {
         
         List<Word> wordsList = Arrays.asList(highFreqWord, lowFreqWord, nullFreqWord);
         
-        when(wordRepository.findTopFrequentWords(eq(language), any(PageRequest.class)))
+        when(wordRepository.findTopFrequentWords(eq(language), any(), eq(false), eq(false), eq(userId), any(PageRequest.class)))
                 .thenReturn(wordsList);
                 
         // Mock the user knowing only the 'highFreqWord' (id 1L)
@@ -80,7 +80,7 @@ public class WordServiceTest {
                 .thenReturn(Collections.singletonList(userKnownWord));
 
         // Act
-        List<WordDTO> result = wordService.getFrequentWords(language, limit, userId);
+        List<WordDTO> result = wordService.getFrequentWords(language, null, 0, 10, userId, false);
 
         // Assert
         assertEquals(3, result.size());
