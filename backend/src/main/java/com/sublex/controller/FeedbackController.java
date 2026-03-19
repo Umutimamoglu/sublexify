@@ -2,12 +2,11 @@ package com.sublex.controller;
 
 import com.sublex.dto.FeedbackDTO;
 import com.sublex.dto.MediaRequestDTO;
-import com.sublex.security.UserPrincipal;
 import com.sublex.service.FeedbackService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,19 +21,21 @@ public class FeedbackController {
 
     @PostMapping("/media-request")
     public ResponseEntity<Void> submitMediaRequests(
-            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            Authentication authentication,
             @RequestBody List<MediaRequestDTO> requests) {
-        feedbackService.submitMediaRequests(userPrincipal.getId(), requests);
+        Long userId = (Long) authentication.getPrincipal();
+        feedbackService.submitMediaRequests(userId, requests);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/submit")
     public ResponseEntity<Void> submitFeedback(
-            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            Authentication authentication,
             @RequestBody Map<String, String> body) {
+        Long userId = (Long) authentication.getPrincipal();
         String message = body.get("message");
         String category = body.get("category");
-        feedbackService.submitFeedback(userPrincipal.getId(), message, category);
+        feedbackService.submitFeedback(userId, message, category);
         return ResponseEntity.ok().build();
     }
 

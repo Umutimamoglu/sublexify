@@ -1,3 +1,5 @@
+import com.sublex.dto.MediaDTO;
+import com.sublex.dto.MediaWordsResponseDTO;
 import com.sublex.service.MediaService;
 import com.sublex.service.TmdbService;
 import lombok.RequiredArgsConstructor;
