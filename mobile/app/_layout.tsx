@@ -1,6 +1,6 @@
 import '../global.css';
 import { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { I18nextProvider } from 'react-i18next';
@@ -27,6 +27,18 @@ const persister = createAsyncStoragePersister({
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const { hasHydrated, isAuthenticated } = useAuthStore();
+  const router = useRouter();
+  const segments = useSegments();
+
+  // Auth gate: logout olunca login'e yönlendir
+  useEffect(() => {
+    if (!ready || !hasHydrated) return;
+    const inAuthGroup = segments[0] === '(auth)';
+    const inOnboarding = segments[0] === 'onboarding';
+    if (!isAuthenticated && !inAuthGroup && !inOnboarding) {
+      router.replace('/(auth)/login');
+    }
+  }, [isAuthenticated, ready, hasHydrated, segments]);
 
   useEffect(() => {
     async function prepare() {
