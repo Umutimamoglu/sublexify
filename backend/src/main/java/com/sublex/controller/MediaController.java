@@ -1,8 +1,5 @@
-package com.sublex.controller;
-
-import com.sublex.dto.MediaDTO;
-import com.sublex.dto.MediaWordsResponseDTO;
 import com.sublex.service.MediaService;
+import com.sublex.service.TmdbService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +13,8 @@ import java.util.List;
 public class MediaController {
 
     private final MediaService mediaService;
+    private final TmdbService tmdbService;
+
 
     /**
      * GET /api/media
@@ -137,4 +136,17 @@ public class MediaController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/tmdb/search")
+    public ResponseEntity<List<TmdbService.TmdbMedia>> searchTmdb(
+            @RequestParam String query,
+            @RequestParam(required = false, defaultValue = "movie") String type) {
+        boolean isSeries = "tv".equalsIgnoreCase(type) || "series".equalsIgnoreCase(type);
+        if (isSeries) {
+            return ResponseEntity.ok(tmdbService.searchSeries(query));
+        } else {
+            return ResponseEntity.ok(tmdbService.searchMovies(query));
+        }
+    }
 }
+
