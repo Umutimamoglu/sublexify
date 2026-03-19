@@ -2,14 +2,12 @@ package com.sublex.controller;
 
 import com.sublex.dto.WordListDTO;
 import com.sublex.dto.WordListWordsResponseDTO;
-import com.sublex.model.WordList;
 import com.sublex.service.WordListService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -31,8 +29,9 @@ public class WordListController {
     }
 
     @GetMapping("/standard")
-    public ResponseEntity<List<WordListDTO>> getStandardLists() {
-        return ResponseEntity.ok(wordListService.getStandardLists());
+    public ResponseEntity<List<WordListDTO>> getStandardLists(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(wordListService.getStandardLists(userId));
     }
 
     @GetMapping("/{id}")

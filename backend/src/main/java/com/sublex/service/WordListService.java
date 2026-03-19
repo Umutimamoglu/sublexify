@@ -161,10 +161,12 @@ public class WordListService {
         }
 
         @Transactional(readOnly = true)
-        public List<WordListDTO> getStandardLists() {
-                Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(1L);
+        public List<WordListDTO> getStandardLists(Long userId) {
+                // Standard lists are seeded under system user (id=1), but known-word
+                // status must reflect the actual authenticated user.
+                Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
                 return wordListRepository.findAllByUserIdWithWords(1L).stream()
-                                .map(list -> convertToDTO(list, 1L, knownWordIds)) // Default system user ID
+                                .map(list -> convertToDTO(list, userId, knownWordIds))
                                 .collect(Collectors.toList());
         }
 
