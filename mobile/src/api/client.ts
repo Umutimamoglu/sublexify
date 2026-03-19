@@ -25,7 +25,7 @@ function getDevHost(): string {
 
 const BASE_URL = __DEV__
   ? getDevHost()
-  : 'https://api.sublex.app/api'; // production URL
+  : 'https://sublexify-production.up.railway.app/api'; // Railway production URL
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
