@@ -664,6 +664,21 @@ public class AdminController {
                 org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").descending())));
     }
 
+    @GetMapping("/words/audit-problems/download")
+    @Operation(summary = "Returns all words flagged by the Step 3 Auditor as a JSON file for download")
+    public ResponseEntity<List<com.sublex.model.Word>> downloadAuditProblems() {
+        List<com.sublex.model.Word> words = wordRepository.findAll(
+                org.springframework.data.jpa.domain.Specification.where((root, query, cb) -> cb.equal(root.get("problemFound"), true)),
+                org.springframework.data.domain.Sort.by("id").descending());
+
+        String filename = "audit_problems_" + java.time.LocalDate.now() + ".json";
+
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body(words);
+    }
+
     @PostMapping("/words/audit-resolve")
     @Operation(summary = "Clears the Auditor flag for specific words")
     @Transactional

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Loader2, AlertCircle, CheckCircle, RefreshCw, X, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, RefreshCw, X, ChevronLeft, ChevronRight, Info, Download } from 'lucide-react';
 import { PipelineAPI, Page } from '@/services/MediaService';
 import { Word } from '@/services/WordListService';
 import api from '@/services/api';
@@ -206,6 +206,13 @@ const AuditReviewPanel = () => {
                         className="px-4 py-2 text-xs font-bold bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800 rounded-lg hover:bg-red-100 transition-all disabled:opacity-50"
                     >
                         {actionLoading === 'reset' ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Sıfırla (Reset)'}
+                    </button>
+                    <button
+                        onClick={() => PipelineAPI.downloadAuditProblems()}
+                        className="px-4 py-2 text-xs font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 rounded-lg hover:bg-indigo-100 transition-all flex items-center gap-2"
+                    >
+                        <Download className="w-3 h-3" />
+                        JSON İndir
                     </button>
                     <button 
                         onClick={fetchProblems}
