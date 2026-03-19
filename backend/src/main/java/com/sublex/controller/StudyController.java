@@ -20,11 +20,13 @@ public class StudyController {
     @GetMapping("/next-batch")
     public ResponseEntity<List<StudyQuestionDTO>> getNextBatch(
             Authentication authentication,
-            @RequestParam Long listId,
+            @RequestParam(required = false) Long listId,
+            @RequestParam(required = false) List<String> difficulties,
+            @RequestParam(defaultValue = "false") boolean onlyUnknown,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) List<String> types) {
         Long userId = (Long) authentication.getPrincipal();
-        return ResponseEntity.ok(studyService.getNextBatch(userId, listId, size, types));
+        return ResponseEntity.ok(studyService.getNextBatch(userId, listId, difficulties, onlyUnknown, size, types));
     }
 
     @PostMapping("/result")

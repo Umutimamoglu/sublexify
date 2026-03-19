@@ -28,9 +28,11 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
+import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
@@ -199,6 +201,21 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
       gap: 8, paddingVertical: 15, paddingHorizontal: 20,
     },
     glassBtnText: { color: isDark ? 'rgba(220,200,255,0.95)' : c.PURPLE, fontSize: 15, fontWeight: '700' },
+
+    // QuizTypeModal styles
+    mkOverlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' as const },
+    mkSheet: {
+      backgroundColor: c.SURFACE,
+      borderTopLeftRadius: 24, borderTopRightRadius: 24,
+      padding: 24, gap: 16,
+    },
+    mkTitle: { color: c.TEXT_P, fontSize: 17, fontWeight: '800' as const },
+    mkWarningText: { color: c.TEXT_S, fontSize: 13, lineHeight: 19 },
+    mkBtnRow: { flexDirection: 'row' as const, gap: 10 },
+    mkCancelBtn: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: c.SURFACE2, alignItems: 'center' as const },
+    mkConfirmBtn: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: c.PURPLE, alignItems: 'center' as const },
+    mkCancelText: { color: c.TEXT_S, fontWeight: '600' as const, fontSize: 15 },
+    mkConfirmText: { color: '#fff', fontWeight: '700' as const, fontSize: 15 },
   });
 }
 
@@ -330,6 +347,7 @@ export default function VocabularyScreen() {
   const isDark = colorScheme === 'dark';
   const { isTablet } = useResponsive();
   const { width, height } = useWindowDimensions();
+  const router = useRouter();
   const c = useMemo(() => ({
     BG: theme.colors.background,
     SURFACE: theme.colors.surface,
@@ -347,6 +365,18 @@ export default function VocabularyScreen() {
   const [isFlippedState, setIsFlippedState] = useState(false);
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
   const [onlyUnknown, setOnlyUnknown] = useState(false);
+
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [selectedQuizTypes, setSelectedQuizTypes] = useState<Set<string>>(new Set(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']));
+
+  const handleToggleQuizType = useCallback((type: string) => {
+    setSelectedQuizTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }, []);
   const [previewWord, setPreviewWord] = useState<WordDTO | null>(null);
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
   const knownInitialized = useRef(false);
@@ -356,6 +386,13 @@ export default function VocabularyScreen() {
 
   // Convert Set to Array for API
   const difficultyList = useMemo(() => Array.from(selectedLevels), [selectedLevels]);
+
+  const handleStartStudy = useCallback(() => {
+    setShowQuizModal(false);
+    const typesStr = Array.from(selectedQuizTypes).join(',');
+    const diffsStr = difficultyList.join(',');
+    router.push(`/study/havuz?types=${typesStr}&difficulties=${diffsStr}&onlyUnknown=${onlyUnknown}` as any);
+  }, [selectedQuizTypes, difficultyList, onlyUnknown, router]);
 
   const { 
     data: frequentWordsData, 
@@ -669,6 +706,7 @@ export default function VocabularyScreen() {
               <TouchableOpacity 
                 style={styles.studyBtn}
                 activeOpacity={0.7}
+                onPress={() => setShowQuizModal(true)}
               >
                 <Ionicons name="play" size={14} color={c.PURPLE} />
                 <Text style={styles.studyBtnText}>Pratik</Text>
@@ -808,6 +846,16 @@ export default function VocabularyScreen() {
         wordId={addModal?.wordId || 0}
         wordName={addModal?.wordName || ''}
         onClose={() => setAddModal(null)}
+      />
+
+      <QuizTypeModal
+        visible={showQuizModal}
+        selectedTypes={selectedQuizTypes}
+        onToggleType={handleToggleQuizType}
+        onClose={() => setShowQuizModal(false)}
+        onConfirm={handleStartStudy}
+        styles={styles}
+        c={c}
       />
       </View>
     </GestureHandlerRootView>

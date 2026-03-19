@@ -34,15 +34,27 @@ public class StudyService {
     private final UserRepository userRepository;
     private final UserKnownWordRepository userKnownWordRepository;
 
-    public List<StudyQuestionDTO> getNextBatch(Long userId, Long listId, int size, List<String> types) {
-        WordList list = wordListRepository.findById(listId)
-                .orElseThrow(() -> new RuntimeException("List not found"));
-
-        if (!list.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Unauthorized");
+    public List<StudyQuestionDTO> getNextBatch(Long userId, Long listId, List<String> difficulties, boolean onlyUnknown,
+            int size, List<String> types) {
+        List<Word> allWords;
+        if (listId != null) {
+            WordList list = wordListRepository.findById(listId)
+                    .orElseThrow(() -> new RuntimeException("List not found"));
+            if (!list.getUser().getId().equals(userId)) {
+                throw new RuntimeException("Unauthorized");
+            }
+            allWords = new ArrayList<>(list.getWords());
+        } else {
+            // Havuz (Vocabulary) mode
+            boolean applyDifficultyFilter = difficulties != null && !difficulties.isEmpty();
+            allWords = wordRepository.findTopFrequentWords(
+                    "en",
+                    difficulties,
+                    applyDifficultyFilter,
+                    onlyUnknown,
+                    userId,
+                    org.springframework.data.domain.PageRequest.of(0, 100));
         }
-
-        List<Word> allWords = new ArrayList<>(list.getWords());
 
         List<Long> wordIds = allWords.stream().map(Word::getId).collect(Collectors.toList());
         List<UserWordProgress> progresses = userWordProgressRepository.findByUserIdAndWordIdIn(userId, wordIds);

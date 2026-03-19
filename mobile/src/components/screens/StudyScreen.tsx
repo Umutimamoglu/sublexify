@@ -173,7 +173,17 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function StudyScreen({ listId, types }: { listId: number; types?: string[] }) {
+export default function StudyScreen({ 
+  listId, 
+  types, 
+  difficulties, 
+  onlyUnknown 
+}: { 
+  listId: number | null; 
+  types?: string[];
+  difficulties?: string[];
+  onlyUnknown?: boolean;
+}) {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation('study');
@@ -192,7 +202,7 @@ export default function StudyScreen({ listId, types }: { listId: number; types?:
 
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
-  const { data: questions = [], isLoading } = useStudyBatch(listId, types);
+  const { data: questions = [], isLoading } = useStudyBatch(listId, types, difficulties, onlyUnknown);
   const { mutate: submitResults, isPending: submitting } = useSubmitStudyResults();
 
   const [currentIndex, setCurrentIndex] = useState(0);
