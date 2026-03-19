@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import {
   View,
@@ -20,7 +20,11 @@ import Reanimated, {
   useSharedValue, 
   useAnimatedStyle, 
   withTiming, 
-  Easing 
+  withSpring,
+  interpolate,
+  Extrapolation,
+  Easing,
+  type SharedValue,
 } from 'react-native-reanimated';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
@@ -128,16 +132,18 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
 
     // Flashcard
     flashOuter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    cardStack: { width: Math.min(Dimensions.get('window').width - 32, 500), height: Math.min(Dimensions.get('window').height * 0.72, 600) },
-    card: { width: Math.min(Dimensions.get('window').width - 32, 500), height: Math.min(Dimensions.get('window').height * 0.72, 600), borderRadius: 20, position: 'absolute', borderWidth: 1, borderColor: isDark ? '#ffffff18' : c.BORDER, overflow: 'hidden', backfaceVisibility: 'hidden' as const },
-    cardFront: { backgroundColor: c.SURFACE, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12 },
-    cardBigWord: { color: c.TEXT_P, fontSize: 44, fontWeight: '900', textAlign: 'center' },
+    cardStack: { width: Math.min(Dimensions.get('window').width - 64, 400), height: Math.min(Dimensions.get('window').height * 0.58, 480) },
+    card: { width: Math.min(Dimensions.get('window').width - 64, 400), height: Math.min(Dimensions.get('window').height * 0.58, 480), borderRadius: 20, position: 'absolute', borderWidth: 1, borderColor: isDark ? '#ffffff18' : c.BORDER, overflow: 'hidden', backfaceVisibility: 'hidden' as const },
+    cardFront: { backgroundColor: c.SURFACE, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 10 },
+    cardBigWord: { color: c.TEXT_P, fontSize: 34, fontWeight: '900', textAlign: 'center' },
     posBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, backgroundColor: c.PURPLE + '22' },
     posBadgeText: { color: c.PURPLE, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
     cardExample: { color: c.TEXT_S, fontSize: 13, fontStyle: 'italic', textAlign: 'center', lineHeight: 20 },
     flipHint: { color: c.TEXT_S, fontSize: 11, opacity: 0.5, marginTop: 6 },
     cardKnownBtn: { position: 'absolute', top: 14, right: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
     cardTtsBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+    ttsBtnText: { fontSize: 13 },
+    cardAddBtn: { position: 'absolute', top: 14, left: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
     // Back
     cardBack: { backgroundColor: c.SURFACE2 },
@@ -341,37 +347,70 @@ export default function VocabularyScreen() {
   const [isFlippedState, setIsFlippedState] = useState(false);
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
   const [onlyUnknown, setOnlyUnknown] = useState(false);
-  const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
   const [previewWord, setPreviewWord] = useState<WordDTO | null>(null);
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
   const knownInitialized = useRef(false);
 
+  const { data: knownWordsData = [] } = useKnownWords();
+  const knownIdsSet = useMemo(() => new Set(knownWordsData.map(w => w.id)), [knownWordsData]);
+
   // Convert Set to Array for API
   const difficultyList = useMemo(() => Array.from(selectedLevels), [selectedLevels]);
 
-  const { data: knownWordsData = [] } = useKnownWords();
   const { 
     data: frequentWordsData, 
     isLoading: freqLoading,
+    isFetching: freqFetching,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
   } = useFrequentWords(difficultyList, onlyUnknown, 50); 
   
-  const { data: searchResults = [], isLoading: searching } = useWordSearch(query, difficultyList, onlyUnknown);
+  const { 
+    data: searchResultsData = [], 
+    isLoading: searchingLoading, 
+    isFetching: searchingFetching 
+  } = useWordSearch(query, difficultyList, onlyUnknown);
   const { mutate: toggleKnown } = useMarkKnown();
   const qc = useQueryClient();
 
   const frequentWords = useMemo(() => {
     if (!frequentWordsData) return [];
-    return frequentWordsData.pages.flatMap(page => page);
+    const all = frequentWordsData.pages.flatMap(page => page);
+    return Array.from(new Map(all.map(w => [w.id, w])).values());
   }, [frequentWordsData]);
+
+  const searchResults = useMemo(() => {
+    return Array.from(new Map(searchResultsData.map(w => [w.id, w])).values());
+  }, [searchResultsData]);
+
+  const isSearching = query.trim().length >= 2;
+  const displayWords: WordDTO[] = isSearching ? searchResults : frequentWords;
+  const isQueryFetching = isSearching ? (searchingLoading || searchingFetching) : (freqLoading || freqFetching);
+
+  // ─── Flashcard animations (Reanimated 4 + Gesture Handler) ──
+  const cardX = useSharedValue(0);
+  const cardY = useSharedValue(0);
+  const flipProgress = useSharedValue(0);
+  const isFlippedShared = useSharedValue(false);
+  const hapticFired = useSharedValue(false);
+  const totalSV = useSharedValue(0);
+  const indexSV = useSharedValue(0);
+  const buttonActiveRef = useRef(false);
+
+  useEffect(() => { totalSV.value = displayWords.length; }, [displayWords.length]);
+  useEffect(() => { indexSV.value = cardIndex; }, [cardIndex]);
+
+  // Reset flip when card changes
+  useEffect(() => {
+    flipProgress.value = 0;
+    isFlippedShared.value = false;
+    setIsFlippedState(false);
+  }, [cardIndex, flipProgress, isFlippedShared]);
 
   // Bulk mark known mutation
   const { mutate: markMultipleKnown } = useMutation({
     mutationFn: async (wordIds: number[]) => {
-      // In a real app we might have a batch endpoint, for now we can do multiple calls or just UI optimistic update
-      // But let's assume we want to call the markKnown for each (inefficient but works for now if no batch endpoint)
       for (const id of wordIds) {
         toggleKnown({ wordId: id, isKnown: false });
       }
@@ -381,38 +420,10 @@ export default function VocabularyScreen() {
     }
   });
 
-  const handleMarkAllKnown = () => {
-    const unknownInDisplay = displayWords.filter(w => !knownIds.has(w.id)).map(w => w.id);
-    if (unknownInDisplay.length === 0) return;
-    
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    markMultipleKnown(unknownInDisplay);
-    
-    // Optimistic update
-    setKnownIds(prev => {
-      const next = new Set(prev);
-      unknownInDisplay.forEach(id => next.add(id));
-      return next;
-    });
-  };
-
-  // Init knownIds once from server data
-  React.useEffect(() => {
-    if (!knownInitialized.current && knownWordsData.length > 0) {
-      setKnownIds(new Set(knownWordsData.map((w) => w.id)));
-      knownInitialized.current = true;
-    }
-  }, [knownWordsData]);
-
   const handleToggle = useCallback((wordId: number) => {
-    const currentlyKnown = knownIds.has(wordId);
-    setKnownIds((prev) => {
-      const next = new Set(prev);
-      currentlyKnown ? next.delete(wordId) : next.add(wordId);
-      return next;
-    });
+    const currentlyKnown = knownIdsSet.has(wordId);
     toggleKnown({ wordId, isKnown: currentlyKnown });
-  }, [knownIds, toggleKnown]);
+  }, [knownIdsSet, toggleKnown]);
 
   const toggleLevel = (lv: string) => {
     if (lv === 'all') {
@@ -425,9 +436,91 @@ export default function VocabularyScreen() {
     setSelectedLevels(next);
   };
 
-  const isSearching = query.trim().length >= 2;
-  const displayWords: WordDTO[] = isSearching ? searchResults : frequentWords;
-  const isLoading = isSearching ? searching : freqLoading;
+  const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
+  const triggerMedium = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), []);
+
+  const doFlip = useCallback(() => {
+    if (buttonActiveRef.current) return;
+    const next = !isFlippedShared.value;
+    isFlippedShared.value = next;
+    setIsFlippedState(next);
+    flipProgress.value = withTiming(next ? 1 : 0, { duration: 380, easing: Easing.inOut(Easing.ease) });
+  }, [flipProgress, isFlippedShared]);
+
+  // Card container: tilt + scale while dragging
+  const cardContainerStyle = useAnimatedStyle(() => {
+    const rotate = interpolate(
+      cardX.value, [-width * 0.5, 0, width * 0.5], [-12, 0, 12], Extrapolation.CLAMP,
+    );
+    const scale = interpolate(
+      Math.abs(cardX.value), [0, width * 0.5], [1, 0.95], Extrapolation.CLAMP,
+    );
+    return { transform: [{ translateX: cardX.value }, { translateY: cardY.value }, { rotate: `${rotate}deg` }, { scale }] };
+  });
+
+  // 3D flip faces
+  const frontAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ perspective: 1200 }, { rotateY: `${interpolate(flipProgress.value, [0, 1], [0, 180])}deg` }],
+    backfaceVisibility: 'hidden' as const,
+  }));
+  const backAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ perspective: 1200 }, { rotateY: `${interpolate(flipProgress.value, [0, 1], [180, 360])}deg` }],
+    backfaceVisibility: 'hidden' as const,
+  }));
+
+  // Gestures
+  const panGesture = Gesture.Pan()
+    .minDistance(5)
+    .activeOffsetX([-8, 8])
+    .failOffsetY([-15, 15])
+    .onUpdate((e) => {
+      if (isFlippedShared.value) return;
+      cardX.value = e.translationX;
+      cardY.value = e.translationY * 0.15;
+      if (!hapticFired.value && Math.abs(e.translationX) > 80) {
+        hapticFired.value = true;
+        runOnJS(triggerLight)();
+      }
+      if (hapticFired.value && Math.abs(e.translationX) <= 80) {
+        hapticFired.value = false;
+      }
+    })
+    .onEnd((e) => {
+      hapticFired.value = false;
+      const committed = Math.abs(e.translationX) > 80 || Math.abs(e.velocityX) > 500;
+      if (!isFlippedShared.value && committed) {
+        const goLeft = e.velocityX < -200 ? true : e.velocityX > 200 ? false : e.translationX < 0;
+        const total = totalSV.value;
+        const cur = indexSV.value;
+        const nextIdx = goLeft ? (cur < total - 1 ? cur + 1 : -1) : (cur > 0 ? cur - 1 : -1);
+        runOnJS(triggerMedium)();
+        if (nextIdx >= 0) {
+          const exitX = goLeft ? -width * 1.5 : width * 1.5;
+          const enterX = goLeft ? width * 1.5 : -width * 1.5;
+          cardX.value = withTiming(exitX, { duration: 200, easing: Easing.in(Easing.ease) }, () => {
+            flipProgress.value = 0;
+            isFlippedShared.value = false;
+            runOnJS(setCardIndex)(nextIdx);
+            cardX.value = enterX;
+            cardY.value = 0;
+            cardX.value = withSpring(0, { damping: 20, stiffness: 220, mass: 0.85 });
+          });
+        } else {
+          cardX.value = withSpring(0, { damping: 4, stiffness: 180 });
+          cardY.value = withSpring(0, { damping: 20, stiffness: 200 });
+        }
+      } else {
+        cardX.value = withSpring(0, { damping: 20, stiffness: 200 });
+        cardY.value = withSpring(0, { damping: 20, stiffness: 200 });
+      }
+    });
+
+  const tapGesture = Gesture.Tap()
+    .maxDistance(8)
+    .maxDuration(350)
+    .onEnd(() => { runOnJS(doFlip)(); });
+
+  const cardGesture = Gesture.Exclusive(panGesture, tapGesture);
 
   const knownCount = knownWordsData.length;
 
@@ -445,7 +538,7 @@ export default function VocabularyScreen() {
       renderItem={({ item }) => (
         <WordRow
           word={item}
-          isKnown={knownIds.has(item.id)}
+          isKnown={knownIdsSet.has(item.id)}
           onToggle={() => handleToggle(item.id)}
           onLongPress={() => setPreviewWord(item)}
           onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
@@ -472,16 +565,15 @@ export default function VocabularyScreen() {
   );
 
   const renderFlashcards = () => {
-    if (isLoading && frequentWords.length === 0) {
-      return (
-        <View style={styles.center}>
-          <ActivityIndicator color={c.PURPLE} size="large" />
-        </View>
-      );
-    }
-
-    const currentWord = frequentWords[cardIndex];
+    const currentWord = displayWords[cardIndex];
     if (!currentWord) {
+      if (isQueryFetching && displayWords.length === 0) {
+        return (
+          <View style={styles.center}>
+            <ActivityIndicator color={c.PURPLE} size="large" />
+          </View>
+        );
+      }
       return (
         <View style={styles.center}>
           <Text style={styles.emptyText}>Kelime bulunamadı</Text>
@@ -491,66 +583,71 @@ export default function VocabularyScreen() {
 
     return (
       <View style={styles.flashOuter}>
-        <View style={styles.cardStack}>
-          {isFlippedState ? (
-            <TouchableOpacity 
-              activeOpacity={1}
-              onPress={() => setIsFlippedState(false)}
-              style={{ flex: 1 }}
-            >
-              <FlashCardBack 
-                word={currentWord as any} 
-                isKnown={knownIds.has(currentWord.id)}
-                onToggle={() => handleToggle(currentWord.id)}
-                styles={styles as any} 
-                c={c} 
-              />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity 
-              activeOpacity={1}
-              onPress={() => setIsFlippedState(true)}
-              style={[styles.card, styles.cardFront]}
-            >
+        <GestureDetector gesture={cardGesture}>
+          <Reanimated.View style={[styles.cardStack, cardContainerStyle]}>
+            <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]} pointerEvents={isFlippedState ? 'none' : 'auto'}>
               <Text style={styles.cardBigWord}>{currentWord.word}</Text>
+              
+              <TouchableOpacity
+                style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
+                onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
+                onPressIn={() => { buttonActiveRef.current = true; }}
+                onPressOut={() => { buttonActiveRef.current = false; }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.ttsBtnText}>🔊</Text>
+              </TouchableOpacity>
+
               {currentWord.difficulty && (
                 <View style={styles.posBadge}>
                   <Text style={styles.posBadgeText}>{currentWord.difficulty}</Text>
                 </View>
               )}
+
+              <TouchableOpacity
+                style={[styles.cardAddBtn, { borderColor: c.BORDER }]}
+                onPress={() => setAddModal({ wordId: currentWord.id, wordName: currentWord.word })}
+                onPressIn={() => { buttonActiveRef.current = true; }}
+                onPressOut={() => { buttonActiveRef.current = false; }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="list" size={18} color={c.TEXT_S} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.cardKnownBtn, {
+                  borderColor: knownIdsSet.has(currentWord.id) ? c.PURPLE : c.TEXT_S,
+                  backgroundColor: knownIdsSet.has(currentWord.id) ? c.PURPLE + '22' : 'transparent',
+                }]}
+                onPress={() => handleToggle(currentWord.id)}
+                onPressIn={() => { buttonActiveRef.current = true; }}
+                onPressOut={() => { buttonActiveRef.current = false; }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.checkText, { color: knownIdsSet.has(currentWord.id) ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+              </TouchableOpacity>
+              
               <Text style={styles.flipHint}>Çevirmek için tıkla</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+            </Reanimated.View>
 
-        <View style={{ flexDirection: 'row', marginTop: 30, gap: 20 }}>
-          <TouchableOpacity 
-            onPress={() => {
-              setCardIndex(prev => Math.max(0, prev - 1));
-              setIsFlippedState(false);
-            }}
-            disabled={cardIndex === 0}
-            style={[styles.backBtn, cardIndex === 0 && { opacity: 0.3 }]}
-          >
-            <Ionicons name="arrow-back" size={24} color={c.TEXT_P} />
-          </TouchableOpacity>
-          
+            <FlashCardBack 
+              word={currentWord as any} 
+              isKnown={knownIdsSet.has(currentWord.id)}
+              onToggle={() => handleToggle(currentWord.id)}
+              onButtonPressIn={() => { buttonActiveRef.current = true; }}
+              onButtonPressOut={() => { buttonActiveRef.current = false; }}
+              styles={styles as any} 
+              c={c} 
+              animStyle={backAnimStyle}
+              pointerEvents={isFlippedState ? 'auto' : 'none'}
+            />
+          </Reanimated.View>
+        </GestureDetector>
+
+        <View style={{ marginTop: 30 }}>
           <Text style={styles.progressText}>
-            {cardIndex + 1} / {frequentWords.length}
+            {cardIndex + 1} / {displayWords.length}
           </Text>
-
-          <TouchableOpacity 
-            onPress={() => {
-              if (cardIndex === frequentWords.length - 1 && hasNextPage) {
-                fetchNextPage();
-              }
-              setCardIndex(prev => prev + 1);
-              setIsFlippedState(false);
-            }}
-            style={styles.backBtn}
-          >
-            <Ionicons name="arrow-forward" size={24} color={c.TEXT_P} />
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -687,30 +784,15 @@ export default function VocabularyScreen() {
             </View>
           </View>
         )}
-
-        {viewMode === 'list' || isSearching ? (
-          isLoading && displayWords.length === 0 ? (
-            <View style={styles.center}>
-              <ActivityIndicator color={c.PURPLE} size="large" />
-            </View>
-          ) : renderList()
-        ) : renderFlashcards()}
-
-        {/* Batch marking — sadece seviye seçiliyse ve bilinmeyen varsa */}
-        {!isSearching && selectedLevels.size > 0 && viewMode === 'list' && displayWords.some(w => !knownIds.has(w.id)) && (
-          <TouchableOpacity 
-            style={styles.glassBtn} 
-            onPress={handleMarkAllKnown}
-            activeOpacity={0.8}
-          >
-            <View style={styles.glassBtnInner}>
-              <Ionicons name="checkmark-circle" size={20} color={isDark ? '#rgba(220,200,255,0.95)' : c.PURPLE} />
-              <Text style={styles.glassBtnText}>
-                Tümünü Biliniyor İşaretle ({displayWords.filter(w => !knownIds.has(w.id)).length})
-              </Text>
-            </View>
-          </TouchableOpacity>
+        {/* Main Content */}
+        {isQueryFetching && !isFetchingNextPage ? (
+          <View style={styles.center}>
+            <ActivityIndicator color={c.PURPLE} size="large" />
+          </View>
+        ) : (
+          (viewMode === 'list' || isSearching) ? renderList() : renderFlashcards()
         )}
+
       </SafeAreaView>
 
       <WordPreviewOverlay 

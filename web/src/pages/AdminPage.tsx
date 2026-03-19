@@ -1,18 +1,406 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import MediaService from '@/services/MediaService';
+import FeedbackService from '@/services/FeedbackService';
+import type { MediaRequest, Feedback } from '@/services/FeedbackService';
 import type { TmdbMedia, TmdbSeasonDetails } from '@/services/MediaService';
+import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Download, ChevronDown, ChevronRight, Users, MessageSquare, Clock, Filter, Trash2 } from 'lucide-react';
 import JudgeReviewPanel from '@/components/JudgeReviewPanel';
 import PipelineControlPanel from '@/components/PipelineControlPanel';
 import AuditReviewPanel from '@/components/AuditReviewPanel';
 
+
+// --- USER INFORMATION SECTION ---
+function UserInfoSection({ requests, feedbacks, loading, onUpdateStatus }: {
+    requests: MediaRequest[],
+    feedbacks: Feedback[],
+    loading: boolean,
+    onUpdateStatus: (id: number, status: string) => Promise<void>
+}) {
+    if (loading) {
+        return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>;
+    }
+
+    return (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+            {/* Media Requests */}
+            <section className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-500" />
+                    İçerik İstekleri
+                </h2>
+                <div className="space-y-4">
+                    {requests.length === 0 ? (
+                        <p className="text-gray-500 text-center py-4">Henüz istek yok.</p>
+                    ) : (
+                        requests.map(req => (
+                            <div key={req.id} className="flex gap-4 p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800">
+                                <div className="w-16 h-24 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800 flex-shrink-0">
+                                    {req.posterPath ? (
+                                        <img src={`https://image.tmdb.org/t/p/w200${req.posterPath}`} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center"><FileText className="w-6 h-6 text-gray-400" /></div>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 dark:text-white truncate">{req.title}</h3>
+                                            <p className="text-xs text-gray-500 uppercase tracking-tight">{req.mediaType}</p>
+                                        </div>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                            req.status === 'APPROVED' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                            req.status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                            'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                        }`}>
+                                            {req.status}
+                                        </span>
+                                    </div>
+                                    <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
+                                        <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {req.userName}</span>
+                                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(req.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="mt-4 flex gap-2">
+                                        <button 
+                                            onClick={() => onUpdateStatus(req.id, 'APPROVED')}
+                                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors"
+                                        >
+                                            Onayla
+                                        </button>
+                                        <button 
+                                            onClick={() => onUpdateStatus(req.id, 'REJECTED')}
+                                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors"
+                                        >
+                                            Reddet
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </section>
+
+            {/* General Feedback */}
+            <section className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-purple-500" />
+                    Geri Bildirimler
+                </h2>
+                <div className="space-y-4">
+                    {feedbacks.length === 0 ? (
+                        <p className="text-gray-500 text-center py-4">Henüz geri bildirim yok.</p>
+                    ) : (
+                        feedbacks.map(f => (
+                            <div key={f.id} className="p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-gray-900 dark:text-white">{f.userName}</span>
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                            f.category === 'BUG' ? 'bg-red-100 text-red-700' :
+                                            f.category === 'SUGGESTION' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-gray-100 text-gray-700'
+                                        }`}>
+                                            {f.category}
+                                        </span>
+                                    </div>
+                                    <span className="text-[10px] text-gray-500">{new Date(f.createdAt).toLocaleString()}</span>
+                                </div>
+                                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    {f.message}
+                                </p>
+                                <p className="text-[10px] text-gray-400 mt-2">{f.userEmail}</p>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </section>
+        </div>
+    );
+}
+
+// Helper Component for Media Groups (Accordion)
+function MediaGroup({ title, count, items, onDelete, isSeries = false }: {
+    title: string,
+    count: number,
+    items: any[],
+    onDelete: (id: number, title: string) => void,
+    isSeries?: boolean
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl overflow-hidden">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between p-6 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors text-left"
+            >
+                <div className="flex items-center gap-3">
+                    {isSeries ? (
+                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                            <FileText className="w-5 h-5" />
+                        </div>
+                    ) : (
+                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
+                            <FileText className="w-5 h-5" />
+                        </div>
+                    )}
+                    <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-lg">{title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {count} {isSeries ? (count === 1 ? 'Episode' : 'Episodes') : (count === 1 ? 'Movie' : 'Movies')}
+                        </p>
+                    </div>
+                </div>
+                {isOpen ? (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                ) : (
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                )}
+            </button>
+
+            {isOpen && (
+                <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-[#1e202e]/50">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {items.map(media => (
+                            <div key={media.id} className="p-4 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                                <div className="flex-1 min-w-0 pr-4">
+                                    <h5 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                        {isSeries ? media.title.split(' - ').slice(1).join(' - ') || media.title : media.title}
+                                    </h5>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        {media.totalWords} Words
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => onDelete(media.id, media.title)}
+                                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium px-3 py-1.5 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Helper Component for Enriched Words Table
+function EnrichedWordsTable({ filterFlagged = false, filterVerified = false, filterJudgeApproved = false, selectedDate = null }: {
+    filterFlagged?: boolean,
+    filterVerified?: boolean,
+    filterJudgeApproved?: boolean,
+    selectedDate?: string | null
+}) {
+    const [words, setWords] = useState<any[]>([]);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [expandedWord, setExpandedWord] = useState<number | null>(null);
+
+    const fetchWords = useCallback(async (pageIndex: number) => {
+        setLoading(true);
+        try {
+            const data = await MediaService.getEnrichedWords(
+                pageIndex,
+                10,
+                filterFlagged,
+                filterVerified,
+                filterJudgeApproved,
+                selectedDate || undefined
+            );
+            setWords(data.content);
+            setTotalPages(data.totalPages);
+            setPage(data.number);
+        } catch (err) {
+            console.error('Failed to fetch words', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [filterFlagged, filterVerified, filterJudgeApproved, selectedDate]);
+
+    useEffect(() => {
+        fetchWords(0);
+    }, [fetchWords]);
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 0 && newPage < totalPages) {
+            fetchWords(newPage);
+        }
+    };
+
+    if (loading && words.length === 0) {
+        return <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-500" /></div>;
+    }
+
+    return (
+        <div>
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-medium">
+                        <tr>
+                            <th className="px-4 py-3">Word</th>
+                            <th className="px-4 py-3">Level</th>
+                            <th className="px-4 py-3">Definition (TR)</th>
+                            <th className="px-4 py-3 w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                        {words.map((word) => {
+                            let def = null;
+                            try {
+                                if (typeof word.definition === 'string') {
+                                    def = JSON.parse(word.definition);
+                                } else {
+                                    def = word.definition;
+                                }
+                            } catch (e) {
+                                console.error("Error parsing definition", e);
+                            }
+
+                            const firstMeaning = def?.meanings?.[0];
+                            const summary = firstMeaning ? `(${firstMeaning.pos}) ${firstMeaning.definition}` : '-';
+
+                            return (
+                                <React.Fragment key={word.id}>
+                                    <tr
+                                        onClick={() => setExpandedWord(expandedWord === word.id ? null : word.id)}
+                                        className="hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                                    >
+                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                            {word.word}
+                                            {word.judgeStatus === 'APPROVED' && (
+                                                <div className="p-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full" title="Judge Approved">
+                                                    <CheckCircle className="w-3.5 h-3.5" />
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${word.difficulty === 'A1' || word.difficulty === 'A2' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                word.difficulty === 'B1' || word.difficulty === 'B2' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                }`}>
+                                                {word.difficulty || '?'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 truncate max-w-xs" title={summary}>
+                                            {summary}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            {expandedWord === word.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        </td>
+                                    </tr>
+                                    {expandedWord === word.id && (
+                                        <tr className="bg-gray-50/50 dark:bg-gray-800/20">
+                                            <td colSpan={4} className="px-4 py-4">
+                                                <pre className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-mono bg-white dark:bg-[#1e202e] p-3 rounded-lg border border-gray-200 dark:border-gray-800">
+                                                    {def ? JSON.stringify(def, null, 2) : 'No definition data'}
+                                                </pre>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between mt-4">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                    Page {page + 1} of {totalPages}
+                </span>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => handlePageChange(page - 1)}
+                        disabled={page === 0 || loading}
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    >
+                        Previous
+                    </button>
+                    <button
+                        onClick={() => handlePageChange(page + 1)}
+                        disabled={page >= totalPages - 1 || loading}
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            {/* Judge Approve All Button */}
+            {!filterJudgeApproved && words.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                    <button
+                        onClick={async () => {
+                            if (!window.confirm(`Mark these ${words.length} words as Judge Approved?`)) return;
+                            try {
+                                await MediaService.judgeApproveBatch(words.map(w => w.id));
+                                fetchWords(page);
+                                alert('Words approved successfully!');
+                            } catch (err) {
+                                alert('Failed to approve words');
+                            }
+                        }}
+                        className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-900/20 flex items-center gap-2"
+                    >
+                        <CheckCircle className="w-5 h-5" />
+                        Judge Approve This Page
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
 const AdminPage = () => {
+
     const [files, setFiles] = useState<File[]>([]);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<string | null>(null);
     const [results, setResults] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
+
+    // User Information Stats / State
+    const [activeTab, setActiveTab] = useState<'system' | 'user-info'>('system');
+    const [requests, setRequests] = useState<MediaRequest[]>([]);
+    const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+    const [loadingInfo, setLoadingInfo] = useState(false);
+
+    const fetchUserInfo = async () => {
+        setLoadingInfo(true);
+        try {
+            const [reqData, feedData] = await Promise.all([
+                FeedbackService.getAllRequests(),
+                FeedbackService.getAllFeedbacks()
+            ]);
+            setRequests(reqData);
+            setFeedbacks(feedData);
+        } catch (err) {
+            console.error('Failed to fetch user info', err);
+        } finally {
+            setLoadingInfo(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'user-info') {
+            fetchUserInfo();
+        }
+    }, [activeTab]);
+
+    const handleUpdateStatus = async (id: number, status: string) => {
+        try {
+            await FeedbackService.updateRequestStatus(id, status);
+            setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+        } catch (err) {
+            alert('Failed to update status');
+        }
+    };
+
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
         setFiles(prev => [...prev, ...acceptedFiles]);
@@ -369,7 +757,37 @@ const AdminPage = () => {
 
     return (
         <div className="max-w-4xl mx-auto pb-20">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Admin Dashboard</h1>
+            <div className="flex items-center justify-between mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+                <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <button
+                        onClick={() => setActiveTab('system')}
+                        className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'system'
+                            ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                    >
+                        System
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('user-info')}
+                        className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'user-info'
+                            ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                    >
+                        User Information
+                    </button>
+                </div>
+            </div>
+
+            {activeTab === 'user-info' ? (
+                <UserInfoSection 
+                    requests={requests} 
+                    feedbacks={feedbacks} 
+                    loading={loadingInfo} 
+                    onUpdateStatus={handleUpdateStatus}
+                />
+            ) : (
+                <React.Fragment>
 
             {/* Judge Review Panel */}
             <JudgeReviewPanel />
@@ -927,7 +1345,7 @@ const AdminPage = () => {
                         <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
                     </div>
                 ) : (
-                    <>
+                    <React.Fragment>
                         {/* Movies Section */}
                         {movies.length > 0 && (
                             <MediaGroup
@@ -953,248 +1371,13 @@ const AdminPage = () => {
                         {mediaList.length === 0 && (
                             <p className="text-gray-500 text-center py-4">No media found.</p>
                         )}
-                    </>
+                    </React.Fragment>
                 )}
             </div>
-        </div>
-    );
-};
-
-// Helper Component for Media Groups (Accordion)
-const MediaGroup = ({ title, count, items, onDelete, isSeries = false }: {
-    title: string,
-    count: number,
-    items: any[],
-    onDelete: (id: number, title: string) => void,
-    isSeries?: boolean
-}) => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-        <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl overflow-hidden">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between p-6 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors text-left"
-            >
-                <div className="flex items-center gap-3">
-                    {isSeries ? (
-                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
-                            <FileText className="w-5 h-5" />
-                        </div>
-                    ) : (
-                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg">
-                            <FileText className="w-5 h-5" />
-                        </div>
-                    )}
-                    <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white text-lg">{title}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {count} {isSeries ? (count === 1 ? 'Episode' : 'Episodes') : (count === 1 ? 'Movie' : 'Movies')}
-                        </p>
-                    </div>
-                </div>
-                {isOpen ? (
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
-                ) : (
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                )}
-            </button>
-
-            {isOpen && (
-                <div className="border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-[#1e202e]/50">
-                    <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {items.map(media => (
-                            <div key={media.id} className="p-4 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
-                                <div className="flex-1 min-w-0 pr-4">
-                                    <h5 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                        {isSeries ? media.title.split(' - ').slice(1).join(' - ') || media.title : media.title}
-                                    </h5>
-                                    <p className="text-xs text-gray-500 mt-0.5">
-                                        {media.totalWords} Words
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => onDelete(media.id, media.title)}
-                                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium px-3 py-1.5 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                </React.Fragment>
             )}
         </div>
     );
 };
-
 export default AdminPage;
 
-// Helper Component for Enriched Words Table
-const EnrichedWordsTable = ({ filterFlagged = false, filterVerified = false, filterJudgeApproved = false, selectedDate = null }: {
-    filterFlagged?: boolean,
-    filterVerified?: boolean,
-    filterJudgeApproved?: boolean,
-    selectedDate?: string | null
-}) => {
-    const [words, setWords] = useState<any[]>([]);
-    const [page, setPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [expandedWord, setExpandedWord] = useState<number | null>(null);
-
-    const fetchWords = useCallback(async (pageIndex: number) => {
-        setLoading(true);
-        try {
-            const data = await MediaService.getEnrichedWords(
-                pageIndex,
-                10,
-                filterFlagged,
-                filterVerified,
-                filterJudgeApproved,
-                selectedDate || undefined
-            );
-            setWords(data.content);
-            setTotalPages(data.totalPages);
-            setPage(data.number);
-        } catch (err) {
-            console.error('Failed to fetch words', err);
-        } finally {
-            setLoading(false);
-        }
-    }, [filterFlagged, filterVerified, filterJudgeApproved, selectedDate]);
-
-    useEffect(() => {
-        fetchWords(0);
-    }, [fetchWords]);
-
-    const handlePageChange = (newPage: number) => {
-        if (newPage >= 0 && newPage < totalPages) {
-            fetchWords(newPage);
-        }
-    };
-
-    if (loading && words.length === 0) {
-        return <div className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-500" /></div>;
-    }
-
-    return (
-        <div>
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-medium">
-                        <tr>
-                            <th className="px-4 py-3">Word</th>
-                            <th className="px-4 py-3">Level</th>
-                            <th className="px-4 py-3">Definition (TR)</th>
-                            <th className="px-4 py-3 w-10"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {words.map((word) => {
-                            let def = null;
-                            try {
-                                if (typeof word.definition === 'string') {
-                                    def = JSON.parse(word.definition);
-                                } else {
-                                    def = word.definition;
-                                }
-                            } catch (e) {
-                                console.error("Error parsing definition", e);
-                            }
-
-                            const firstMeaning = def?.meanings?.[0];
-                            const summary = firstMeaning ? `(${firstMeaning.pos}) ${firstMeaning.definition}` : '-';
-
-                            return (
-                                <React.Fragment key={word.id}>
-                                    <tr
-                                        onClick={() => setExpandedWord(expandedWord === word.id ? null : word.id)}
-                                        className="hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors"
-                                    >
-                                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                                            {word.word}
-                                            {word.judgeStatus === 'APPROVED' && (
-                                                <div className="p-1 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full" title="Judge Approved">
-                                                    <CheckCircle className="w-3.5 h-3.5" />
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${word.difficulty === 'A1' || word.difficulty === 'A2' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                word.difficulty === 'B1' || word.difficulty === 'B2' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                }`}>
-                                                {word.difficulty || '?'}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300 truncate max-w-xs" title={summary}>
-                                            {summary}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {expandedWord === word.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                        </td>
-                                    </tr>
-                                    {expandedWord === word.id && (
-                                        <tr className="bg-gray-50/50 dark:bg-gray-800/20">
-                                            <td colSpan={4} className="px-4 py-4">
-                                                <pre className="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-mono bg-white dark:bg-[#1e202e] p-3 rounded-lg border border-gray-200 dark:border-gray-800">
-                                                    {def ? JSON.stringify(def, null, 2) : 'No definition data'}
-                                                </pre>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </React.Fragment>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-between mt-4">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Page {page + 1} of {totalPages}
-                </span>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => handlePageChange(page - 1)}
-                        disabled={page === 0 || loading}
-                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                    >
-                        Previous
-                    </button>
-                    <button
-                        onClick={() => handlePageChange(page + 1)}
-                        disabled={page >= totalPages - 1 || loading}
-                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
-                    >
-                        Next
-                    </button>
-                </div>
-            </div>
-
-            {/* Judge Approve All Button */}
-            {!filterJudgeApproved && words.length > 0 && (
-                <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end">
-                    <button
-                        onClick={async () => {
-                            if (!window.confirm(`Mark these ${words.length} words as Judge Approved?`)) return;
-                            try {
-                                await MediaService.judgeApproveBatch(words.map(w => w.id));
-                                fetchWords(page);
-                                alert('Words approved successfully!');
-                            } catch (err) {
-                                alert('Failed to approve words');
-                            }
-                        }}
-                        className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-900/20 flex items-center gap-2"
-                    >
-                        <CheckCircle className="w-5 h-5" />
-                        Judge Approve This Page
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-};

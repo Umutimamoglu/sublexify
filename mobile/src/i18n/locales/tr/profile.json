@@ -27,5 +27,9 @@
   "comingSoonDesc": "Bu özellik yolda.",
   "account": "Hesap",
   "signOut": "Çıkış Yap",
-  "version": "Sürüm"
+  "version": "Sürüm",
+  "mediaRequest": "İçerik İsteği",
+  "mediaRequestDesc": "Yeni dizi veya film öner",
+  "feedback": "Geri Bildirim / Öneri",
+  "feedbackDesc": "Hata bildir veya özellik öner"
 }

@@ -95,17 +95,21 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     userName: { color: c.TEXT_P, fontSize: 20, fontWeight: '800', marginTop: 14 },
     userEmail: { color: c.TEXT_S, fontSize: 13, marginTop: 3 },
 
-    // ── Stats row ──────────────────────────────────────────────────
-    statsRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-    statCard: {
+    // ── Action Row ─────────────────────────────────────────────────
+    actionRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+    actionCard: {
       flex: 1, backgroundColor: c.SURFACE,
-      borderRadius: 16, padding: 16,
+      borderRadius: 20, padding: 16,
       borderWidth: 1, borderColor: cardBorder,
+      alignItems: 'center', justifyContent: 'center',
     },
-    statIconRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
-    statIconLabel: { color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 1.0, textTransform: 'uppercase' },
-    statValue: { color: c.TEXT_P, fontSize: 26, fontWeight: '900' },
-    statSub: { color: '#10b981', fontSize: 12, fontWeight: '600', marginTop: 4 },
+    actionIconBox: {
+      width: 52, height: 52, borderRadius: 16,
+      alignItems: 'center', justifyContent: 'center',
+      marginBottom: 10,
+    },
+    actionTitle: { color: c.TEXT_P, fontSize: 15, fontWeight: '800', textAlign: 'center' },
+    actionDesc: { color: c.TEXT_S, fontSize: 10, fontWeight: '500', textAlign: 'center', marginTop: 4, lineHeight: 14 },
 
     // ── Progress card ──────────────────────────────────────────────
     progressCard: {
@@ -156,6 +160,33 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
     loadingBox: { height: 160, alignItems: 'center', justifyContent: 'center' },
   });
+}
+
+// ─── Action Card ───────────────────────────────────────────────────────────────
+function ActionCard({
+  icon, title, description, onPress, styles, isDark, color
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  title: string;
+  description: string;
+  onPress: () => void;
+  styles: ReturnType<typeof makeStyles>;
+  isDark: boolean;
+  color: string;
+}) {
+  return (
+    <TouchableOpacity 
+      style={[styles.actionCard, { borderColor: isDark ? `${color}33` : `${color}22` }]} 
+      onPress={onPress} 
+      activeOpacity={0.7}
+    >
+      <View style={[styles.actionIconBox, { backgroundColor: isDark ? `${color}22` : `${color}11` }]}>
+        <Ionicons name={icon} size={26} color={color} />
+      </View>
+      <Text style={styles.actionTitle}>{title}</Text>
+      <Text style={styles.actionDesc} numberOfLines={2}>{description}</Text>
+    </TouchableOpacity>
+  );
 }
 
 // ─── Settings Tile ─────────────────────────────────────────────────────────────
@@ -251,25 +282,26 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <>
-              {/* ── Stats Row ── */}
-              <View style={styles.statsRow}>
-                <View style={styles.statCard}>
-                  <View style={styles.statIconRow}>
-                    <Ionicons name="alert-circle-outline" size={14} color="#f59e0b" />
-                    <Text style={styles.statIconLabel}>{t('difficultWords')}</Text>
-                  </View>
-                  <Text style={styles.statValue}>{mastered.toLocaleString()}</Text>
-                  <Text style={[styles.statSub, { color: '#f59e0b' }]}>{t('difficultDesc')}</Text>
-                </View>
-
-                <View style={styles.statCard}>
-                  <View style={styles.statIconRow}>
-                    <Ionicons name="flame-outline" size={14} color={TokenPalette.teal500} />
-                    <Text style={styles.statIconLabel}>{t('dueTodayLabel')}</Text>
-                  </View>
-                  <Text style={styles.statValue}>{dueToday.toLocaleString()}</Text>
-                  <Text style={[styles.statSub, { color: TokenPalette.teal500 }]}>{t('dueTodayDesc')}</Text>
-                </View>
+              {/* ── Action Cards Row ── */}
+              <View style={styles.actionRow}>
+                <ActionCard
+                  icon="film-outline"
+                  title={t('mediaRequest')}
+                  description={t('mediaRequestDesc')}
+                  onPress={() => router.push('/profile/media-request' as any)}
+                  styles={styles}
+                  isDark={isDark}
+                  color={TokenPalette.teal500}
+                />
+                <ActionCard
+                  icon="chatbubble-ellipses-outline"
+                  title={t('feedback')}
+                  description={t('feedbackDesc')}
+                  onPress={() => router.push('/profile/feedback' as any)}
+                  styles={styles}
+                  isDark={isDark}
+                  color={c.PURPLE}
+                />
               </View>
 
               {/* ── Progress Card ── */}

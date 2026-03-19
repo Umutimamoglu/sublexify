@@ -27,5 +27,9 @@
   "comingSoonDesc": "This feature is on its way.",
   "account": "Account",
   "signOut": "Sign Out",
-  "version": "Version"
+  "version": "Version",
+  "mediaRequest": "Request Content",
+  "mediaRequestDesc": "Recommend new movies or series",
+  "feedback": "Feedback / Suggestion",
+  "feedbackDesc": "Report bugs or suggest features"
 }

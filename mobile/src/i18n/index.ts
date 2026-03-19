@@ -11,6 +11,8 @@ import enLists from './locales/en/lists.json';
 import enProfile from './locales/en/profile.json';
 import enStudy from './locales/en/study.json';
 import enProgress from './locales/en/progress.json';
+import enMediaRequest from './locales/en/mediaRequest.json';
+import enFeedback from './locales/en/feedback.json';
 
 import trCommon from './locales/tr/common.json';
 import trDiscover from './locales/tr/discover.json';
@@ -19,6 +21,8 @@ import trLists from './locales/tr/lists.json';
 import trProfile from './locales/tr/profile.json';
 import trStudy from './locales/tr/study.json';
 import trProgress from './locales/tr/progress.json';
+import trMediaRequest from './locales/tr/mediaRequest.json';
+import trFeedback from './locales/tr/feedback.json';
 
 const LANGUAGE_KEY = '@sublex/language';
 
@@ -37,19 +41,21 @@ export async function initI18n() {
       : 'en');
 
   if (!i18n.isInitialized) {
-    await i18n.use(initReactI18next).init({
-      resources: {
-        en: { common: enCommon, discover: enDiscover, vocabulary: enVocabulary, lists: enLists, profile: enProfile, study: enStudy, progress: enProgress },
-        tr: { common: trCommon, discover: trDiscover, vocabulary: trVocabulary, lists: trLists, profile: trProfile, study: trStudy, progress: trProgress },
-      },
-      lng,
-      fallbackLng: 'en',
-      defaultNS: 'common',
-      ns: ['common', 'discover', 'vocabulary', 'lists', 'profile', 'study', 'progress'],
-      interpolation: { escapeValue: false },
-      compatibilityJSON: 'v4',
-    });
+    i18n.use(initReactI18next);
   }
+
+  await i18n.init({
+    resources: {
+      en: { common: enCommon, discover: enDiscover, vocabulary: enVocabulary, lists: enLists, profile: enProfile, study: enStudy, progress: enProgress, mediaRequest: enMediaRequest, feedback: enFeedback },
+      tr: { common: trCommon, discover: trDiscover, vocabulary: trVocabulary, lists: trLists, profile: trProfile, study: trStudy, progress: trProgress, mediaRequest: trMediaRequest, feedback: trFeedback },
+    },
+    lng,
+    fallbackLng: 'en',
+    defaultNS: 'common',
+    ns: ['common', 'discover', 'vocabulary', 'lists', 'profile', 'study', 'progress', 'mediaRequest', 'feedback'],
+    interpolation: { escapeValue: false },
+    compatibilityJSON: 'v4',
+  });
 
   return i18n;
 }
