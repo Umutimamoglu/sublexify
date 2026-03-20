@@ -49,11 +49,14 @@ public class AuditorService {
                     Boolean problemFound = (Boolean) result.get("problem_found");
                     String error = (String) result.get("step3_error");
                     
-                    word.setProblemFound(problemFound != null && problemFound);
-                    word.setStep3Error(error);
+                    boolean isProblem = problemFound != null && problemFound;
+                    word.setProblemFound(isProblem);
                     
-                    if (Boolean.TRUE.equals(word.getProblemFound())) {
+                    if (isProblem) {
+                        word.setStep3Error(error);
                         log.warn("AUDIT FAIL: '{}' - {}", word.getWord(), error);
+                    } else {
+                        word.setStep3Error("Clean");
                     }
                 }
                 processed.incrementAndGet();
