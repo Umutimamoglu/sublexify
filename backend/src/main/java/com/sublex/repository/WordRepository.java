@@ -143,4 +143,14 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
 
     @Query("SELECT w FROM Word w WHERE w.language = 'en' AND w.isEnriched = true AND (w.problemFound = false OR w.problemFound IS NULL) ORDER BY w.id ASC")
     List<Word> findWordsForAuditing(org.springframework.data.domain.Pageable pageable);
+
+    // ======= AUDIT STATS QUERIES =======
+    @Query("SELECT COUNT(w) FROM Word w WHERE w.isEnriched = true")
+    long countEnriched();
+
+    @Query("SELECT COUNT(w) FROM Word w WHERE w.problemFound = true")
+    long countProblems();
+
+    @Query("SELECT COUNT(w) FROM Word w WHERE w.isEnriched = true AND w.step3Error IS NOT NULL AND (w.problemFound = false OR w.problemFound IS NULL)")
+    long countAuditedClean();
 }

@@ -692,6 +692,69 @@ public class AdminController {
         return ResponseEntity.ok("Successfully resolved audit flags for " + words.size() + " words.");
     }
 
+    @GetMapping("/words/audit-stats")
+    @Operation(summary = "Returns audit statistics: enriched, audited, problems, pending")
+    public ResponseEntity<Map<String, Long>> getAuditStats() {
+        long totalEnriched = wordRepository.countEnriched();
+        long totalProblems = wordRepository.countProblems();
+        long totalAuditedClean = wordRepository.countAuditedClean();
+        long totalAudited = totalAuditedClean + totalProblems;
+        long totalPending = totalEnriched - totalAudited;
+
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("totalEnriched", totalEnriched);
+        stats.put("totalAudited", totalAudited);
+        stats.put("totalProblems", totalProblems);
+        stats.put("totalPending", Math.max(0, totalPending));
+        return ResponseEntity.ok(stats);
+    }
+
+    @PostMapping("/words/bulk-fix-definitions")
+    @Operation(summary = "Bulk update definitions for flagged words and clear audit flags")
+    @Transactional
+    public ResponseEntity<String> bulkFixDefinitions(@RequestBody List<Map<String, Object>> fixes) {
+        log.info("Bulk fix request for {} words", fixes.size());
+        int updated = 0;
+
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+        for (Map<String, Object> fix : fixes) {
+            Long wordId = ((Number) fix.get("id")).longValue();
+            Optional<Word> optWord = wordRepository.findById(wordId);
+            if (optWord.isEmpty()) {
+                log.warn("Word not found for ID: {}", wordId);
+                continue;
+            }
+            Word word = optWord.get();
+
+            // Update definition
+            if (fix.containsKey("definition")) {
+                try {
+                    com.sublex.model.WordDefinition newDef = mapper.convertValue(fix.get("definition"), com.sublex.model.WordDefinition.class);
+                    word.setDefinition(newDef);
+                } catch (Exception e) {
+                    log.error("Failed to parse definition for word ID {}: {}", wordId, e.getMessage());
+                    continue;
+                }
+            }
+
+            // Clear root word binding if requested
+            if (fix.containsKey("clearRootWord") && Boolean.TRUE.equals(fix.get("clearRootWord"))) {
+                word.setRootWord(null);
+            }
+
+            // Clear audit flags
+            word.setProblemFound(false);
+            word.setStep3Error(null);
+            word.setAuditNotes("Manually fixed by admin via bulk-fix");
+            updated++;
+        }
+
+        wordRepository.flush();
+        log.info("Bulk fix completed. Updated {} words.", updated);
+        return ResponseEntity.ok("Successfully fixed " + updated + " words.");
+    }
+
     @PostMapping("/words/reset-definitions")
     @Operation(summary = "Resets definitions and flags for specific words to trigger re-enrichment")
     @Transactional
