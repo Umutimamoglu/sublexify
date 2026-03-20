@@ -42,7 +42,7 @@ public class GeminiService implements AIService {
     // current flash preview/model
     public static final String SHERIFF_MODEL = "gemini-3-flash-preview";
     public static final String PIPELINE_MODEL = "gemini-2.5-pro";
- public static final String SPECIALIST_MODEL = "gemini-3.1-pro-preview";
+ public static final String SPECIALIST_MODEL = "gemini-2.5-pro";
     public static final String ANALYSIS_MODEL = "gemini-2.5-flash";
     private static final String DEFAULT_MODEL = PIPELINE_MODEL;
 
