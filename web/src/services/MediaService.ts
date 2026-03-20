@@ -368,6 +368,16 @@ const PipelineAPI = {
         document.body.appendChild(link);
         link.click();
         link.parentNode?.removeChild(link);
+    },
+
+    getAuditStats: async (): Promise<{ totalEnriched: number; totalAudited: number; totalProblems: number; totalPending: number }> => {
+        const response = await api.get('/admin/words/audit-stats');
+        return response.data;
+    },
+
+    bulkFixDefinitions: async (fixes: Array<{ id: number; definition: unknown; clearRootWord?: boolean }>): Promise<string> => {
+        const response = await api.post('/admin/words/bulk-fix-definitions', fixes);
+        return response.data;
     }
 };
 

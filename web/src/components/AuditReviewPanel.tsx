@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Loader2, AlertCircle, CheckCircle, RefreshCw, X, ChevronLeft, ChevronRight, Info, Download } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, RefreshCw, X, ChevronLeft, ChevronRight, Info, Download, BarChart3 } from 'lucide-react';
 import { PipelineAPI, Page } from '@/services/MediaService';
 import { Word } from '@/services/WordListService';
 import api from '@/services/api';
@@ -10,8 +10,18 @@ const AuditReviewPanel = () => {
     const [loading, setLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [stats, setStats] = useState<{ totalEnriched: number; totalAudited: number; totalProblems: number; totalPending: number } | null>(null);
 
     const [selectedWord, setSelectedWord] = useState<Word | null>(null);
+
+    const fetchStats = useCallback(async () => {
+        try {
+            const data = await PipelineAPI.getAuditStats();
+            setStats(data);
+        } catch (err) {
+            console.error('Failed to fetch audit stats', err);
+        }
+    }, []);
 
     const fetchProblems = useCallback(async () => {
         setLoading(true);
@@ -27,7 +37,8 @@ const AuditReviewPanel = () => {
 
     useEffect(() => {
         fetchProblems();
-    }, [fetchProblems]);
+        fetchStats();
+    }, [fetchProblems, fetchStats]);
 
     const handleBatchAction = async (action: 'resolve' | 'reset') => {
         if (selectedIds.length === 0) return;
@@ -178,6 +189,34 @@ const AuditReviewPanel = () => {
                             >
                                 SIFIRLA (RESET)
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Stats Card */}
+            {stats && (
+                <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-indigo-500/5 via-purple-500/5 to-pink-500/5">
+                    <div className="flex items-center gap-2 mb-3">
+                        <BarChart3 className="w-4 h-4 text-indigo-500" />
+                        <span className="text-xs font-black uppercase tracking-widest text-gray-400">Teftiş İstatistikleri</span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-gray-800">
+                            <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Zenginleştirilmiş</p>
+                            <p className="text-2xl font-black text-gray-900 dark:text-white">{stats.totalEnriched.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-green-100 dark:border-green-900/30">
+                            <p className="text-[10px] font-bold uppercase text-green-500 tracking-wider">✅ Teftiş Edilmiş</p>
+                            <p className="text-2xl font-black text-green-600 dark:text-green-400">{stats.totalAudited.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-red-100 dark:border-red-900/30">
+                            <p className="text-[10px] font-bold uppercase text-red-500 tracking-wider">❌ Hatalı Bulunan</p>
+                            <p className="text-2xl font-black text-red-600 dark:text-red-400">{stats.totalProblems.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                            <p className="text-[10px] font-bold uppercase text-amber-500 tracking-wider">⏳ Bekleyen</p>
+                            <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{stats.totalPending.toLocaleString('tr-TR')}</p>
                         </div>
                     </div>
                 </div>
