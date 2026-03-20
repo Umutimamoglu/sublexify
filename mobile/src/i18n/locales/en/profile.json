@@ -31,5 +31,15 @@
   "mediaRequest": "Request Content",
   "mediaRequestDesc": "Recommend new movies or series",
   "feedback": "Feedback / Suggestion",
-  "feedbackDesc": "Report bugs or suggest features"
+  "feedbackDesc": "Report bugs or suggest features",
+  "privacyPolicy": "Privacy Policy",
+  "privacyPolicyDesc": "Learn how your data is used",
+  "deleteAccount": "Delete Account",
+  "deleteAccountDesc": "Permanently delete your account and all data",
+  "deleteAccountConfirmTitle": "Delete Account",
+  "deleteAccountConfirmMsg": "This action cannot be undone. All your data (word progress, lists, etc.) will be permanently deleted.",
+  "deleteAccountCancel": "Cancel",
+  "deleteAccountConfirm": "Yes, Delete",
+  "deleteAccountSuccess": "Your account has been deleted.",
+  "danger": "Danger Zone"
 }

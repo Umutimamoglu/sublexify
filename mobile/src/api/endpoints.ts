@@ -27,8 +27,9 @@ export const ENDPOINTS = {
     containingWord:     (wordId: number) => `/lists/containing-word/${wordId}`,
   },
   auth: {
-    login:    '/auth/login',
-    register: '/auth/register',
+    login:         '/auth/login',
+    register:      '/auth/register',
+    deleteAccount: '/auth/account',
   },
   study: {
     nextBatch: '/study/next-batch',

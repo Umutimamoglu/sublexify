@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/src/api/client';
 import { ENDPOINTS } from '@/src/api/endpoints';
 import type { UserStatistics, WordDTO } from '@/src/types/api';
@@ -24,6 +24,14 @@ export function useKnownWords() {
     queryFn:  async () => {
       const res = await apiClient.get<WordDTO[]>(ENDPOINTS.user.knownWords);
       return res.data;
+    },
+  });
+}
+
+export function useDeleteAccount() {
+  return useMutation<void, Error>({
+    mutationFn: async () => {
+      await apiClient.delete(ENDPOINTS.auth.deleteAccount);
     },
   });
 }

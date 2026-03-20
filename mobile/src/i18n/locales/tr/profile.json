@@ -31,5 +31,15 @@
   "mediaRequest": "İçerik İsteği",
   "mediaRequestDesc": "Yeni dizi veya film öner",
   "feedback": "Geri Bildirim / Öneri",
-  "feedbackDesc": "Hata bildir veya özellik öner"
+  "feedbackDesc": "Hata bildir veya özellik öner",
+  "privacyPolicy": "Gizlilik Politikası",
+  "privacyPolicyDesc": "Verilerinin nasıl kullanıldığını öğren",
+  "deleteAccount": "Hesabı Sil",
+  "deleteAccountDesc": "Hesabını ve tüm verilerini kalıcı olarak sil",
+  "deleteAccountConfirmTitle": "Hesabı Sil",
+  "deleteAccountConfirmMsg": "Bu işlem geri alınamaz. Tüm verileriniz (kelime ilerlemeniz, listeleriniz vb.) kalıcı olarak silinecektir.",
+  "deleteAccountCancel": "Vazgeç",
+  "deleteAccountConfirm": "Evet, Sil",
+  "deleteAccountSuccess": "Hesabınız silindi.",
+  "danger": "Tehlikeli Bölge"
 }
