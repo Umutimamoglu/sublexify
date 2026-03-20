@@ -686,6 +686,7 @@ public class AdminController {
         List<com.sublex.model.Word> words = wordRepository.findAllById(wordIds);
         words.forEach(w -> {
             w.setProblemFound(false);
+            w.setStep3Error("Ignored");
             w.setAuditNotes("Problem resolved/ignored by admin");
         });
         wordRepository.saveAll(words);
@@ -698,7 +699,10 @@ public class AdminController {
         long totalEnriched = wordRepository.countEnriched();
         long totalProblems = wordRepository.countProblems();
         long totalAuditedClean = wordRepository.countAuditedClean();
-        long totalAudited = totalAuditedClean + totalProblems;
+        long totalFixed = wordRepository.countFixed();
+        long totalIgnored = wordRepository.countIgnored();
+        
+        long totalAudited = totalAuditedClean + totalProblems + totalFixed + totalIgnored;
         long totalPending = totalEnriched - totalAudited;
 
         Map<String, Long> stats = new HashMap<>();
@@ -706,6 +710,8 @@ public class AdminController {
         stats.put("totalAudited", totalAudited);
         stats.put("totalProblems", totalProblems);
         stats.put("totalPending", Math.max(0, totalPending));
+        stats.put("totalFixed", totalFixed);
+        stats.put("totalIgnored", totalIgnored);
         return ResponseEntity.ok(stats);
     }
 
@@ -745,7 +751,7 @@ public class AdminController {
 
             // Clear audit flags
             word.setProblemFound(false);
-            word.setStep3Error(null);
+            word.setStep3Error("Fixed");
             word.setAuditNotes("Manually fixed by admin via bulk-fix");
             updated++;
         }

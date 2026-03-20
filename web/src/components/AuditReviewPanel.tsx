@@ -10,7 +10,7 @@ const AuditReviewPanel = () => {
     const [loading, setLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [stats, setStats] = useState<{ totalEnriched: number; totalAudited: number; totalProblems: number; totalPending: number } | null>(null);
+    const [stats, setStats] = useState<{ totalEnriched: number; totalAudited: number; totalProblems: number; totalPending: number; totalFixed: number; totalIgnored: number } | null>(null);
 
     const [selectedWord, setSelectedWord] = useState<Word | null>(null);
 
@@ -201,7 +201,7 @@ const AuditReviewPanel = () => {
                         <BarChart3 className="w-4 h-4 text-indigo-500" />
                         <span className="text-xs font-black uppercase tracking-widest text-gray-400">Teftiş İstatistikleri</span>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                         <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-gray-800">
                             <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider">Zenginleştirilmiş</p>
                             <p className="text-2xl font-black text-gray-900 dark:text-white">{stats.totalEnriched.toLocaleString('tr-TR')}</p>
@@ -211,8 +211,16 @@ const AuditReviewPanel = () => {
                             <p className="text-2xl font-black text-green-600 dark:text-green-400">{stats.totalAudited.toLocaleString('tr-TR')}</p>
                         </div>
                         <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-red-100 dark:border-red-900/30">
-                            <p className="text-[10px] font-bold uppercase text-red-500 tracking-wider">❌ Hatalı Bulunan</p>
+                            <p className="text-[10px] font-bold uppercase text-red-500 tracking-wider">❌ Hatalı</p>
                             <p className="text-2xl font-black text-red-600 dark:text-red-400">{stats.totalProblems.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                            <p className="text-[10px] font-bold uppercase text-blue-500 tracking-wider">✨ Düzeltilmiş</p>
+                            <p className="text-2xl font-black text-blue-600 dark:text-blue-400">{stats.totalFixed.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-gray-700">
+                            <p className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">☑️ Yoksayılmış</p>
+                            <p className="text-2xl font-black text-gray-600 dark:text-gray-400">{stats.totalIgnored.toLocaleString('tr-TR')}</p>
                         </div>
                         <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-amber-100 dark:border-amber-900/30">
                             <p className="text-[10px] font-bold uppercase text-amber-500 tracking-wider">⏳ Bekleyen</p>

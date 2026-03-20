@@ -370,7 +370,7 @@ const PipelineAPI = {
         link.parentNode?.removeChild(link);
     },
 
-    getAuditStats: async (): Promise<{ totalEnriched: number; totalAudited: number; totalProblems: number; totalPending: number }> => {
+    getAuditStats: async (): Promise<{ totalEnriched: number; totalAudited: number; totalProblems: number; totalPending: number; totalFixed: number; totalIgnored: number }> => {
         const response = await api.get('/admin/words/audit-stats');
         return response.data;
     },
