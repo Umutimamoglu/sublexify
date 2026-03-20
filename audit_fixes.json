@@ -1,0 +1,913 @@
+[
+  {
+    "id": 1863,
+    "definition": {
+      "word": "barely",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "adverb", "definition": "Zar zor, ancak; bir şeyin ucu ucuna gerçekleştiğini belirtir.", "example": "She barely passed the exam. (Sınavı zar zor geçti.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1855,
+    "definition": {
+      "word": "means",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir şeyi yapmaya yarayan yol, yöntem veya araç.", "example": "We need to find a means of solving this problem. (Bu sorunu çözmek için bir yol bulmamız gerekiyor.)" },
+        { "pos": "noun", "definition": "Bir kişinin sahip olduğu para veya kaynaklar.", "example": "They live beyond their means. (Gelirlerinin üzerinde harcıyorlar.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1848,
+    "definition": {
+      "word": "low",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "adjective", "definition": "Alçak; yerden veya normal seviyeden yüksek olmayan.", "example": "The table is low. (Masa alçak.)" },
+        { "pos": "adverb", "definition": "Alçaktan, düşük bir seviyede.", "example": "The plane is flying low. (Uçak alçaktan uçuyor.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1840,
+    "definition": {
+      "word": "teaching",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Bilgi veya beceri vermek için yapılan iş veya faaliyet; öğretmenlik.", "example": "Teaching is important for children's development. (Öğretim, çocukların gelişimi için önemlidir.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1839,
+    "definition": {
+      "word": "consume",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "verb", "definition": "Bir şeyi kullanarak tüketmek.", "example": "Cars consume a lot of fuel. (Arabalar çok yakıt tüketir.)" },
+        { "pos": "verb", "definition": "Yemek veya içmek.", "example": "He consumed a large meal. (Büyük bir öğün yedi.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "consume", "v2": "consumed", "v3": "consumed", "ing": "consuming" }
+    }
+  },
+  {
+    "id": 1822,
+    "definition": {
+      "word": "deputy",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir kişinin yerine geçen veya ona yardımcı olan kişi.", "example": "The deputy took over the meeting when the manager was absent. (Yönetici yokken yardımcısı toplantıyı yönetti.)" },
+        { "pos": "noun", "definition": "Milletvekili; halkı temsil etmek üzere seçilmiş kişi.", "example": "She was elected as a deputy in the parliament. (Parlamentoya milletvekili olarak seçildi.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1820,
+    "definition": {
+      "word": "tenant",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir ev, daire veya işyeri gibi bir yeri kiralayan kişi; kiracı.", "example": "The tenant pays rent every month. (Kiracı her ay kira öder.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1806,
+    "definition": {
+      "word": "premise",
+      "difficulty": "C1",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir argüman veya düşüncenin temelini oluşturan öncül ya da varsayım.", "example": "The argument is based on the premise that all people are equal. (Tartışma, tüm insanların eşit olduğu varsayımına dayanıyor.)" },
+        { "pos": "noun", "definition": "Bir bina ve çevresindeki arazi (her zaman çoğul 'premises' olarak kullanılır).", "example": "Smoking is not allowed on the premises. (Bina ve çevresinde sigara içmek yasaktır.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1797,
+    "definition": {
+      "word": "parking",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "noun", "definition": "Araç park etme eylemi veya park etmeye ayrılmış alan.", "example": "Parking is not allowed here. (Burada park etmek yasaktır.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1794,
+    "definition": {
+      "word": "short",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "adjective", "definition": "Uzunluğu veya yüksekliği normalden az olan; kısa.", "example": "She has short hair. (Onun kısa saçları var.)" },
+        { "pos": "adjective", "definition": "Zaman olarak az süren.", "example": "The meeting was short. (Toplantı kısaydı.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1790,
+    "definition": {
+      "word": "equal",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "adjective", "definition": "Miktar, değer veya önem olarak aynı olan; eşit.", "example": "The two sides are equal in size. (İki taraf büyüklük olarak eşittir.)" },
+        { "pos": "verb", "definition": "Eşit olmak, eşitlemek.", "example": "Two plus two equals four. (İki artı iki dört eder.)" },
+        { "pos": "noun", "definition": "Aynı değerde veya seviyede olan kişi veya şey.", "example": "She is his equal in intelligence. (O, zekâ açısından onun eşidir.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "equal", "v2": "equaled", "v3": "equaled", "ing": "equaling" }
+    }
+  },
+  {
+    "id": 1778,
+    "definition": {
+      "word": "convention",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "noun", "definition": "Belirli bir konuda bir araya gelinen resmi toplantı veya büyük buluşma.", "example": "The writers' convention will be held in New York this year. (Yazarlar toplantısı bu yıl New York'ta yapılacak.)" },
+        { "pos": "noun", "definition": "Toplumda kabul görmüş gelenek veya teamül.", "example": "It is a convention to shake hands when you meet someone. (Biriyle tanışınca el sıkışmak bir gelenektir.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1776,
+    "definition": {
+      "word": "painful",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "adjective", "definition": "Acı veren veya ağrıtan.", "example": "The cut on his hand was painful. (Elindeki kesik acı veriyordu.)" },
+        { "pos": "adjective", "definition": "Duygusal olarak üzücü veya acı veren.", "example": "It was a painful goodbye. (Acı bir vedaydı.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1759,
+    "definition": {
+      "word": "any more",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "adverb", "definition": "Artık, bundan sonra (olumsuz cümlelerde bir şeyin devam etmediğini belirtir).", "example": "I don't live there any more. (Artık orada yaşamıyorum.)" },
+        { "pos": "determiner", "definition": "Daha fazla (soru cümlelerinde veya olumsuzlarda miktar belirtir).", "example": "Do you want any more coffee? (Daha fazla kahve ister misin?)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1729,
+    "definition": {
+      "word": "domestic",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "adjective", "definition": "Evle veya aileyle ilgili olan.", "example": "They had a domestic dispute last night. (Dün gece aile içi bir tartışma yaşadılar.)" },
+        { "pos": "adjective", "definition": "Bir ülke içinde olan, yurtiçi.", "example": "Domestic flights are usually cheaper. (Yurtiçi uçuşlar genellikle daha ucuzdur.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1725,
+    "definition": {
+      "word": "lie",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "verb", "definition": "Doğru olmayan bir şey söylemek, yalan söylemek.", "example": "He lied about his age. (Yaşı hakkında yalan söyledi.)" },
+        { "pos": "verb", "definition": "Yatay pozisyonda olmak, uzanmak.", "example": "She lay on the bed to rest. (Dinlenmek için yatağa uzandı.)" },
+        { "pos": "noun", "definition": "Gerçek olmayan, kasıtlı söylenen söz; yalan.", "example": "That was a lie. (O bir yalandı.)" }
+      ],
+      "phrasal_verbs": [
+        { "phrase": "lie down", "definition": "Uzanmak, yatmak.", "example": "I need to lie down for a while. (Bir süre uzanmam gerekiyor.)" }
+      ],
+      "verb_forms": { "v1": "lie", "v2": "lay/lied", "v3": "lain/lied", "ing": "lying" }
+    }
+  },
+  {
+    "id": 1708,
+    "definition": {
+      "word": "withdrawal",
+      "difficulty": "C1",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir yerden geri çekilme veya uzaklaşma.", "example": "The army announced its withdrawal from the region. (Ordu, bölgeden çekilmesini duyurdu.)" },
+        { "pos": "noun", "definition": "Bankadan para çekme işlemi.", "example": "She made a withdrawal of $500 from her account. (Hesabından 500 dolar çekti.)" },
+        { "pos": "noun", "definition": "Bir maddenin kullanımını bırakınca ortaya çıkan yoksunluk belirtileri.", "example": "He experienced withdrawal symptoms after quitting smoking. (Sigara bırakınca yoksunluk belirtileri yaşadı.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1673,
+    "definition": {
+      "word": "document",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Yazılı veya basılı bilgi içeren resmi kağıt veya dosya; belge.", "example": "Please bring your identity document to the meeting. (Lütfen toplantıya kimlik belgenizi getirin.)" },
+        { "pos": "verb", "definition": "Bir şeyi resmi olarak kayıt altına almak, belgelemek.", "example": "Document all the changes made. (Yapılan tüm değişiklikleri belgele.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "document", "v2": "documented", "v3": "documented", "ing": "documenting" }
+    }
+  },
+  {
+    "id": 1668,
+    "definition": {
+      "word": "cut",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "noun", "definition": "Ciltte oluşan küçük yara; kesik.", "example": "He has a small cut on his finger. (Parmağında küçük bir kesik var.)" },
+        { "pos": "verb", "definition": "Bir şeyi kesmek, bölmek.", "example": "Cut the paper with scissors. (Kağıdı makasla kes.)" }
+      ],
+      "phrasal_verbs": [
+        { "phrase": "cut down", "definition": "Azaltmak.", "example": "We should cut down on sugar. (Şeker tüketimini azaltmalıyız.)" },
+        { "phrase": "cut off", "definition": "Kesmek, ayırmak.", "example": "The power was cut off. (Elektrik kesildi.)" }
+      ],
+      "verb_forms": { "v1": "cut", "v2": "cut", "v3": "cut", "ing": "cutting" }
+    }
+  },
+  {
+    "id": 1642,
+    "definition": {
+      "word": "merge",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "verb", "definition": "İki şeyi tek bir şey hâline getirmek; birleşmek veya birleştirmek.", "example": "Two small companies merged last year. (İki küçük şirket geçen yıl birleşti.)" },
+        { "pos": "verb", "definition": "Trafiğe veya başka bir akışa katılmak.", "example": "The car merged into traffic. (Araba trafiğe katıldı.)" }
+      ],
+      "phrasal_verbs": [
+        { "phrase": "merge into", "definition": "Bir şeye katılmak veya bir şeyin içine girmek.", "example": "The two lanes merge into one. (İki şerit tek şeride birleşiyor.)" },
+        { "phrase": "merge with", "definition": "Bir şeyle birleşmek.", "example": "The small company merged with a larger firm. (Küçük şirket daha büyük bir firma ile birleşti.)" }
+      ],
+      "verb_forms": { "v1": "merge", "v2": "merged", "v3": "merged", "ing": "merging" }
+    }
+  },
+  {
+    "id": 1624,
+    "definition": {
+      "word": "sketch",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "noun", "definition": "Hızlı ve basit çizim; taslak.", "example": "She made a quick sketch of the landscape. (Manzaranın hızlı bir taslağını yaptı.)" },
+        { "pos": "noun", "definition": "Kısa, komik bir oyun veya gösteri; skeç.", "example": "The comedy sketch made everyone laugh. (Komedi skeçi herkesi güldürdü.)" },
+        { "pos": "verb", "definition": "Hızlı ve basit bir şekilde çizmek.", "example": "He sketched the idea on paper. (Fikri kağıda hızlıca çizdi.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "sketch", "v2": "sketched", "v3": "sketched", "ing": "sketching" }
+    }
+  },
+  {
+    "id": 1612,
+    "definition": {
+      "word": "alcoholic",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "noun", "definition": "Alkol bağımlısı kişi.", "example": "He is an alcoholic who has been trying to quit. (O, bırakmaya çalışan bir alkol bağımlısıdır.)" },
+        { "pos": "adjective", "definition": "İçinde alkol bulunan; alkollü.", "example": "This is an alcoholic drink. (Bu alkollü bir içecektir.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1610,
+    "definition": {
+      "word": "exhibition",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "noun", "definition": "Sanat, ürün veya bilgi gibi şeylerin halka gösterilmesi; sergi.", "example": "The art exhibition attracted many visitors. (Sanat sergisi birçok ziyaretçi çekti.)" },
+        { "pos": "noun", "definition": "Bir yeteneğin veya niteliğin sergilenmesi.", "example": "It was an exhibition of great skill. (Büyük bir beceri gösterisiydi.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1592,
+    "definition": {
+      "word": "bombing",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir yere bomba atma veya patlatma eylemi; bombalama.", "example": "The bombing caused a lot of damage. (Bombalama çok fazla zarar verdi.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1583,
+    "definition": {
+      "word": "less",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "determiner", "definition": "Daha az miktarda olan.", "example": "I have less money than you. (Benim senden daha az param var.)" },
+        { "pos": "adverb", "definition": "Daha az şekilde, daha az derecede.", "example": "She works less than before. (Öncekinden daha az çalışıyor.)" },
+        { "pos": "preposition", "definition": "Eksi, çıkarılmış olarak.", "example": "The total is $100 less tax. (Toplam, vergi düşülmüş olarak 100 dolardır.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1582,
+    "definition": {
+      "word": "plenty",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "pronoun", "definition": "Yeterli veya bol miktarda olan şey.", "example": "There is plenty of food for everyone. (Herkes için yeterince yiyecek var.)" },
+        { "pos": "adverb", "definition": "Yeterince, oldukça (bir sıfat veya zarfı nitelemek için).", "example": "This room is plenty big for us. (Bu oda bizim için oldukça büyük.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1571,
+    "definition": {
+      "word": "quite",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "adverb", "definition": "Oldukça, epey; bir şeyin fark edilir derecede olduğunu belirtir.", "example": "She is quite happy with her new job. (Yeni işiyle oldukça mutlu.)" },
+        { "pos": "adverb", "definition": "Tamamen, büsbütün.", "example": "I quite agree with you. (Sana tamamen katılıyorum.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1557,
+    "definition": {
+      "word": "upon",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "preposition", "definition": "Üzerinde, üstünde (on kelimesinin resmi/edebi hali).", "example": "Upon arrival, please check in at the front desk. (Varışınızda lütfen resepsiyona başvurun.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1556,
+    "definition": {
+      "word": "lab",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "noun", "definition": "Bilimsel deneylerin yapıldığı oda veya yer; laboratuvar.", "example": "She works in a chemistry lab. (Kimya laboratuvarında çalışıyor.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1551,
+    "definition": {
+      "word": "cop",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "noun", "definition": "Polis memuru (gündelik dilde).", "example": "The cop helped the lost child find his parents. (Polis memuru kaybolan çocuğun ailesini bulmasına yardım etti.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1546,
+    "definition": {
+      "word": "rose",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Güzel ve kokulu bir çiçek; gül.", "example": "She gave me a red rose. (Bana kırmızı bir gül verdi.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1516,
+    "definition": {
+      "word": "matter",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Konu, mesele.", "example": "This is an important matter. (Bu önemli bir konudur.)" },
+        { "pos": "noun", "definition": "Fiziksel dünyayı oluşturan madde.", "example": "Water is a form of matter. (Su bir madde türüdür.)" },
+        { "pos": "verb", "definition": "Önemli olmak, değer taşımak.", "example": "It doesn't matter if you are late. (Geç kalman önemli değil.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "matter", "v2": "mattered", "v3": "mattered", "ing": "mattering" }
+    }
+  },
+  {
+    "id": 1511,
+    "definition": {
+      "word": "save",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "verb", "definition": "Tehlikeden kurtarmak.", "example": "The firefighter saved the child. (İtfaiyeci çocuğu kurtardı.)" },
+        { "pos": "verb", "definition": "Para biriktirmek.", "example": "She saved enough money for a trip. (Bir gezi için yeterince para biriktirdi.)" },
+        { "pos": "verb", "definition": "Bir dosyayı kaydetmek.", "example": "Save your work regularly. (Çalışmanızı düzenli olarak kaydedin.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "save", "v2": "saved", "v3": "saved", "ing": "saving" }
+    }
+  },
+  {
+    "id": 1492,
+    "definition": {
+      "word": "block",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Büyük, genellikle dikdörtgen şekilli katı parça.", "example": "She bought a block of cheese. (Bir kalıp peynir aldı.)" },
+        { "pos": "noun", "definition": "Bir şehirdeki binaların arasındaki alan; blok.", "example": "I live three blocks from the school. (Okuldan üç blok uzakta oturuyorum.)" },
+        { "pos": "verb", "definition": "Bir şeyin hareket etmesini veya ilerlemesini engellemek.", "example": "He blocked the ball with his hand. (Topu eliyle engelledi.)" }
+      ],
+      "phrasal_verbs": [
+        { "phrase": "block out", "definition": "Dışarıdaki ışığı veya sesi engellemek.", "example": "She used curtains to block out the sunlight. (Güneş ışığını engellemek için perdeleri kullandı.)" },
+        { "phrase": "block up", "definition": "Tıkamak veya kapatmak.", "example": "Leaves blocked up the drain. (Yapraklar gideri tıkadı.)" }
+      ],
+      "verb_forms": { "v1": "block", "v2": "blocked", "v3": "blocked", "ing": "blocking" }
+    }
+  },
+  {
+    "id": 1489,
+    "definition": {
+      "word": "implication",
+      "difficulty": "C1",
+      "meanings": [
+        { "pos": "noun", "definition": "Doğrudan söylenmeden ima edilen anlam.", "example": "The implication of his words was that he was unhappy. (Sözlerinin iması, mutlu olmadığıydı.)" },
+        { "pos": "noun", "definition": "Olası sonuç veya etki.", "example": "We need to consider the environmental implications. (Çevresel etkileri düşünmemiz gerekiyor.)" },
+        { "pos": "noun", "definition": "Bir olaya veya suça karışma, ilişkili olma.", "example": "His implication in the scandal surprised everyone. (Skandala karışmış olması herkesi şaşırttı.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1471,
+    "definition": {
+      "word": "well",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "adverb", "definition": "İyi bir şekilde.", "example": "She speaks English very well. (Çok iyi İngilizce konuşur.)" },
+        { "pos": "adjective", "definition": "Sağlıklı, iyi durumda.", "example": "I am well, thank you. (İyiyim, teşekkürler.)" },
+        { "pos": "noun", "definition": "Yeraltına açılan derin çukur; kuyu.", "example": "They drew water from the well. (Kuyudan su çektiler.)" },
+        { "pos": "interjection", "definition": "Konuşmaya başlarken veya duraksamada kullanılan ifade; peki, şey.", "example": "Well, I'm not sure about that. (Şey, bundan emin değilim.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1463,
+    "definition": {
+      "word": "expose",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "verb", "definition": "Maruz bırakmak; bir şeyin etkisine açık hale getirmek.", "example": "Don't expose your skin to the sun. (Cildinizi güneşe maruz bırakmayın.)" },
+        { "pos": "verb", "definition": "İfşa etmek, ortaya çıkarmak.", "example": "The journalist exposed the corruption. (Gazeteci yolsuzluğu ifşa etti.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "expose", "v2": "exposed", "v3": "exposed", "ing": "exposing" }
+    }
+  },
+  {
+    "id": 1448,
+    "definition": {
+      "word": "hard",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "adjective", "definition": "Sert; kolayca kırılmayan.", "example": "This rock is very hard. (Bu taş çok serttir.)" },
+        { "pos": "adjective", "definition": "Zor, güç.", "example": "The exam was really hard. (Sınav gerçekten zordu.)" },
+        { "pos": "adverb", "definition": "Çok sıkı, yoğun şekilde.", "example": "She works hard every day. (Her gün çok sıkı çalışır.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1441,
+    "definition": {
+      "word": "representation",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir şeyi göstermek veya simgelemek; tasvir.", "example": "The painting is a representation of the countryside. (Tablo, kırsal alanın bir tasviridir.)" },
+        { "pos": "noun", "definition": "Bir kişi veya grubun başkaları adına hareket etmesi; temsil.", "example": "The lawyer provided legal representation. (Avukat hukuki temsil sağladı.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1437,
+    "definition": {
+      "word": "inmate",
+      "difficulty": "C1",
+      "meanings": [
+        { "pos": "noun", "definition": "Hapishane veya kapalı bir kurumda tutulan kişi; mahkûm.", "example": "The inmate was allowed to make a phone call. (Mahkûmun telefon etmesine izin verildi.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1432,
+    "definition": {
+      "word": "aside",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "adverb", "definition": "Bir kenara, yana doğru.", "example": "He stepped aside to let her pass. (Onun geçmesine izin vermek için kenara çekildi.)" },
+        { "pos": "adverb", "definition": "Bir kenara ayırarak, sonraya bırakarak.", "example": "He set the problem aside for now. (Sorunu şimdilik bir kenara bıraktı.)" },
+        { "pos": "noun", "definition": "Tiyatroda bir karakterin doğrudan seyirciye söylediği söz.", "example": "In an aside, the villain revealed his plan to the audience. (Bir kenara konuşmayla kötü adam planını seyirciye açıkladı.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1431,
+    "definition": {
+      "word": "sand",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Çok küçük ve ince tanelerden oluşan doğal malzeme; kum.", "example": "The children played in the sand at the beach. (Çocuklar plajda kumda oynadılar.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1429,
+    "definition": {
+      "word": "check",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "noun", "definition": "Kontrol; bir şeyi incelemek için yapılan işlem.", "example": "He gave the car a quick check. (Arabayı hızlıca kontrol etti.)" },
+        { "pos": "noun", "definition": "Restoranda hesap; adisyon.", "example": "Can I have the check, please? (Hesabı alabilir miyim lütfen?)" },
+        { "pos": "verb", "definition": "Doğru veya eksiksiz olup olmadığını kontrol etmek.", "example": "Check the spelling of this word. (Bu kelimenin yazımını kontrol et.)" }
+      ],
+      "phrasal_verbs": [
+        { "phrase": "check in", "definition": "Giriş yapmak (otel, havalimanı).", "example": "We checked in at the hotel. (Otele giriş yaptık.)" },
+        { "phrase": "check out", "definition": "Çıkış yapmak; bir şeye bakmak, incelemek.", "example": "Check out this book. (Bu kitaba bir bak.)" }
+      ],
+      "verb_forms": { "v1": "check", "v2": "checked", "v3": "checked", "ing": "checking" }
+    }
+  },
+  {
+    "id": 1427,
+    "clearRootWord": true,
+    "definition": {
+      "word": "making",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir şeyin oluşması veya yapılması süreci; yapım.", "example": "The making of a cake takes about an hour. (Bir kekin yapılması yaklaşık bir saat sürer.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1414,
+    "definition": {
+      "word": "deploy",
+      "difficulty": "C1",
+      "meanings": [
+        { "pos": "verb", "definition": "Konuşlandırmak; birlikleri veya kaynakları stratejik olarak yerleştirmek.", "example": "The army deployed troops along the border. (Ordu sınır boyunca birlik konuşlandırdı.)" },
+        { "pos": "verb", "definition": "Kullanıma sunmak; bir sistemi devreye almak.", "example": "Deploy the new software update. (Yeni yazılım güncellemesini devreye al.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "deploy", "v2": "deployed", "v3": "deployed", "ing": "deploying" }
+    }
+  },
+  {
+    "id": 1410,
+    "definition": {
+      "word": "violent",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "adjective", "definition": "Şiddet içeren; fiziksel güç kullanarak zarar veren.", "example": "The city has a high rate of violent crime. (Şehirde şiddet suçu oranı yüksektir.)" },
+        { "pos": "adjective", "definition": "Çok güçlü ve şiddetli.", "example": "The violent storm damaged many houses. (Şiddetli fırtına birçok eve zarar verdi.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1409,
+    "definition": {
+      "word": "November",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "noun", "definition": "Yılın on birinci ayı; Kasım.", "example": "November is the month before December. (Kasım, Aralık'tan önceki aydır.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1398,
+    "definition": {
+      "word": "sale",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir şeyin para karşılığında satılması; satış.", "example": "The sale of the house took two months. (Evin satışı iki ay sürdü.)" },
+        { "pos": "noun", "definition": "Ürünlerin indirimli fiyatla satılması; indirim.", "example": "I bought this jacket on sale. (Bu ceketi indirimde aldım.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1397,
+    "definition": {
+      "word": "halt",
+      "difficulty": "C1",
+      "meanings": [
+        { "pos": "verb", "definition": "Durdurmak veya durmak.", "example": "The train halted suddenly. (Tren aniden durdu.)" },
+        { "pos": "noun", "definition": "Durma, duraklama.", "example": "The soldiers made a halt to rest. (Askerler dinlenmek için durdu.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "halt", "v2": "halted", "v3": "halted", "ing": "halting" }
+    }
+  },
+  {
+    "id": 1391,
+    "definition": {
+      "word": "address",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir kişi veya yerin bulunduğu yerin tam açıklaması; adres.", "example": "Please write your home address on the form. (Lütfen forma ev adresinizi yazın.)" },
+        { "pos": "verb", "definition": "Bir konuyu veya sorunu ele almak.", "example": "We need to address this problem. (Bu sorunu ele almamız gerekiyor.)" },
+        { "pos": "verb", "definition": "Birine hitap etmek, söz yöneltmek.", "example": "She addressed the audience. (Seyircilere hitap etti.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "address", "v2": "addressed", "v3": "addressed", "ing": "addressing" }
+    }
+  },
+  {
+    "id": 1381,
+    "definition": {
+      "word": "commission",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "noun", "definition": "Belirli bir konuyu incelemek üzere kurulan resmi kurul veya heyet.", "example": "The government set up a commission to investigate. (Hükümet soruşturma için bir komisyon kurdu.)" },
+        { "pos": "noun", "definition": "Satıştan alınan yüzde veya ücret; komisyon.", "example": "The agent earns a commission on every sale. (Aracı her satıştan komisyon kazanır.)" },
+        { "pos": "verb", "definition": "Birine özel bir iş veya görev vermek; sipariş etmek.", "example": "They commissioned an artist to create a mural. (Bir sanatçıya duvar resmi siparişi verdiler.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "commission", "v2": "commissioned", "v3": "commissioned", "ing": "commissioning" }
+    }
+  },
+  {
+    "id": 1377,
+    "definition": {
+      "word": "result",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir şeyin sonunda ortaya çıkan durum; sonuç.", "example": "The result of the test was good. (Testin sonucu iyiydi.)" },
+        { "pos": "verb", "definition": "Bir şeyin sonucu olmak, yol açmak.", "example": "Overeating results in weight gain. (Aşırı yemek kilo almaya yol açar.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "result", "v2": "resulted", "v3": "resulted", "ing": "resulting" }
+    }
+  },
+  {
+    "id": 1364,
+    "definition": {
+      "word": "hang",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "verb", "definition": "Bir şeyi bir yere asmak veya asılı durmak.", "example": "She hung the picture on the wall. (Resmi duvara astı.)" },
+        { "pos": "verb", "definition": "Bir bilgisayarın takılıp çalışmaması.", "example": "My computer hangs when I open too many programs. (Bilgisayarım çok program açınca takılıyor.)" }
+      ],
+      "phrasal_verbs": [
+        { "phrase": "hang out", "definition": "Takılmak, vakit geçirmek.", "example": "We like to hang out at the park. (Parkta takılmayı severiz.)" },
+        { "phrase": "hang up", "definition": "Telefonu kapatmak.", "example": "She hung up the phone quickly. (Telefonu hızlıca kapattı.)" },
+        { "phrase": "hang on", "definition": "Beklemek, dayanmak.", "example": "Hang on a minute. (Bir dakika bekle.)" }
+      ],
+      "verb_forms": { "v1": "hang", "v2": "hung", "v3": "hung", "ing": "hanging" }
+    }
+  },
+  {
+    "id": 1361,
+    "definition": {
+      "word": "object",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "noun", "definition": "Görülebilen veya dokunulabilen şey; nesne.", "example": "The table is a heavy object. (Masa ağır bir nesnedir.)" },
+        { "pos": "noun", "definition": "Amaç, hedef.", "example": "The object of the game is to score points. (Oyunun amacı puan kazanmaktır.)" },
+        { "pos": "verb", "definition": "Karşı çıkmak, itiraz etmek.", "example": "I object to this decision. (Bu karara itiraz ediyorum.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "object", "v2": "objected", "v3": "objected", "ing": "objecting" }
+    }
+  },
+  {
+    "id": 1357,
+    "clearRootWord": true,
+    "definition": {
+      "word": "left",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "adjective", "definition": "Sol taraftaki.", "example": "Turn left at the corner. (Köşede sola dön.)" },
+        { "pos": "noun", "definition": "Sol taraf veya sol yön.", "example": "The shop is on the left. (Dükkan solda.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1354,
+    "definition": {
+      "word": "backwards",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "adverb", "definition": "Geriye doğru, ters yönde.", "example": "He walked backwards to see where he had come from. (Nereden geldiğini görmek için geriye doğru yürüdü.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1352,
+    "definition": {
+      "word": "scratch",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "verb", "definition": "Tırnak veya keskin bir şeyle çizmek.", "example": "The cat scratched the sofa. (Kedi kanepeyi çizdi.)" },
+        { "pos": "verb", "definition": "Kaşımak, kaşınmak.", "example": "He scratched his head. (Başını kaşıdı.)" },
+        { "pos": "noun", "definition": "Yüzeyde oluşan ince çizik veya iz.", "example": "There is a scratch on the table. (Masada bir çizik var.)" }
+      ],
+      "phrasal_verbs": [
+        { "phrase": "scratch off", "definition": "Kazıyarak çıkarmak.", "example": "He scratched off the lottery ticket. (Piyango biletini kazıdı.)" }
+      ],
+      "verb_forms": { "v1": "scratch", "v2": "scratched", "v3": "scratched", "ing": "scratching" }
+    }
+  },
+  {
+    "id": 1351,
+    "definition": {
+      "word": "require",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "verb", "definition": "Gerektirmek, zorunlu kılmak.", "example": "This job requires experience. (Bu iş deneyim gerektiriyor.)" },
+        { "pos": "verb", "definition": "İhtiyaç duymak.", "example": "The patient requires immediate attention. (Hasta acil ilgiye ihtiyaç duyuyor.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "require", "v2": "required", "v3": "required", "ing": "requiring" }
+    }
+  },
+  {
+    "id": 1343,
+    "definition": {
+      "word": "successfully",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "adverb", "definition": "Başarılı bir şekilde.", "example": "She completed the project successfully. (Projeyi başarıyla tamamladı.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1340,
+    "definition": {
+      "word": "sake",
+      "difficulty": "C1",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir şeyin yapılma nedeni veya amacı; hatır, uğur.", "example": "She did it for the sake of her family. (Ailesi uğruna yaptı.)" },
+        { "pos": "noun", "definition": "Japon pirinç şarabı.", "example": "We drank sake at the Japanese restaurant. (Japon restoranında sake içtik.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1337,
+    "definition": {
+      "word": "pick",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Seçim; seçilen şey.", "example": "He made a good pick for the team. (Takım için iyi bir seçim yaptı.)" },
+        { "pos": "verb", "definition": "Seçmek veya toplamak.", "example": "Pick the ripe fruits. (Olgun meyveleri topla.)" }
+      ],
+      "phrasal_verbs": [
+        { "phrase": "pick up", "definition": "Yerden kaldırmak; arabayla birini almak.", "example": "Can you pick me up? (Beni alabilir misin?)" },
+        { "phrase": "pick on", "definition": "Birini rahatsız etmek, birine takılmak.", "example": "Stop picking on him. (Ona takılmayı bırak.)" }
+      ],
+      "verb_forms": { "v1": "pick", "v2": "picked", "v3": "picked", "ing": "picking" }
+    }
+  },
+  {
+    "id": 1336,
+    "definition": {
+      "word": "would",
+      "difficulty": "A1",
+      "meanings": [
+        { "pos": "modal verb", "definition": "Hayali veya gerçekleşmemiş durumları ifade etmek için kullanılır.", "example": "I would go if I had time. (Zamanım olsaydı giderdim.)" },
+        { "pos": "modal verb", "definition": "Kibarca istek veya teklif belirtmek için kullanılır.", "example": "Would you like some water? (Biraz su ister misiniz?)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1335,
+    "clearRootWord": true,
+    "definition": {
+      "word": "drunk",
+      "difficulty": "B1",
+      "meanings": [
+        { "pos": "adjective", "definition": "Alkol alıp sarhoş olmuş.", "example": "He was so drunk that he couldn't walk straight. (O kadar sarhoştu ki düzgün yürüyemiyordu.)" },
+        { "pos": "noun", "definition": "Sürekli sarhoş olan kişi.", "example": "The old drunk sat alone at the bar. (Yaşlı sarhoş barda yalnız oturuyordu.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1331,
+    "definition": {
+      "word": "pollution",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Hava, su veya toprağın zararlı maddelerle kirlenmesi; kirlilik.", "example": "Air pollution makes it hard to breathe. (Hava kirliliği nefes almayı zorlaştırır.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1328,
+    "definition": {
+      "word": "hall",
+      "difficulty": "A2",
+      "meanings": [
+        { "pos": "noun", "definition": "Bir binadaki giriş alanı veya koridor.", "example": "Leave your shoes in the hall. (Ayakkabılarını koridorda bırak.)" },
+        { "pos": "noun", "definition": "İnsanların toplandığı büyük oda; salon.", "example": "The school assembly was held in the main hall. (Okul toplantısı ana salonda yapıldı.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1327,
+    "definition": {
+      "word": "discourage",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "verb", "definition": "Birinin cesaretini veya isteğini kırmak; caydırmak.", "example": "His parents tried to discourage him from quitting school. (Ailesi onun okulu bırakmaması için cesaretini kırmaya çalıştı.)" },
+        { "pos": "verb", "definition": "Bir şeyin yapılmasını zorlaştırmak veya önlemeye çalışmak.", "example": "High prices discourage people from buying. (Yüksek fiyatlar insanları satın almaktan caydırır.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": { "v1": "discourage", "v2": "discouraged", "v3": "discouraged", "ing": "discouraging" }
+    }
+  },
+  {
+    "id": 1326,
+    "definition": {
+      "word": "shooting",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "noun", "definition": "Silahla ateş açma olayı; silahlı saldırı.", "example": "There was a shooting near the park last night. (Dün gece parkın yakınında bir silahlı saldırı oldu.)" },
+        { "pos": "noun", "definition": "Film veya dizi çekim işi.", "example": "The shooting of the movie took three months. (Filmin çekimleri üç ay sürdü.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  },
+  {
+    "id": 1325,
+    "definition": {
+      "word": "surgeon",
+      "difficulty": "B2",
+      "meanings": [
+        { "pos": "noun", "definition": "Ameliyat yapan doktor; cerrah.", "example": "The surgeon performed a successful operation. (Cerrah başarılı bir ameliyat yaptı.)" }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null
+    }
+  }
+]
