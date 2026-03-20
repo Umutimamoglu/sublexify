@@ -151,6 +151,6 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
     @Query("SELECT COUNT(w) FROM Word w WHERE w.problemFound = true")
     long countProblems();
 
-    @Query("SELECT COUNT(w) FROM Word w WHERE w.isEnriched = true AND w.step3Error IS NOT NULL AND (w.problemFound = false OR w.problemFound IS NULL)")
+    @Query("SELECT COUNT(w) FROM Word w WHERE w.isEnriched = true AND w.isVerified = true AND w.problemFound = false")
     long countAuditedClean();
 }
