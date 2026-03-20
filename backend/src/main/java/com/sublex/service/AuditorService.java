@@ -20,7 +20,7 @@ import java.util.function.BiConsumer;
 public class AuditorService {
 
     private final WordRepository wordRepository;
-    private final AIService aiService;
+    private final OpenAIService openAIService;
 
     @Transactional
     public void auditRecentWords(int limit, BiConsumer<Integer, Integer> progressCallback) {
@@ -41,7 +41,7 @@ public class AuditorService {
             List<Word> batch = words.subList(i, end);
             
             log.info("Auditing batch of {} words...", batch.size());
-            Map<String, Map<String, Object>> results = aiService.auditWordsBatch(batch);
+            Map<String, Map<String, Object>> results = openAIService.auditWordsBatch(batch);
             
             for (Word word : batch) {
                 Map<String, Object> result = results.get(word.getWord());
