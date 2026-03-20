@@ -488,12 +488,12 @@ public class AdminController {
     }
 
     @PostMapping("/audit-batch")
-    @Operation(summary = "Triggers the Sheriff (Gemini 1.5 Pro) to audit recently enriched words")
+    @Operation(summary = "Triggers the Auditor (GPT-5) to audit recently enriched words")
     public ResponseEntity<String> auditBatch(@RequestParam(defaultValue = "50") int size) {
-        log.info("Manual request to trigger Sheriff audit for last {} words", size);
+        log.info("Manual request to trigger Auditor (GPT-5) for last {} words", size);
         try {
-            auditService.auditRecentWords(size);
-            return ResponseEntity.ok("Audit batch completed successfully");
+            auditService.auditRecentWords(size, true);
+            return ResponseEntity.ok("Audit batch (Teftis Panosu) completed successfully via GPT-5");
         } catch (Exception e) {
             log.error("Audit batch failed", e);
             return ResponseEntity.internalServerError().body("Audit failed: " + e.getMessage());

@@ -205,6 +205,35 @@ public class OpenAIService implements AIService {
                 }
         }
 
+        public String generateContent(String systemPrompt, String userPrompt, String modelName) {
+                log.info("Calling OpenAI API with model: {}", modelName);
+                try {
+                        Map<String, Object> requestBody = Map.of(
+                                        "model", modelName,
+                                        "messages", List.of(
+                                                        Map.of("role", "system", "content", systemPrompt),
+                                                        Map.of("role", "user", "content", userPrompt)));
+
+                        String response = restClient.post()
+                                        .uri(OPENAI_URL)
+                                        .header("Authorization", "Bearer " + apiKey)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .body(requestBody)
+                                        .retrieve()
+                                        .body(String.class);
+
+                        Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
+                        List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+                        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                        return (String) message.get("content");
+
+                } catch (Exception e) {
+                        log.error("Failed to generate content with OpenAI", e);
+                        return null;
+                }
+        }
+
+
         @Override
         public Map<String, Map<String, Object>> auditWordsBatch(List<Word> words) {
                 Map<String, Map<String, Object>> results = new ConcurrentHashMap<>();

@@ -26,15 +26,24 @@ public class AuditService {
 
     private final WordRepository wordRepository;
     private final GeminiService geminiService;
+    private final OpenAIService openAIService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final int SHERIFF_BATCH_SIZE = 10;
 
     public void auditRecentWords(int totalLimit) {
-        auditRecentWords(totalLimit, null, null);
+        auditRecentWords(totalLimit, null, null, false);
+    }
+
+    public void auditRecentWords(int totalLimit, boolean useGPT5) {
+        auditRecentWords(totalLimit, null, null, useGPT5);
     }
 
     public void auditRecentWords(int limit, Long mediaId, BiConsumer<Integer, Integer> progressCallback) {
+        auditRecentWords(limit, mediaId, progressCallback, false);
+    }
+
+    public void auditRecentWords(int limit, Long mediaId, BiConsumer<Integer, Integer> progressCallback, boolean useGPT5) {
         log.info("Starting Sheriff audit for up to {} words...", limit);
 
         List<Word> pendingWords = (mediaId == null)
@@ -69,7 +78,7 @@ public class AuditService {
                     try {
                         auditSemaphore.acquire();
                         try {
-                            auditBatch(batch);
+                            auditBatch(batch, useGPT5);
                         } finally {
                             auditSemaphore.release();
                         }
@@ -87,7 +96,7 @@ public class AuditService {
         log.info("Sheriff parallel audit complete.");
     }
 
-    private void auditBatch(List<Word> batch) {
+    private void auditBatch(List<Word> batch, boolean useGPT5) {
         try {
             log.info("Auditing batch of {} words...", batch.size());
 
@@ -189,7 +198,14 @@ public class AuditService {
 
             String userPrompt = String.format("### INPUT DATA:\n%s", inputJson);
 
-            String response = geminiService.generateContent(systemPrompt, userPrompt, GeminiService.SHERIFF_MODEL);
+            String response;
+            if (useGPT5) {
+                log.info("Auditing with GPT-5 (Teftiş Panosu)");
+                response = openAIService.generateContent(systemPrompt, userPrompt, "gpt-5-mini");
+            } else {
+                log.info("Auditing with Gemini (Pipeline Sheriff)");
+                response = geminiService.generateContent(systemPrompt, userPrompt, GeminiService.SHERIFF_MODEL);
+            }
 
             if (response == null || response.isEmpty()) {
                 log.error("Sheriff (Gemini) returned empty response. Skipping batch to prevent false approvals.");
