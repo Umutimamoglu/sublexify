@@ -5,17 +5,24 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.EqualsAndHashCode;
+
 @Entity
 @Table(name = "media_word", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"media_id", "word_id"})
 })
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class MediaWord {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
