@@ -40,9 +40,9 @@ public class GeminiService implements AIService {
     // User requested "3 pro" i.e., gemini-3-pro-preview for Sheriff
     // For Pipeline, "3 flash" likely refers to gemini-2.0-flash as it is the
     // current flash preview/model
-    public static final String SHERIFF_MODEL = "gemini-3-flash-preview";
+    public static final String SHERIFF_MODEL = "gemini-2.5-flash";
     public static final String PIPELINE_MODEL = "gemini-2.5-pro";
- public static final String SPECIALIST_MODEL = "gemini-2.5-pro";
+    public static final String SPECIALIST_MODEL = "gemini-2.5-pro";
     public static final String ANALYSIS_MODEL = "gemini-2.5-flash";
     private static final String DEFAULT_MODEL = PIPELINE_MODEL;
 
@@ -69,7 +69,7 @@ public class GeminiService implements AIService {
                                 - Marka, şirket ve müzik grubu adları (örn: porsche, purina, playboy, nike, radiohead)
                                 - Film, dizi, karakter adları (örn: bambi, terminator, gandalf, elric)
                                 - Uydurma/kurgu özel isimleri (örn: friesenstinlender, lecroix)
-                                DİKKAT: Kelimeler küçük harfle yazılmış olabilir. 
+                                DİKKAT: Kelimeler küçük harfle yazılmış olabilir.
                                 ALTIN KURAL: Eğer bir kelimenin yaygın bir sözlük anlamı varsa (örn: 'hefty', 'scotch', 'will', 'can', 'bridge') ve bağlamda bir özel isim olarak KESİN olarak (büyük harfle başlama, unvan eşlik etmesi vb.) kullanılmıyorsa özel isim İŞARETLEME.
                                 HYPHENATED INTEGRITY: Treat long hyphenated strings (e.g., 'married-to-the-job', 'once-in-a-lifetime') as a SINGLE concept/word. Do not break them up into fragments.
                             4. Dil Tespiti (language):
@@ -395,7 +395,8 @@ public class GeminiService implements AIService {
                         new com.fasterxml.jackson.core.type.TypeReference<List<com.sublex.model.WordDefinition>>() {
                         });
 
-                Map<String, com.sublex.model.WordDefinition> result = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                Map<String, com.sublex.model.WordDefinition> result = new java.util.TreeMap<>(
+                        String.CASE_INSENSITIVE_ORDER);
                 for (com.sublex.model.WordDefinition def : definitions) {
                     if (def.getWord() != null) {
                         result.put(def.getWord(), def);
@@ -459,7 +460,9 @@ public class GeminiService implements AIService {
             }
 
             String cleanResponse = response.replace("```json", "").replace("```", "").trim();
-            return objectMapper.readValue(cleanResponse, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Map<String, Object>>>() {});
+            return objectMapper.readValue(cleanResponse,
+                    new com.fasterxml.jackson.core.type.TypeReference<Map<String, Map<String, Object>>>() {
+                    });
         } catch (Exception e) {
             log.error("Gemini batch audit failed", e);
             return Map.of();
