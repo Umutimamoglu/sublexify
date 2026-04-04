@@ -88,6 +88,7 @@ export type WordListDTO = {
   levelCounts: Record<string, number>;
   createdAt: string;
   isSystem?: boolean;
+  color?: string;
 };
 
 export type ApiError = {

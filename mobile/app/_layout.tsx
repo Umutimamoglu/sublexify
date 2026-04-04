@@ -15,6 +15,9 @@ import { queryClient } from '@/src/api/queryClient';
 import { apiClient } from '@/src/api/client';
 import { ENDPOINTS } from '@/src/api/endpoints';
 import { useAuthStore } from '@/src/store/authStore';
+import { Audio } from 'expo-av';
+import { useSettingsStore } from '@/src/store/settingsStore';
+import type { SupportedLanguage } from '@/src/i18n';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -44,6 +47,11 @@ export default function RootLayout() {
     async function prepare() {
       try {
         await initI18n();
+        // Sync i18n's detected language (device locale fallback) to the Zustand store
+        useSettingsStore.getState().setLanguage(i18n.language as SupportedLanguage);
+
+        // Allow audio (expo-speech) to play even when iPhone is in silent mode
+        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
 
         // Wait for hydration if not already done
         if (!hasHydrated) return;

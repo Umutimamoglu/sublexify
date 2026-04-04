@@ -62,6 +62,15 @@ public class WordListController {
         return ResponseEntity.ok(wordListService.getListsContainingWord(userId, wordId));
     }
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<WordListDTO> updateList(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> body,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(wordListService.updateList(id, body.get("name"), body.get("color"), userId));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteList(@PathVariable Long id) {
         wordListService.deleteList(id);

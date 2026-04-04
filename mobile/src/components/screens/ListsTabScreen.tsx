@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
-import { useLists, useCreateList, useDeleteList } from '@/src/api/queries/lists.queries';
+import { useLists, useCreateList, useDeleteList, useUpdateList } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { Ionicons } from '@expo/vector-icons';
 import type { WordListDTO } from '@/src/types/api';
@@ -57,13 +57,22 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     sectionLabel: { color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, paddingHorizontal: pad, paddingTop: 14, paddingBottom: 8 },
 
     // List card
-    listCard: { marginHorizontal: pad, marginBottom: 10, padding: 14, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
+    listCard: { marginHorizontal: pad, marginBottom: 10, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER, overflow: 'hidden' },
+    listCardAccent: { height: 4 },
+    listCardBody: { padding: 14 },
     listCardRow: { flexDirection: 'row', alignItems: 'flex-start' },
     listCardInfo: { flex: 1 },
     listCardName: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
     listCardStats: { color: c.TEXT_S, fontSize: 12, marginTop: 4 },
-    deleteBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EF444422', alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
+    listCardActions: { flexDirection: 'row', gap: 6, marginLeft: 8 },
+    editBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
+    deleteBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EF444422', alignItems: 'center', justifyContent: 'center' },
     lockIcon: { fontSize: 16, marginLeft: 10 },
+
+    // Color swatches
+    swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
+    swatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: 'transparent' },
+    swatchSelected: { borderColor: c.TEXT_P },
 
     // CEFR mini bar
     levelBar: { flexDirection: 'row', height: 5, borderRadius: 3, overflow: 'hidden', marginTop: 10 },
@@ -125,12 +134,14 @@ function ListCard({
   item,
   onPress,
   onDelete,
+  onEdit,
   styles,
   c,
 }: {
   item: WordListDTO;
   onPress: () => void;
   onDelete: () => void;
+  onEdit: () => void;
   styles: Styles;
   c: Palette;
 }) {
@@ -140,26 +151,36 @@ function ListCard({
     : 0;
 
   return (
-    <TouchableOpacity style={styles.listCard} onPress={onPress} activeOpacity={0.75}>
-      <View style={styles.listCardRow}>
-        <View style={styles.listCardInfo}>
-          <Text style={styles.listCardName}>{item.name}</Text>
-          <Text style={styles.listCardStats}>
-            {t('wordCount', { count: item.totalWords })} · {t('wordStatsPct', { pct: unknownPct })}
-          </Text>
+    <View style={styles.listCard}>
+      {item.color && <View style={[styles.listCardAccent, { backgroundColor: item.color }]} />}
+      <View style={styles.listCardBody}>
+        <View style={styles.listCardRow}>
+          <TouchableOpacity style={styles.listCardInfo} onPress={onPress} activeOpacity={0.75}>
+            <Text style={styles.listCardName}>{item.name}</Text>
+            <Text style={styles.listCardStats}>
+              {t('wordCount', { count: item.totalWords })} · {t('wordStatsPct', { pct: unknownPct })}
+            </Text>
+          </TouchableOpacity>
+          {item.isSystem ? (
+            <Text style={styles.lockIcon}>🔒</Text>
+          ) : (
+            <View style={styles.listCardActions}>
+              <TouchableOpacity style={styles.editBtn} onPress={onEdit} activeOpacity={0.7}>
+                <Ionicons name="pencil-outline" size={15} color={c.TEXT_S} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} activeOpacity={0.7}>
+                <Ionicons name="trash-outline" size={15} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-        {item.isSystem ? (
-          <Text style={styles.lockIcon}>🔒</Text>
-        ) : (
-          <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} activeOpacity={0.7}>
-            <Ionicons name="trash-outline" size={16} color="#EF4444" />
+        {item.levelCounts && item.totalWords > 0 && (
+          <TouchableOpacity activeOpacity={0.75} onPress={onPress}>
+            <CefrMiniBar levelCounts={item.levelCounts} total={item.totalWords} styles={styles} />
           </TouchableOpacity>
         )}
       </View>
-      {item.levelCounts && item.totalWords > 0 && (
-        <CefrMiniBar levelCounts={item.levelCounts} total={item.totalWords} styles={styles} />
-      )}
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -225,6 +246,103 @@ function CreateModal({
   );
 }
 
+// ─── Renk paleti ───────────────────────────────────────────────
+const LIST_COLORS = [
+  '#7c3aed', '#2563eb', '#0891b2', '#059669',
+  '#d97706', '#dc2626', '#db2777', '#6b7280',
+];
+
+// ─── Edit list modal ───────────────────────────────────────────
+function EditListModal({
+  item,
+  visible,
+  onClose,
+  onSave,
+  saving,
+  styles,
+  c,
+}: {
+  item: WordListDTO | null;
+  visible: boolean;
+  onClose: () => void;
+  onSave: (name: string, color: string) => void;
+  saving: boolean;
+  styles: Styles;
+  c: Palette;
+}) {
+  const { t: tCommon } = useTranslation('common');
+  const [name, setName] = useState('');
+  const [color, setColor] = useState('');
+
+  // item değişince formu doldur
+  React.useEffect(() => {
+    if (item) {
+      setName(item.name);
+      setColor(item.color ?? '');
+    }
+  }, [item]);
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity style={styles.modalSheet} activeOpacity={1}>
+          <Text style={styles.modalTitle}>Listeyi Düzenle</Text>
+
+          <TextInput
+            style={styles.modalInput}
+            value={name}
+            onChangeText={setName}
+            placeholderTextColor={c.TEXT_S}
+            placeholder="Liste adı"
+            autoFocus
+          />
+
+          {/* Renk seçici */}
+          <Text style={[styles.modalTitle, { fontSize: 13, fontWeight: '600', color: c.TEXT_S }]}>Renk</Text>
+          <View style={styles.swatchRow}>
+            {/* Renksiz seçenek */}
+            <TouchableOpacity
+              style={[
+                styles.swatch,
+                { backgroundColor: c.SURFACE2, borderWidth: 2, borderColor: color === '' ? c.TEXT_P : c.BORDER },
+              ]}
+              onPress={() => setColor('')}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="close" size={14} color={c.TEXT_S} style={{ alignSelf: 'center', marginTop: 7 }} />
+            </TouchableOpacity>
+
+            {LIST_COLORS.map((col) => (
+              <TouchableOpacity
+                key={col}
+                style={[styles.swatch, { backgroundColor: col }, color === col && styles.swatchSelected]}
+                onPress={() => setColor(col)}
+                activeOpacity={0.75}
+              />
+            ))}
+          </View>
+
+          <View style={styles.modalBtns}>
+            <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
+              <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalCreate, (!name.trim() || saving) && { opacity: 0.5 }]}
+              onPress={() => onSave(name.trim(), color)}
+              disabled={!name.trim() || saving}
+            >
+              {saving
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.modalCreateText}>{tCommon('actions.save')}</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
 // ─── Main Screen ──────────────────────────────────────────────
 export default function ListsTabScreen() {
   const router = useRouter();
@@ -245,6 +363,7 @@ export default function ListsTabScreen() {
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
   const [showCreate, setShowCreate] = useState(false);
+  const [editingList, setEditingList] = useState<WordListDTO | null>(null);
 
   const { data: rawLists = [], isLoading } = useLists();
   const systemLists = useMemo(
@@ -260,6 +379,7 @@ export default function ListsTabScreen() {
   const { data: knownWords = [] } = useKnownWords();
   const { mutate: createList, isPending: creating } = useCreateList();
   const { mutate: deleteList } = useDeleteList();
+  const { mutate: updateList, isPending: saving } = useUpdateList();
 
   const handleCreate = useCallback((name: string) => {
     createList(name, {
@@ -277,6 +397,14 @@ export default function ListsTabScreen() {
       ],
     );
   }, [deleteList, t, tCommon]);
+
+  const handleSaveEdit = useCallback((name: string, color: string) => {
+    if (!editingList) return;
+    updateList(
+      { id: editingList.id, name, color },
+      { onSuccess: () => setEditingList(null) },
+    );
+  }, [editingList, updateList]);
 
   return (
     <View style={styles.root}>
@@ -327,6 +455,7 @@ export default function ListsTabScreen() {
                 item={item}
                 onPress={() => router.push(`/list/${item.id}` as any)}
                 onDelete={() => handleDelete(item)}
+                onEdit={() => setEditingList(item)}
                 styles={styles}
                 c={c}
               />
@@ -345,7 +474,8 @@ export default function ListsTabScreen() {
                     key={item.id}
                     item={item}
                     onPress={() => router.push(`/list/${item.id}` as any)}
-                    onDelete={() => { }}
+                    onDelete={() => {}}
+                    onEdit={() => {}}
                     styles={styles}
                     c={c}
                   />
@@ -364,6 +494,16 @@ export default function ListsTabScreen() {
         onClose={() => setShowCreate(false)}
         onCreate={handleCreate}
         creating={creating}
+        styles={styles}
+        c={c}
+      />
+
+      <EditListModal
+        item={editingList}
+        visible={!!editingList}
+        onClose={() => setEditingList(null)}
+        onSave={handleSaveEdit}
+        saving={saving}
         styles={styles}
         c={c}
       />

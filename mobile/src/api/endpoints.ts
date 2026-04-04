@@ -20,6 +20,7 @@ export const ENDPOINTS = {
     list:               '/lists',
     standard:           '/lists/standard',
     detail:             (id: number) => `/lists/${id}`,
+    update:             (id: number) => `/lists/${id}`,
     words:              (id: number) => `/lists/${id}/words`,
     wordItem:           (listId: number, wordId: number) => `/lists/${listId}/words/${wordId}`,
     generateFromMedia:  '/lists/generate/unknown',

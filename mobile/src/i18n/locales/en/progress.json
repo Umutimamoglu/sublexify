@@ -1,6 +1,8 @@
 {
   "title": "Progress",
   "dueTodayTitle": "Due Today",
+  "dueTodayDesc": "words to review today",
+  "dueTodayProgress": "{{count}} / {{total}} words",
   "totalLearntTitle": "Total Learnt",
   "totalStudiedTitle": "Total Studied",
   "difficultTitle": "Challenging",

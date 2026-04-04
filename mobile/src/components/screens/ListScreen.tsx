@@ -34,6 +34,7 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -48,6 +49,11 @@ import { FlashCardBack } from '@/src/components/ui/FlashCard';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
 import type { ListWord, Difficulty } from '@/src/types/api';
+
+const glassAvailable = isGlassEffectAPIAvailable();
+
+// Strips trailing parenthetical TR translation: "example. (örnek.)" → "example."
+const stripTr = (text?: string) => text?.replace(/\s*\([^)]+\)\s*$/, '').trim();
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;
@@ -441,6 +447,11 @@ const actionStyles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3, // Android gölgesi
   },
+  btnInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 function RightActions({
@@ -475,38 +486,74 @@ function RightActions({
 
   return (
     <View style={actionStyles.container}>
-      {/* 1. Ekleme Butonu (Primary Renk) */}
+      {/* 1. Ekleme Butonu */}
       <Reanimated.View style={addStyle}>
-        <TouchableOpacity
-          style={[actionStyles.btn, { backgroundColor: c.PURPLE }]}
-          onPress={() => { onClose(); onAddToList(); }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="bookmark" size={20} color="#fff" />
-        </TouchableOpacity>
-      </Reanimated.View>
-
-      {/* 2. Seslendirme Butonu (Soft Arka Plan) */}
-      <Reanimated.View style={ttsStyle}>
-        <TouchableOpacity
-          style={[actionStyles.btn, { backgroundColor: c.SURFACE2, borderWidth: 1, borderColor: c.BORDER }]}
-          onPress={() => { onClose(); onTts(); }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
-        </TouchableOpacity>
-      </Reanimated.View>
-
-      {/* 3. Silme Butonu (Kırmızı) - Eğer onRemove gönderilmişse */}
-      {!!onRemove && (
-        <Reanimated.View style={delStyle}>
+        {glassAvailable ? (
+          <GlassView glassEffectStyle="regular" style={actionStyles.btn}>
+            <TouchableOpacity
+              style={actionStyles.btnInner}
+              onPress={() => { onClose(); onAddToList(); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="bookmark" size={20} color={c.PURPLE} />
+            </TouchableOpacity>
+          </GlassView>
+        ) : (
           <TouchableOpacity
-            style={[actionStyles.btn, { backgroundColor: '#EF4444' }]}
-            onPress={() => { onClose(); onRemove(); }}
+            style={[actionStyles.btn, { backgroundColor: c.PURPLE }]}
+            onPress={() => { onClose(); onAddToList(); }}
             activeOpacity={0.7}
           >
-            <Ionicons name="trash" size={20} color="#fff" />
+            <Ionicons name="bookmark" size={20} color="#fff" />
           </TouchableOpacity>
+        )}
+      </Reanimated.View>
+
+      {/* 2. Seslendirme Butonu */}
+      <Reanimated.View style={ttsStyle}>
+        {glassAvailable ? (
+          <GlassView glassEffectStyle="regular" style={actionStyles.btn}>
+            <TouchableOpacity
+              style={actionStyles.btnInner}
+              onPress={() => { onClose(); onTts(); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
+            </TouchableOpacity>
+          </GlassView>
+        ) : (
+          <TouchableOpacity
+            style={[actionStyles.btn, { backgroundColor: c.SURFACE2, borderWidth: 1, borderColor: c.BORDER }]}
+            onPress={() => { onClose(); onTts(); }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
+          </TouchableOpacity>
+        )}
+      </Reanimated.View>
+
+      {/* 3. Silme Butonu - Eğer onRemove gönderilmişse */}
+      {!!onRemove && (
+        <Reanimated.View style={delStyle}>
+          {glassAvailable ? (
+            <GlassView glassEffectStyle="regular" style={actionStyles.btn}>
+              <TouchableOpacity
+                style={actionStyles.btnInner}
+                onPress={() => { onClose(); onRemove(); }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trash" size={20} color="#EF4444" />
+              </TouchableOpacity>
+            </GlassView>
+          ) : (
+            <TouchableOpacity
+              style={[actionStyles.btn, { backgroundColor: '#EF4444' }]}
+              onPress={() => { onClose(); onRemove(); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash" size={20} color="#fff" />
+            </TouchableOpacity>
+          )}
         </Reanimated.View>
       )}
     </View>
@@ -1084,7 +1131,7 @@ export default function ListScreen({ listId }: { listId: number }) {
                           </Text>
                         </View>
                         <Text style={styles.cardExample} numberOfLines={3}>
-                          {currentWord.definition.meanings[0].example}
+                          {stripTr(currentWord.definition.meanings[0].example)}
                         </Text>
                       </>
                     )}

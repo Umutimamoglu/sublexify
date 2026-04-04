@@ -18,6 +18,9 @@ import { Palette as TokenPalette } from '@/src/theme/tokens';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useProgressStats } from '@/src/api/queries/progress.queries';
+import { useKnownWords } from '@/src/api/queries/user.queries';
+import { useSettingsStore } from '@/src/store/settingsStore';
+
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;
@@ -176,9 +179,16 @@ export default function ProgressScreen() {
 
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
-  const { data: stats, isLoading } = useProgressStats();
+  const { data: stats, isLoading: statsLoading } = useProgressStats();
+  const { data: knownWords = [], isLoading: knownLoading } = useKnownWords();
+  const { dailyReviewCount } = useSettingsStore();
 
-  const hasData = stats && (stats.totalWordsLearnt > 0 || stats.totalWordsStudied > 0 || stats.difficultWords > 0 || stats.wordsToReviewToday > 0);
+  const isLoading = statsLoading || knownLoading;
+
+  const totalKnown = knownWords.length;
+  const dailyCount = Math.min(dailyReviewCount, totalKnown);
+
+  const hasData = (stats && (stats.totalWordsLearnt > 0 || stats.totalWordsStudied > 0 || stats.difficultWords > 0)) || totalKnown > 0;
 
   const helpData = [
     { icon: '🎯', color: '#F43F5E', label: t('dueTodayTitle'), text: t('dueTodayHelp') },
@@ -229,16 +239,16 @@ export default function ProgressScreen() {
             <View style={styles.statsGrid}>
               <StatCard
                 icon="🎯"
-                value={stats.wordsToReviewToday}
+                value={dailyCount}
                 label={t('dueTodayTitle')}
-                desc={t('dueTodayDesc')}
+                desc={t('dueTodayProgress', { count: dailyCount, total: totalKnown })}
                 styles={styles}
                 color="#F43F5E"
                 onPress={() => router.push('/progress/due' as any)}
               />
               <StatCard
                 icon="📖"
-                value={stats.totalWordsLearnt}
+                value={stats?.totalWordsLearnt ?? 0}
                 label={t('totalLearntTitle')}
                 desc={t('totalLearntDesc')}
                 styles={styles}
@@ -247,7 +257,7 @@ export default function ProgressScreen() {
               />
               <StatCard
                 icon="✏️"
-                value={stats.totalWordsStudied}
+                value={stats?.totalWordsStudied ?? 0}
                 label={t('totalStudiedTitle')}
                 desc={t('totalStudiedDesc')}
                 styles={styles}
@@ -256,7 +266,7 @@ export default function ProgressScreen() {
               />
               <StatCard
                 icon="⚡"
-                value={stats.difficultWords}
+                value={stats?.difficultWords ?? 0}
                 label={t('difficultTitle')}
                 desc={t('difficultHelp')}
                 styles={styles}

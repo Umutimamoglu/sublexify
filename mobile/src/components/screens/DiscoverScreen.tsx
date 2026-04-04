@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import {
   View,
@@ -346,7 +347,11 @@ export default function DiscoverScreen() {
   const [allMediaModalVisible, setAllMediaModalVisible] = useState(false);
   const [continueModalVisible, setContinueModalVisible] = useState(false);
 
-  const { data: continueMedia = [], isLoading: continueLoading } = useContinueLearning(50);
+  const { data: continueMedia = [], isLoading: continueLoading, refetch: refetchContinue } = useContinueLearning(50);
+
+  useFocusEffect(useCallback(() => {
+    refetchContinue();
+  }, [refetchContinue]));
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
   const { data: allLists = [], isLoading: listsLoading } = useLists();
   const systemLists = useMemo(() => allLists.filter((l) => l.isSystem), [allLists]);

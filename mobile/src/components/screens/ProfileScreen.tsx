@@ -332,7 +332,7 @@ export default function ProfileScreen() {
           <SettingsTile
             icon="bar-chart-outline"
             label={t('progress')}
-            onPress={() => router.push('/progress')}
+            onPress={() => router.push('/profile/progress' as any)}
             styles={styles}
             isDark={isDark}
           />

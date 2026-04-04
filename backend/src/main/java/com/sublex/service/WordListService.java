@@ -262,8 +262,24 @@ public class WordListService {
                 dto.setTotalWords(totalWords);
                 dto.setUnknownWords(unknownWords);
                 dto.setLevelCounts(levelCounts);
+                dto.setColor(list.getColor());
 
                 return dto;
+        }
+
+        @Transactional
+        public WordListDTO updateList(Long listId, String name, String color, Long userId) {
+                WordList list = wordListRepository.findById(listId)
+                                .orElseThrow(() -> new RuntimeException("List not found: " + listId));
+                if (name != null && !name.isBlank()) {
+                        list.setName(name.trim());
+                }
+                // null = don't touch, empty string = remove color
+                if (color != null) {
+                        list.setColor(color.isBlank() ? null : color);
+                }
+                WordList saved = wordListRepository.save(list);
+                return convertToDTO(saved, userId, getKnownWordIds(userId));
         }
 
         private WordDTO convertToWordDTO(Word word, boolean isKnown) {

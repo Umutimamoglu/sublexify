@@ -42,6 +42,9 @@ public class WordList {
     @Column(name = "is_system", nullable = false, columnDefinition = "boolean default false")
     private Boolean isSystem = false;
 
+    @Column(name = "color")
+    private String color;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import WordListService, { type WordListDTO, type WordListWordsResponseDTO } from '@/services/WordListService';
 import WordCard from '@/components/features/WordCard';
-import { Loader2, Plus, Trash2, ChevronRight, Book, Star, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock, PlayCircle } from 'lucide-react';
+import { Loader2, Plus, Trash2, ChevronRight, Book, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock, PlayCircle, Pencil, X } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import api from '@/services/api';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +28,41 @@ const UserListsPage = () => {
     // Quiz Type Modal State
     const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
     const [selectedQuizTypes, setSelectedQuizTypes] = useState<string[]>(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']);
+
+    // Edit List Modal State
+    const [editingList, setEditingList] = useState<WordListDTO | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editColor, setEditColor] = useState<string | undefined>(undefined);
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+    const LIST_COLORS = ['#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777', '#6b7280'];
+
+    const handleOpenEdit = (e: React.MouseEvent, list: WordListDTO) => {
+        e.stopPropagation();
+        setEditingList(list);
+        setEditName(list.name);
+        setEditColor(list.color);
+    };
+
+    const [editError, setEditError] = useState<string | null>(null);
+
+    const handleSaveEdit = async () => {
+        if (!editingList) return;
+        setIsSavingEdit(true);
+        setEditError(null);
+        try {
+            // undefined → '' so backend clears color; a hex string sets it
+            const updated = await WordListService.updateList(editingList.id, editName, editColor ?? '');
+            setLists(prev => prev.map(l => l.id === updated.id ? updated : l));
+            if (selectedList?.id === updated.id) setSelectedList(updated);
+            setEditingList(null);
+        } catch (error: any) {
+            console.error('Failed to update list', error);
+            setEditError(error?.response?.data?.message ?? error?.message ?? 'Bir hata oluştu');
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
 
     // Mock userId
     const userId = 1;
@@ -271,34 +306,55 @@ const UserListsPage = () => {
                                 ) : (
                                     <div className="divide-y divide-gray-100 dark:divide-gray-800">
                                         {sortedLists.map(list => (
-                                            <button
+                                            <div
                                                 key={list.id}
-                                                onClick={() => setSelectedList(list)}
                                                 className={cn(
-                                                    "w-full text-left px-5 py-4 flex items-center justify-between transition-colors",
+                                                    "w-full flex items-center transition-colors",
                                                     selectedList?.id === list.id
-                                                        ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
-                                                        : "hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                                                        ? "bg-indigo-50 dark:bg-indigo-500/10"
+                                                        : "hover:bg-gray-50 dark:hover:bg-gray-800"
                                                 )}
                                             >
-                                                <div className="min-w-0 flex items-center gap-3">
-                                                    <div className="w-2 h-2 rounded-full bg-indigo-400 shrink-0" />
-                                                    <div className="min-w-0">
-                                                        <p className="font-semibold truncate flex items-center gap-2">
-                                                            {list.name}
-                                                            {list.isSystem && (
-                                                                <span title="System List">
-                                                                    <Lock className="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-500 shrink-0" />
-                                                                </span>
-                                                            )}
-                                                        </p>
-                                                        <p className="text-xs text-gray-400 mt-1">
-                                                            {list.totalWords} words • {list.unknownWords} unknown
-                                                        </p>
+                                                <button
+                                                    onClick={() => setSelectedList(list)}
+                                                    className={cn(
+                                                        "flex-1 text-left px-5 py-4 flex items-center justify-between min-w-0",
+                                                        selectedList?.id === list.id
+                                                            ? "text-indigo-700 dark:text-indigo-300"
+                                                            : "text-gray-700 dark:text-gray-300"
+                                                    )}
+                                                >
+                                                    <div className="min-w-0 flex items-center gap-3">
+                                                        <div
+                                                            className="w-2 h-2 rounded-full shrink-0"
+                                                            style={{ backgroundColor: list.color ?? '#818cf8' }}
+                                                        />
+                                                        <div className="min-w-0">
+                                                            <p className="font-semibold truncate flex items-center gap-2">
+                                                                {list.name}
+                                                                {list.isSystem && (
+                                                                    <span title="System List">
+                                                                        <Lock className="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-500 shrink-0" />
+                                                                    </span>
+                                                                )}
+                                                            </p>
+                                                            <p className="text-xs text-gray-400 mt-1">
+                                                                {list.totalWords} words • {list.unknownWords} unknown
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                {selectedList?.id === list.id && <ChevronRight className="w-4 h-4" />}
-                                            </button>
+                                                    {selectedList?.id === list.id && <ChevronRight className="w-4 h-4" />}
+                                                </button>
+                                                {!list.isSystem && (
+                                                    <button
+                                                        onClick={(e) => handleOpenEdit(e, list)}
+                                                        className="p-2 mr-2 text-gray-300 hover:text-indigo-500 dark:text-gray-600 dark:hover:text-indigo-400 rounded-lg transition-colors shrink-0"
+                                                        title="Edit list"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                 )}
@@ -493,6 +549,73 @@ const UserListsPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* Edit List Modal */}
+            {editingList && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-[#161822] rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-gray-200 dark:border-gray-800">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Edit List</h3>
+                            <button onClick={() => setEditingList(null)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Name</label>
+                        <input
+                            type="text"
+                            value={editName}
+                            onChange={e => setEditName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white mb-6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Color</label>
+                        <div className="flex flex-wrap gap-2 mb-8">
+                            <button
+                                onClick={() => setEditColor(undefined)}
+                                className={cn(
+                                    "w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all",
+                                    !editColor ? "border-gray-400 scale-110" : "border-gray-200 dark:border-gray-700"
+                                )}
+                                title="No color"
+                            >
+                                <X className="w-3.5 h-3.5 text-gray-400" />
+                            </button>
+                            {LIST_COLORS.map(c => (
+                                <button
+                                    key={c}
+                                    onClick={() => setEditColor(c)}
+                                    className={cn(
+                                        "w-8 h-8 rounded-full border-2 transition-all",
+                                        editColor === c ? "border-white scale-110 shadow-lg" : "border-transparent"
+                                    )}
+                                    style={{ backgroundColor: c }}
+                                />
+                            ))}
+                        </div>
+
+                        {editError && (
+                            <p className="text-sm text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2">{editError}</p>
+                        )}
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setEditingList(null)}
+                                className="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                disabled={isSavingEdit || !editName.trim()}
+                                className="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                {isSavingEdit ? 'Saving…' : 'Save'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Quiz Type Selection Modal */}
             {isQuizModalOpen && selectedList && (

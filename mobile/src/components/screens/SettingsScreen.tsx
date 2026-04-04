@@ -107,7 +107,7 @@ function SettingsTile({
 export default function SettingsScreen() {
   const { theme, colorScheme, themePreference, setThemePreference } = useTheme();
   const isDark = colorScheme === 'dark';
-  const { language, setLanguage } = useSettingsStore();
+  const { language, setLanguage, dailyReviewCount, setDailyReviewCount } = useSettingsStore();
   const { t } = useTranslation('profile');
   const { isTablet } = useResponsive();
   const router = useRouter();
@@ -213,6 +213,38 @@ export default function SettingsScreen() {
                     </Text>
                   </TouchableOpacity>
                 ))}
+              </View>
+            </View>
+          </View>
+
+          {/* ── Daily Review ── */}
+          <Text style={styles.sectionLabel}>Günlük Tekrar</Text>
+          <View style={styles.card}>
+            <View style={styles.settingsRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowLabel}>Günlük kelime sayısı</Text>
+                <Text style={[styles.rowLabel, { fontSize: 11, fontWeight: '400', color: c.TEXT_S, marginTop: 2 }]}>
+                  Her gün tekrar edilecek kelime sayısı
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <TouchableOpacity
+                  onPress={() => setDailyReviewCount(Math.max(5, dailyReviewCount - 5))}
+                  activeOpacity={0.7}
+                  style={[styles.chip, { width: 32, height: 32, borderRadius: 16 }]}
+                >
+                  <Text style={[styles.chipText, { fontSize: 18, lineHeight: 22 }]}>−</Text>
+                </TouchableOpacity>
+                <Text style={[styles.rowLabel, { minWidth: 28, textAlign: 'center', fontSize: 18, fontWeight: '800' }]}>
+                  {dailyReviewCount}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setDailyReviewCount(Math.min(50, dailyReviewCount + 5))}
+                  activeOpacity={0.7}
+                  style={[styles.chip, styles.chipActive, { width: 32, height: 32, borderRadius: 16 }]}
+                >
+                  <Text style={[styles.chipTextActive, { fontSize: 18, lineHeight: 22 }]}>+</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>

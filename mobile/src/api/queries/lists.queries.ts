@@ -66,6 +66,19 @@ export function useCreateList() {
   });
 }
 
+export function useUpdateList() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name, color }: { id: number; name?: string; color?: string }) => {
+      const res = await apiClient.patch<WordListDTO>(ENDPOINTS.lists.update(id), { name, color });
+      return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: listKeys.all });
+    },
+  });
+}
+
 export function useDeleteList() {
   const qc = useQueryClient();
   return useMutation({

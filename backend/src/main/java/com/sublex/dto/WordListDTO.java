@@ -18,4 +18,5 @@ public class WordListDTO {
     private Boolean isSystem;
     private Map<String, Long> levelCounts;
     private LocalDateTime createdAt;
+    private String color;
 }

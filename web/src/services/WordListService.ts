@@ -43,6 +43,7 @@ export interface WordListDTO {
     unknownWords: number;
     isSystem?: boolean;
     levelCounts: Record<string, number>;
+    color?: string;
 }
 
 export interface WordListWordsResponseDTO {
@@ -99,6 +100,11 @@ const WordListService = {
 
     removeWordFromList: async (listId: number, wordId: number): Promise<void> => {
         await api.delete(`/lists/${listId}/words/${wordId}`);
+    },
+
+    updateList: async (id: number, name?: string, color?: string): Promise<WordListDTO> => {
+        const response = await api.patch<WordListDTO>(`/lists/${id}`, { name, color });
+        return response.data;
     },
 
     deleteList: async (id: number): Promise<void> => {

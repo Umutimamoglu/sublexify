@@ -35,6 +35,7 @@ export function useMediaDetail(id: number) {
 export function useContinueLearning(limit = 5) {
   return useQuery<MediaDTO[]>({
     queryKey: mediaKeys.continueLearning,
+    staleTime: 0,
     queryFn:  async () => {
       const res = await apiClient.get<MediaDTO[]>(
         `${ENDPOINTS.media.continueLearning}?limit=${limit}`,
@@ -79,6 +80,7 @@ export function useGenerateListFromMedia() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['lists'] });
+      qc.invalidateQueries({ queryKey: mediaKeys.continueLearning });
     },
   });
 }

@@ -28,6 +28,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import AddToListModal from '@/src/components/ui/AddToListModal';
@@ -42,6 +43,8 @@ import { useWordSearch, useFrequentWords } from '@/src/api/queries/words.queries
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
 import type { WordDTO } from '@/src/types/api';
+
+const glassAvailable = isGlassEffectAPIAvailable();
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;
@@ -177,6 +180,7 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     // Swipe-to-reveal actions
     swipeActions: { flexDirection: 'row', alignItems: 'stretch' },
     swipeAction: { width: 68, alignItems: 'center', justifyContent: 'center' },
+    swipeActionInner: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const },
     swipeActionAdd: { backgroundColor: c.PURPLE },
     swipeActionTts: { backgroundColor: c.SURFACE2 },
     swipeActionDel: { backgroundColor: '#EF4444' },
@@ -236,20 +240,28 @@ function RightActions({
 
   return (
     <View style={styles.swipeActions}>
-      <TouchableOpacity 
-        style={[styles.swipeAction, styles.swipeActionAdd]} 
-        onPress={onAddToList}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="list" size={20} color="#fff" />
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.swipeAction, styles.swipeActionTts]} 
-        onPress={speak}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="volume-medium" size={20} color="#fff" />
-      </TouchableOpacity>
+      {glassAvailable ? (
+        <GlassView glassEffectStyle="regular" style={styles.swipeAction}>
+          <TouchableOpacity style={styles.swipeActionInner} onPress={onAddToList} activeOpacity={0.8}>
+            <Ionicons name="list" size={20} color={word.definition ? '#a78bfa' : '#fff'} />
+          </TouchableOpacity>
+        </GlassView>
+      ) : (
+        <TouchableOpacity style={[styles.swipeAction, styles.swipeActionAdd]} onPress={onAddToList} activeOpacity={0.8}>
+          <Ionicons name="list" size={20} color="#fff" />
+        </TouchableOpacity>
+      )}
+      {glassAvailable ? (
+        <GlassView glassEffectStyle="regular" style={styles.swipeAction}>
+          <TouchableOpacity style={styles.swipeActionInner} onPress={speak} activeOpacity={0.8}>
+            <Ionicons name="volume-medium" size={20} color="#fff" />
+          </TouchableOpacity>
+        </GlassView>
+      ) : (
+        <TouchableOpacity style={[styles.swipeAction, styles.swipeActionTts]} onPress={speak} activeOpacity={0.8}>
+          <Ionicons name="volume-medium" size={20} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -418,8 +430,15 @@ export default function VocabularyScreen() {
   }, [frequentWordsData]);
 
   const searchResults = useMemo(() => {
-    return Array.from(new Map(searchResultsData.map(w => [w.id, w])).values());
-  }, [searchResultsData]);
+    const deduped = Array.from(new Map(searchResultsData.map(w => [w.id, w])).values());
+    const q = query.trim().toLowerCase();
+    return deduped.sort((a, b) => {
+      const aw = a.word.toLowerCase();
+      const bw = b.word.toLowerCase();
+      const rank = (w: string) => w === q ? 0 : w.startsWith(q) ? 1 : 2;
+      return rank(aw) - rank(bw);
+    });
+  }, [searchResultsData, query]);
 
   const isSearching = query.trim().length >= 2;
   const displayWords: WordDTO[] = isSearching ? searchResults : frequentWords;

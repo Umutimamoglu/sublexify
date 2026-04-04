@@ -1,6 +1,8 @@
 {
   "title": "İlerleme",
   "dueTodayTitle": "Bugün Tekrar",
+  "dueTodayDesc": "bugün çalışılacak kelimeler",
+  "dueTodayProgress": "{{count}} / {{total}} kelime",
   "totalLearntTitle": "Öğrenilen",
   "totalStudiedTitle": "Çalışılan",
   "difficultTitle": "Zorlandığımız",
