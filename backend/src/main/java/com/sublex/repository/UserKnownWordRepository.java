@@ -22,5 +22,7 @@ public interface UserKnownWordRepository extends JpaRepository<UserKnownWord, Lo
 
     int countByUserId(Long userId);
 
+    int countByUserIdAndMarkedAtAfter(Long userId, java.time.LocalDateTime markedAt);
+
     void deleteByUserIdAndWordId(Long userId, Long wordId);
 }

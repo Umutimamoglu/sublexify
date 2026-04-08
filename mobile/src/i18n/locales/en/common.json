@@ -47,6 +47,7 @@
     "C1": "Advanced",
     "C2": "Mastery"
   },
+  "sentenceTts": "Sentence",
   "loading": "Loading...",
   "noResults": "No results found."
 }

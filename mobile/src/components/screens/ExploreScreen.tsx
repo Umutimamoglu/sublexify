@@ -9,13 +9,13 @@ import {
   StyleSheet,
   StatusBar,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useResponsive } from '@/src/hooks/useResponsive';
+import { useTranslation } from '@/src/i18n/useTranslation';
 import { useMedia } from '@/src/api/queries/media.queries';
 import type { MediaDTO } from '@/src/types/api';
 
@@ -27,18 +27,14 @@ type Palette = {
   PURPLE: string;
 };
 
-const { width: SW } = Dimensions.get('window');
-
-function makeStyles(c: Palette, isDark: boolean) {
+function makeStyles(c: Palette, pad: number) {
   return StyleSheet.create({
     root:     { flex: 1, backgroundColor: c.BG },
     safeArea: { flex: 1, backgroundColor: c.BG },
 
-    // Header
-    header:      { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10 },
+    header:      { paddingHorizontal: pad, paddingTop: 16, paddingBottom: 10 },
     headerTitle: { color: c.TEXT_P, fontSize: 26, fontWeight: '900', marginBottom: 14 },
 
-    // Search
     searchWrap: {
       flexDirection: 'row', alignItems: 'center',
       backgroundColor: c.SURFACE, borderRadius: 14,
@@ -48,53 +44,46 @@ function makeStyles(c: Palette, isDark: boolean) {
     searchInput: { flex: 1, color: c.TEXT_P, fontSize: 15, marginLeft: 8 },
     clearBtn:    { padding: 4 },
 
-    // Filter chips
-    filterRow:    { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
-    chip:         { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
-    chipActive:   { backgroundColor: c.PURPLE, borderColor: c.PURPLE },
-    chipText:     { color: c.TEXT_S, fontSize: 13, fontWeight: '600' },
+    filterRow:      { flexDirection: 'row', paddingHorizontal: pad, paddingVertical: 12, gap: 8 },
+    chip:           { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
+    chipActive:     { backgroundColor: c.PURPLE, borderColor: c.PURPLE },
+    chipText:       { color: c.TEXT_S, fontSize: 13, fontWeight: '600' },
     chipTextActive: { color: '#fff', fontSize: 13, fontWeight: '600' },
 
-    // Section label
     sectionLabel: {
       color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 1.2,
-      paddingHorizontal: 16, paddingTop: 4, paddingBottom: 10,
+      paddingHorizontal: pad, paddingTop: 4, paddingBottom: 10,
     },
 
-    // Stories row
-    storiesRow:   { paddingLeft: 16, paddingBottom: 16 },
-    storyItem:    { alignItems: 'center', marginRight: 14, width: 72 },
-    storyRing:    {
+    storiesRow: { paddingLeft: pad, paddingBottom: 16 },
+    storyItem:  { alignItems: 'center', marginRight: 14, width: 72 },
+    storyRing:  {
       width: 68, height: 68, borderRadius: 34,
       borderWidth: 2, borderColor: c.PURPLE,
       padding: 2, marginBottom: 6,
     },
-    storyImg:     { width: '100%', height: '100%', borderRadius: 30 },
+    storyImg:            { width: '100%', height: '100%', borderRadius: 30 },
     storyImgPlaceholder: {
       width: '100%', height: '100%', borderRadius: 30,
-      backgroundColor: c.SURFACE2,
-      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center',
     },
-    storyLabel:   { color: c.TEXT_S, fontSize: 10, textAlign: 'center', maxWidth: 68 },
+    storyLabel: { color: c.TEXT_S, fontSize: 10, textAlign: 'center', maxWidth: 68 },
 
-    // Grid
-    gridContent:  { paddingHorizontal: 10, paddingBottom: 24 },
+    gridContent: { paddingHorizontal: pad - 4, paddingBottom: 24 },
     gridCard: {
       flex: 1, margin: 4, borderRadius: 12,
       overflow: 'hidden', backgroundColor: c.SURFACE,
       aspectRatio: 0.67,
     },
-    gridImg:      { width: '100%', height: '80%' },
-    gridImgPlaceholder: {
+    gridImg:             { width: '100%', height: '80%' },
+    gridImgPlaceholder:  {
       width: '100%', height: '80%',
-      backgroundColor: c.SURFACE2,
-      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center',
     },
-    gridInfo:     { padding: 6, flex: 1, justifyContent: 'center' },
-    gridTitle:    { color: c.TEXT_P, fontSize: 11, fontWeight: '700', numberOfLines: 1 },
-    gridType:     { color: c.TEXT_S, fontSize: 9, marginTop: 1 },
+    gridInfo:  { padding: 6, flex: 1, justifyContent: 'center' },
+    gridTitle: { color: c.TEXT_P, fontSize: 11, fontWeight: '700' },
+    gridType:  { color: c.TEXT_S, fontSize: 9, marginTop: 1 },
 
-    // Type badge on card
     typeBadge: {
       position: 'absolute', top: 6, left: 6,
       paddingHorizontal: 6, paddingVertical: 2,
@@ -102,19 +91,17 @@ function makeStyles(c: Palette, isDark: boolean) {
     },
     typeBadgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },
 
-    // Empty
     center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
     emptyIcon: { fontSize: 40 },
     emptyText: { color: c.TEXT_S, fontSize: 14, textAlign: 'center' },
   });
 }
 
-// ─── Story bubble ─────────────────────────────────────────────
-function StoryItem({ item, onPress, styles }: { item: MediaDTO; onPress: () => void; styles: ReturnType<typeof makeStyles> }) {
-  const label = item.type === 'SEASON'
-    ? item.title.split(' - ')[0]
-    : item.title;
+type Styles = ReturnType<typeof makeStyles>;
 
+// ─── Story bubble ─────────────────────────────────────────────
+function StoryItem({ item, onPress, styles }: { item: MediaDTO; onPress: () => void; styles: Styles }) {
+  const label = item.type === 'SEASON' ? item.title.split(' - ')[0] : item.title;
   return (
     <TouchableOpacity style={styles.storyItem} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.storyRing}>
@@ -132,7 +119,13 @@ function StoryItem({ item, onPress, styles }: { item: MediaDTO; onPress: () => v
 }
 
 // ─── Grid card ────────────────────────────────────────────────
-function GridCard({ item, onPress, styles }: { item: MediaDTO; onPress: () => void; styles: ReturnType<typeof makeStyles> }) {
+function GridCard({ item, onPress, styles, movieLabel, showLabel }: {
+  item: MediaDTO;
+  onPress: () => void;
+  styles: Styles;
+  movieLabel: string;
+  showLabel: string;
+}) {
   return (
     <TouchableOpacity style={styles.gridCard} onPress={onPress} activeOpacity={0.85}>
       {item.posterUrl ? (
@@ -143,7 +136,7 @@ function GridCard({ item, onPress, styles }: { item: MediaDTO; onPress: () => vo
         </View>
       )}
       <View style={styles.typeBadge}>
-        <Text style={styles.typeBadgeText}>{item.type === 'MOVIE' ? 'FİLM' : 'DİZİ'}</Text>
+        <Text style={styles.typeBadgeText}>{item.type === 'MOVIE' ? movieLabel : showLabel}</Text>
       </View>
       <View style={styles.gridInfo}>
         <Text style={styles.gridTitle} numberOfLines={1}>{item.title}</Text>
@@ -161,6 +154,9 @@ export default function ExploreScreen() {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const { isTablet } = useResponsive();
+  const { t } = useTranslation('explore');
+
+  const pad = isTablet ? 32 : 16;
 
   const c = useMemo<Palette>(() => ({
     BG:      theme.colors.background,
@@ -172,7 +168,7 @@ export default function ExploreScreen() {
     PURPLE:  theme.colors.primary,
   }), [theme]);
 
-  const styles = useMemo(() => makeStyles(c, isDark), [c, isDark]);
+  const styles = useMemo(() => makeStyles(c, pad), [c, pad]);
 
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<MediaFilter>('all');
@@ -180,12 +176,10 @@ export default function ExploreScreen() {
 
   const { data: allMedia = [], isLoading } = useMedia();
 
-  // Parent-level items only (MOVIE + SEASON, not EPISODE)
   const rootMedia = useMemo(() =>
     allMedia.filter(m => m.type === 'MOVIE' || m.type === 'SEASON'),
   [allMedia]);
 
-  // Stories: newest 15 items
   const stories = useMemo(() =>
     [...rootMedia]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -205,20 +199,41 @@ export default function ExploreScreen() {
   }, [rootMedia, filter, query, isSearching]);
 
   const navigate = useCallback((item: MediaDTO) => {
-    router.push(`/media/${item.id}` as any);
+    if (item.type === 'SEASON') {
+      router.push(`/show/${item.imdbId}` as any);
+    } else {
+      router.push(`/media/${item.id}` as any);
+    }
   }, [router]);
 
   const numCols = isTablet ? 4 : 3;
 
+  const movieLabel = t('movie');
+  const showLabel = t('show');
+
   const renderGrid = useCallback(({ item }: { item: MediaDTO }) => (
-    <GridCard item={item} onPress={() => navigate(item)} styles={styles} />
-  ), [navigate, styles]);
+    <GridCard
+      item={item}
+      onPress={() => navigate(item)}
+      styles={styles}
+      movieLabel={movieLabel}
+      showLabel={showLabel}
+    />
+  ), [navigate, styles, movieLabel, showLabel]);
 
   const filters: { label: string; value: MediaFilter }[] = [
-    { label: 'Tümü', value: 'all' },
-    { label: 'Filmler', value: 'MOVIE' },
-    { label: 'Diziler', value: 'SEASON' },
+    { label: t('filterAll'),    value: 'all' },
+    { label: t('filterMovies'), value: 'MOVIE' },
+    { label: t('filterSeries'), value: 'SEASON' },
   ];
+
+  const sectionTitle = isSearching
+    ? t('searchResults')
+    : filter === 'all' ? t('allContent') : filter === 'MOVIE' ? t('movies') : t('series');
+
+  const sectionCount = isSearching
+    ? t('searchResultCount', { count: filtered.length })
+    : t('contentCount', { count: filtered.length });
 
   return (
     <View style={styles.root}>
@@ -226,15 +241,13 @@ export default function ExploreScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Ara</Text>
-
-          {/* Search bar */}
+          <Text style={styles.headerTitle}>{t('title')}</Text>
           <View style={styles.searchWrap}>
             <Ionicons name="search-outline" size={18} color={c.TEXT_S} />
             <TextInput
               ref={inputRef}
               style={styles.searchInput}
-              placeholder="Film veya dizi ara..."
+              placeholder={t('searchPlaceholder')}
               placeholderTextColor={c.TEXT_S}
               value={query}
               onChangeText={setQuery}
@@ -249,7 +262,6 @@ export default function ExploreScreen() {
           </View>
         </View>
 
-        {/* Filter chips */}
         <View style={styles.filterRow}>
           {filters.map(f => (
             <TouchableOpacity
@@ -278,11 +290,11 @@ export default function ExploreScreen() {
             renderItem={renderGrid}
             contentContainerStyle={styles.gridContent}
             showsVerticalScrollIndicator={false}
-            ListHeaderComponent={!isSearching ? (
+            ListHeaderComponent={
               <>
-                {stories.length > 0 && (
+                {!isSearching && stories.length > 0 && (
                   <>
-                    <Text style={styles.sectionLabel}>YENİ EKLENENLER</Text>
+                    <Text style={styles.sectionLabel}>{t('newlyAdded')}</Text>
                     <FlatList
                       data={stories}
                       keyExtractor={item => `story-${item.id}`}
@@ -296,21 +308,17 @@ export default function ExploreScreen() {
                   </>
                 )}
                 <Text style={styles.sectionLabel}>
-                  {filter === 'all' ? 'TÜM İÇERİKLER' : filter === 'MOVIE' ? 'FİLMLER' : 'DİZİLER'}
+                  {sectionTitle}
                   {'  '}
-                  <Text style={{ fontWeight: '400', letterSpacing: 0 }}>{filtered.length} içerik</Text>
+                  <Text style={{ fontWeight: '400', letterSpacing: 0 }}>{sectionCount}</Text>
                 </Text>
               </>
-            ) : (
-              <Text style={styles.sectionLabel}>
-                ARAMA SONUÇLARI  <Text style={{ fontWeight: '400', letterSpacing: 0 }}>{filtered.length} sonuç</Text>
-              </Text>
-            )}
+            }
             ListEmptyComponent={
               <View style={[styles.center, { paddingVertical: 40 }]}>
                 <Text style={styles.emptyIcon}>🎬</Text>
                 <Text style={styles.emptyText}>
-                  {isSearching ? 'Sonuç bulunamadı' : 'İçerik yok'}
+                  {isSearching ? t('noResults') : t('noContent')}
                 </Text>
               </View>
             }

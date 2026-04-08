@@ -34,7 +34,7 @@ import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
-import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -50,7 +50,7 @@ import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
 import type { ListWord, Difficulty } from '@/src/types/api';
 
-const glassAvailable = isGlassEffectAPIAvailable();
+
 
 // Strips trailing parenthetical TR translation: "example. (örnek.)" → "example."
 const stripTr = (text?: string) => text?.replace(/\s*\([^)]+\)\s*$/, '').trim();
@@ -75,7 +75,7 @@ const FILTERS: Filter[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTablet: boolean) {
   const pad = isTablet ? 32 : 16;
   const cardW = Math.min(sw - 32, 500);
-  const cardH = Math.min(sh * 0.72, 600);
+  const cardH = Math.min(sh * 0.55, 520);
 
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.BG },
@@ -128,7 +128,10 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     flipHint: { color: c.TEXT_S, fontSize: 11, opacity: 0.5, marginTop: 6 },
     cardKnownBtn: { position: 'absolute', top: 14, right: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
     cardListBtn: { position: 'absolute', top: 14, left: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-    cardTtsBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+    ttsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+    cardTtsBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    cardSentenceTtsBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, borderRadius: 18, borderWidth: 1, paddingHorizontal: 12 },
+    sentenceTtsBtnText: { fontSize: 11, fontWeight: '600' },
 
     // Back
     cardBack: { backgroundColor: c.SURFACE2 },
@@ -290,6 +293,20 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     mkConfirmBtn: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: c.PURPLE, alignItems: 'center' as const },
     mkCancelText: { color: c.TEXT_S, fontWeight: '600' as const, fontSize: 15 },
     mkConfirmText: { color: '#fff', fontWeight: '700' as const, fontSize: 15 },
+
+    // Word stats + progress bar
+    statsWrap:  { paddingHorizontal: pad, paddingBottom: 12 },
+    statsLabel: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginBottom: 5 },
+    statsText:  { color: c.TEXT_S, fontSize: 12 },
+    statsPct:   { color: c.PURPLE, fontSize: 12, fontWeight: '700' as const },
+    statsBar:   { height: 6, borderRadius: 3, backgroundColor: c.SURFACE2 },
+    statsFill:  { height: 6, borderRadius: 3, backgroundColor: c.PURPLE },
+
+    // Unknown-only toggle
+    unknownToggleWrap:  { flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: pad, paddingBottom: 8, gap: 10 },
+    unknownToggleLabel: { color: c.TEXT_S, fontSize: 13, flex: 1 },
+    unknownToggleSwitch: { width: 44, height: 26, borderRadius: 13, justifyContent: 'center' as const, paddingHorizontal: 3 },
+    unknownToggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' },
 
     // Search
     searchRow: {
@@ -488,8 +505,7 @@ function RightActions({
     <View style={actionStyles.container}>
       {/* 1. Ekleme Butonu */}
       <Reanimated.View style={addStyle}>
-        {glassAvailable ? (
-          <GlassView glassEffectStyle="regular" style={actionStyles.btn}>
+        <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
             <TouchableOpacity
               style={actionStyles.btnInner}
               onPress={() => { onClose(); onAddToList(); }}
@@ -497,22 +513,12 @@ function RightActions({
             >
               <Ionicons name="bookmark" size={20} color={c.PURPLE} />
             </TouchableOpacity>
-          </GlassView>
-        ) : (
-          <TouchableOpacity
-            style={[actionStyles.btn, { backgroundColor: c.PURPLE }]}
-            onPress={() => { onClose(); onAddToList(); }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="bookmark" size={20} color="#fff" />
-          </TouchableOpacity>
-        )}
+          </BlurView>
       </Reanimated.View>
 
       {/* 2. Seslendirme Butonu */}
       <Reanimated.View style={ttsStyle}>
-        {glassAvailable ? (
-          <GlassView glassEffectStyle="regular" style={actionStyles.btn}>
+        <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
             <TouchableOpacity
               style={actionStyles.btnInner}
               onPress={() => { onClose(); onTts(); }}
@@ -520,40 +526,21 @@ function RightActions({
             >
               <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
             </TouchableOpacity>
-          </GlassView>
-        ) : (
-          <TouchableOpacity
-            style={[actionStyles.btn, { backgroundColor: c.SURFACE2, borderWidth: 1, borderColor: c.BORDER }]}
-            onPress={() => { onClose(); onTts(); }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
-          </TouchableOpacity>
-        )}
+          </BlurView>
       </Reanimated.View>
 
       {/* 3. Silme Butonu - Eğer onRemove gönderilmişse */}
       {!!onRemove && (
         <Reanimated.View style={delStyle}>
-          {glassAvailable ? (
-            <GlassView glassEffectStyle="regular" style={actionStyles.btn}>
-              <TouchableOpacity
-                style={actionStyles.btnInner}
-                onPress={() => { onClose(); onRemove(); }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="trash" size={20} color="#EF4444" />
-              </TouchableOpacity>
-            </GlassView>
-          ) : (
+          <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
             <TouchableOpacity
-              style={[actionStyles.btn, { backgroundColor: '#EF4444' }]}
+              style={actionStyles.btnInner}
               onPress={() => { onClose(); onRemove(); }}
               activeOpacity={0.7}
             >
-              <Ionicons name="trash" size={20} color="#fff" />
+              <Ionicons name="trash" size={20} color="#EF4444" />
             </TouchableOpacity>
-          )}
+          </BlurView>
         </Reanimated.View>
       )}
     </View>
@@ -723,6 +710,7 @@ export default function ListScreen({ listId }: { listId: number }) {
 
   // ─── State ────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [onlyUnknown, setOnlyUnknown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchActive, setSearchActive] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
@@ -756,6 +744,9 @@ export default function ListScreen({ listId }: { listId: number }) {
   const filteredWords = useMemo<ListWord[]>(() => {
     if (!effectiveList?.words) return [];
     let words = effectiveList.words;
+    if (onlyUnknown) {
+      words = words.filter((w) => !knownIds.has(w.id));
+    }
     if (selectedLevels.size > 0) {
       words = words.filter((w) => w.difficulty && selectedLevels.has(w.difficulty));
     }
@@ -767,7 +758,7 @@ export default function ListScreen({ listId }: { listId: number }) {
       );
     }
     return words;
-  }, [effectiveList?.words, selectedLevels, searchQuery]);
+  }, [effectiveList?.words, onlyUnknown, knownIds, selectedLevels, searchQuery]);
 
   // Reset card index on filter change
   useEffect(() => { setCardIndex(0); }, [selectedLevels]);
@@ -985,8 +976,7 @@ export default function ListScreen({ listId }: { listId: number }) {
               onPress={() => setShowQuizModal(true)}
               activeOpacity={0.85}
             >
-              <Ionicons name="school-outline" size={13} color={c.PURPLE} />
-              <Text style={styles.studyBtnText}>{tStudy('studyList')}</Text>
+              <Ionicons name="school-outline" size={16} color={c.PURPLE} />
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -1039,6 +1029,41 @@ export default function ListScreen({ listId }: { listId: number }) {
                 <Text style={styles.searchClearText}>✕</Text>
               </TouchableOpacity>
             )}
+          </View>
+        )}
+
+        {/* Stats + progress bar — bilinen listesi hariç */}
+        {!isKnownList && (() => {
+          const totalWords = effectiveList?.words?.length ?? 0;
+          const knownCount = (effectiveList?.words ?? []).filter(w => knownIds.has(w.id)).length;
+          const unknownCnt = totalWords - knownCount;
+          const knownPct = totalWords > 0 ? Math.round((knownCount / totalWords) * 100) : 0;
+          return totalWords > 0 ? (
+            <View style={styles.statsWrap}>
+              <View style={styles.statsLabel}>
+                <Text style={styles.statsText}>
+                  {t('wordCount', { count: totalWords })} · {unknownCnt} {t('unknownWords')}
+                </Text>
+                <Text style={styles.statsPct}>{t('wordStatsPct', { pct: knownPct })}</Text>
+              </View>
+              <View style={styles.statsBar}>
+                <View style={[styles.statsFill, { width: `${knownPct}%` }]} />
+              </View>
+            </View>
+          ) : null;
+        })()}
+
+        {/* Unknown-only toggle — bilinen listesi hariç hepsinde */}
+        {!isKnownList && (
+          <View style={styles.unknownToggleWrap}>
+            <Text style={styles.unknownToggleLabel}>{t('unknownOnlyToggle')}</Text>
+            <TouchableOpacity
+              style={[styles.unknownToggleSwitch, { backgroundColor: onlyUnknown ? c.PURPLE : c.SURFACE2 }]}
+              onPress={() => { setOnlyUnknown((v) => !v); setSelectedLevels(new Set()); }}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.unknownToggleThumb, { alignSelf: onlyUnknown ? 'flex-end' : 'flex-start' }]} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -1114,15 +1139,29 @@ export default function ListScreen({ listId }: { listId: number }) {
                   {/* Front */}
                   <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]} pointerEvents={isFlippedState ? 'none' : 'auto'}>
                     <Text style={styles.cardBigWord}>{currentWord.word}</Text>
-                    <TouchableOpacity
-                      style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
-                      onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
-                      onPressIn={() => { buttonActiveRef.current = true; }}
-                      onPressOut={() => { buttonActiveRef.current = false; }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.ttsBtnText}>🔊</Text>
-                    </TouchableOpacity>
+                    <View style={styles.ttsRow}>
+                      <TouchableOpacity
+                        style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
+                        onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
+                        onPressIn={() => { buttonActiveRef.current = true; }}
+                        onPressOut={() => { buttonActiveRef.current = false; }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.ttsBtnText}>🔊</Text>
+                      </TouchableOpacity>
+                      {!!stripTr(currentWord.definition?.meanings?.[0]?.example) && (
+                        <TouchableOpacity
+                          style={[styles.cardSentenceTtsBtn, { borderColor: c.BORDER }]}
+                          onPress={() => Speech.speak(stripTr(currentWord.definition!.meanings[0].example)!, { language: 'en-US' })}
+                          onPressIn={() => { buttonActiveRef.current = true; }}
+                          onPressOut={() => { buttonActiveRef.current = false; }}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.ttsBtnText}>💬</Text>
+                          <Text style={[styles.sentenceTtsBtnText, { color: c.TEXT_S }]}>{tCommon('sentenceTts')}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                     {currentWord.definition?.meanings?.[0] && (
                       <>
                         <View style={styles.posBadge}>

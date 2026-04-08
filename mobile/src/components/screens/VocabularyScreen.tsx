@@ -28,7 +28,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
-import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import { BlurView } from 'expo-blur';
 import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import AddToListModal from '@/src/components/ui/AddToListModal';
@@ -44,7 +44,7 @@ import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
 import type { WordDTO } from '@/src/types/api';
 
-const glassAvailable = isGlassEffectAPIAvailable();
+const stripTr = (text?: string) => text?.replace(/\s*\([^)]+\)\s*$/, '').trim();
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;
@@ -146,8 +146,11 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     cardExample: { color: c.TEXT_S, fontSize: 13, fontStyle: 'italic', textAlign: 'center', lineHeight: 20 },
     flipHint: { color: c.TEXT_S, fontSize: 11, opacity: 0.5, marginTop: 6 },
     cardKnownBtn: { position: 'absolute', top: 14, right: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-    cardTtsBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
+    ttsRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+    cardTtsBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     ttsBtnText: { fontSize: 13 },
+    cardSentenceTtsBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, borderRadius: 18, borderWidth: 1, paddingHorizontal: 12 },
+    sentenceTtsBtnText: { fontSize: 11, fontWeight: '600' },
     cardAddBtn: { position: 'absolute', top: 14, left: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
     // Back
@@ -240,28 +243,16 @@ function RightActions({
 
   return (
     <View style={styles.swipeActions}>
-      {glassAvailable ? (
-        <GlassView glassEffectStyle="regular" style={styles.swipeAction}>
-          <TouchableOpacity style={styles.swipeActionInner} onPress={onAddToList} activeOpacity={0.8}>
-            <Ionicons name="list" size={20} color={word.definition ? '#a78bfa' : '#fff'} />
-          </TouchableOpacity>
-        </GlassView>
-      ) : (
-        <TouchableOpacity style={[styles.swipeAction, styles.swipeActionAdd]} onPress={onAddToList} activeOpacity={0.8}>
-          <Ionicons name="list" size={20} color="#fff" />
+      <BlurView tint="dark" intensity={60} style={styles.swipeAction}>
+        <TouchableOpacity style={styles.swipeActionInner} onPress={onAddToList} activeOpacity={0.8}>
+          <Ionicons name="list" size={20} color={word.definition ? '#a78bfa' : '#fff'} />
         </TouchableOpacity>
-      )}
-      {glassAvailable ? (
-        <GlassView glassEffectStyle="regular" style={styles.swipeAction}>
-          <TouchableOpacity style={styles.swipeActionInner} onPress={speak} activeOpacity={0.8}>
-            <Ionicons name="volume-medium" size={20} color="#fff" />
-          </TouchableOpacity>
-        </GlassView>
-      ) : (
-        <TouchableOpacity style={[styles.swipeAction, styles.swipeActionTts]} onPress={speak} activeOpacity={0.8}>
+      </BlurView>
+      <BlurView tint="dark" intensity={60} style={styles.swipeAction}>
+        <TouchableOpacity style={styles.swipeActionInner} onPress={speak} activeOpacity={0.8}>
           <Ionicons name="volume-medium" size={20} color="#fff" />
         </TouchableOpacity>
-      )}
+      </BlurView>
     </View>
   );
 }
@@ -644,15 +635,29 @@ export default function VocabularyScreen() {
             <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]} pointerEvents={isFlippedState ? 'none' : 'auto'}>
               <Text style={styles.cardBigWord}>{currentWord.word}</Text>
               
-              <TouchableOpacity
-                style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
-                onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
-                onPressIn={() => { buttonActiveRef.current = true; }}
-                onPressOut={() => { buttonActiveRef.current = false; }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.ttsBtnText}>🔊</Text>
-              </TouchableOpacity>
+              <View style={styles.ttsRow}>
+                <TouchableOpacity
+                  style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
+                  onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
+                  onPressIn={() => { buttonActiveRef.current = true; }}
+                  onPressOut={() => { buttonActiveRef.current = false; }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.ttsBtnText}>🔊</Text>
+                </TouchableOpacity>
+                {!!stripTr(currentWord.definition?.meanings?.[0]?.example) && (
+                  <TouchableOpacity
+                    style={[styles.cardSentenceTtsBtn, { borderColor: c.BORDER }]}
+                    onPress={() => Speech.speak(stripTr(currentWord.definition!.meanings[0].example)!, { language: 'en-US' })}
+                    onPressIn={() => { buttonActiveRef.current = true; }}
+                    onPressOut={() => { buttonActiveRef.current = false; }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.ttsBtnText}>💬</Text>
+                    <Text style={[styles.sentenceTtsBtnText, { color: c.TEXT_S }]}>{tCommon('sentenceTts')}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
               {currentWord.difficulty && (
                 <View style={styles.posBadge}>

@@ -10,6 +10,8 @@ import {
   TextInput,
   Alert,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -34,7 +36,7 @@ const DIFF_COLORS: Record<string, string> = {
 };
 
 // ─── Styles ───────────────────────────────────────────────────
-function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
+function makeStyles(c: Palette, _isDark: boolean, isTablet: boolean) {
   const pad = isTablet ? 32 : 16;
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.BG },
@@ -57,9 +59,9 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     sectionLabel: { color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, paddingHorizontal: pad, paddingTop: 14, paddingBottom: 8 },
 
     // List card
-    listCard: { marginHorizontal: pad, marginBottom: 10, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER, overflow: 'hidden' },
-    listCardAccent: { height: 4 },
-    listCardBody: { padding: 14 },
+    listCard: { marginHorizontal: pad, marginBottom: 10, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER, overflow: 'hidden', flexDirection: 'row' },
+    listCardStrip: { width: 5, borderTopLeftRadius: 14, borderBottomLeftRadius: 14 },
+    listCardBody: { flex: 1, padding: 14 },
     listCardRow: { flexDirection: 'row', alignItems: 'flex-start' },
     listCardInfo: { flex: 1 },
     listCardName: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
@@ -151,8 +153,8 @@ function ListCard({
     : 0;
 
   return (
-    <View style={styles.listCard}>
-      {item.color && <View style={[styles.listCardAccent, { backgroundColor: item.color }]} />}
+    <View style={[styles.listCard, item.color ? { backgroundColor: item.color + '12', borderColor: item.color + '55' } : undefined]}>
+      <View style={[styles.listCardStrip, { backgroundColor: item.color ?? c.SURFACE }]} />
       <View style={styles.listCardBody}>
         <View style={styles.listCardRow}>
           <TouchableOpacity style={styles.listCardInfo} onPress={onPress} activeOpacity={0.75}>
@@ -213,35 +215,40 @@ function CreateModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity style={styles.modalSheet} activeOpacity={1}>
-          <Text style={styles.modalTitle}>{t('newList')}</Text>
-          <TextInput
-            style={styles.modalInput}
-            placeholder={t('listNamePlaceholder')}
-            placeholderTextColor={c.TEXT_S}
-            value={name}
-            onChangeText={setName}
-            autoFocus
-            onSubmitEditing={handleCreate}
-          />
-          <View style={styles.modalBtns}>
-            <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
-              <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalCreate, (!name.trim() || creating) && { opacity: 0.5 }]}
-              onPress={handleCreate}
-              disabled={!name.trim() || creating}
-            >
-              {creating
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.modalCreateText}>{tCommon('actions.create')}</Text>
-              }
-            </TouchableOpacity>
-          </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+          <TouchableOpacity style={styles.modalSheet} activeOpacity={1}>
+            <Text style={styles.modalTitle}>{t('newList')}</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder={t('listNamePlaceholder')}
+              placeholderTextColor={c.TEXT_S}
+              value={name}
+              onChangeText={setName}
+              autoFocus
+              onSubmitEditing={handleCreate}
+            />
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
+                <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalCreate, (!name.trim() || creating) && { opacity: 0.5 }]}
+                onPress={handleCreate}
+                disabled={!name.trim() || creating}
+              >
+                {creating
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.modalCreateText}>{tCommon('actions.create')}</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -284,61 +291,65 @@ function EditListModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity style={styles.modalSheet} activeOpacity={1}>
-          <Text style={styles.modalTitle}>Listeyi Düzenle</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+          <TouchableOpacity style={styles.modalSheet} activeOpacity={1}>
+            <Text style={styles.modalTitle}>Listeyi Düzenle</Text>
 
-          <TextInput
-            style={styles.modalInput}
-            value={name}
-            onChangeText={setName}
-            placeholderTextColor={c.TEXT_S}
-            placeholder="Liste adı"
-            autoFocus
-          />
+            <TextInput
+              style={styles.modalInput}
+              value={name}
+              onChangeText={setName}
+              placeholderTextColor={c.TEXT_S}
+              placeholder="Liste adı"
+              autoFocus
+            />
 
-          {/* Renk seçici */}
-          <Text style={[styles.modalTitle, { fontSize: 13, fontWeight: '600', color: c.TEXT_S }]}>Renk</Text>
-          <View style={styles.swatchRow}>
-            {/* Renksiz seçenek */}
-            <TouchableOpacity
-              style={[
-                styles.swatch,
-                { backgroundColor: c.SURFACE2, borderWidth: 2, borderColor: color === '' ? c.TEXT_P : c.BORDER },
-              ]}
-              onPress={() => setColor('')}
-              activeOpacity={0.75}
-            >
-              <Ionicons name="close" size={14} color={c.TEXT_S} style={{ alignSelf: 'center', marginTop: 7 }} />
-            </TouchableOpacity>
-
-            {LIST_COLORS.map((col) => (
+            {/* Renk seçici */}
+            <Text style={[styles.modalTitle, { fontSize: 13, fontWeight: '600', color: c.TEXT_S }]}>Renk</Text>
+            <View style={styles.swatchRow}>
               <TouchableOpacity
-                key={col}
-                style={[styles.swatch, { backgroundColor: col }, color === col && styles.swatchSelected]}
-                onPress={() => setColor(col)}
+                style={[
+                  styles.swatch,
+                  { backgroundColor: c.SURFACE2, borderWidth: 2, borderColor: color === '' ? c.TEXT_P : c.BORDER },
+                ]}
+                onPress={() => setColor('')}
                 activeOpacity={0.75}
-              />
-            ))}
-          </View>
+              >
+                <Ionicons name="close" size={14} color={c.TEXT_S} style={{ alignSelf: 'center', marginTop: 7 }} />
+              </TouchableOpacity>
 
-          <View style={styles.modalBtns}>
-            <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
-              <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalCreate, (!name.trim() || saving) && { opacity: 0.5 }]}
-              onPress={() => onSave(name.trim(), color)}
-              disabled={!name.trim() || saving}
-            >
-              {saving
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.modalCreateText}>{tCommon('actions.save')}</Text>
-              }
-            </TouchableOpacity>
-          </View>
+              {LIST_COLORS.map((col) => (
+                <TouchableOpacity
+                  key={col}
+                  style={[styles.swatch, { backgroundColor: col }, color === col && styles.swatchSelected]}
+                  onPress={() => setColor(col)}
+                  activeOpacity={0.75}
+                />
+              ))}
+            </View>
+
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
+                <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalCreate, (!name.trim() || saving) && { opacity: 0.5 }]}
+                onPress={() => onSave(name.trim(), color)}
+                disabled={!name.trim() || saving}
+              >
+                {saving
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.modalCreateText}>{tCommon('actions.save')}</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

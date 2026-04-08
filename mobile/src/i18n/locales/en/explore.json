@@ -1,0 +1,18 @@
+{
+  "title": "Search",
+  "searchPlaceholder": "Search movies or shows...",
+  "newlyAdded": "NEWLY ADDED",
+  "allContent": "ALL CONTENT",
+  "movies": "MOVIES",
+  "series": "SERIES",
+  "filterAll": "All",
+  "filterMovies": "Movies",
+  "filterSeries": "Series",
+  "contentCount": "{{count}} items",
+  "searchResults": "SEARCH RESULTS",
+  "searchResultCount": "{{count}} results",
+  "noResults": "No results found",
+  "noContent": "No content yet",
+  "movie": "MOVIE",
+  "show": "SHOW"
+}

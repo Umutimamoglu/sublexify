@@ -1,0 +1,234 @@
+[
+  {
+    "id": 6856,
+    "definition": {
+      "difficulty": "A1",
+      "meanings": [
+        {
+          "definition": "'see' (görmek) fiilinin geçmiş zaman (V2) hâli.",
+          "example": "I saw him yesterday. (Onu dün gördüm.)",
+          "pos": "verb"
+        },
+        {
+          "definition": "Ahşap veya başka malzemeleri kesmek için kullanılan, dişli bir bıçağı olan bir alet; testere.",
+          "example": "He used a saw to cut the branch. (Dalı kesmek için bir testere kullandı.)",
+          "pos": "noun"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": {
+        "ing": "sawing",
+        "v1": "saw",
+        "v2": "sawed",
+        "v3": "sawn"
+      },
+      "word": "saw"
+    }
+  },
+  {
+    "id": 6975,
+    "clearRootWord": true,
+    "definition": {
+      "difficulty": "A2",
+      "meanings": [
+        {
+          "definition": "'mad' (sinirli, öfkeli) sıfatının karşılaştırma hâli; daha sinirli, daha kızgın.",
+          "example": "He got even madder when he heard the news. (Haberi duyduğunda daha da sinirlendi.)",
+          "pos": "adjective"
+        },
+        {
+          "definition": "Kırmızı boya elde etmek için kökü kullanılan, kökboyasıgillerden bir bitki; kökboyası.",
+          "example": "They used madder to dye the fabric red. (Kumaşı kırmızıya boyamak için kökboya kullandılar.)",
+          "pos": "noun"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null,
+      "word": "madder"
+    }
+  },
+  {
+    "id": 6687,
+    "definition": {
+      "difficulty": "A1",
+      "meanings": [
+        {
+          "definition": "Almancada 'benim' anlamına gelen iyelik zamiri. (Genellikle İngilizce metinlere konuşmacının aksanı veya kökeni nedeniyle karışır).",
+          "example": "Mein Herr. (Benim efendim.)",
+          "pos": "pronoun"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null,
+      "word": "mein"
+    }
+  },
+  {
+    "id": 6674,
+    "definition": {
+      "difficulty": "A1",
+      "meanings": [
+        {
+          "definition": "'be' (olmak) fiilinin şimdiki zamanda birinci tekil şahıs (I) için çekimlenmiş hâli.",
+          "example": "I am a student. (Ben bir öğrenciyim.)",
+          "pos": "verb"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": {
+        "ing": "being",
+        "v1": "be",
+        "v2": "was/were",
+        "v3": "been"
+      },
+      "word": "am"
+    }
+  },
+  {
+    "id": 6629,
+    "definition": {
+      "difficulty": "A1",
+      "meanings": [
+        {
+          "definition": "'cannot' kelimesinin kısaltması; bir şeyi yapma yeteneğine veya iznine sahip olmamak; yapamamak, edememek.",
+          "example": "I can't speak French. (Fransızca konuşamıyorum.)",
+          "pos": "modal verb"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null,
+      "word": "can't"
+    }
+  },
+  {
+    "id": 6521,
+    "definition": {
+      "difficulty": "A2",
+      "meanings": [
+        {
+          "definition": "Elektrikli bir cihazı, makineyi veya ışığı düğmesine basarak çalıştırmak; açmak.",
+          "example": "Please switch the radio on. (Lütfen radyoyu aç.)",
+          "pos": "phrasal verb"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": {
+        "ing": "switching on",
+        "v1": "switch on",
+        "v2": "switched on",
+        "v3": "switched on"
+      },
+      "word": "switch on"
+    }
+  },
+  {
+    "id": 6603,
+    "definition": {
+      "difficulty": "C2",
+      "meanings": [
+        {
+          "definition": "Hız, agresiflik ve gösterişi abartılı bir şekilde çağrıştıran uydurma veya kurgusal bir sözcük; genellikle argo veya bilimkurgu bağlamında kullanılır.",
+          "example": "He rides his new bike like a turboraptor. (Yeni bisikletini bir turboraptor gibi sürüyor.)",
+          "pos": "noun"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": null,
+      "word": "turboraptor"
+    }
+  },
+  {
+    "id": 6398,
+    "definition": {
+      "difficulty": "B1",
+      "meanings": [
+        {
+          "definition": "Bir şeyi keserek koparmak veya ayırmak.",
+          "example": "He cut a branch off the tree. (Ağaçtan bir dal kesti.)",
+          "pos": "phrasal verb"
+        },
+        {
+          "definition": "Elektrik, su, gaz gibi bir hizmetin sağlanmasını durdurmak; kesmek.",
+          "example": "They cut the electricity off because of unpaid bills. (Ödenmeyen faturalar yüzünden elektriği kestiler.)",
+          "pos": "phrasal verb"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": {
+        "ing": "cutting off",
+        "v1": "cut off",
+        "v2": "cut off",
+        "v3": "cut off"
+      },
+      "word": "cut off"
+    }
+  },
+  {
+    "id": 6392,
+    "definition": {
+      "difficulty": "A2",
+      "meanings": [
+        {
+          "definition": "Bir yerden, bir ülkeden veya belirli bir kökenden gelmek; kökeni olmak.",
+          "example": "She comes from Italy. (O, İtalya'dan geliyor / İtalyalı.)",
+          "pos": "phrasal verb"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": {
+        "ing": "coming from",
+        "v1": "come from",
+        "v2": "came from",
+        "v3": "come from"
+      },
+      "word": "come from"
+    }
+  },
+  {
+    "id": 6370,
+    "definition": {
+      "difficulty": "B1",
+      "meanings": [
+        {
+          "definition": "Bir çocuğu büyütmek ve yetiştirmek.",
+          "example": "She was brought up by her grandparents. (Büyükanne ve büyükbabası tarafından yetiştirildi.)",
+          "pos": "phrasal verb"
+        },
+        {
+          "definition": "Bir konu veya meseleyi konuşmak için açmak; gündeme getirmek.",
+          "example": "Don't bring up his past. (Onun geçmişini gündeme getirme.)",
+          "pos": "phrasal verb"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": {
+        "ing": "bringing up",
+        "v1": "bring up",
+        "v2": "brought up",
+        "v3": "brought up"
+      },
+      "word": "bring up"
+    }
+  },
+  {
+    "id": 6391,
+    "definition": {
+      "difficulty": "B2",
+      "meanings": [
+        {
+          "definition": "Bilgi vermek, kanıt sunmak veya yardım teklif etmek için öne çıkmak, kendini göstermek.",
+          "example": "Several witnesses came forward with information about the crash. (Birkaç tanık kaza hakkında bilgi vermek için öne çıktı.)",
+          "pos": "phrasal verb"
+        }
+      ],
+      "phrasal_verbs": [],
+      "verb_forms": {
+        "ing": "coming forward",
+        "v1": "come forward",
+        "v2": "came forward",
+        "v3": "come forward"
+      },
+      "word": "come forward"
+    }
+  }
+]

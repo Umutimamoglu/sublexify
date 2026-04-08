@@ -160,8 +160,7 @@ export default function CategoryWordsScreen() {
               onPress={() => router.push('/(tabs)/lists' as any)}
               activeOpacity={0.8}
             >
-              <Text style={styles.goBtnText}>Kelimeleri Çalış</Text>
-              <Ionicons name="arrow-forward" size={16} color="white" style={{ marginLeft: 8 }} />
+              <Ionicons name="school" size={22} color="white" />
             </TouchableOpacity>
           </View>
         }
@@ -205,17 +204,14 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 20, fontWeight: '900', marginTop: 0, textAlign: 'center' },
   emptyDesc: { fontSize: 14, opacity: 0.6, textAlign: 'center', marginTop: 10, lineHeight: 20, maxWidth: 280 },
   goBtn: { 
-    marginTop: 32, 
-    flexDirection: 'row', 
+    marginTop: 28, 
+    width: 52, height: 52, borderRadius: 26,
     alignItems: 'center', 
-    paddingHorizontal: 24, 
-    paddingVertical: 14, 
-    borderRadius: 16,
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4
   },
-  goBtnText: { color: 'white', fontWeight: '900', fontSize: 16 },
 });

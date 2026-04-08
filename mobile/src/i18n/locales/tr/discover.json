@@ -1,5 +1,8 @@
 {
   "title": "Keşfet",
+  "greetingMorning": "Günaydın",
+  "greetingAfternoon": "İyi günler",
+  "greetingEvening": "İyi akşamlar",
   "searchPlaceholder": "Dizi, film ara...",
   "allContent": "Tüm İçerikler",
   "movies": "Filmler",

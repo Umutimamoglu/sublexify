@@ -13,6 +13,7 @@ import enStudy from './locales/en/study.json';
 import enProgress from './locales/en/progress.json';
 import enMediaRequest from './locales/en/mediaRequest.json';
 import enFeedback from './locales/en/feedback.json';
+import enExplore from './locales/en/explore.json';
 
 import trCommon from './locales/tr/common.json';
 import trDiscover from './locales/tr/discover.json';
@@ -23,6 +24,7 @@ import trStudy from './locales/tr/study.json';
 import trProgress from './locales/tr/progress.json';
 import trMediaRequest from './locales/tr/mediaRequest.json';
 import trFeedback from './locales/tr/feedback.json';
+import trExplore from './locales/tr/explore.json';
 
 const LANGUAGE_KEY = '@sublex/language';
 
@@ -46,13 +48,13 @@ export async function initI18n() {
 
   await i18n.init({
     resources: {
-      en: { common: enCommon, discover: enDiscover, vocabulary: enVocabulary, lists: enLists, profile: enProfile, study: enStudy, progress: enProgress, mediaRequest: enMediaRequest, feedback: enFeedback },
-      tr: { common: trCommon, discover: trDiscover, vocabulary: trVocabulary, lists: trLists, profile: trProfile, study: trStudy, progress: trProgress, mediaRequest: trMediaRequest, feedback: trFeedback },
+      en: { common: enCommon, discover: enDiscover, vocabulary: enVocabulary, lists: enLists, profile: enProfile, study: enStudy, progress: enProgress, mediaRequest: enMediaRequest, feedback: enFeedback, explore: enExplore },
+      tr: { common: trCommon, discover: trDiscover, vocabulary: trVocabulary, lists: trLists, profile: trProfile, study: trStudy, progress: trProgress, mediaRequest: trMediaRequest, feedback: trFeedback, explore: trExplore },
     },
     lng,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'discover', 'vocabulary', 'lists', 'profile', 'study', 'progress', 'mediaRequest', 'feedback'],
+    ns: ['common', 'discover', 'vocabulary', 'lists', 'profile', 'study', 'progress', 'mediaRequest', 'feedback', 'explore'],
     interpolation: { escapeValue: false },
     compatibilityJSON: 'v4',
   });

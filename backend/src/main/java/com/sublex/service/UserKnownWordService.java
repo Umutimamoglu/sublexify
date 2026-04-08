@@ -144,9 +144,12 @@ public class UserKnownWordService {
     public Map<String, Integer> getUserStatistics(Long userId) {
         int totalKnownWords = userKnownWordRepository.countByUserId(userId);
 
+        LocalDateTime startOfDay = java.time.LocalDate.now().atStartOfDay();
+        int wordsLearnedToday = userKnownWordRepository.countByUserIdAndMarkedAtAfter(userId, startOfDay);
+
         Map<String, Integer> stats = new HashMap<>();
         stats.put("totalKnownWords", totalKnownWords);
-        stats.put("wordsLearnedToday", 0); // TODO: implement date-based filtering
+        stats.put("wordsLearnedToday", wordsLearnedToday); 
         stats.put("wordsLearnedThisWeek", 0); // TODO: implement date-based filtering
 
         return stats;

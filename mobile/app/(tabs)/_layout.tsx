@@ -1,20 +1,19 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
-
-const glassAvailable = isGlassEffectAPIAvailable();
 
 function TabIcon({ name, color, size }: { name: IoniconName; color: string; size: number }) {
   return <Ionicons name={name} size={size} color={color} />;
 }
 
 export default function TabLayout() {
-  const { theme } = useTheme();
+  const { theme, colorScheme } = useTheme();
+  const isDark = colorScheme === 'dark';
   const { t } = useTranslation('common');
 
   return (
@@ -23,30 +22,50 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor:   theme.colors.tabActive,
         tabBarInactiveTintColor: theme.colors.tabInactive,
-        tabBarStyle: glassAvailable
-          ? {
-              backgroundColor: 'transparent',
-              borderTopWidth: 0,
-              elevation: 0,
-            }
-          : {
-              backgroundColor: theme.colors.tabBackground,
-              borderTopColor:  theme.colors.tabBorder,
-              borderTopWidth:  1,
+        tabBarStyle: {
+          position: 'absolute',
+          bottom: 24,
+          alignSelf: 'center',
+          marginHorizontal: 60,
+          height: 64,
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          borderRadius: 28,
+          elevation: 0,
+          overflow: 'hidden',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.3,
+          shadowRadius: 20,
+          ...Platform.select({
+            android: {
+              backgroundColor: isDark
+                ? 'rgba(17, 17, 27, 0.88)'
+                : 'rgba(255, 255, 255, 0.88)',
+              elevation: 16,
             },
+          }),
+        },
+        tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontSize:   theme.fonts.size.xs,
-          fontWeight: '500',
+          fontSize: 10,
+          fontWeight: '600',
+          marginTop: -2,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 6,
         },
         tabBarHideOnKeyboard: true,
-        tabBarBackground: glassAvailable
-          ? () => (
-              <GlassView
-                glassEffectStyle="regular"
-                style={StyleSheet.absoluteFill}
-              />
-            )
-          : undefined,
+        tabBarBackground: () => (
+          <BlurView
+            tint={isDark ? 'dark' : 'light'}
+            intensity={80}
+            style={[
+              StyleSheet.absoluteFill,
+              { borderRadius: 28, overflow: 'hidden' },
+            ]}
+          />
+        ),
       }}
     >
       <Tabs.Screen

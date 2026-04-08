@@ -77,6 +77,7 @@ export type MediaWordsResponseDTO = {
 export type UserStatistics = {
   totalKnownWords: number;
   totalWords: number;
+  wordsLearnedToday?: number;
 };
 
 // GET /api/lists ve /api/lists/standard yanıtı

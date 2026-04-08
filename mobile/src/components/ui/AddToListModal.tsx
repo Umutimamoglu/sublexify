@@ -43,10 +43,13 @@ function makeStyles(c: Palette) {
     // List items
     listItem: {
       flexDirection: 'row', alignItems: 'center',
-      paddingHorizontal: 20, paddingVertical: 14,
+      paddingVertical: 14,
       borderBottomWidth: 1, borderBottomColor: c.BORDER,
+      overflow: 'hidden',
     },
     listItemAdded: { backgroundColor: c.PURPLE + '0d' },
+    listStrip: { width: 4, alignSelf: 'stretch', marginRight: 16, marginLeft: 0 },
+    listItemRight: { paddingRight: 20 },
     listInfo: { flex: 1 },
     listName: { color: c.TEXT_P, fontSize: 14, fontWeight: '600' },
     listCount: { color: c.TEXT_S, fontSize: 12, marginTop: 2 },
@@ -103,30 +106,33 @@ function ListRow({
   const { t } = useTranslation('lists');
   return (
     <TouchableOpacity
-      style={[styles.listItem, isAdded && styles.listItemAdded]}
+      style={[styles.listItem, isAdded && styles.listItemAdded, item.color ? { backgroundColor: item.color + '10' } : undefined]}
       onPress={onPress}
       activeOpacity={0.7}
       disabled={isPending}
     >
+      <View style={[styles.listStrip, { backgroundColor: item.color ?? 'transparent' }]} />
       <View style={styles.listInfo}>
         <Text style={styles.listName}>{item.name}</Text>
         <Text style={styles.listCount}>{t('wordCount', { count: item.totalWords })}</Text>
       </View>
-      {isPending ? (
-        <ActivityIndicator size="small" color={c.PURPLE} />
-      ) : (
-        <View style={[
-          styles.checkCircle,
-          {
-            borderColor: isAdded ? c.PURPLE : c.BORDER,
-            backgroundColor: isAdded ? c.PURPLE + '22' : 'transparent'
-          },
-        ]}>
-          {isAdded && (
-            <Text style={[styles.checkText, { color: c.PURPLE }]}>✓</Text>
-          )}
-        </View>
-      )}
+      <View style={styles.listItemRight}>
+        {isPending ? (
+          <ActivityIndicator size="small" color={c.PURPLE} />
+        ) : (
+          <View style={[
+            styles.checkCircle,
+            {
+              borderColor: isAdded ? c.PURPLE : c.BORDER,
+              backgroundColor: isAdded ? c.PURPLE + '22' : 'transparent'
+            },
+          ]}>
+            {isAdded && (
+              <Text style={[styles.checkText, { color: c.PURPLE }]}>✓</Text>
+            )}
+          </View>
+        )}
+      </View>
     </TouchableOpacity>
   );
 }

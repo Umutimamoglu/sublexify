@@ -1,5 +1,8 @@
 {
   "title": "Discover",
+  "greetingMorning": "Good morning",
+  "greetingAfternoon": "Good afternoon",
+  "greetingEvening": "Good evening",
   "searchPlaceholder": "Search series, movies...",
   "allContent": "All Content",
   "movies": "Movies",

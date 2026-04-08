@@ -1,0 +1,18 @@
+{
+  "title": "Ara",
+  "searchPlaceholder": "Film veya dizi ara...",
+  "newlyAdded": "YENİ EKLENENLER",
+  "allContent": "TÜM İÇERİKLER",
+  "movies": "FİLMLER",
+  "series": "DİZİLER",
+  "filterAll": "Tümü",
+  "filterMovies": "Filmler",
+  "filterSeries": "Diziler",
+  "contentCount": "{{count}} içerik",
+  "searchResults": "ARAMA SONUÇLARI",
+  "searchResultCount": "{{count}} sonuç",
+  "noResults": "Sonuç bulunamadı",
+  "noContent": "İçerik yok",
+  "movie": "FİLM",
+  "show": "DİZİ"
+}

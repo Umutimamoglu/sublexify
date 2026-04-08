@@ -5,6 +5,7 @@ import type { WordDTO, UserStatistics } from '@/src/types/api';
 import { mediaKeys } from './media.queries';
 import { userKeys } from './user.queries';
 import { listKeys } from './lists.queries';
+import { useStreakStore } from '@/src/store/streakStore';
 
 export const wordKeys = {
   search:   (q: string) => ['words', 'search', q] as const,
@@ -100,7 +101,7 @@ export function useMarkKnown() {
         qc.setQueryData(userKeys.stats, context.prevStats);
       }
     },
-    onSuccess: ({ mediaId }) => {
+    onSuccess: ({ mediaId, isKnown }) => {
       qc.invalidateQueries({ queryKey: userKeys.knownWords });
       qc.invalidateQueries({ queryKey: userKeys.stats });
       qc.invalidateQueries({ queryKey: ['progress', 'stats'] });
@@ -108,6 +109,10 @@ export function useMarkKnown() {
       if (mediaId) {
         qc.invalidateQueries({ queryKey: mediaKeys.words(mediaId) });
         qc.invalidateQueries({ queryKey: mediaKeys.detail(mediaId) });
+      }
+      // Record streak when marking as known (not when unmarking)
+      if (!isKnown) {
+        useStreakStore.getState().recordActivity();
       }
     },
   });
@@ -128,6 +133,8 @@ export function useMarkKnownBatch() {
       qc.invalidateQueries({ queryKey: ['progress', 'stats'] });
       qc.invalidateQueries({ queryKey: wordKeys.frequent }); // Refresh frequent words
       qc.invalidateQueries({ queryKey: listKeys.all });
+      // Record streak for batch mark-known
+      useStreakStore.getState().recordActivity();
     },
   });
 }
