@@ -26,7 +26,7 @@ export default function TabLayout() {
           position: 'absolute',
           bottom: 24,
           alignSelf: 'center',
-          marginHorizontal: 60,
+          marginHorizontal: 32, // Genişliği %20 civarı artırmak için margin daraltıldı
           height: 64,
           backgroundColor: 'transparent',
           borderTopWidth: 0,

@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { useSettingsStore, type ThemePreference } from '@/src/store/settingsStor
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { changeLanguage, type SupportedLanguage } from '@/src/i18n';
 import { useResponsive } from '@/src/hooks/useResponsive';
+import { AppPalettes, type PaletteKey } from '@/src/theme/palettes';
 
 type Palette = {
   BG: string; SURFACE: string;
@@ -107,10 +108,26 @@ function SettingsTile({
 export default function SettingsScreen() {
   const { theme, colorScheme, themePreference, setThemePreference } = useTheme();
   const isDark = colorScheme === 'dark';
-  const { language, setLanguage, dailyReviewCount, setDailyReviewCount } = useSettingsStore();
+  const { 
+    language, setLanguage, 
+    dailyReviewCount, setDailyReviewCount,
+    activeBrandPalette, setActiveBrandPalette,
+    setCustomBrandHex, customBrandHex
+  } = useSettingsStore();
   const { t } = useTranslation('profile');
   const { isTablet } = useResponsive();
   const router = useRouter();
+
+  const [colorModalVisible, setColorModalVisible] = useState(false);
+
+  const CUSTOM_COLORS = [
+    '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E', 
+    '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1', 
+    '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#1F2937', 
+    '#475569', '#3F6212', '#047857', '#0F766E', '#1D4ED8', '#4338CA', 
+    '#86198F', '#9F1239', '#57534E', '#1E3A8A', '#064E3B', '#14532D', 
+    '#7C2D12', '#450A0A', '#4A044E', '#881337', '#9D174D', '#1E1B4B'
+  ];
 
   const c = useMemo<Palette>(() => ({
     BG:      theme.colors.background,
@@ -178,6 +195,49 @@ export default function SettingsScreen() {
           {/* ── Visual & Language Settings ── */}
           <Text style={styles.sectionLabel}>{t('languagePreferences')}</Text>
           <View style={styles.card}>
+            
+            <View style={styles.settingsRow}>
+              <Text style={styles.rowLabel}>Ana Renk (Brand)</Text>
+              <View style={styles.chipRow}>
+                {(Object.keys(AppPalettes) as PaletteKey[]).map((pkey) => {
+                  const palette = AppPalettes[pkey];
+                  const isActive = activeBrandPalette === pkey;
+                  return (
+                    <TouchableOpacity
+                      key={pkey}
+                      activeOpacity={0.8}
+                      onPress={() => setActiveBrandPalette(pkey)}
+                      style={{
+                        width: 36, height: 36, borderRadius: 18,
+                        backgroundColor: palette?.brand500,
+                        alignItems: 'center', justifyContent: 'center',
+                        borderWidth: isActive ? 3 : 0,
+                        borderColor: isDark ? '#fff' : c.TEXT_P,
+                      }}
+                    >
+                      {isActive && <Ionicons name="checkmark" size={20} color="#fff" />}
+                    </TouchableOpacity>
+                  );
+                })}
+                {/* Custom Color Button */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setColorModalVisible(true)}
+                  style={{
+                    width: 36, height: 36, borderRadius: 18,
+                    backgroundColor: activeBrandPalette === 'custom' && customBrandHex ? customBrandHex : isDark ? '#333' : '#eee',
+                    alignItems: 'center', justifyContent: 'center',
+                    borderWidth: activeBrandPalette === 'custom' ? 3 : 1,
+                    borderColor: activeBrandPalette === 'custom' ? (isDark ? '#fff' : c.TEXT_P) : (isDark ? '#555' : '#ccc'),
+                  }}
+                >
+                  <Ionicons name={activeBrandPalette === 'custom' ? "checkmark" : "add"} size={20} color={activeBrandPalette === 'custom' ? "#fff" : c.TEXT_S} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={[styles.tileDivider, { marginHorizontal: 0 }]} />
+
             <View style={styles.settingsRow}>
               <Text style={styles.rowLabel}>{t('theme')}</Text>
               <View style={styles.chipRow}>
@@ -250,6 +310,46 @@ export default function SettingsScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Color Selection Modal */}
+      <Modal visible={colorModalVisible} transparent animationType="fade" onRequestClose={() => setColorModalVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ width: '100%', maxWidth: 400, backgroundColor: c.SURFACE, borderRadius: 24, padding: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ color: c.TEXT_P, fontSize: 18, fontWeight: '700' }}>Özel Renk Seç</Text>
+              <TouchableOpacity onPress={() => setColorModalVisible(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={24} color={c.TEXT_S} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+              {CUSTOM_COLORS.map(hex => (
+                <TouchableOpacity
+                  key={hex}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setCustomBrandHex(hex);
+                    setActiveBrandPalette('custom');
+                    setColorModalVisible(false);
+                  }}
+                  style={{
+                    width: 42, height: 42, borderRadius: 21,
+                    backgroundColor: hex,
+                    alignItems: 'center', justifyContent: 'center',
+                    borderWidth: customBrandHex === hex && activeBrandPalette === 'custom' ? 3 : 0,
+                    borderColor: isDark ? '#fff' : '#000',
+                  }}
+                >
+                  {customBrandHex === hex && activeBrandPalette === 'custom' && (
+                    <Ionicons name="checkmark" size={22} color="#fff" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }

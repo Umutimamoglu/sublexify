@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
-import { lightTheme, darkTheme, type Theme } from '@/src/theme';
+import { createLightTheme, type Theme } from '@/src/theme/lightTheme';
+import { createDarkTheme } from '@/src/theme/darkTheme';
+import { AppPalettes, generateCustomPalette, type PaletteKey } from '@/src/theme/palettes';
 import { useSettingsStore, type ThemePreference } from '@/src/store/settingsStore';
 
 type ThemeContextValue = {
@@ -17,12 +19,20 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme() ?? 'light';
   const { setColorScheme: setNWColorScheme } = useNativeWindColorScheme();
-  const { themePreference, setThemePreference } = useSettingsStore();
+  const { themePreference, setThemePreference, activeBrandPalette, setActiveBrandPalette, customBrandHex } = useSettingsStore();
 
   const resolvedScheme: 'light' | 'dark' =
     themePreference === 'system' ? systemScheme : themePreference;
 
-  const theme = resolvedScheme === 'dark' ? darkTheme : lightTheme;
+  let activePalette = AppPalettes[activeBrandPalette];
+  if (activeBrandPalette === 'custom' && customBrandHex) {
+    activePalette = generateCustomPalette(customBrandHex);
+  }
+  if (!activePalette) {
+    activePalette = AppPalettes.netflix!;
+  }
+  
+  const theme = resolvedScheme === 'dark' ? createDarkTheme(activePalette) : createLightTheme(activePalette);
 
   // Tercih değişince NativeWind'e de bildir (dark: prefix'leri için)
   useEffect(() => {

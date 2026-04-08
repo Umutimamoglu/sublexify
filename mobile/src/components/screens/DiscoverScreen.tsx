@@ -117,7 +117,7 @@ type Palette = {
 
 function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, sh: number, topInset: number) {
   const pad = isTablet ? 32 : 16;
-  const mediaCardW = isTablet ? 160 : 112;
+  const mediaCardW = isTablet ? 340 : 270;
   const heroHeight = sh * 0.46;
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.BG },
@@ -223,15 +223,48 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, 
     viewAll: { color: '#FEE76C', fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
     hScrollContent: { paddingLeft: pad, paddingRight: 6 },
 
-    // ─── Media Card ───────────────────────────────────────────
-    mediaCard: { width: mediaCardW, borderRadius: CARD_R, overflow: 'hidden', marginRight: 10, borderWidth: 1, borderColor: '#ffffff15' },
-    badgeWrapper: { position: 'absolute', top: 8, left: 8, zIndex: 10 },
-    poster: { width: '100%', height: 155 },
-    posterPlaceholder: { height: 155, alignItems: 'center', justifyContent: 'center' },
-    posterLetter: { fontSize: 52, fontWeight: '900', opacity: 0.7 },
-    cefrBar: { flexDirection: 'row', height: 4, overflow: 'hidden' },
-    mediaTitle: { color: '#ffffff', fontSize: 12, fontWeight: '600', textAlign: 'center', paddingTop: 6, paddingHorizontal: 6 },
-    mediaStats: { color: '#aaaacc', fontSize: 10, textAlign: 'center', paddingHorizontal: 6, paddingTop: 3, paddingBottom: 8 },
+    // ─── Media Card (Premium Landscape) ───────────────────────
+    mediaCard: { 
+        width: mediaCardW, 
+        height: 140,
+        marginRight: 16, 
+        borderRadius: 18,
+        overflow: 'hidden',
+        flexDirection: 'row',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    badgeWrapperWide: { position: 'absolute', top: 10, right: 10, zIndex: 10 },
+    
+    posterLeft: {
+        width: 100,
+        height: '100%',
+        backgroundColor: '#000',
+    },
+    poster: { width: '100%', height: '100%' },
+    posterPlaceholder: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+    posterLetter: { fontSize: 44, fontWeight: '900', opacity: 0.5 },
+    
+    rightContent: {
+        flex: 1,
+        paddingTop: 14,
+        paddingHorizontal: 14,
+        paddingBottom: 12,
+        justifyContent: 'space-between',
+    },
+    mediaTitle: { color: c.TEXT_P, fontSize: 15, fontWeight: '800', textAlign: 'left', marginBottom: 4, paddingRight: 24 },
+    mediaStatsWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
+    mediaStats: { color: c.TEXT_S, fontSize: 12, fontWeight: '600' },
+    mediaKnownStats: { color: '#FEE76C', fontSize: 12, fontWeight: '700' },
+    
+    cefrBarRow: { 
+        flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', width: '85%', opacity: 0.85,
+    },
 
     // Filter chips
     filterRow: { flexDirection: 'row', paddingHorizontal: pad, paddingBottom: 12, gap: 8, flexWrap: 'wrap' },
@@ -298,41 +331,60 @@ function MediaBrowseCard({
   const unknownCount = item.totalWords > 0 && item.knownWordPercentage != null
     ? Math.round(item.totalWords * (1 - item.knownWordPercentage / 100))
     : item.totalWords;
+  const knownCount = item.totalWords - unknownCount;
 
   return (
     <TouchableOpacity
-      style={[styles.mediaCard, { backgroundColor: isDark ? darkBg : lightBg }]}
+      style={styles.mediaCard}
       activeOpacity={0.85}
       onPress={onPress}
     >
-      <View style={styles.badgeWrapper}>
+      {/* Background Poster for Frosted Glass Effect */}
+      {item.posterUrl && (
+        <Image source={{ uri: item.posterUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+      )}
+      <BlurView
+        intensity={isDark ? 50 : 80}
+        tint={isDark ? "dark" : "light"}
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: accent + '40' }]}
+      />
+
+      <View style={styles.badgeWrapperWide}>
         <DifficultyBadge difficulty={diff} size="sm" />
       </View>
-      {item.posterUrl ? (
-        <Image source={{ uri: item.posterUrl }} style={styles.poster} resizeMode="cover" />
-      ) : (
-        <View style={[styles.posterPlaceholder, { backgroundColor: accent + '22' }]}>
-          <Text style={[styles.posterLetter, { color: accent }]}>{title.charAt(0)}</Text>
-        </View>
-      )}
+      
+      <View style={styles.posterLeft}>
+        {item.posterUrl ? (
+          <Image source={{ uri: item.posterUrl }} style={styles.poster} resizeMode="cover" />
+        ) : (
+          <View style={[styles.posterPlaceholder, { backgroundColor: accent + '22' }]}>
+            <Text style={[styles.posterLetter, { color: accent }]}>{title.charAt(0)}</Text>
+          </View>
+        )}
+      </View>
 
-      {/* CEFR dağılım çubuğu */}
-      {cefrTotal > 0 && (
-        <View style={styles.cefrBar}>
-          {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const).map((lv) => {
+      <View style={[styles.rightContent, { justifyContent: 'space-evenly' }]}>
+        <Text style={styles.mediaTitle} numberOfLines={2}>{title}</Text>
+        <View style={styles.mediaStatsWrap}>
+            <Ionicons name="documents" size={12} color="#aaaacc" />
+            <Text style={styles.mediaStats}>
+                {item.totalWords} {t('words')} · <Text style={styles.mediaKnownStats}>{knownCount} bilinen</Text>
+            </Text>
+        </View>
+        
+        {/* CEFR dağılım çubuğu */}
+        {cefrTotal > 0 && (
+        <View style={styles.cefrBarRow}>
+            {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const).map((lv) => {
             const count = item.levelCounts?.[lv] ?? 0;
             if (count === 0) return null;
             return (
-              <View key={lv} style={{ flex: count / cefrTotal, height: 4, backgroundColor: CEFR_COLORS[lv] }} />
+                <View key={lv} style={{ flex: count / cefrTotal, height: '100%', backgroundColor: CEFR_COLORS[lv] }} />
             );
-          })}
+            })}
         </View>
-      )}
-
-      <Text style={styles.mediaTitle} numberOfLines={2}>{title}</Text>
-      <Text style={styles.mediaStats}>
-        {item.totalWords} {t('words')} · {unknownCount} {t('unknownWords')}
-      </Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -672,9 +724,6 @@ export default function DiscoverScreen() {
 
         {/* Browse Media */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t('browseMedia')}</Text>
-          </View>
 
           {/* Filter chips */}
           <View style={styles.filterRow}>

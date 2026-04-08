@@ -2,8 +2,9 @@
 // Token'lardan semantik roller üretir. Ham renk yok — hepsi Palette'den gelir.
 
 import { Palette, FontFamily, FontSize, LineHeight, Spacing, Radii, Shadow } from './tokens';
+import { BrandPalette } from './palettes';
 
-export const lightTheme = {
+export const createLightTheme = (brand: BrandPalette) => ({
   colors: {
     // Yüzeyler
     background:       Palette.gray50,
@@ -20,16 +21,16 @@ export const lightTheme = {
     textOnBrand:      Palette.white,
 
     // Marka/aksiyon
-    primary:          Palette.brand500,
-    primaryHover:     Palette.brand600,
-    primarySubtle:    Palette.brand50,
+    primary:          brand.brand500,
+    primaryHover:     brand.brand600,
+    primarySubtle:    brand.brand50,
     primaryForeground: Palette.white,
 
     // Kenarlıklar
     borderDefault:    Palette.gray200,
     borderSubtle:     Palette.gray100,
     borderStrong:     Palette.gray300,
-    borderFocus:      Palette.brand500,
+    borderFocus:      brand.brand500,
 
     // Durum renkleri
     success:          Palette.success500,
@@ -48,7 +49,7 @@ export const lightTheme = {
     diffC2: Palette.diffC2,
 
     // Tab bar
-    tabActive:        Palette.brand500,
+    tabActive:        brand.brand500,
     tabInactive:      Palette.gray400,
     tabBackground:    Palette.white,
     tabBorder:        Palette.gray200,
@@ -65,7 +66,7 @@ export const lightTheme = {
   spacing: Spacing,
   radii: Radii,
   shadows:  Shadow,
-};
+});
 
 export type Theme = {
   colors: Record<string, string>;

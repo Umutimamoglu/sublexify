@@ -2,18 +2,10 @@
 // ============================================================
 // TEK KAYNAK — Tüm görsel değerleri buradan değiştir.
 // Renk, font, boyut, boşluk, gölge hepsi burada tanımlı.
-// ============================================================
 
 export const Palette = {
-  // Brand (mor)
-  brand50:  '#F5F0FF',
-  brand100: '#EDE5FF',
-  brand200: '#D5C4FF',
-  brand300: '#B89BF8',
-  brand400: '#9B6FF3',
-  brand500: '#7C4CED',
-  brand600: '#6338D6',
-  brand700: '#4B25B5',
+  // Brand is dynamically injected in ThemeContext now.
+  // Kept here so it compiles if anything checks for Palette directly, but mostly unused.
 
   // Nötr gri skalası
   gray50:  '#F8FAFC',
@@ -27,13 +19,13 @@ export const Palette = {
   gray800: '#1E293B',
   gray900: '#0F172A',
 
-  // Semantik renkler
+  // Semantik renkler (Değiştirilmedi, dil öğrenimi bağlamında standarttır)
   success500: '#22C55E',
   warning500: '#F59E0B',
   error500:   '#EF4444',
   teal500:    '#238DA0',
 
-  // CEFR Zorluk seviyeleri (A1=en kolay, C2=en zor)
+  // CEFR Zorluk seviyeleri (A1=en kolay, C2=en zor) (Değiştirilmedi)
   diffA1: '#22C55E',
   diffA2: '#84CC16',
   diffB1: '#F59E0B',
