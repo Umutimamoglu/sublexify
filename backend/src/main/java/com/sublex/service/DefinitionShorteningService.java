@@ -131,14 +131,16 @@ public class DefinitionShorteningService {
     }
 
     private void shortenBatch(List<Word> batch, String batchId) {
-        // Build input: word + current verbose definitions
+        // Build input: word + current verbose definitions + examples
         StringBuilder input = new StringBuilder();
         for (int i = 0; i < batch.size(); i++) {
             Word w = batch.get(i);
             StringBuilder defs = new StringBuilder();
             for (WordDefinition.Meaning m : w.getDefinition().getMeanings()) {
                 if (m.getDefinition() != null && m.getDefinition().length() > MAX_DEFINITION_LENGTH) {
-                    defs.append(String.format("  - [%s] %s\n", m.getPos(), m.getDefinition()));
+                    String examplePart = (m.getExample() != null && !m.getExample().isEmpty()) 
+                                         ? (" | Example: " + m.getExample()) : "";
+                    defs.append(String.format("  - [%s] %s%s\n", m.getPos(), m.getDefinition(), examplePart));
                 }
             }
             if (defs.length() > 0) {
@@ -152,11 +154,12 @@ public class DefinitionShorteningService {
                 
                 CRITICAL INSTRUCTIONS:
                 1. PRESERVE THE ORIGINAL MEANING: You MUST strictly retain the exact semantic meaning of the original Turkish definition. Do NOT provide a different, obscure, or slang translation of the English word (e.g., if original definition is about "digging dirt", do NOT output "hoşlanmak (argo)").
-                2. Replace long explanatory definitions with the shortest possible Turkish equivalent word(s). 
-                3. If a simple 1-2 word Turkish translation exists, USE IT. 
-                4. Keep the same POS (part of speech). Do NOT add new meanings or remove existing ones.
-                5. NO DUPLICATE DEFINITIONS: If your shortening results in two identical definitions for the same word and the same POS, you MUST slightly differentiate them (e.g., provide a secondary nuance) or remove/merge one. Never return two exact same strings like "Eğlence." and "Eğlence."
-                6. Avoid confusing words: e.g. for 'resume', if it means 'to start again after a pause', use 'kaldığı yerden devam etmek', not 'yeniden başlatmak'. For 'capital' as a city, use 'başkent', not 'sermaye'. Only give what the ORIGINAL definition describes.
+                2. Her anlamı kısaltırken o anlamın örnek cümlesini (Example) REFERANS AL. Kısaltılan tanım ile örnek cümle anlam olarak kesinlikle uyuşmalıdır. Örnek cümleye bakarak orijinal tanımın hangi anlamda kullanıldığını teyit et.
+                3. Replace long explanatory definitions with the shortest possible Turkish equivalent word(s). 
+                4. If a simple 1-2 word Turkish translation exists, USE IT. 
+                5. Keep the same POS (part of speech). Do NOT add new meanings or remove existing ones.
+                6. NO DUPLICATE DEFINITIONS: If your shortening results in two identical definitions for the same word and the same POS, you MUST slightly differentiate them (e.g., provide a secondary nuance) or remove/merge one. Never return two exact same strings like "Eğlence." and "Eğlence."
+                7. Avoid confusing words: e.g. for 'resume', if it means 'to start again after a pause', use 'kaldığı yerden devam etmek', not 'yeniden başlatmak'. For 'capital' as a city, use 'başkent', not 'sermaye'. Only give what the ORIGINAL definition describes.
 
                 EXAMPLES:
                 - "Motorlu, dört tekerlekli, insanları bir yerden taşımak için kullanılan taşıt." → "Araba, otomobil."
