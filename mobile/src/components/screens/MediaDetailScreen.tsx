@@ -42,10 +42,6 @@ const DIFF_COLORS: Record<string, string> = {
   C1: '#EF4444', C2: '#9333EA',
 };
 
-  MEDIUM: string;
-  HARD: string;
-};
-
 const OVERALL_DIFF_BG: Record<string, string>   = { EASY: '#22C55E22', MEDIUM: '#F59E0B22', HARD: '#EF444422' };
 const OVERALL_DIFF_TEXT: Record<string, string>  = { EASY: '#22C55E',   MEDIUM: '#F59E0B',   HARD: '#EF4444'   };
 
