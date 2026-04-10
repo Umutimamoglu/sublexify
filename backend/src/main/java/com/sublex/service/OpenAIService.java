@@ -33,7 +33,7 @@ public class OpenAIService implements AIService {
                                 .requestFactory(new org.springframework.http.client.SimpleClientHttpRequestFactory() {
                                         {
                                                 setConnectTimeout(60000);
-                                                setReadTimeout(60000);
+                                                setReadTimeout(180000); // 3 min - batch enrichment (25 words) needs more time
                                         }
                                 })
                                 .build();

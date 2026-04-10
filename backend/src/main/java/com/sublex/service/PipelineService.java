@@ -267,8 +267,10 @@ public class PipelineService {
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.SPECIALIST);
 
-        List<Word> flaggedWords = specialistService.getFlaggedWords("en", mediaId);
-        int specialistTotal = flaggedWords.size();
+        List<Word> allFlagged = specialistService.getFlaggedWords("en", mediaId);
+        int specialistTotal = Math.min(allFlagged.size(), actualSize);
+        List<Word> flaggedWords = allFlagged.subList(0, specialistTotal);
+        
         log.info("Gemini Specialist fixing {} words in PARALLEL...", specialistTotal);
 
         currentStatus.updateAndGet(s -> s.toBuilder()

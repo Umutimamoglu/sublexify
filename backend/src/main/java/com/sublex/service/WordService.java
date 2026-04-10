@@ -44,11 +44,11 @@ public class WordService {
                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                 .filter(word -> !applyDiffFilter || difficulties.contains(word.getDifficulty()))
                 .filter(word -> !onlyUnknown || !finalKnownWordIds.contains(word.getId()))
-                .sorted(Comparator.comparingInt(word -> {
+                .sorted(Comparator.comparingInt((Word word) -> {
                     String w = word.getWord().toLowerCase();
-                    if (w.equals(q))         return 0; // exact match
-                    if (w.startsWith(q))     return 1; // starts with
-                    return 2;                           // contains in middle
+                    if (w.equals(q))     return 0; // exact match
+                    if (w.startsWith(q)) return 1; // starts with
+                    return 2;                       // contains in middle
                 }))
                 .map(word -> convertToDTO(word, finalKnownWordIds.contains(word.getId())))
                 .collect(Collectors.toList());

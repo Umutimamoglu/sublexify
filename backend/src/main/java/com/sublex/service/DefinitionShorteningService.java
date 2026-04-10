@@ -242,9 +242,8 @@ public class DefinitionShorteningService {
 
                 if (updated) {
                     word.setAuditNotes("Definition shortened by AI [BATCH:" + batchId + "]");
-                    word.setEnrichedAt(LocalDateTime.now());
                     
-                    // Reset auditor flags so it gets re-audited
+                    // Sadece sorunları sıfırlıyoruz, ama orijinal enrich tarihini (enrichedAt) bozmuyoruz!
                     word.setStep3Error(null);
                     word.setProblemFound(false);
                 }
