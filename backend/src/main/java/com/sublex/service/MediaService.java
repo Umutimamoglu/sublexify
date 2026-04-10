@@ -373,27 +373,17 @@ public class MediaService {
      * Calculate overall difficulty (EASY, MEDIUM, HARD) based on level distributions
      */
     private String calculateOverallDifficulty(Map<String, Long> levelCounts, int totalWords) {
-        if (totalWords == 0) return "MEDIUM";
+        long counted = levelCounts.values().stream().mapToLong(Long::longValue).sum();
+        if (counted == 0) return null;
 
-        // Weighted average: A1=1, A2=2, B1=3, B2=4, C1=5, C2=6
-        java.util.Map<String, Integer> weights = java.util.Map.of(
-            "A1", 1, "A2", 2, "B1", 3, "B2", 4, "C1", 5, "C2", 6
-        );
+        long bTotal = levelCounts.getOrDefault("B1", 0L) + levelCounts.getOrDefault("B2", 0L);
+        long cTotal = levelCounts.getOrDefault("C1", 0L) + levelCounts.getOrDefault("C2", 0L);
+        
+        // Advanced words (B-level) and Mastery words (C-level, weighted heavily) ratio against all graded words.
+        double advancedRatio = (double) (bTotal + cTotal * 2) / counted;
 
-        long weightedSum = 0;
-        long counted = 0;
-        for (java.util.Map.Entry<String, Integer> entry : weights.entrySet()) {
-            long cnt = levelCounts.getOrDefault(entry.getKey(), 0L);
-            weightedSum += cnt * entry.getValue();
-            counted += cnt;
-        }
-
-        if (counted == 0) return "MEDIUM";
-
-        double avg = (double) weightedSum / counted;
-
-        if (avg <= 2.5) return "EASY";    // A-seviyesi ağırlıklı
-        if (avg <= 4.0) return "MEDIUM";  // B-seviyesi ağırlıklı
-        return "HARD";                    // C-seviyesi ağırlıklı
+        if (advancedRatio < 0.20) return "EASY";
+        if (advancedRatio < 0.35) return "MEDIUM";
+        return "HARD";
     }
 }

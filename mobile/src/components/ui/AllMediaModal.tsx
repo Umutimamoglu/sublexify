@@ -250,7 +250,7 @@ export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate 
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => {
                 const title = seriesTitle(item);
-                const overallDiff = item.overallDifficulty ?? 'MEDIUM';
+                const overallDiff = item.overallDifficulty;
                 const { darkBg, lightBg, accent } = cardAccent(item.id);
                 const cefrTotal = Object.values(item.levelCounts ?? {}).reduce((a, b) => a + b, 0);
 
@@ -263,9 +263,11 @@ export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate 
                       setTimeout(() => onNavigate(item), 250);
                     }}
                   >
-                    <View style={styles.badgeWrapper}>
-                      <OverallDifficultyBadge level={overallDiff} label={tCommon(`media.difficulty_labels.${overallDiff}`)} size="sm" />
-                    </View>
+                    {overallDiff && (
+                      <View style={styles.badgeWrapper}>
+                        <OverallDifficultyBadge level={overallDiff} label={tCommon(`media.difficulty_labels.${overallDiff}`)} size="sm" />
+                      </View>
+                    )}
 
                     {item.posterUrl ? (
                       <Image source={{ uri: item.posterUrl }} style={styles.poster} resizeMode="cover" />

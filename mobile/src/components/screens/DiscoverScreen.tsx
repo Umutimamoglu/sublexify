@@ -326,7 +326,7 @@ function MediaBrowseCard({
   const { t: tCommon } = useTranslation('common');
   const { darkBg, lightBg, accent } = cardAccent(item.id);
   const title = seriesTitle(item);
-  const overallDiff = item.overallDifficulty ?? 'MEDIUM';
+  const overallDiff = item.overallDifficulty;
 
   const cefrTotal = Object.values(item.levelCounts ?? {}).reduce((a, b) => a + b, 0);
   const unknownCount = item.totalWords > 0 && item.knownWordPercentage != null
@@ -353,9 +353,11 @@ function MediaBrowseCard({
         ]}
       />
 
-      <View style={styles.badgeWrapperWide}>
-        <OverallDifficultyBadge level={overallDiff} label={tCommon(`media.difficulty_labels.${overallDiff}`)} size="sm" />
-      </View>
+      {overallDiff && (
+        <View style={styles.badgeWrapperWide}>
+          <OverallDifficultyBadge level={overallDiff} label={tCommon(`media.difficulty_labels.${overallDiff}`)} size="sm" />
+        </View>
+      )}
       
       <View style={styles.posterLeft}>
         {item.posterUrl ? (
