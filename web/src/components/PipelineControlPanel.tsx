@@ -9,6 +9,7 @@ interface Counts {
 
 const PipelineControlPanel = () => {
     const [counts, setCounts] = useState<Counts>({ pendingAnalysis: 0, pendingEnrichment: 0 });
+    const [shorteningStats, setShorteningStats] = useState<any>(null);
     const [status, setStatus] = useState<PipelineStatus | null>(null);
     const [batchSize, setBatchSize] = useState(100);
     const [loading, setLoading] = useState(false);
@@ -16,12 +17,14 @@ const PipelineControlPanel = () => {
 
     const fetchStatus = useCallback(async () => {
         try {
-            const [countsData, statusData] = await Promise.all([
+            const [countsData, statusData, sStats] = await Promise.all([
                 PipelineAPI.getPendingCounts(),
-                PipelineAPI.getStatus()
+                PipelineAPI.getStatus(),
+                PipelineAPI.getShorteningStats()
             ]);
             setCounts(countsData);
             setStatus(statusData);
+            setShorteningStats(sStats);
         } catch (err) {
             console.error('Failed to fetch pipeline info', err);
         }
@@ -143,6 +146,33 @@ const PipelineControlPanel = () => {
                     </div>
                 </div>
 
+                <div className="flex justify-end mb-6">
+                     <button
+                            onClick={async () => {
+                                if (!window.confirm(`Start AI Definition Shortening for ${batchSize} verbose definitions?`)) return;
+                                setActionLoading('shortening');
+                                try {
+                                    await PipelineAPI.startDefinitionShortening(batchSize);
+                                    fetchStatus();
+                                } catch (err) {
+                                    alert('Failed to start shortening pipeline');
+                                } finally {
+                                    setActionLoading(null);
+                                }
+                            }}
+                            disabled={loading || status?.running}
+                            className="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-400 text-white font-bold rounded-xl transition-all shadow-lg flex items-center gap-2"
+                        >
+                            {status?.running && status?.currentStep === 'DEFINITION_SHORTENING' ? <Activity className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                            {status?.running && status?.currentStep === 'DEFINITION_SHORTENING' ? 'Shortening...' : 'Start Definition Shortening'}
+                        </button>
+                        {shorteningStats?.pendingShortening > 0 && (
+                            <button onClick={() => PipelineAPI.downloadShorteningCandidates()} className="ml-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-xl transition-colors font-bold text-sm text-gray-700 dark:text-gray-300">
+                                Download Candidates
+                            </button>
+                        )}
+                </div>
+
                 {/* Queue Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <StatCard 
@@ -170,6 +200,12 @@ const PipelineControlPanel = () => {
                         color="red"
                         onClick={handleGlobalSpecialistFix}
                         loading={actionLoading === 'specialist'}
+                    />
+                     <StatCard 
+                        label="Long Definitions" 
+                        value={shorteningStats?.pendingShortening || 0} 
+                        icon={<Database className="w-4 h-4" />} 
+                        color="cyan"
                     />
                 </div>
 

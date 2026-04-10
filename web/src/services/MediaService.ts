@@ -277,7 +277,7 @@ export interface FailedWord {
 }
 
 export interface PipelineStatus {
-    currentStep: 'IDLE' | 'WORKER' | 'SHERIFF' | 'SPECIALIST' | 'JUDGE' | 'AUDITOR' | 'COMPLETE' | 'FAILED';
+    currentStep: 'IDLE' | 'WORKER' | 'SHERIFF' | 'SPECIALIST' | 'JUDGE' | 'AUDITOR' | 'DEFINITION_SHORTENING' | 'COMPLETE' | 'FAILED';
     totalWords: number;
     processedWords: number;
     progressPercent: number;
@@ -379,6 +379,31 @@ const PipelineAPI = {
     bulkFixDefinitions: async (fixes: Array<{ id: number; definition: unknown; clearRootWord?: boolean }>): Promise<string> => {
         const response = await api.post('/admin/words/bulk-fix-definitions', fixes);
         return response.data;
+    },
+
+    getShorteningStats: async (): Promise<any> => {
+        const response = await api.get('/admin/pipeline/shortening/stats');
+        return response.data;
+    },
+
+    startDefinitionShortening: async (size: number): Promise<string> => {
+        const response = await api.post(`/admin/pipeline/shortening/start?size=${size}`);
+        return response.data;
+    },
+
+    downloadShorteningCandidates: async (): Promise<void> => {
+        const response = await api.get<Blob>('/admin/pipeline/shortening/download', {
+            responseType: 'blob'
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        link.setAttribute('download', `shortening_candidates_${date}.json`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
     }
 };
 

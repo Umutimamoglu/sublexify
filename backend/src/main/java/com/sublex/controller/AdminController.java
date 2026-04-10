@@ -46,6 +46,7 @@ public class AdminController {
     private final com.sublex.service.SpecialistService specialistService;
     private final com.sublex.service.PipelineService pipelineService;
     private final com.sublex.service.WordAnalysisService wordAnalysisService;
+    private final com.sublex.service.DefinitionShorteningService definitionShorteningService;
 
     // ... (other methods unchanged) ...
 
@@ -866,5 +867,75 @@ public class AdminController {
         }
 
         return ResponseEntity.ok("Root consolidation completed. Merged " + mergeCount + " associations.");
+    }
+
+    // ============ DEFINITION SHORTENING PIPELINE ============
+
+    @GetMapping("/pipeline/shortening/stats")
+    @Operation(summary = "Returns stats for the definition shortening pipeline")
+    public ResponseEntity<Map<String, Object>> getShorteningStats() {
+        return ResponseEntity.ok(definitionShorteningService.getStats());
+    }
+
+    @PostMapping("/pipeline/shortening/start")
+    @Operation(summary = "Starts the definition shortening pipeline for verbose A1-B1 definitions")
+    public ResponseEntity<String> startDefinitionShortening(@RequestParam(defaultValue = "500") int size) {
+        log.info("Starting Definition Shortening Pipeline for {} words", size);
+        pipelineService.startDefinitionShortening(size);
+        return ResponseEntity.accepted().body("Definition shortening started for " + size + " words.");
+    }
+
+    @GetMapping("/pipeline/shortening/candidates")
+    @Operation(summary = "Returns words that are candidates for definition shortening")
+    public ResponseEntity<List<Map<String, Object>>> getShorteningCandidates(
+            @RequestParam(defaultValue = "50") int limit) {
+        List<com.sublex.model.Word> candidates = definitionShorteningService.findCandidates(limit);
+        
+        // Build a lightweight response (not full Word objects)
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (com.sublex.model.Word w : candidates) {
+            Map<String, Object> entry = new java.util.LinkedHashMap<>();
+            entry.put("id", w.getId());
+            entry.put("word", w.getWord());
+            entry.put("difficulty", w.getDifficulty());
+            
+            // Add current definitions with their lengths
+            List<Map<String, Object>> meanings = new java.util.ArrayList<>();
+            if (w.getDefinition() != null && w.getDefinition().getMeanings() != null) {
+                for (var m : w.getDefinition().getMeanings()) {
+                    Map<String, Object> mEntry = new java.util.LinkedHashMap<>();
+                    mEntry.put("pos", m.getPos());
+                    mEntry.put("definition", m.getDefinition());
+                    mEntry.put("charCount", m.getDefinition() != null ? m.getDefinition().length() : 0);
+                    meanings.add(mEntry);
+                }
+            }
+            entry.put("meanings", meanings);
+            result.add(entry);
+        }
+        
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/pipeline/shortening/download")
+    @Operation(summary = "Downloads all shortening candidates as JSON")
+    public ResponseEntity<List<Map<String, Object>>> downloadShorteningCandidates() {
+        List<com.sublex.model.Word> candidates = definitionShorteningService.findCandidates(Integer.MAX_VALUE);
+        
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (com.sublex.model.Word w : candidates) {
+            Map<String, Object> entry = new java.util.LinkedHashMap<>();
+            entry.put("id", w.getId());
+            entry.put("word", w.getWord());
+            entry.put("difficulty", w.getDifficulty());
+            entry.put("definition", w.getDefinition());
+            result.add(entry);
+        }
+
+        String filename = "shortening_candidates_" + java.time.LocalDate.now() + ".json";
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body(result);
     }
 }

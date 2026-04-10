@@ -32,6 +32,7 @@ public class PipelineService {
     private final JudgeService judgeService;
     private final GeminiService geminiService;
     private final AuditorService auditorService;
+    private final DefinitionShorteningService definitionShorteningService;
 
     private final AtomicReference<PipelineStatus> currentStatus = new AtomicReference<>(
             PipelineStatus.builder().currentStep(PipelineStatus.Step.IDLE).build());
@@ -581,6 +582,45 @@ public class PipelineService {
                 log.info("=== AUDITOR COMPLETE === Total time: {}ms", duration);
             } catch (Exception e) {
                 log.error("Auditor failed: {}", e.getMessage(), e);
+                currentStatus.updateAndGet(s -> s.toBuilder()
+                        .currentStep(PipelineStatus.Step.FAILED)
+                        .running(false)
+                        .completedAt(LocalDateTime.now())
+                        .build());
+            }
+        });
+    }
+
+    public void startDefinitionShortening(int limit) {
+        if (currentStatus.get().isRunning()) {
+            throw new RuntimeException("Pipeline is already running");
+        }
+        PipelineStatus initial = PipelineStatus.builder()
+                .currentStep(PipelineStatus.Step.DEFINITION_SHORTENING)
+                .totalWords(limit)
+                .processedWords(0)
+                .running(true)
+                .startedAt(LocalDateTime.now())
+                .build();
+        currentStatus.set(initial);
+
+        Thread.startVirtualThread(() -> {
+            try {
+                long start = System.currentTimeMillis();
+                definitionShorteningService.shortenDefinitions(limit, (done, total) -> {
+                    updateProgress(PipelineStatus.Step.DEFINITION_SHORTENING, done, total);
+                });
+                long duration = System.currentTimeMillis() - start;
+
+                currentStatus.updateAndGet(s -> s.toBuilder()
+                        .currentStep(PipelineStatus.Step.COMPLETE)
+                        .running(false)
+                        .completedAt(LocalDateTime.now())
+                        .progressPercent(100)
+                        .build());
+                log.info("=== DEFINITION SHORTENING COMPLETE === Total time: {}ms", duration);
+            } catch (Exception e) {
+                log.error("Definition shortening failed: {}", e.getMessage(), e);
                 currentStatus.updateAndGet(s -> s.toBuilder()
                         .currentStep(PipelineStatus.Step.FAILED)
                         .running(false)

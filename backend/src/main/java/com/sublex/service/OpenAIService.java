@@ -55,7 +55,14 @@ public class OpenAIService implements AIService {
                            - SEMANTIC UNIQUENESS (CRITICAL): Do NOT provide meanings that are near-synonyms or redundant. If a word primarily has one meaning, provide ONLY ONE meaning.
                            - NO NESTED LISTS (CRITICAL): Each 'definition' must be a SINGLE string. Do NOT use numbered lists (e.g., '1)... 2)...') or bullet points inside a definition. Use separate entries in the 'meanings' array instead.
                            - 'pos': part of speech in English (noun, verb, adjective, adverb, number, etc.)
-                           - 'definition': Short, clear, and NATURAL definition IN TURKISH. Explain slang or loanword context in Turkish.
+                           - 'definition': DICTIONARY TRANSLATION IN TURKISH — NOT an encyclopedic explanation.
+                             CRITICAL: Use the shortest, most direct Turkish equivalent first. If the word has a simple, well-known Turkish translation, USE IT.
+                             - WRONG: "Motorlu, dört tekerlekli, insanları bir yerden başka bir yere taşımak için kullanılan kara taşıtı." → RIGHT: "Araba, otomobil."
+                             - WRONG: "Üzerine yemek, eşya ve benzeri nesnelerin koyulduğu, genellikle dört ayaklı, düz yüzeyli mobilya." → RIGHT: "Masa."
+                             - WRONG: "Sayfalardan oluşan, bilgi veya hikaye içeren basılı ya da dijital eser." → RIGHT: "Kitap."
+                             - WRONG: "İnsanların oturduğu, arka dayanaklı mobilya parçası." → RIGHT: "Sandalye."
+                             - For RARE or COMPLEX words (C1/C2), a brief explanatory definition is acceptable (e.g., 'magnanimity' → "Büyük ruhlu olma, cömertlik ve bağışlayıcılık.")
+                             - RULE OF THUMB: If a Turkish person would answer with ONE WORD when asked "X ne demek?", use that one word.
                            - 'example': One example sentence in English, with its COMPLETE TURKISH translation in parentheses.
                         5. 'phrasal_verbs': Array of common phrasal verbs. return an empty array [] if none exist. Do NOT force or invent phrasal verbs for words like 'tea' or 'ketchup'.
                            - 'phrase': the phrasal verb itself (e.g., 'look up'). CRITICAL: This field MUST NEVER be null or empty.
@@ -322,22 +329,108 @@ public class OpenAIService implements AIService {
                         return Collections.emptyMap();
                 }
 
-                Map<String, WordDefinition> results = new ConcurrentHashMap<>();
-                log.info("Enriching batch of {} words via OpenAI", words.size());
+                log.info("Enriching TRUE BATCH of {} words via OpenAI (single API call)", words.size());
 
-                // For now, since GPT-5-mini is fast and we want high quality, 
-                // we'll use virtual threads to parallelize individual enrichments
-                try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+                // Build the batch user prompt with all words + their context
+                StringBuilder batchDetails = new StringBuilder();
+                for (int i = 0; i < words.size(); i++) {
+                        Word w = words.get(i);
+                        String context = w.getContextSentence() != null ? w.getContextSentence() : "";
+                        String difficulty = w.getDifficulty() != null ? w.getDifficulty() : "B1";
+                        batchDetails.append(String.format("%d. WORD: \"%s\", DIFFICULTY: \"%s\", CONTEXT: \"%s\"\n",
+                                        i + 1, w.getWord(), difficulty, context));
+                }
+
+                String batchSystemPrompt = SYSTEM_INSTRUCTIONS + "\n\n" +
+                        "IMPORTANT: You will receive MULTIPLE words. Return a JSON ARRAY of objects, " +
+                        "one for each word, in the same order. Each object must follow the structure above.";
+
+                String userPrompt = String.format(
+                        "Analyze and provide dictionary entries for the following %d English words:\n\n%s\n\nReturn a JSON array with %d objects:",
+                        words.size(), batchDetails.toString(), words.size());
+
+                // RETRY MECHANISM (2 Attempts)
+                for (int attempt = 1; attempt <= 2; attempt++) {
+                        try {
+                                Map<String, Object> requestBody = Map.of(
+                                                "model", MODEL,
+                                                "messages", List.of(
+                                                                Map.of("role", "system", "content", batchSystemPrompt),
+                                                                Map.of("role", "user", "content", userPrompt)),
+                                                "response_format", Map.of("type", "json_object"));
+
+                                String response = restClient.post()
+                                                .uri(OPENAI_URL)
+                                                .header("Authorization", "Bearer " + apiKey)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .body(requestBody)
+                                                .retrieve()
+                                                .body(String.class);
+
+                                Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
+                                List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+                                Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                                String content = (String) message.get("content");
+
+                                String cleanContent = content.replace("```json", "").replace("```", "").trim();
+                                log.info("OpenAI Worker batch raw response length: {} chars", cleanContent.length());
+
+                                // GPT with json_object mode may wrap array in an object like {"words": [...]}
+                                // Try to extract the array
+                                List<WordDefinition> definitions;
+                                if (cleanContent.startsWith("[")) {
+                                        definitions = objectMapper.readValue(cleanContent,
+                                                new com.fasterxml.jackson.core.type.TypeReference<List<WordDefinition>>() {});
+                                } else {
+                                        // It's wrapped in an object, find the array value
+                                        Map<String, Object> wrapper = objectMapper.readValue(cleanContent, Map.class);
+                                        // Get the first array value from the wrapper
+                                        Object arrayValue = wrapper.values().stream()
+                                                .filter(v -> v instanceof List)
+                                                .findFirst()
+                                                .orElse(null);
+                                        if (arrayValue != null) {
+                                                String arrayJson = objectMapper.writeValueAsString(arrayValue);
+                                                definitions = objectMapper.readValue(arrayJson,
+                                                        new com.fasterxml.jackson.core.type.TypeReference<List<WordDefinition>>() {});
+                                        } else {
+                                                // Single word fallback
+                                                WordDefinition singleDef = objectMapper.readValue(cleanContent, WordDefinition.class);
+                                                definitions = List.of(singleDef);
+                                        }
+                                }
+
+                                log.info("OpenAI Worker parsed {} definitions from batch", definitions.size());
+
+                                Map<String, WordDefinition> result = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                                for (WordDefinition def : definitions) {
+                                        if (def.getWord() != null) {
+                                                result.put(def.getWord(), def);
+                                        }
+                                }
+                                return result;
+
+                        } catch (Exception e) {
+                                log.warn("OpenAI Worker batch enrichment failed (Attempt {}). Error: {}", attempt, e.getMessage());
+                                if (attempt < 2) {
+                                        try { Thread.sleep(2000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                                }
+                        }
+                }
+
+                log.error("OpenAI Worker batch enrichment failed after all retries. Falling back to individual enrichment.");
+                // Fallback: individual enrichment
+                Map<String, WordDefinition> fallbackResults = new ConcurrentHashMap<>();
+                try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
                         for (Word word : words) {
                                 executor.submit(() -> {
                                         WordDefinition def = enrichWord(word.getWord(), word.getDifficulty(), word.getContextSentence());
                                         if (def != null) {
-                                                results.put(word.getWord(), def);
+                                                fallbackResults.put(word.getWord(), def);
                                         }
                                 });
                         }
                 }
-
-                return results;
+                return fallbackResults;
         }
 }

@@ -208,6 +208,10 @@ public class GeminiService implements AIService {
                 1. **TURKISH TRANSLATION IS STRICTLY REQUIRED**:
                    - Every 'definition' MUST be written in fluent Turkish.
                    - Every English 'example' MUST include its Turkish translation in parentheses.
+                   - **CONCISE DEFINITIONS (CRITICAL)**: Use the shortest, most direct Turkish equivalent. Do NOT write encyclopedic explanations.
+                     - WRONG: "Motorlu, dört tekerlekli, insanları taşımak için kullanılan kara taşıtı." → RIGHT: "Araba, otomobil."
+                     - WRONG: "Üzerine eşya koyulan dört ayaklı mobilya." → RIGHT: "Masa."
+                     - RULE: If a Turkish person would answer with ONE WORD, use that one word. For rare/complex words (C1/C2), a brief explanation is acceptable.
                 2. **LEMMA (ROOT) IDENTIFICATION**:
                    - Always use the base root form (lemma) of the word.
                 3. **CONTEXT SENSITIVITY (CRITICAL)**:
@@ -318,6 +322,9 @@ public class GeminiService implements AIService {
                 1. **TURKISH TRANSLATION IS STRICTLY REQUIRED**:
                    - Every 'definition' MUST be written in fluent Turkish.
                    - Every English 'example' MUST include its Turkish translation in parentheses.
+                   - **CONCISE DEFINITIONS (CRITICAL)**: Use the shortest, most direct Turkish equivalent. Do NOT write encyclopedic explanations.
+                     - WRONG: "Motorlu, dört tekerlekli, insanları taşımak için kullanılan kara taşıtı." → RIGHT: "Araba, otomobil."
+                     - RULE: If a Turkish person would answer with ONE WORD, use that one word.
                 2. **ROOT MATCHING (CRITICAL)**:
                    - If the rejection reason is 'Root mismatch', you MUST change the "word" field in the JSON to the correct base root. Do not define the past tense or plural form!
                 3. **SEMANTIC UNIQUENESS (CRITICAL)**:
