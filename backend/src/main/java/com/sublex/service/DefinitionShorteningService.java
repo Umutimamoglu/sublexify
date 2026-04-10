@@ -225,8 +225,12 @@ public class DefinitionShorteningService {
                                               currentDef.contains(gptOld) || 
                                               gptOld.contains(currentDef);
                                               
-                            // Alternatif olarak, eğer POS (isim, fiil vb.) eşleşiyorsa ve sadece 1 anlamı varsa da esnek eşleşebiliriz
-                            if (!isMatch && meaning.getPos() != null && meaning.getPos().equals(s.get("pos"))) {
+                            // Alternatif olarak, eğer o POS (isim, fiil vb.) için kelimenin SADECE 1 anlamı varsa da esnek eşleşebiliriz
+                            long posCount = word.getDefinition().getMeanings().stream()
+                                    .filter(m -> m.getPos() != null && m.getPos().equals(meaning.getPos()))
+                                    .count();
+                            
+                            if (!isMatch && meaning.getPos() != null && meaning.getPos().equals(s.get("pos")) && posCount == 1) {
                                 isMatch = true; 
                             }
 
