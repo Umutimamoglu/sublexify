@@ -206,13 +206,26 @@ public class DefinitionShorteningService {
                 boolean updated = false;
                 for (WordDefinition.Meaning meaning : word.getDefinition().getMeanings()) {
                     for (Map<String, String> s : shortenings) {
-                        if (meaning.getDefinition() != null && 
-                            meaning.getDefinition().equals(s.get("old")) &&
-                            s.get("new") != null) {
-                            log.info("Shortened '{}' [{}]: '{}' → '{}'", 
-                                word.getWord(), meaning.getPos(), meaning.getDefinition(), s.get("new"));
-                            meaning.setDefinition(s.get("new"));
-                            updated = true;
+                        if (meaning.getDefinition() != null && s.get("new") != null) {
+                            String currentDef = meaning.getDefinition().trim();
+                            String gptOld = s.get("old") != null ? s.get("old").trim() : "";
+                            
+                            // Eşleşmeyi esnek yap. GPT bazen boşlukları veya harfleri hafif kırpabilir.
+                            boolean isMatch = currentDef.equals(gptOld) || 
+                                              currentDef.contains(gptOld) || 
+                                              gptOld.contains(currentDef);
+                                              
+                            // Alternatif olarak, eğer POS (isim, fiil vb.) eşleşiyorsa ve sadece 1 anlamı varsa da esnek eşleşebiliriz
+                            if (!isMatch && meaning.getPos() != null && meaning.getPos().equals(s.get("pos"))) {
+                                isMatch = true; 
+                            }
+
+                            if (isMatch) {
+                                log.info("Shortened '{}' [{}]: '{}' → '{}'", 
+                                    word.getWord(), meaning.getPos(), meaning.getDefinition(), s.get("new"));
+                                meaning.setDefinition(s.get("new"));
+                                updated = true;
+                            }
                         }
                     }
                 }
