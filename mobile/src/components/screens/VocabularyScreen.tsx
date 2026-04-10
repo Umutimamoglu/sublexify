@@ -12,6 +12,7 @@ import {
   Dimensions,
   useWindowDimensions,
   Modal,
+  Platform,
 } from 'react-native';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -243,16 +244,33 @@ function RightActions({
 
   return (
     <View style={styles.swipeActions}>
-      <BlurView tint="dark" intensity={60} style={styles.swipeAction}>
-        <TouchableOpacity style={styles.swipeActionInner} onPress={onAddToList} activeOpacity={0.8}>
-          <Ionicons name="list" size={20} color={word.definition ? '#a78bfa' : '#fff'} />
-        </TouchableOpacity>
-      </BlurView>
-      <BlurView tint="dark" intensity={60} style={styles.swipeAction}>
-        <TouchableOpacity style={styles.swipeActionInner} onPress={speak} activeOpacity={0.8}>
-          <Ionicons name="volume-medium" size={20} color="#fff" />
-        </TouchableOpacity>
-      </BlurView>
+      {Platform.OS === 'ios' ? (
+        <BlurView tint="dark" intensity={60} style={styles.swipeAction}>
+          <TouchableOpacity style={styles.swipeActionInner} onPress={onAddToList} activeOpacity={0.8}>
+            <Ionicons name="list" size={20} color={word.definition ? '#a78bfa' : '#fff'} />
+          </TouchableOpacity>
+        </BlurView>
+      ) : (
+        <View style={[styles.swipeAction, { backgroundColor: 'rgba(40,40,50,0.92)' }]}>
+          <TouchableOpacity style={styles.swipeActionInner} onPress={onAddToList} activeOpacity={0.8}>
+            <Ionicons name="list" size={20} color={word.definition ? '#a78bfa' : '#fff'} />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {Platform.OS === 'ios' ? (
+        <BlurView tint="dark" intensity={60} style={styles.swipeAction}>
+          <TouchableOpacity style={styles.swipeActionInner} onPress={speak} activeOpacity={0.8}>
+            <Ionicons name="volume-medium" size={20} color="#fff" />
+          </TouchableOpacity>
+        </BlurView>
+      ) : (
+        <View style={[styles.swipeAction, { backgroundColor: 'rgba(50,50,60,0.92)' }]}>
+          <TouchableOpacity style={styles.swipeActionInner} onPress={speak} activeOpacity={0.8}>
+            <Ionicons name="volume-medium" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }

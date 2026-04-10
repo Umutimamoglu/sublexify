@@ -18,6 +18,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Platform,
 } from 'react-native';
 import Reanimated, {
   useSharedValue,
@@ -505,7 +506,8 @@ function RightActions({
     <View style={actionStyles.container}>
       {/* 1. Ekleme Butonu */}
       <Reanimated.View style={addStyle}>
-        <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
+        {Platform.OS === 'ios' ? (
+          <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
             <TouchableOpacity
               style={actionStyles.btnInner}
               onPress={() => { onClose(); onAddToList(); }}
@@ -514,11 +516,23 @@ function RightActions({
               <Ionicons name="bookmark" size={20} color={c.PURPLE} />
             </TouchableOpacity>
           </BlurView>
+        ) : (
+          <View style={[actionStyles.btn, { backgroundColor: isDark ? 'rgba(40,40,50,0.92)' : 'rgba(230,230,240,0.92)' }]}>
+            <TouchableOpacity
+              style={actionStyles.btnInner}
+              onPress={() => { onClose(); onAddToList(); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="bookmark" size={20} color={c.PURPLE} />
+            </TouchableOpacity>
+          </View>
+        )}
       </Reanimated.View>
 
       {/* 2. Seslendirme Butonu */}
       <Reanimated.View style={ttsStyle}>
-        <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
+        {Platform.OS === 'ios' ? (
+          <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
             <TouchableOpacity
               style={actionStyles.btnInner}
               onPress={() => { onClose(); onTts(); }}
@@ -527,20 +541,43 @@ function RightActions({
               <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
             </TouchableOpacity>
           </BlurView>
+        ) : (
+          <View style={[actionStyles.btn, { backgroundColor: isDark ? 'rgba(40,40,50,0.92)' : 'rgba(230,230,240,0.92)' }]}>
+            <TouchableOpacity
+              style={actionStyles.btnInner}
+              onPress={() => { onClose(); onTts(); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
+            </TouchableOpacity>
+          </View>
+        )}
       </Reanimated.View>
 
       {/* 3. Silme Butonu - Eğer onRemove gönderilmişse */}
       {!!onRemove && (
         <Reanimated.View style={delStyle}>
-          <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
-            <TouchableOpacity
-              style={actionStyles.btnInner}
-              onPress={() => { onClose(); onRemove(); }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="trash" size={20} color="#EF4444" />
-            </TouchableOpacity>
-          </BlurView>
+          {Platform.OS === 'ios' ? (
+            <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
+              <TouchableOpacity
+                style={actionStyles.btnInner}
+                onPress={() => { onClose(); onRemove(); }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trash" size={20} color="#EF4444" />
+              </TouchableOpacity>
+            </BlurView>
+          ) : (
+            <View style={[actionStyles.btn, { backgroundColor: isDark ? 'rgba(40,40,50,0.92)' : 'rgba(230,230,240,0.92)' }]}>
+              <TouchableOpacity
+                style={actionStyles.btnInner}
+                onPress={() => { onClose(); onRemove(); }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="trash" size={20} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+          )}
         </Reanimated.View>
       )}
     </View>
