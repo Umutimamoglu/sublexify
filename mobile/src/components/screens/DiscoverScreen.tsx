@@ -323,6 +323,7 @@ function MediaBrowseCard({
   onPress: () => void;
 }) {
   const { t } = useTranslation('discover');
+  const { t: tCommon } = useTranslation('common');
   const { darkBg, lightBg, accent } = cardAccent(item.id);
   const title = seriesTitle(item);
   const diff = (item.difficultyLevel as any) ?? '-';
@@ -371,7 +372,7 @@ function MediaBrowseCard({
         <View style={styles.mediaStatsWrap}>
             <Ionicons name="documents" size={12} color="#aaaacc" />
             <Text style={styles.mediaStats}>
-                {item.totalWords} {t('words')} · <Text style={styles.mediaKnownStats}>{t('media.known_count', { count: knownCount })}</Text>
+                {item.totalWords} {t('words')} · <Text style={styles.mediaKnownStats}>{tCommon('media.known_count', { count: knownCount })}</Text>
             </Text>
         </View>
         

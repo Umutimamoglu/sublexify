@@ -148,7 +148,6 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
 type Styles = ReturnType<typeof makeStyles>;
 
-// ─── MarkKnownModal ───────────────────────────────────────────
 function MarkKnownModal({
   visible, levels, wordCount, onClose, onConfirm, loading, styles, c,
 }: {
@@ -156,6 +155,7 @@ function MarkKnownModal({
   onClose: () => void; onConfirm: () => void; loading: boolean;
   styles: Styles; c: Palette;
 }) {
+  const { t: tCommon } = useTranslation('common');
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.mkOverlay} activeOpacity={1} onPress={onClose}>
@@ -577,7 +577,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
               >
                 <Ionicons name="checkmark-circle-outline" size={15} color={c.PURPLE} />
                 <Text style={styles.ctaTextOutline} numberOfLines={1}>
-                  {[...selectedLevels].sort().join(' · ')} → {tCommon('media.known_count', { count: '' }).replace(' ', '').replace(':', '')}
+                  {[...selectedLevels].sort().join(' · ')} → {tCommon('media.known_count', { count: 0 }).replace('0', '').trim()}
                 </Text>
               </TouchableOpacity>
             )}

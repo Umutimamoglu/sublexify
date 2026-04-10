@@ -349,6 +349,7 @@ function MarkKnownModal({
   styles: Styles;
   c: Palette;
 }) {
+  const { t: tCommon } = useTranslation('common');
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.mkOverlay} activeOpacity={1} onPress={onClose}>
@@ -1274,7 +1275,7 @@ export default function ListScreen({ listId }: { listId: number }) {
               >
                 <Ionicons name="checkmark-circle-outline" size={15} color={c.PURPLE} />
                 <Text style={styles.ctaTextOutline} numberOfLines={1}>
-                  {[...selectedLevels].sort().join(' · ')} → {tCommon('media.known_count', { count: '' }).replace(' ', '').replace(':', '')}
+                  {[...selectedLevels].sort().join(' · ')} → {tCommon('media.known_count', { count: 0 }).replace('0', '').trim()}
                 </Text>
               </TouchableOpacity>
             )}
