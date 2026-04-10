@@ -364,15 +364,14 @@ function MarkKnownModal({
 
           {/* Başlık */}
           <Text style={styles.mkTitle}>
-            {wordCount} kelime bilinen olarak işaretlenecek
+            {tCommon('media.mark_batch_known', { count: wordCount })}
           </Text>
 
           {/* Uyarı */}
           <View style={styles.mkWarningBox}>
             <Ionicons name="warning-outline" size={18} color="#F59E0B" />
             <Text style={styles.mkWarningText}>
-              Bu kelimeler kalıcı olarak Bilinen Kelimeler listenize eklenecek.
-              İşlem geri alınamaz — bu listeden ayrıca çıkarılamaz.
+              {tCommon('media.mark_batch_warning')}
             </Text>
           </View>
 
@@ -1004,7 +1003,7 @@ export default function ListScreen({ listId }: { listId: number }) {
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={c.BG}
       />
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
 
         {/* Header */}
         <View style={styles.header}>
@@ -1275,7 +1274,7 @@ export default function ListScreen({ listId }: { listId: number }) {
               >
                 <Ionicons name="checkmark-circle-outline" size={15} color={c.PURPLE} />
                 <Text style={styles.ctaTextOutline} numberOfLines={1}>
-                  {[...selectedLevels].sort().join(' · ')} → Bilinen
+                  {[...selectedLevels].sort().join(' · ')} → {tCommon('media.known_count', { count: '' }).replace(' ', '').replace(':', '')}
                 </Text>
               </TouchableOpacity>
             )}

@@ -99,5 +99,15 @@
     },
     "unknownKategory": "Unknown Category.",
     "wordCount": "{{count}} words"
+  },
+  "media": {
+    "difficulty_labels": {
+      "EASY": "Easy",
+      "MEDIUM": "Medium",
+      "HARD": "Hard"
+    },
+    "known_count": "{{count}} known",
+    "mark_batch_known": "{{count}} words will be marked as known",
+    "mark_batch_warning": "These words will be permanently added to your Known Words list. This action cannot be undone."
   }
 }

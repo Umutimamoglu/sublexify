@@ -371,7 +371,7 @@ function MediaBrowseCard({
         <View style={styles.mediaStatsWrap}>
             <Ionicons name="documents" size={12} color="#aaaacc" />
             <Text style={styles.mediaStats}>
-                {item.totalWords} {t('words')} · <Text style={styles.mediaKnownStats}>{knownCount} bilinen</Text>
+                {item.totalWords} {t('words')} · <Text style={styles.mediaKnownStats}>{t('media.known_count', { count: knownCount })}</Text>
             </Text>
         </View>
         

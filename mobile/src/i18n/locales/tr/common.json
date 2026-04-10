@@ -99,5 +99,15 @@
     },
     "unknownKategory": "Bilinmeyen Kategori.",
     "wordCount": "{{count}} kelime"
+  },
+  "media": {
+    "difficulty_labels": {
+      "EASY": "Kolay",
+      "MEDIUM": "Orta",
+      "HARD": "Zor"
+    },
+    "known_count": "{{count}} bilinen",
+    "mark_batch_known": "{{count}} kelime bilinen olarak işaretlenecek",
+    "mark_batch_warning": "Bu kelimeler kalıcı olarak Bilinen Kelimeler listenize eklenecek. İşlem geri alınamaz."
   }
 }

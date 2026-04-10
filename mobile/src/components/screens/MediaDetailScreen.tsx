@@ -42,9 +42,14 @@ const DIFF_COLORS: Record<string, string> = {
   C1: '#EF4444', C2: '#9333EA',
 };
 
+  MEDIUM: string;
+  HARD: string;
+};
+
 const OVERALL_DIFF_BG: Record<string, string>   = { EASY: '#22C55E22', MEDIUM: '#F59E0B22', HARD: '#EF444422' };
 const OVERALL_DIFF_TEXT: Record<string, string>  = { EASY: '#22C55E',   MEDIUM: '#F59E0B',   HARD: '#EF4444'   };
-const OVERALL_DIFF_LABEL: Record<string, string> = { EASY: 'Kolay',     MEDIUM: 'Orta',      HARD: 'Zor'       };
+
+// Difficulty labels are now handled by i18n in common.json
 
 type Filter = 'all' | Difficulty;
 const FILTERS: Filter[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -166,12 +171,11 @@ function MarkKnownModal({
               </View>
             ))}
           </View>
-          <Text style={styles.mkTitle}>{wordCount} kelime bilinen olarak işaretlenecek</Text>
+          <Text style={styles.mkTitle}>{tCommon('media.mark_batch_known', { count: wordCount })}</Text>
           <View style={styles.mkWarningBox}>
             <Ionicons name="warning-outline" size={18} color="#F59E0B" />
             <Text style={styles.mkWarningText}>
-              Bu kelimeler kalıcı olarak Bilinen Kelimeler listenize eklenecek.
-              İşlem geri alınamaz — bu listeden ayrıca çıkarılamaz.
+              {tCommon('media.mark_batch_warning')}
             </Text>
           </View>
           <View style={styles.mkBtnRow}>
@@ -441,7 +445,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
             {!!media?.overallDifficulty && (
               <View style={[styles.heroBadge, { backgroundColor: OVERALL_DIFF_BG[media.overallDifficulty] }]}>
                 <Text style={[styles.heroBadgeText, { color: OVERALL_DIFF_TEXT[media.overallDifficulty] }]}>
-                  {OVERALL_DIFF_LABEL[media.overallDifficulty]}
+                  {tCommon(`media.difficulty_labels.${media.overallDifficulty}`)}
                 </Text>
               </View>
             )}
@@ -524,7 +528,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         barStyle={isDark ? 'light-content' : 'dark-content'}
         backgroundColor={c.BG}
       />
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
 
         {/* Top bar */}
         <View style={styles.headerBar}>
@@ -577,7 +581,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
               >
                 <Ionicons name="checkmark-circle-outline" size={15} color={c.PURPLE} />
                 <Text style={styles.ctaTextOutline} numberOfLines={1}>
-                  {[...selectedLevels].sort().join(' · ')} → Bilinen
+                  {[...selectedLevels].sort().join(' · ')} → {tCommon('media.known_count', { count: '' }).replace(' ', '').replace(':', '')}
                 </Text>
               </TouchableOpacity>
             )}
