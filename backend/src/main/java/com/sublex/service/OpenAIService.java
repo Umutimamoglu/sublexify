@@ -403,9 +403,16 @@ public class OpenAIService implements AIService {
                                 log.info("OpenAI Worker parsed {} definitions from batch", definitions.size());
 
                                 Map<String, WordDefinition> result = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-                                for (WordDefinition def : definitions) {
+                                for (int idx = 0; idx < definitions.size(); idx++) {
+                                        WordDefinition def = definitions.get(idx);
+                                        // Map by GPT's returned word (root form, e.g. "run")
                                         if (def.getWord() != null) {
                                                 result.put(def.getWord(), def);
+                                        }
+                                        // CRITICAL: Also map by original word name from DB (e.g. "running")
+                                        // so PipelineService lookup by word.getWord() always succeeds
+                                        if (idx < words.size()) {
+                                                result.put(words.get(idx).getWord(), def);
                                         }
                                 }
                                 return result;
