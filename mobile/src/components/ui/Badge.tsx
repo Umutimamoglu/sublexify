@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { Text } from './Text';
 import type { Difficulty } from '@/src/types/api';
 
-// Tailwind dinamik class üretemez — renk değerleri sabit map olarak tutulur
+// CEFR level colors
 const colorMap: Record<Difficulty | '-', string> = {
   A1: '#22C55E',
   A2: '#84CC16',
@@ -11,6 +11,13 @@ const colorMap: Record<Difficulty | '-', string> = {
   C1: '#EF4444',
   C2: '#9333EA',
   '-': '#6B7280',
+};
+
+// Overall difficulty colors (EASY/MEDIUM/HARD)
+const overallColorMap: Record<string, string> = {
+  EASY: '#22C55E',
+  MEDIUM: '#F59E0B',
+  HARD: '#EF4444',
 };
 
 type BadgeProps = {
@@ -32,6 +39,31 @@ export function DifficultyBadge({ difficulty, size = 'md' }: BadgeProps) {
         style={{ color }}
       >
         {difficulty}
+      </Text>
+    </View>
+  );
+}
+
+type OverallBadgeProps = {
+  level: 'EASY' | 'MEDIUM' | 'HARD';
+  label: string;
+  size?: 'sm' | 'md';
+};
+
+export function OverallDifficultyBadge({ level, label, size = 'md' }: OverallBadgeProps) {
+  const color = overallColorMap[level] ?? '#6B7280';
+
+  return (
+    <View
+      className={`self-start rounded-full border ${size === 'sm' ? 'px-2 py-0.5' : 'px-3 py-1'}`}
+      style={{ borderColor: color, backgroundColor: color + '20' }}
+    >
+      <Text
+        variant="caption"
+        className="font-bold tracking-wide"
+        style={{ color }}
+      >
+        {label}
       </Text>
     </View>
   );

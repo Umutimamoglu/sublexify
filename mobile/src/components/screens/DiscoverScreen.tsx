@@ -25,7 +25,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useTheme } from '@/src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { DifficultyBadge } from '@/src/components/ui';
+import { OverallDifficultyBadge } from '@/src/components/ui';
 import { useMedia, useContinueLearning } from '@/src/api/queries/media.queries';
 import { useLists } from '@/src/api/queries/lists.queries';
 import { useUserStats } from '@/src/api/queries/user.queries';
@@ -326,7 +326,7 @@ function MediaBrowseCard({
   const { t: tCommon } = useTranslation('common');
   const { darkBg, lightBg, accent } = cardAccent(item.id);
   const title = seriesTitle(item);
-  const diff = (item.difficultyLevel as any) ?? '-';
+  const overallDiff = item.overallDifficulty ?? 'MEDIUM';
 
   const cefrTotal = Object.values(item.levelCounts ?? {}).reduce((a, b) => a + b, 0);
   const unknownCount = item.totalWords > 0 && item.knownWordPercentage != null
@@ -354,7 +354,7 @@ function MediaBrowseCard({
       />
 
       <View style={styles.badgeWrapperWide}>
-        <DifficultyBadge difficulty={diff} size="sm" />
+        <OverallDifficultyBadge level={overallDiff} label={tCommon(`media.difficulty_labels.${overallDiff}`)} size="sm" />
       </View>
       
       <View style={styles.posterLeft}>

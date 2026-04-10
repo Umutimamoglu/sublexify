@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
-import { DifficultyBadge } from '@/src/components/ui/Badge';
+import { OverallDifficultyBadge } from '@/src/components/ui/Badge';
 import type { MediaDTO } from '@/src/types/api';
 
 const CEFR_COLORS: Record<string, string> = {
@@ -76,6 +76,7 @@ export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate 
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation('discover');
+  const { t: tCommon } = useTranslation('common');
   const { width } = useWindowDimensions();
   const [filter, setFilter] = useState<MediaFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -249,7 +250,7 @@ export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate 
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => {
                 const title = seriesTitle(item);
-                const diff = (item.difficultyLevel as any) ?? '-';
+                const overallDiff = item.overallDifficulty ?? 'MEDIUM';
                 const { darkBg, lightBg, accent } = cardAccent(item.id);
                 const cefrTotal = Object.values(item.levelCounts ?? {}).reduce((a, b) => a + b, 0);
 
@@ -263,7 +264,7 @@ export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate 
                     }}
                   >
                     <View style={styles.badgeWrapper}>
-                      <DifficultyBadge difficulty={diff} size="sm" />
+                      <OverallDifficultyBadge level={overallDiff} label={tCommon(`media.difficulty_labels.${overallDiff}`)} size="sm" />
                     </View>
 
                     {item.posterUrl ? (

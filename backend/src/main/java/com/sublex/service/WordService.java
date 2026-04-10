@@ -49,7 +49,7 @@ public class WordService {
                     if (w.equals(q))     return 0; // exact match
                     if (w.startsWith(q)) return 1; // starts with
                     return 2;                       // contains in middle
-                }))
+                }).thenComparingInt(word -> word.getWord().length()).thenComparing(word -> word.getWord().toLowerCase()))
                 .map(word -> convertToDTO(word, finalKnownWordIds.contains(word.getId())))
                 .collect(Collectors.toList());
     }

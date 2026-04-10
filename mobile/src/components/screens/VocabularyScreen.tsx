@@ -449,7 +449,10 @@ export default function VocabularyScreen() {
       const aw = a.word.toLowerCase();
       const bw = b.word.toLowerCase();
       const rank = (w: string) => w === q ? 0 : w.startsWith(q) ? 1 : 2;
-      return rank(aw) - rank(bw);
+      const rankDiff = rank(aw) - rank(bw);
+      if (rankDiff !== 0) return rankDiff;
+      if (aw.length !== bw.length) return aw.length - bw.length;
+      return aw.localeCompare(bw);
     });
   }, [searchResultsData, query]);
 
