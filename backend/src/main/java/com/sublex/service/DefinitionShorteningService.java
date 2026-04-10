@@ -43,14 +43,15 @@ public class DefinitionShorteningService {
         if (lastNote != null && lastNote.contains("[BATCH:")) {
             int start = lastNote.indexOf("[BATCH:") + 7;
             int end = lastNote.indexOf("]", start);
-            if (end > start) lastBatchId = lastNote.substring(start, end);
+            if (end > start)
+                lastBatchId = lastNote.substring(start, end);
         }
 
         long lastBatchCount = 0;
         if (lastBatchId != null) {
             lastBatchCount = wordRepository.countByAuditNotesContaining(lastBatchId);
         }
-        
+
         stats.put("lastBatchProcessed", lastBatchCount);
         stats.put("lastBatchId", lastBatchId);
 
@@ -58,8 +59,8 @@ public class DefinitionShorteningService {
         Map<String, Long> byDifficulty = new LinkedHashMap<>();
         for (String diff : List.of("A1", "A2", "B1")) {
             byDifficulty.put(diff, candidates.stream()
-                .filter(w -> diff.equalsIgnoreCase(w.getDifficulty()))
-                .count());
+                    .filter(w -> diff.equalsIgnoreCase(w.getDifficulty()))
+                    .count());
         }
         stats.put("byDifficulty", byDifficulty);
 
@@ -71,24 +72,25 @@ public class DefinitionShorteningService {
      */
     public List<Word> findCandidates(int limit) {
         List<Word> enrichedWords = wordRepository.findByIsEnrichedTrueAndLanguageAndDifficultyIn(
-            "en", List.of("A1", "A2", "B1"));
-        
+                "en", List.of("A1", "A2", "B1"));
+
         return enrichedWords.stream()
-            .filter(w -> w.getDifficulty() != null && TARGET_DIFFICULTIES.contains(w.getDifficulty().toUpperCase()))
-            .filter(w -> w.getDefinition() != null && w.getDefinition().getMeanings() != null)
-            .filter(w -> !w.getDefinition().getMeanings().isEmpty())
-            .filter(w -> {
-                // Check if any meaning's definition is too long
-                return w.getDefinition().getMeanings().stream()
-                    .anyMatch(m -> m.getDefinition() != null && m.getDefinition().length() > MAX_DEFINITION_LENGTH);
-            })
-            .filter(w -> {
-                // Skip already shortened words
-                String notes = w.getAuditNotes();
-                return notes == null || !notes.contains("Definition shortened");
-            })
-            .limit(limit)
-            .toList();
+                .filter(w -> w.getDifficulty() != null && TARGET_DIFFICULTIES.contains(w.getDifficulty().toUpperCase()))
+                .filter(w -> w.getDefinition() != null && w.getDefinition().getMeanings() != null)
+                .filter(w -> !w.getDefinition().getMeanings().isEmpty())
+                .filter(w -> {
+                    // Check if any meaning's definition is too long
+                    return w.getDefinition().getMeanings().stream()
+                            .anyMatch(m -> m.getDefinition() != null
+                                    && m.getDefinition().length() > MAX_DEFINITION_LENGTH);
+                })
+                .filter(w -> {
+                    // Skip already shortened words
+                    String notes = w.getAuditNotes();
+                    return notes == null || !notes.contains("Definition shortened");
+                })
+                .limit(limit)
+                .toList();
     }
 
     /**
@@ -107,7 +109,7 @@ public class DefinitionShorteningService {
 
         log.info("Found {} words with verbose definitions. Processing...", total);
 
-        int gpuBatchSize = 10; // 10 words per GPT call
+        int gpuBatchSize = 30; // 10 words per GPT call
         AtomicInteger processed = new AtomicInteger(0);
         String batchId = "B-" + System.currentTimeMillis();
 
@@ -138,25 +140,26 @@ public class DefinitionShorteningService {
             StringBuilder defs = new StringBuilder();
             for (WordDefinition.Meaning m : w.getDefinition().getMeanings()) {
                 if (m.getDefinition() != null && m.getDefinition().length() > MAX_DEFINITION_LENGTH) {
-                    String examplePart = (m.getExample() != null && !m.getExample().isEmpty()) 
-                                         ? (" | Example: " + m.getExample()) : "";
+                    String examplePart = (m.getExample() != null && !m.getExample().isEmpty())
+                            ? (" | Example: " + m.getExample())
+                            : "";
                     defs.append(String.format("  - [%s] %s%s\n", m.getPos(), m.getDefinition(), examplePart));
                 }
             }
             if (defs.length() > 0) {
                 input.append(String.format("%d. WORD: \"%s\" (DIFFICULTY: %s)\n   VERBOSE DEFINITIONS:\n%s",
-                    i + 1, w.getWord(), w.getDifficulty(), defs));
+                        i + 1, w.getWord(), w.getDifficulty(), defs));
             }
         }
 
         String systemPrompt = """
                 You are a Turkish Dictionary Editor. Your ONLY job is to SHORTEN verbose Turkish definitions to their simplest form.
-                
+
                 CRITICAL INSTRUCTIONS:
                 1. PRESERVE THE ORIGINAL MEANING: You MUST strictly retain the exact semantic meaning of the original Turkish definition. Do NOT provide a different, obscure, or slang translation of the English word (e.g., if original definition is about "digging dirt", do NOT output "hoşlanmak (argo)").
                 2. Her anlamı kısaltırken o anlamın örnek cümlesini (Example) REFERANS AL. Kısaltılan tanım ile örnek cümle anlam olarak kesinlikle uyuşmalıdır. Örnek cümleye bakarak orijinal tanımın hangi anlamda kullanıldığını teyit et.
-                3. Replace long explanatory definitions with the shortest possible Turkish equivalent word(s). 
-                4. If a simple 1-2 word Turkish translation exists, USE IT. 
+                3. Replace long explanatory definitions with the shortest possible Turkish equivalent word(s).
+                4. If a simple 1-2 word Turkish translation exists, USE IT.
                 5. Keep the same POS (part of speech). Do NOT add new meanings or remove existing ones.
                 6. NO DUPLICATE DEFINITIONS: If your shortening results in two identical definitions for the same word and the same POS, you MUST slightly differentiate them (e.g., provide a secondary nuance) or remove/merge one. Never return two exact same strings like "Eğlence." and "Eğlence."
                 7. Avoid confusing words: e.g. for 'resume', if it means 'to start again after a pause', use 'kaldığı yerden devam etmek', not 'yeniden başlatmak'. For 'capital' as a city, use 'başkent', not 'sermaye'. Only give what the ORIGINAL definition describes.
@@ -164,12 +167,12 @@ public class DefinitionShorteningService {
                 EXAMPLES:
                 - "Motorlu, dört tekerlekli, insanları bir yerden taşımak için kullanılan taşıt." → "Araba, otomobil."
                 - "Gözlem yapmak, incelemek ve bakmak." → "Gözlemlemek."
-                
+
                 OUTPUT FORMAT (JSON):
                 Return a JSON array where each object has:
                 - "word": the English word
                 - "shortened": array of objects with {"pos": "...", "old": "original definition", "new": "shortened definition"}
-                
+
                 Return ONLY valid JSON. No explanations.
                 """;
 
@@ -187,12 +190,14 @@ public class DefinitionShorteningService {
             // Parse response - could be array or wrapped object
             List<Map<String, Object>> results;
             if (clean.startsWith("[")) {
-                results = objectMapper.readValue(clean, new TypeReference<>() {});
+                results = objectMapper.readValue(clean, new TypeReference<>() {
+                });
             } else {
                 Map<String, Object> wrapper = objectMapper.readValue(clean, Map.class);
                 Object arr = wrapper.values().stream().filter(v -> v instanceof List).findFirst().orElse(null);
                 if (arr != null) {
-                    results = objectMapper.convertValue(arr, new TypeReference<>() {});
+                    results = objectMapper.convertValue(arr, new TypeReference<>() {
+                    });
                 } else {
                     log.error("Cannot parse shortening response");
                     return;
@@ -203,7 +208,9 @@ public class DefinitionShorteningService {
             Map<String, List<Map<String, String>>> shortenedMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             for (Map<String, Object> r : results) {
                 String word = (String) r.get("word");
-                List<Map<String, String>> shortened = objectMapper.convertValue(r.get("shortened"), new TypeReference<>() {});
+                List<Map<String, String>> shortened = objectMapper.convertValue(r.get("shortened"),
+                        new TypeReference<>() {
+                        });
                 if (word != null && shortened != null) {
                     shortenedMap.put(word, shortened);
                 }
@@ -211,7 +218,8 @@ public class DefinitionShorteningService {
 
             for (Word word : batch) {
                 List<Map<String, String>> shortenings = shortenedMap.get(word.getWord());
-                if (shortenings == null || shortenings.isEmpty()) continue;
+                if (shortenings == null || shortenings.isEmpty())
+                    continue;
 
                 boolean updated = false;
                 for (WordDefinition.Meaning meaning : word.getDefinition().getMeanings()) {
@@ -219,24 +227,26 @@ public class DefinitionShorteningService {
                         if (meaning.getDefinition() != null && s.get("new") != null) {
                             String currentDef = meaning.getDefinition().trim();
                             String gptOld = s.get("old") != null ? s.get("old").trim() : "";
-                            
+
                             // Eşleşmeyi esnek yap. GPT bazen boşlukları veya harfleri hafif kırpabilir.
-                            boolean isMatch = currentDef.equals(gptOld) || 
-                                              currentDef.contains(gptOld) || 
-                                              gptOld.contains(currentDef);
-                                              
-                            // Alternatif olarak, eğer o POS (isim, fiil vb.) için kelimenin SADECE 1 anlamı varsa da esnek eşleşebiliriz
+                            boolean isMatch = currentDef.equals(gptOld) ||
+                                    currentDef.contains(gptOld) ||
+                                    gptOld.contains(currentDef);
+
+                            // Alternatif olarak, eğer o POS (isim, fiil vb.) için kelimenin SADECE 1 anlamı
+                            // varsa da esnek eşleşebiliriz
                             long posCount = word.getDefinition().getMeanings().stream()
                                     .filter(m -> m.getPos() != null && m.getPos().equals(meaning.getPos()))
                                     .count();
-                            
-                            if (!isMatch && meaning.getPos() != null && meaning.getPos().equals(s.get("pos")) && posCount == 1) {
-                                isMatch = true; 
+
+                            if (!isMatch && meaning.getPos() != null && meaning.getPos().equals(s.get("pos"))
+                                    && posCount == 1) {
+                                isMatch = true;
                             }
 
                             if (isMatch) {
-                                log.info("Shortened '{}' [{}]: '{}' → '{}'", 
-                                    word.getWord(), meaning.getPos(), meaning.getDefinition(), s.get("new"));
+                                log.info("Shortened '{}' [{}]: '{}' → '{}'",
+                                        word.getWord(), meaning.getPos(), meaning.getDefinition(), s.get("new"));
                                 meaning.setDefinition(s.get("new"));
                                 updated = true;
                             }
@@ -246,8 +256,9 @@ public class DefinitionShorteningService {
 
                 if (updated) {
                     word.setAuditNotes("Definition shortened by AI [BATCH:" + batchId + "]");
-                    
-                    // Sadece sorunları sıfırlıyoruz, ama orijinal enrich tarihini (enrichedAt) bozmuyoruz!
+
+                    // Sadece sorunları sıfırlıyoruz, ama orijinal enrich tarihini (enrichedAt)
+                    // bozmuyoruz!
                     word.setStep3Error(null);
                     word.setProblemFound(false);
                 }
