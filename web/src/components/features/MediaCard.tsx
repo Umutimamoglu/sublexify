@@ -43,8 +43,13 @@ const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
         }
     };
 
+    const getTargetLink = () => {
+        if (media.generatedListId) return `/lists?id=${media.generatedListId}`;
+        return media.tmdbId ? `/series/${media.tmdbId}` : `/media/${media.id}`;
+    };
+
     return (
-        <Link to={media.tmdbId ? `/series/${media.tmdbId}` : `/media/${media.id}`} className="block group h-full">
+        <Link to={getTargetLink()} className="block group h-full">
             <div className="bg-white dark:bg-[#161822] rounded-2xl overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/5 dark:hover:shadow-indigo-500/5 hover:-translate-y-0.5 h-full flex flex-col">
                 {/* Image or Icon Area */}
                 <div className={`aspect-[2/3] w-full relative overflow-hidden ${!imageUrl ? `${config.bgLight} ${config.bgDark}` : ''}`}>

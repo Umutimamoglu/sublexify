@@ -31,5 +31,8 @@ public class MediaDTO {
     private String difficultyLevel; // e.g. B2, C1 -> dominant level
     private String overallDifficulty; // EASY, MEDIUM, HARD
     private Map<String, Long> levelCounts;
+    
+    // Smart Routing
+    private Long generatedListId;
 }
 

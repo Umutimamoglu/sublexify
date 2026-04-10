@@ -152,6 +152,7 @@ public class WordListService {
                 WordList wordList = new WordList();
                 wordList.setName(listName);
                 wordList.setUser(user);
+                wordList.setSourceMedia(media);
                 wordList.getWords().addAll(unknownWords);
 
                 WordList savedList = wordListRepository.save(wordList);
@@ -263,6 +264,11 @@ public class WordListService {
                 dto.setUnknownWords(unknownWords);
                 dto.setLevelCounts(levelCounts);
                 dto.setColor(list.getColor());
+
+                if (list.getSourceMedia() != null) {
+                        dto.setSourceMediaId(list.getSourceMedia().getId());
+                        dto.setSourceMediaPosterUrl(list.getSourceMedia().getPosterUrl());
+                }
 
                 return dto;
         }

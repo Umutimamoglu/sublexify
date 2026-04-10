@@ -45,9 +45,28 @@ public class UserMediaProgressService {
     }
 
     public List<Media> getRecentMediaForUser(Long userId, int limit) {
-        return progressRepository.findAllByUserIdOrderByLastAccessedAtDesc(userId).stream()
-                .limit(limit)
-                .map(UserMediaProgress::getMedia)
-                .collect(Collectors.toList());
+        List<UserMediaProgress> progresses = progressRepository.findAllByUserIdOrderByLastAccessedAtDesc(userId);
+        
+        List<Media> result = new java.util.ArrayList<>();
+        java.util.Map<String, Integer> imdbIdCounts = new java.util.HashMap<>();
+        
+        for (UserMediaProgress progress : progresses) {
+            Media m = progress.getMedia();
+            
+            if (m.getImdbId() != null) {
+                int count = imdbIdCounts.getOrDefault(m.getImdbId(), 0);
+                if (count >= 2) {
+                    continue; // max 2 items per Series/Movie
+                }
+                imdbIdCounts.put(m.getImdbId(), count + 1);
+            }
+            
+            result.add(m);
+            if (result.size() >= limit) {
+                break;
+            }
+        }
+        
+        return result;
     }
 }

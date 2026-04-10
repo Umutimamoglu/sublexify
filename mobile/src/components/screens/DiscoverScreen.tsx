@@ -578,7 +578,13 @@ export default function DiscoverScreen() {
       <TouchableOpacity
         style={styles.heroSlide}
         activeOpacity={0.95}
-        onPress={() => router.push(`/media/${item.id}` as any)}
+        onPress={() => {
+          if (item.generatedListId) {
+            router.push(`/list/${item.generatedListId}` as any);
+          } else {
+            router.push(`/media/${item.id}` as any);
+          }
+        }}
       >
         {item.posterUrl || item.backdropUrl ? (
           <Image
@@ -603,7 +609,17 @@ export default function DiscoverScreen() {
             </Text>
           )}
           <View style={styles.heroBtnRow}>
-            <TouchableOpacity style={styles.heroBtnOuter} activeOpacity={0.8} onPress={() => router.push(`/media/${item.id}` as any)}>
+            <TouchableOpacity 
+              style={styles.heroBtnOuter} 
+              activeOpacity={0.8} 
+              onPress={() => {
+                if (item.generatedListId) {
+                  router.push(`/list/${item.generatedListId}` as any);
+                } else {
+                  router.push(`/media/${item.id}` as any);
+                }
+              }}
+            >
                 <LinearGradient
                     colors={[
                         "rgba(255,255,255,0.1)",

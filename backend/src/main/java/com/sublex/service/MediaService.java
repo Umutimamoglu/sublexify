@@ -8,6 +8,7 @@ import com.sublex.model.MediaWord;
 import com.sublex.repository.MediaRepository;
 import com.sublex.repository.MediaWordRepository;
 import com.sublex.repository.UserKnownWordRepository;
+import com.sublex.repository.WordListRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ public class MediaService {
     private final MediaWordRepository mediaWordRepository;
     private final UserKnownWordRepository userKnownWordRepository;
     private final UserMediaProgressService userMediaProgressService;
+    private final WordListRepository wordListRepository;
 
     /**
      * Get recent media for user (Continue Learning)
@@ -60,6 +62,8 @@ public class MediaService {
 
         // Batch 3: known-word counts per media
         Map<Long, Integer> knownCountByMedia = new java.util.HashMap<>();
+        Map<Long, Long> mediaToListMap = new java.util.HashMap<>();
+        
         if (userId != null) {
             for (Object[] row : mediaWordRepository.countKnownWordsPerMedia(userId)) {
                 Long mediaId = (Long) row[0];
@@ -67,6 +71,13 @@ public class MediaService {
                     Long knownCount = (Long) row[1];
                     knownCountByMedia.put(mediaId, knownCount.intValue());
                 }
+            }
+            
+            // Batch 4: WordList mappings
+            for (Object[] row : wordListRepository.findMediaListMappingsByUserId(userId)) {
+                Long mediaId = (Long) row[0];
+                Long listId = (Long) row[1];
+                mediaToListMap.put(mediaId, listId);
             }
         }
 
@@ -91,6 +102,8 @@ public class MediaService {
                 int known = knownCountByMedia.getOrDefault(media.getId(), 0);
                 dto.setKnownWordPercentage((double) known / total * 100);
             }
+
+            dto.setGeneratedListId(mediaToListMap.get(media.getId()));
 
             result.add(dto);
         }

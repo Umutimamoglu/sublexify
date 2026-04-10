@@ -20,6 +20,7 @@ export interface Media {
     difficultyLevel?: string;
     overallDifficulty?: string;
     levelCounts?: Record<string, number>;
+    generatedListId?: number;
 }
 
 export interface MediaWordsResponse {

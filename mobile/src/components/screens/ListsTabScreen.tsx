@@ -21,6 +21,7 @@ import { useResponsive } from '@/src/hooks/useResponsive';
 import { useLists, useCreateList, useDeleteList, useUpdateList } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import type { WordListDTO } from '@/src/types/api';
 
 type Palette = {
@@ -36,7 +37,7 @@ const DIFF_COLORS: Record<string, string> = {
 };
 
 // ─── Styles ───────────────────────────────────────────────────
-function makeStyles(c: Palette, _isDark: boolean, isTablet: boolean) {
+function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
   const pad = isTablet ? 32 : 16;
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.BG },
@@ -58,18 +59,34 @@ function makeStyles(c: Palette, _isDark: boolean, isTablet: boolean) {
     // Section label
     sectionLabel: { color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 1.2, paddingHorizontal: pad, paddingTop: 14, paddingBottom: 8 },
 
-    // List card
-    listCard: { marginHorizontal: pad, marginBottom: 10, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER, overflow: 'hidden', flexDirection: 'row' },
-    listCardStrip: { width: 5, borderTopLeftRadius: 14, borderBottomLeftRadius: 14 },
-    listCardBody: { flex: 1, padding: 14 },
+    // Modern List card (matches Discover listRow)
+    listCard: {
+      marginHorizontal: pad, marginBottom: 14,
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: isDark ? '#1a1a1c' : '#ffffff',
+      borderRadius: 24, paddingVertical: 18, paddingLeft: 20, paddingRight: 24,
+      elevation: isDark ? 0 : 2,
+      shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 10,
+    },
+    listCardStrip: {
+       position: 'absolute', left: 0, top: 22, bottom: 22, width: 4,
+       borderTopRightRadius: 4, borderBottomRightRadius: 4,
+    },
+    listIconCircle: {
+      width: 52, height: 52, borderRadius: 20,
+      alignItems: 'center', justifyContent: 'center',
+      marginRight: 16,
+    },
+    listCardBody: { flex: 1, gap: 4 },
     listCardRow: { flexDirection: 'row', alignItems: 'flex-start' },
     listCardInfo: { flex: 1 },
-    listCardName: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
-    listCardStats: { color: c.TEXT_S, fontSize: 12, marginTop: 4 },
+    listCardName: { color: c.TEXT_P, fontSize: 16, fontWeight: '800' },
+    listCardStats: { color: c.TEXT_S, fontSize: 13, fontWeight: '500', marginTop: 2 },
     listCardActions: { flexDirection: 'row', gap: 6, marginLeft: 8 },
     editBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
-    deleteBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EF444422', alignItems: 'center', justifyContent: 'center' },
-    lockIcon: { fontSize: 16, marginLeft: 10 },
+    deleteBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EF444415', alignItems: 'center', justifyContent: 'center' },
+    lockIconBox: { marginLeft: 10, alignSelf: 'center', width: 28, height: 28, borderRadius: 14, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
 
     // Color swatches
     swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
@@ -132,8 +149,13 @@ function CefrMiniBar({
 }
 
 // ─── List card ─────────────────────────────────────────────────
+const DISCOVER_LIST_COLORS = [
+  '#E91E63', '#9C27B0', '#3F51B5', '#00BCD4', '#4CAF50', '#FF9800', '#F44336',
+];
+
 function ListCard({
   item,
+  index,
   onPress,
   onDelete,
   onEdit,
@@ -141,6 +163,7 @@ function ListCard({
   c,
 }: {
   item: WordListDTO;
+  index: number;
   onPress: () => void;
   onDelete: () => void;
   onEdit: () => void;
@@ -152,20 +175,74 @@ function ListCard({
     ? Math.round(((item.totalWords - item.unknownWords) / item.totalWords) * 100)
     : 0;
 
+  const n = item.name.toLowerCase();
+  
+  let colorHex = item.color;
+  if (!colorHex) {
+    if (item.isSystem) {
+      const isOxford = n.includes('oxford');
+      colorHex = isOxford ? '#FFCA28' : DISCOVER_LIST_COLORS[index % DISCOVER_LIST_COLORS.length];
+    } else {
+      colorHex = c.PURPLE;
+    }
+  }
+  
+  // Icon selector like Discover
+  let iconName: React.ComponentProps<typeof Ionicons>['name'] = 'library-outline';
+  if (n.includes('oxford') || n.includes('essential')) iconName = 'school-outline';
+  else if (n.includes('business') || n.includes('professional')) iconName = 'briefcase-outline';
+  else if (item.isSystem) iconName = 'albums-outline';
+
   return (
-    <View style={[styles.listCard, item.color ? { backgroundColor: item.color + '12', borderColor: item.color + '55' } : undefined]}>
-      <View style={[styles.listCardStrip, { backgroundColor: item.color ?? c.SURFACE }]} />
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={onPress}
+      style={[
+        styles.listCard,
+        item.color ? { backgroundColor: item.color + '0C' } : null,
+        { overflow: 'hidden' }
+      ]}
+    >
+      {/* Dev Arka Plan Kilit Filigranı (System Lists) */}
+      {item.isSystem && (
+        <Ionicons 
+          name="lock-closed-outline"
+          size={100}
+          color={colorHex}
+          style={{
+            position: 'absolute',
+            right: -18,
+            bottom: -30,
+            opacity: 0.05, // Daha minimal, ince ve şık
+            transform: [{ rotate: '-15deg' }],
+          }}
+        />
+      )}
+
+      <View style={[styles.listCardStrip, { backgroundColor: colorHex }]} />
+      
+      {/* Icon Circle or Poster Thumbnail */}
+      {item.sourceMediaPosterUrl ? (
+        <Image 
+          source={{ uri: item.sourceMediaPosterUrl }} 
+          style={[styles.listIconCircle, { backgroundColor: c.SURFACE2, borderWidth: 1, borderColor: colorHex + '33' }]} 
+          contentFit="cover" 
+        />
+      ) : (
+        <View style={[styles.listIconCircle, { backgroundColor: colorHex + '1A' }]}>
+          <Ionicons name={iconName} size={24} color={colorHex} />
+        </View>
+      )}
+
       <View style={styles.listCardBody}>
         <View style={styles.listCardRow}>
-          <TouchableOpacity style={styles.listCardInfo} onPress={onPress} activeOpacity={0.75}>
+          <View style={[styles.listCardInfo, item.isSystem && { paddingRight: 40 }]}>
             <Text style={styles.listCardName}>{item.name}</Text>
             <Text style={styles.listCardStats}>
               {t('wordCount', { count: item.totalWords })} · {t('wordStatsPct', { pct: unknownPct })}
             </Text>
-          </TouchableOpacity>
-          {item.isSystem ? (
-            <Text style={styles.lockIcon}>🔒</Text>
-          ) : (
+          </View>
+          {!item.isSystem && (
             <View style={styles.listCardActions}>
               <TouchableOpacity style={styles.editBtn} onPress={onEdit} activeOpacity={0.7}>
                 <Ionicons name="pencil-outline" size={15} color={c.TEXT_S} />
@@ -177,12 +254,12 @@ function ListCard({
           )}
         </View>
         {item.levelCounts && item.totalWords > 0 && (
-          <TouchableOpacity activeOpacity={0.75} onPress={onPress}>
+          <View style={{ marginTop: 8 }}>
             <CefrMiniBar levelCounts={item.levelCounts} total={item.totalWords} styles={styles} />
-          </TouchableOpacity>
+          </View>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -461,9 +538,10 @@ export default function ListsTabScreen() {
                 <Text style={styles.sectionLabel}>{t('personalLists')}</Text>
               </>
             )}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <ListCard
                 item={item}
+                index={index}
                 onPress={() => router.push(`/list/${item.id}` as any)}
                 onDelete={() => handleDelete(item)}
                 onEdit={() => setEditingList(item)}
@@ -480,10 +558,11 @@ export default function ListsTabScreen() {
             ListFooterComponent={systemLists.length > 0 ? () => (
               <>
                 <Text style={styles.sectionLabel}>{t('curatedLists')}</Text>
-                {systemLists.map((item) => (
+                {systemLists.map((item, index) => (
                   <ListCard
                     key={item.id}
                     item={item}
+                    index={index + 1}
                     onPress={() => router.push(`/list/${item.id}` as any)}
                     onDelete={() => {}}
                     onEdit={() => {}}

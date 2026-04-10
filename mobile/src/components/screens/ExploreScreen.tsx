@@ -19,7 +19,7 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useMedia } from '@/src/api/queries/media.queries';
 import type { MediaDTO } from '@/src/types/api';
 
-type MediaFilter = 'all' | 'MOVIE' | 'SEASON';
+type MediaFilter = 'all' | 'MOVIE' | 'EPISODE';
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;
@@ -101,7 +101,7 @@ type Styles = ReturnType<typeof makeStyles>;
 
 // ─── Story bubble ─────────────────────────────────────────────
 function StoryItem({ item, onPress, styles }: { item: MediaDTO; onPress: () => void; styles: Styles }) {
-  const label = item.type === 'SEASON' ? item.title.split(' - ')[0] : item.title;
+  const label = item.type === 'EPISODE' ? item.title.split(' - ')[0] : item.title;
   return (
     <TouchableOpacity style={styles.storyItem} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.storyRing}>
@@ -176,9 +176,19 @@ export default function ExploreScreen() {
 
   const { data: allMedia = [], isLoading } = useMedia();
 
-  const rootMedia = useMemo(() =>
-    allMedia.filter(m => m.type === 'MOVIE' || m.type === 'SEASON'),
-  [allMedia]);
+  const rootMedia = useMemo(() => {
+    const movies = allMedia.filter(m => m.type === 'MOVIE');
+    const episodes = allMedia.filter(m => m.type === 'EPISODE');
+    
+    const uniqueSeriesMap = new Map<string, MediaDTO>();
+    episodes.forEach(ep => {
+      if (ep.imdbId && !uniqueSeriesMap.has(ep.imdbId)) {
+        uniqueSeriesMap.set(ep.imdbId, ep);
+      }
+    });
+    
+    return [...movies, ...Array.from(uniqueSeriesMap.values())];
+  }, [allMedia]);
 
   const stories = useMemo(() =>
     [...rootMedia]
@@ -199,7 +209,7 @@ export default function ExploreScreen() {
   }, [rootMedia, filter, query, isSearching]);
 
   const navigate = useCallback((item: MediaDTO) => {
-    if (item.type === 'SEASON') {
+    if (item.type === 'EPISODE') {
       router.push(`/show/${item.imdbId}` as any);
     } else {
       router.push(`/media/${item.id}` as any);
@@ -224,7 +234,7 @@ export default function ExploreScreen() {
   const filters: { label: string; value: MediaFilter }[] = [
     { label: t('filterAll'),    value: 'all' },
     { label: t('filterMovies'), value: 'MOVIE' },
-    { label: t('filterSeries'), value: 'SEASON' },
+    { label: t('filterSeries'), value: 'EPISODE' },
   ];
 
   const sectionTitle = isSearching

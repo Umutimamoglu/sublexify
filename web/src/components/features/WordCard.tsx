@@ -140,6 +140,17 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                             >
                                 <Volume2 className="w-8 h-8" />
                             </button>
+
+                            {definition?.meanings?.[0]?.example && (
+                                <div className="mt-3 text-center px-4">
+                                    <span className="inline-block mb-1.5 text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 rounded">
+                                        {definition.meanings[0].pos}
+                                    </span>
+                                    <p className="text-sm italic text-gray-500 dark:text-gray-400 line-clamp-3">
+                                        "{definition.meanings[0].example.split('|')[0].trim()}"
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <div className="w-full mt-auto">

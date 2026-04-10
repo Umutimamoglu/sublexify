@@ -19,4 +19,6 @@ public class WordListDTO {
     private Map<String, Long> levelCounts;
     private LocalDateTime createdAt;
     private String color;
+    private Long sourceMediaId;
+    private String sourceMediaPosterUrl;
 }

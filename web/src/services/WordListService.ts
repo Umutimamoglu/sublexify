@@ -44,6 +44,8 @@ export interface WordListDTO {
     isSystem?: boolean;
     levelCounts: Record<string, number>;
     color?: string;
+    sourceMediaId?: number;
+    sourceMediaPosterUrl?: string | null;
 }
 
 export interface WordListWordsResponseDTO {

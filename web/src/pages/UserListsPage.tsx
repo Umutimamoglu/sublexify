@@ -4,7 +4,7 @@ import WordCard from '@/components/features/WordCard';
 import { Loader2, Plus, Trash2, ChevronRight, Book, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock, PlayCircle, Pencil, X } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import api from '@/services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const UserListsPage = () => {
     const [lists, setLists] = useState<WordListDTO[]>([]);
@@ -13,6 +13,8 @@ const UserListsPage = () => {
     const [selectedList, setSelectedList] = useState<WordListDTO | null>(null);
     const [wordData, setWordData] = useState<WordListWordsResponseDTO | null>(null);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const urlListId = searchParams.get('id');
     
     // Filters
     const [filterUnknown, setFilterUnknown] = useState(false);
@@ -110,7 +112,10 @@ const UserListsPage = () => {
             });
             setLists(sortedData);
             if (sortedData.length > 0 && !selectedList) {
-                setSelectedList(sortedData[0]);
+                const preSelected = urlListId 
+                    ? sortedData.find(l => l.id === parseInt(urlListId)) 
+                    : null;
+                setSelectedList(preSelected || sortedData[0]);
             }
         } catch (error) {
             console.error("Failed to fetch lists", error);
@@ -325,10 +330,18 @@ const UserListsPage = () => {
                                                     )}
                                                 >
                                                     <div className="min-w-0 flex items-center gap-3">
-                                                        <div
-                                                            className="w-2 h-2 rounded-full shrink-0"
-                                                            style={{ backgroundColor: list.color ?? '#818cf8' }}
-                                                        />
+                                                        {list.sourceMediaPosterUrl ? (
+                                                            <img 
+                                                                src={list.sourceMediaPosterUrl} 
+                                                                alt={list.name} 
+                                                                className="w-10 h-14 object-cover rounded-md shadow-sm shrink-0 border border-gray-200 dark:border-gray-800" 
+                                                            />
+                                                        ) : (
+                                                            <div
+                                                                className="w-2 h-2 rounded-full shrink-0"
+                                                                style={{ backgroundColor: list.color ?? '#818cf8' }}
+                                                            />
+                                                        )}
                                                         <div className="min-w-0">
                                                             <p className="font-semibold truncate flex items-center gap-2">
                                                                 {list.name}

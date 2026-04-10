@@ -45,6 +45,10 @@ public class WordList {
     @Column(name = "color")
     private String color;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_media_id")
+    private Media sourceMedia;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

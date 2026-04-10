@@ -63,6 +63,7 @@ export type MediaDTO = {
   difficultyLevel?: string | null;
   overallDifficulty?: 'EASY' | 'MEDIUM' | 'HARD' | null;
   levelCounts?: Record<string, number> | null;
+  generatedListId?: number | null;
 };
 
 // GET /api/media/{id}/words yanıtı
@@ -90,6 +91,8 @@ export type WordListDTO = {
   createdAt: string;
   isSystem?: boolean;
   color?: string;
+  sourceMediaId?: number;
+  sourceMediaPosterUrl?: string | null;
 };
 
 export type ApiError = {

@@ -30,4 +30,7 @@ public interface WordListRepository extends JpaRepository<WordList, Long> {
     boolean existsByUserIdAndIsSystemFalseAndWordId(
             @org.springframework.data.repository.query.Param("userId") Long userId,
             @org.springframework.data.repository.query.Param("wordId") Long wordId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT wl.sourceMedia.id, wl.id FROM WordList wl WHERE wl.user.id = :userId AND wl.sourceMedia IS NOT NULL")
+    List<Object[]> findMediaListMappingsByUserId(@org.springframework.data.repository.query.Param("userId") Long userId);
 }
