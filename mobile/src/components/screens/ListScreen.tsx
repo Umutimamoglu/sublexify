@@ -1009,7 +1009,7 @@ export default function ListScreen({ listId }: { listId: number }) {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backText}>←</Text>
+            <Ionicons name="arrow-back" size={24} color={c.TEXT_P} />
           </TouchableOpacity>
           <Text style={styles.title} numberOfLines={1}>{effectiveList?.name ?? '...'}</Text>
           {!isKnownList && !isSystemList && (

@@ -8,6 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -159,7 +160,7 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backText}>←</Text>
+            <Ionicons name="arrow-back" size={24} color={c.TEXT_P} />
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>{showTitle}</Text>
         </View>
@@ -190,7 +191,7 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
                   >
                     <Text style={styles.seasonLabel}>{t('season')} {row.season}</Text>
                     <Text style={styles.seasonMeta}>{t('episodeCount', { count: row.epCount })}</Text>
-                    <Text style={styles.seasonChevron}>{isOpen ? '▾' : '▸'}</Text>
+                    <Ionicons name={isOpen ? "chevron-down" : "chevron-forward"} size={16} color={c.TEXT_S} />
                   </TouchableOpacity>
                 );
               }
@@ -213,7 +214,7 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
                         : ''}
                     </Text>
                   </View>
-                  <Text style={styles.epChevron}>›</Text>
+                  <Ionicons name="chevron-forward" size={18} color={c.TEXT_S} />
                 </TouchableOpacity>
               );
             }}

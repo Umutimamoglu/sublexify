@@ -529,7 +529,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         {/* Top bar */}
         <View style={styles.headerBar}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backText}>←</Text>
+            <Ionicons name="arrow-back" size={24} color={c.TEXT_P} />
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {media?.title ?? '...'}
