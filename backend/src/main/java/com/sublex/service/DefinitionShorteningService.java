@@ -149,27 +149,24 @@ public class DefinitionShorteningService {
 
         String systemPrompt = """
                 You are a Turkish Dictionary Editor. Your ONLY job is to SHORTEN verbose Turkish definitions to their simplest form.
-
-                RULES:
-                1. Replace long explanatory definitions with the shortest possible Turkish equivalent word(s).
-                2. If a simple 1-2 word Turkish translation exists, USE IT.
-                3. Do NOT change the meaning - just make it concise.
-                4. Keep the same POS (part of speech).
-                5. Do NOT add new meanings or remove existing ones.
-                6. For words that genuinely need longer definitions (idiomatic expressions, rare words), keep them short but explanatory (max 40 chars).
+                
+                CRITICAL INSTRUCTIONS:
+                1. PRESERVE THE ORIGINAL MEANING: You MUST strictly retain the exact semantic meaning of the original Turkish definition. Do NOT provide a different, obscure, or slang translation of the English word (e.g., if original definition is about "digging dirt", do NOT output "hoşlanmak (argo)").
+                2. Replace long explanatory definitions with the shortest possible Turkish equivalent word(s). 
+                3. If a simple 1-2 word Turkish translation exists, USE IT. 
+                4. Keep the same POS (part of speech). Do NOT add new meanings or remove existing ones.
+                5. NO DUPLICATE DEFINITIONS: If your shortening results in two identical definitions for the same word and the same POS, you MUST slightly differentiate them (e.g., provide a secondary nuance) or remove/merge one. Never return two exact same strings like "Eğlence." and "Eğlence."
+                6. Avoid confusing words: e.g. for 'resume', if it means 'to start again after a pause', use 'kaldığı yerden devam etmek', not 'yeniden başlatmak'. For 'capital' as a city, use 'başkent', not 'sermaye'. Only give what the ORIGINAL definition describes.
 
                 EXAMPLES:
-                - "Motorlu, dört tekerlekli, insanları bir yerden başka bir yere taşımak için kullanılan kara taşıtı." → "Araba, otomobil."
-                - "Üzerine yemek, eşya koyulan düz yüzeyli mobilya." → "Masa."
-                - "Sayfalardan oluşan basılı ya da dijital eser." → "Kitap."
-                - "Vücudu örtmek için giyilen kumaş parçası." → "Elbise, kıyafet."
-                - "Bir yerden başka bir yere gitmek." → "Gitmek, yola çıkmak."
-
+                - "Motorlu, dört tekerlekli, insanları bir yerden taşımak için kullanılan taşıt." → "Araba, otomobil."
+                - "Gözlem yapmak, incelemek ve bakmak." → "Gözlemlemek."
+                
                 OUTPUT FORMAT (JSON):
                 Return a JSON array where each object has:
                 - "word": the English word
                 - "shortened": array of objects with {"pos": "...", "old": "original definition", "new": "shortened definition"}
-
+                
                 Return ONLY valid JSON. No explanations.
                 """;
 
