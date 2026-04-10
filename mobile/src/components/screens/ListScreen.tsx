@@ -480,6 +480,7 @@ function RightActions({
   onClose,
   styles,
   c,
+  isDark,
 }: {
   progress: SharedValue<number>;
   onAddToList: () => void;
@@ -488,6 +489,7 @@ function RightActions({
   onClose: () => void;
   styles: Styles; // Orijinal stilleri tip hatası almamak için tutuyoruz ama kendi stillerimizi kullanacağız
   c: Palette;
+  isDark: boolean;
 }) {
   const count = onRemove ? 3 : 2;
 
@@ -596,6 +598,7 @@ function SwipeableWordRow({
   hintDelay,
   styles,
   c,
+  isDark,
 }: {
   word: ListWord;
   isKnown: boolean;
@@ -607,6 +610,7 @@ function SwipeableWordRow({
   hintDelay?: number;
   styles: Styles;
   c: Palette;
+  isDark: boolean;
 }) {
   const swipeRef = useRef<any>(null);
   const removeAnim = useSharedValue(1);
@@ -668,6 +672,7 @@ function SwipeableWordRow({
       onClose={() => swipeRef.current?.close()}
       styles={styles}
       c={c}
+      isDark={isDark}
     />
   );
 
@@ -1160,6 +1165,7 @@ export default function ListScreen({ listId }: { listId: number }) {
                 hintDelay={!hintShown.current && index < 3 ? 700 + index * 200 : undefined}
                 styles={styles}
                 c={c}
+                isDark={isDark}
               />
             )}
             ItemSeparatorComponent={() => <View style={styles.separator} />}

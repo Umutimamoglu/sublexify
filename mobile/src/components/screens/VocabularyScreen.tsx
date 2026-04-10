@@ -234,11 +234,13 @@ type ViewMode = 'list' | 'flashcard';
 function RightActions({ 
   word, 
   onAddToList,
-  styles 
+  styles,
+  isDark,
 }: { 
   word: WordDTO; 
   onAddToList: () => void;
   styles: Styles;
+  isDark: boolean;
 }) {
   const speak = () => Speech.speak(word.word, { language: 'en-US' });
 
@@ -251,7 +253,7 @@ function RightActions({
           </TouchableOpacity>
         </BlurView>
       ) : (
-        <View style={[styles.swipeAction, { backgroundColor: 'rgba(40,40,50,0.92)' }]}>
+        <View style={[styles.swipeAction, { backgroundColor: isDark ? 'rgba(40,40,50,0.92)' : 'rgba(230,230,240,0.92)' }]}>
           <TouchableOpacity style={styles.swipeActionInner} onPress={onAddToList} activeOpacity={0.8}>
             <Ionicons name="list" size={20} color={word.definition ? '#a78bfa' : '#fff'} />
           </TouchableOpacity>
@@ -265,7 +267,7 @@ function RightActions({
           </TouchableOpacity>
         </BlurView>
       ) : (
-        <View style={[styles.swipeAction, { backgroundColor: 'rgba(50,50,60,0.92)' }]}>
+        <View style={[styles.swipeAction, { backgroundColor: isDark ? 'rgba(50,50,60,0.92)' : 'rgba(220,220,230,0.92)' }]}>
           <TouchableOpacity style={styles.swipeActionInner} onPress={speak} activeOpacity={0.8}>
             <Ionicons name="volume-medium" size={20} color="#fff" />
           </TouchableOpacity>
@@ -284,6 +286,7 @@ function WordRow({
   onAddToList,
   styles,
   c,
+  isDark,
 }: {
   word: WordDTO;
   isKnown: boolean;
@@ -292,6 +295,7 @@ function WordRow({
   onAddToList: () => void;
   styles: Styles;
   c: Palette;
+  isDark: boolean;
 }) {
   const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
   const meaning = word.definition?.meanings?.[0]?.definition;
@@ -316,7 +320,7 @@ function WordRow({
       enableTrackpadTwoFingerGesture
       rightThreshold={40}
       renderRightActions={() => (
-        <RightActions word={word} onAddToList={onAddToList} styles={styles} />
+        <RightActions word={word} onAddToList={onAddToList} styles={styles} isDark={isDark} />
       )}
     >
       <GestureDetector gesture={rowGesture}>
@@ -609,6 +613,7 @@ export default function VocabularyScreen() {
           onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
           styles={styles}
           c={c}
+          isDark={isDark}
         />
       )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
