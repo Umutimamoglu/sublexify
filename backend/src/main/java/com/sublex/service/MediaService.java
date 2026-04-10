@@ -375,18 +375,25 @@ public class MediaService {
     private String calculateOverallDifficulty(Map<String, Long> levelCounts, int totalWords) {
         if (totalWords == 0) return "MEDIUM";
 
-        long easyCount = levelCounts.getOrDefault("A1", 0L) + levelCounts.getOrDefault("A2", 0L);
-        long hardCount = levelCounts.getOrDefault("C1", 0L) + levelCounts.getOrDefault("C2", 0L);
+        // Weighted average: A1=1, A2=2, B1=3, B2=4, C1=5, C2=6
+        java.util.Map<String, Integer> weights = java.util.Map.of(
+            "A1", 1, "A2", 2, "B1", 3, "B2", 4, "C1", 5, "C2", 6
+        );
 
-        double easyRatio = (double) easyCount / totalWords;
-        double hardRatio = (double) hardCount / totalWords;
-
-        if (easyRatio > 0.85) { // If more than 85% of distinct words are A1/A2
-            return "EASY";
-        } else if (hardRatio > 0.05) { // If more than 5% of distinct words are C1/C2
-            return "HARD";
-        } else {
-            return "MEDIUM";
+        long weightedSum = 0;
+        long counted = 0;
+        for (java.util.Map.Entry<String, Integer> entry : weights.entrySet()) {
+            long cnt = levelCounts.getOrDefault(entry.getKey(), 0L);
+            weightedSum += cnt * entry.getValue();
+            counted += cnt;
         }
+
+        if (counted == 0) return "MEDIUM";
+
+        double avg = (double) weightedSum / counted;
+
+        if (avg <= 2.5) return "EASY";    // A-seviyesi ağırlıklı
+        if (avg <= 4.0) return "MEDIUM";  // B-seviyesi ağırlıklı
+        return "HARD";                    // C-seviyesi ağırlıklı
     }
 }

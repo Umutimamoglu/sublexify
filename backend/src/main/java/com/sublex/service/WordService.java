@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,11 +38,18 @@ public class WordService {
 
         boolean applyDiffFilter = difficulties != null && !difficulties.isEmpty();
         Set<Long> finalKnownWordIds = knownWordIds;
+        String q = query.toLowerCase();
 
         return words.stream()
                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                 .filter(word -> !applyDiffFilter || difficulties.contains(word.getDifficulty()))
                 .filter(word -> !onlyUnknown || !finalKnownWordIds.contains(word.getId()))
+                .sorted(Comparator.comparingInt(word -> {
+                    String w = word.getWord().toLowerCase();
+                    if (w.equals(q))         return 0; // exact match
+                    if (w.startsWith(q))     return 1; // starts with
+                    return 2;                           // contains in middle
+                }))
                 .map(word -> convertToDTO(word, finalKnownWordIds.contains(word.getId())))
                 .collect(Collectors.toList());
     }
