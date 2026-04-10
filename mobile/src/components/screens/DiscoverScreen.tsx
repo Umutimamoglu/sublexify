@@ -344,9 +344,12 @@ function MediaBrowseCard({
         <Image source={{ uri: item.posterUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
       )}
       <BlurView
-        intensity={isDark ? 50 : 80}
+        intensity={Platform.OS === 'android' ? 100 : (isDark ? 50 : 80)}
         tint={isDark ? "dark" : "light"}
-        style={[StyleSheet.absoluteFillObject, { backgroundColor: accent + '40' }]}
+        style={[
+          StyleSheet.absoluteFillObject, 
+          { backgroundColor: accent + (Platform.OS === 'android' ? (isDark ? 'c0' : 'd0') : '40') }
+        ]}
       />
 
       <View style={styles.badgeWrapperWide}>

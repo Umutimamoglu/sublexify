@@ -1,44 +1,47 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { View, Text, FlatList, Dimensions, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/src/store/authStore';
+import { useTranslation } from '@/src/i18n/useTranslation';
 
 const { width, height } = Dimensions.get('window');
 
-const SLIDES = [
+const getSlideData = (t: any) => [
   {
     id: '1',
-    title: 'İzleyerek Öğren',
-    description: 'Favori film ve dizilerindeki cümleleri keşfet. Gerçek hayatta nasıl konuşulduğunu doğal bağlamında gör.',
+    title: t('onboarding.slides.1.title', { defaultValue: 'İzleyerek Öğren' }),
+    description: t('onboarding.slides.1.description', { defaultValue: 'Favori film ve dizilerindeki cümleleri keşfet.' }),
     icon: 'film-outline' as const,
-    color: '#6366f1', // indigo-500
+    color: '#6366f1',
   },
   {
     id: '2',
-    title: 'Yapay Zeka Sözlüğü',
-    description: 'Sadece Türkçe karşılığı değil. Cümlenin içindeki mecazları, deyimleri ve kullanım şekillerini yapay zeka ile analiz et.',
+    title: t('onboarding.slides.2.title', { defaultValue: 'Yapay Zeka Sözlüğü' }),
+    description: t('onboarding.slides.2.description', { defaultValue: 'Cümlenin içindeki mecazları analiz et.' }),
     icon: 'bulb-outline' as const,
-    color: '#8b5cf6', // violet-500
+    color: '#8b5cf6',
   },
   {
     id: '3',
-    title: 'Akıllı Kelime Havuzu',
-    description: 'Binlerce kelime arasından kendi seviyene (A1-C2) uygun olanları filtrele. Sadece bilmediklerine odaklan.',
+    title: t('onboarding.slides.3.title', { defaultValue: 'Akıllı Kelime Havuzu' }),
+    description: t('onboarding.slides.3.description', { defaultValue: 'Seviyene uygun kelimeleri filtrele.' }),
     icon: 'layers-outline' as const,
-    color: '#0ea5e9', // sky-500
+    color: '#0ea5e9',
   },
   {
     id: '4',
-    title: 'Kalıcı Hafıza',
-    description: 'Öğrendiğin kelimeleri aralıklı tekrar (Spaced Repetition) yöntemiyle tam zamanında tekrar ederek asla unutma.',
+    title: t('onboarding.slides.4.title', { defaultValue: 'Kalıcı Hafıza' }),
+    description: t('onboarding.slides.4.description', { defaultValue: 'Öğrendiğin kelimeleri aralıklı tekrar yöntemiyle asla unutma.' }),
     icon: 'trending-up-outline' as const,
-    color: '#10b981', // emerald-500
+    color: '#10b981',
   },
 ];
 
 export default function OnboardingScreen() {
+  const { t } = useTranslation('common');
+  const SLIDES = useMemo(() => getSlideData(t), [t]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const { setHasSeenOnboarding, isAuthenticated } = useAuthStore();
@@ -66,7 +69,6 @@ export default function OnboardingScreen() {
     if (!isAuthenticated) {
       router.replace('/(auth)/login');
     } else {
-      // If came from profile (can go back), go back. Otherwise go to tabs.
       if (router.canGoBack()) {
         router.back();
       } else {
@@ -97,7 +99,7 @@ export default function OnboardingScreen() {
       <View className="flex-row justify-end px-6 pt-4">
         {currentIndex < SLIDES.length - 1 && (
           <TouchableOpacity onPress={handleFinish}>
-            <Text className="text-gray-500 dark:text-gray-400 font-medium text-base">Atla</Text>
+            <Text className="text-gray-500 dark:text-gray-400 font-medium text-base">{t('onboarding.skip', { defaultValue: 'Atla' })}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -141,8 +143,8 @@ export default function OnboardingScreen() {
         >
           <Text className="text-white font-bold text-lg">
             {currentIndex === SLIDES.length - 1 
-              ? (isAuthenticated ? 'Anladım' : 'Hemen Başla') 
-              : 'Devam Et'}
+              ? (isAuthenticated ? t('onboarding.gotIt', { defaultValue: 'Anladım' }) : t('onboarding.startNow', { defaultValue: 'Hemen Başla' })) 
+              : t('actions.continue', { defaultValue: 'Devam Et' })}
           </Text>
         </TouchableOpacity>
       </View>

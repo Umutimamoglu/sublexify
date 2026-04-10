@@ -49,5 +49,29 @@
   },
   "sentenceTts": "Sentence",
   "loading": "Loading...",
-  "noResults": "No results found."
+  "noResults": "No results found.",
+  "onboarding": {
+    "skip": "Skip",
+    "gotIt": "Got It",
+    "startNow": "Start Now",
+    "continue": "Continue",
+    "slides": {
+      "1": {
+        "title": "Learn by Watching",
+        "description": "Discover sentences from your favorite movies and series. See how they are spoken naturally in context."
+      },
+      "2": {
+        "title": "AI Dictionary",
+        "description": "Not just Turkish translations. Analyze metaphors, idioms, and usage patterns in sentences with AI."
+      },
+      "3": {
+        "title": "Smart Word Pool",
+        "description": "Filter thousands of words to fit your level (A1-C2). Focus only on what you don't know."
+      },
+      "4": {
+        "title": "Permanent Memory",
+        "description": "Never forget words you learn with the Spaced Repetition method."
+      }
+    }
+  }
 }

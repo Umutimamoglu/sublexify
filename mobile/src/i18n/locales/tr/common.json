@@ -49,5 +49,29 @@
   },
   "sentenceTts": "Cümle",
   "loading": "Yükleniyor...",
-  "noResults": "Sonuç bulunamadı."
+  "noResults": "Sonuç bulunamadı.",
+  "onboarding": {
+    "skip": "Atla",
+    "gotIt": "Anladım",
+    "startNow": "Hemen Başla",
+    "continue": "Devam Et",
+    "slides": {
+      "1": {
+        "title": "İzleyerek Öğren",
+        "description": "Favori film ve dizilerindeki cümleleri keşfet. Gerçek hayatta nasıl konuşulduğunu doğal bağlamında gör."
+      },
+      "2": {
+        "title": "Yapay Zeka Sözlüğü",
+        "description": "Sadece Türkçe karşılığı değil. Cümlenin içindeki mecazları, deyimleri ve kullanım şekillerini yapay zeka ile analiz et."
+      },
+      "3": {
+        "title": "Akıllı Kelime Havuzu",
+        "description": "Binlerce kelime arasından kendi seviyene (A1-C2) uygun olanları filtrele. Sadece bilmediklerine odaklan."
+      },
+      "4": {
+        "title": "Kalıcı Hafıza",
+        "description": "Öğrendiğin kelimeleri aralıklı tekrar (Spaced Repetition) yöntemiyle tam zamanında tekrar ederek asla unutma."
+      }
+    }
+  }
 }

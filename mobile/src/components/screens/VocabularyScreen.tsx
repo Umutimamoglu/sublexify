@@ -572,16 +572,16 @@ export default function VocabularyScreen() {
   const knownCount = knownWordsData.length;
 
   const renderList = () => (
-    <FlatList
-      data={displayWords}
-      keyExtractor={(item) => String(item.id)}
-      ListHeaderComponent={() => (
-        <Text style={styles.sectionLabel}>
-          {isSearching
-            ? t('searchResultsFor', { query })
-            : 'Sık Geçen Kelimeler'}
-        </Text>
-      )}
+      <FlatList
+        data={displayWords}
+        keyExtractor={(item) => String(item.id)}
+        ListHeaderComponent={() => (
+          <Text style={styles.sectionLabel}>
+            {isSearching
+              ? t('searchResultsFor', { query })
+              : t('frequentWords')}
+          </Text>
+        )}
       renderItem={({ item }) => (
         <WordRow
           word={item}
@@ -724,7 +724,7 @@ export default function VocabularyScreen() {
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           {/* Header */}
           <View style={[styles.header, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
-            <Text style={[styles.headerTitle, { marginBottom: 0 }]}>Kelime Havuzu</Text>
+            <Text style={[styles.headerTitle, { marginBottom: 0 }]}>{t('title')}</Text>
             
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
               <TouchableOpacity 
@@ -733,7 +733,7 @@ export default function VocabularyScreen() {
                 onPress={() => setShowQuizModal(true)}
               >
                 <Ionicons name="play" size={14} color={c.PURPLE} />
-                <Text style={styles.studyBtnText}>Pratik</Text>
+                <Text style={styles.studyBtnText}>{tCommon('onboarding.slides.4.title') === 'Permanent Memory' ? 'Practice' : 'Pratik'}</Text>
               </TouchableOpacity>
 
               <View style={styles.toggleRow}>

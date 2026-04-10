@@ -199,10 +199,19 @@ function ListCard({
       onPress={onPress}
       style={[
         styles.listCard,
-        item.color ? { backgroundColor: item.color + '0C' } : null,
         { overflow: 'hidden' }
       ]}
     >
+      {/* Background tint layer that preserves the opaque base color for Android elevation */}
+      {!!item.color && (
+        <View 
+          style={[
+            StyleSheet.absoluteFill, 
+            { backgroundColor: item.color, opacity: 0.05 }
+          ]} 
+        />
+      )}
+
       {/* Dev Arka Plan Kilit Filigranı (System Lists) */}
       {item.isSystem && (
         <Ionicons 
@@ -573,7 +582,7 @@ export default function ListsTabScreen() {
               </>
             ) : null}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 24 }}
+            contentContainerStyle={{ paddingBottom: 120 }}
           />
         )}
 

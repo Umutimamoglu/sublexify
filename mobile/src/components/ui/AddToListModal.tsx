@@ -9,6 +9,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import {
@@ -48,7 +49,9 @@ function makeStyles(c: Palette) {
       overflow: 'hidden',
     },
     listItemAdded: { backgroundColor: c.PURPLE + '0d' },
-    listStrip: { width: 4, alignSelf: 'stretch', marginRight: 16, marginLeft: 0 },
+    listStrip: { width: 4, alignSelf: 'stretch', marginRight: 12, marginLeft: 0 },
+    listThumbnail: { width: 32, height: 44, borderRadius: 6, backgroundColor: c.SURFACE2, marginRight: 12, borderWidth: 1, borderColor: c.BORDER },
+    listColorDot: { width: 28, height: 28, borderRadius: 14, marginRight: 12 },
     listItemRight: { paddingRight: 20 },
     listInfo: { flex: 1 },
     listName: { color: c.TEXT_P, fontSize: 14, fontWeight: '600' },
@@ -112,6 +115,17 @@ function ListRow({
       disabled={isPending}
     >
       <View style={[styles.listStrip, { backgroundColor: item.color ?? 'transparent' }]} />
+      
+      {item.sourceMediaPosterUrl ? (
+        <Image 
+          source={{ uri: item.sourceMediaPosterUrl }} 
+          style={styles.listThumbnail} 
+          contentFit="cover" 
+        />
+      ) : (
+        <View style={[styles.listColorDot, { backgroundColor: (item.color || c.PURPLE) + '22', borderWidth: 2, borderColor: item.color || c.PURPLE }]} />
+      )}
+
       <View style={styles.listInfo}>
         <Text style={styles.listName}>{item.name}</Text>
         <Text style={styles.listCount}>{t('wordCount', { count: item.totalWords })}</Text>

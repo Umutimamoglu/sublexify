@@ -144,7 +144,26 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
                                                 : "hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                                         )}
                                     >
-                                        <div className="flex items-center gap-2 truncate">
+                                        <div className="flex items-center gap-3 truncate">
+                                            {list.sourceMediaPosterUrl ? (
+                                                <img 
+                                                    src={list.sourceMediaPosterUrl} 
+                                                    alt={list.name} 
+                                                    className="w-8 h-12 object-cover rounded shadow-sm shrink-0 border border-gray-200 dark:border-gray-800"
+                                                />
+                                            ) : (
+                                                <div 
+                                                    className="w-8 h-8 rounded shrink-0 flex items-center justify-center border"
+                                                    style={{ 
+                                                        backgroundColor: list.color ? `${list.color}15` : 'rgba(99, 102, 241, 0.1)', 
+                                                        borderColor: list.color || 'rgb(99, 102, 241)'
+                                                    }}
+                                                >
+                                                    <span className="text-xs font-bold" style={{ color: list.color || 'rgb(99, 102, 241)' }}>
+                                                        {list.name.charAt(0).toUpperCase()}
+                                                    </span>
+                                                </div>
+                                            )}
                                             <span className="font-medium truncate">{list.name}</span>
                                         </div>
                                         {isAdded && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}

@@ -67,7 +67,7 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
     separator: { height: 1, backgroundColor: isDark ? '#ffffff0f' : '#e0e0ea', marginBottom: 4 },
 
-    body: { paddingHorizontal: pad, paddingBottom: 40 },
+    body: { paddingHorizontal: pad, paddingBottom: Platform.OS === 'ios' ? 100 : 120 },
 
     // ── Profile header ─────────────────────────────────────────────
     profileSection: { alignItems: 'center', paddingVertical: 24 },
@@ -260,7 +260,7 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.separator} />
 
-        <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
 
           {/* ── Profile Header ── */}
           <View style={styles.profileSection}>

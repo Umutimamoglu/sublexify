@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -15,6 +16,10 @@ export default function TabLayout() {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation('common');
+  const insets = useSafeAreaInsets();
+  
+  // Android'de fiziksel nav bar varsa (insets.bottom > 0), sekme çubuğunu nav bar'ın hemen üzerine çıkarıyoruz.
+  const bottomOffset = Platform.OS === 'android' ? Math.max(insets.bottom + 12, 24) : 24;
 
   return (
     <Tabs
@@ -24,10 +29,11 @@ export default function TabLayout() {
         tabBarInactiveTintColor: theme.colors.tabInactive,
         tabBarStyle: {
           position: 'absolute',
-          bottom: 24,
+          bottom: bottomOffset,
           alignSelf: 'center',
-          marginHorizontal: 32, // Genişliği %20 civarı artırmak için margin daraltıldı
-          height: 64,
+          marginHorizontal: 32,
+          height: Platform.OS === 'android' ? 68 : 64,
+          paddingBottom: Platform.OS === 'android' ? 6 : 0,
           backgroundColor: 'transparent',
           borderTopWidth: 0,
           borderRadius: 28,
@@ -40,8 +46,8 @@ export default function TabLayout() {
           ...Platform.select({
             android: {
               backgroundColor: isDark
-                ? 'rgba(17, 17, 27, 0.88)'
-                : 'rgba(255, 255, 255, 0.88)',
+                ? 'rgba(17, 17, 27, 0.95)'
+                : 'rgba(255, 255, 255, 0.95)',
               elevation: 16,
             },
           }),
@@ -50,10 +56,11 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '600',
-          marginTop: -2,
+          marginTop: Platform.OS === 'android' ? -4 : -2,
         },
         tabBarItemStyle: {
-          paddingVertical: 6,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'android' ? 8 : 6,
         },
         tabBarHideOnKeyboard: true,
         tabBarBackground: () => (

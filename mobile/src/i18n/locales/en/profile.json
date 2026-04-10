@@ -41,5 +41,6 @@
   "deleteAccountCancel": "Cancel",
   "deleteAccountConfirm": "Yes, Delete",
   "deleteAccountSuccess": "Your account has been deleted.",
+  "onboardingGuide": "View Onboarding Guide",
   "danger": "Danger Zone"
 }

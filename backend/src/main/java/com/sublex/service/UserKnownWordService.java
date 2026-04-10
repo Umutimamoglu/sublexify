@@ -151,6 +151,7 @@ public class UserKnownWordService {
         stats.put("totalKnownWords", totalKnownWords);
         stats.put("wordsLearnedToday", wordsLearnedToday); 
         stats.put("wordsLearnedThisWeek", 0); // TODO: implement date-based filtering
+        stats.put("totalWords", (int) wordRepository.countEnriched());
 
         return stats;
     }

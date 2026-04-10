@@ -33,11 +33,15 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white dark:bg-[#0f1117]"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-        <View className="flex-1 justify-center px-6 py-12">
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} 
+        keyboardShouldPersistTaps="handled"
+        className="bg-white dark:bg-[#0f1117]"
+      >
+        <View className="px-6 py-12">
           {/* Logo */}
           <View className="items-center mb-10">
             <View className="w-16 h-16 rounded-2xl bg-indigo-600 items-center justify-center mb-4">
