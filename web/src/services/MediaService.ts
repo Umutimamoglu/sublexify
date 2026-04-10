@@ -406,8 +406,11 @@ const PipelineAPI = {
         link.parentNode?.removeChild(link);
     },
 
-    downloadShorteningProcessed: async (): Promise<void> => {
-        const response = await api.get<Blob>('/admin/pipeline/shortening/processed/download', {
+    downloadShorteningProcessed: async (batchId?: string): Promise<void> => {
+        const urlRequest = batchId 
+            ? `/admin/pipeline/shortening/processed/download?batchId=${batchId}`
+            : `/admin/pipeline/shortening/processed/download`;
+        const response = await api.get<Blob>(urlRequest, {
             responseType: 'blob'
         });
 

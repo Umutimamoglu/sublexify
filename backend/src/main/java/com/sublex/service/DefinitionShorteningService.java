@@ -37,6 +37,22 @@ public class DefinitionShorteningService {
         stats.put("pendingShortening", candidates.size());
         stats.put("alreadyShortened", shortened);
 
+        // Extract last batch info
+        String lastNote = wordRepository.findLastShorteningNote();
+        String lastBatchId = null;
+        if (lastNote != null && lastNote.contains("[BATCH:")) {
+            int start = lastNote.indexOf("[BATCH:") + 7;
+            int end = lastNote.indexOf("]", start);
+            if (end > start) lastBatchId = lastNote.substring(start, end);
+        }
+
+        long lastBatchCount = 0;
+        if (lastBatchId != null) {
+            lastBatchCount = wordRepository.countByAuditNotesContaining(lastBatchId);
+        }
+        stats.put("lastBatchProcessed", lastBatchCount);
+        stats.put("lastBatchId", lastBatchId);
+
         // Breakdown by difficulty
         Map<String, Long> byDifficulty = new LinkedHashMap<>();
         for (String diff : List.of("A1", "A2", "B1")) {
@@ -92,13 +108,14 @@ public class DefinitionShorteningService {
 
         int gpuBatchSize = 30; // 30 words per GPT call
         AtomicInteger processed = new AtomicInteger(0);
+        String batchId = "B-" + System.currentTimeMillis();
 
         for (int i = 0; i < candidates.size(); i += gpuBatchSize) {
             int end = Math.min(i + gpuBatchSize, candidates.size());
             List<Word> batch = candidates.subList(i, end);
 
             try {
-                shortenBatch(batch);
+                shortenBatch(batch, batchId);
             } catch (Exception e) {
                 log.error("Failed to shorten batch: {}", e.getMessage());
             }
@@ -112,7 +129,7 @@ public class DefinitionShorteningService {
         log.info("Definition Shortening Pipeline complete. Processed {} words.", total);
     }
 
-    private void shortenBatch(List<Word> batch) {
+    private void shortenBatch(List<Word> batch, String batchId) {
         // Build input: word + current verbose definitions
         StringBuilder input = new StringBuilder();
         for (int i = 0; i < batch.size(); i++) {
@@ -210,8 +227,12 @@ public class DefinitionShorteningService {
                 }
 
                 if (updated) {
-                    word.setAuditNotes("Definition shortened by AI (" + LocalDateTime.now().toLocalDate() + ")");
+                    word.setAuditNotes("Definition shortened by AI [BATCH:" + batchId + "]");
                     word.setEnrichedAt(LocalDateTime.now());
+                    
+                    // Reset auditor flags so it gets re-audited
+                    word.setStep3Error(null);
+                    word.setProblemFound(false);
                 }
             }
 

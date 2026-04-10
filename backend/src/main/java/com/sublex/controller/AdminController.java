@@ -70,7 +70,6 @@ public class AdminController {
         return ResponseEntity.ok("Word analysis triggered in background.");
     }
 
-
     @PostMapping("/word-analysis/reset-failed")
     @Operation(summary = "Resets all permanently FAILED words back to PENDING and triggers analysis")
     @Transactional
@@ -113,8 +112,10 @@ public class AdminController {
                         ((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder
                                 .getRequestAttributes()).getRequest().getServletContext())
                 .getBean("wordService");
-        // Actually, it's better to just inject it. But I don't want to break existing constructor.
-        // Wait, I can just use wordRepository directly here since I'm in AdminController.
+        // Actually, it's better to just inject it. But I don't want to break existing
+        // constructor.
+        // Wait, I can just use wordRepository directly here since I'm in
+        // AdminController.
         wordRepository.updateGlobalFrequencies();
         return ResponseEntity.ok("Global frequencies recalculation triggered.");
     }
@@ -334,7 +335,8 @@ public class AdminController {
         String content = new String(file.getBytes(), StandardCharsets.UTF_8);
         subtitleProcessingService.processSubtitles(media.getId(), content, language);
 
-        // Word analysis is now triggered automatically via SubtitleProcessedEvent + debounce
+        // Word analysis is now triggered automatically via SubtitleProcessedEvent +
+        // debounce
 
         return String.format("Processed %s as %s (ID: %d)", filename, media.getTitle(), media.getId());
     }
@@ -661,21 +663,25 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(wordRepository.findAll(
-                org.springframework.data.jpa.domain.Specification.where((root, query, cb) -> cb.equal(root.get("problemFound"), true)),
-                org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").descending())));
+                org.springframework.data.jpa.domain.Specification
+                        .where((root, query, cb) -> cb.equal(root.get("problemFound"), true)),
+                org.springframework.data.domain.PageRequest.of(page, size,
+                        org.springframework.data.domain.Sort.by("id").descending())));
     }
 
     @GetMapping("/words/audit-problems/download")
     @Operation(summary = "Returns all words flagged by the Step 3 Auditor as a JSON file for download")
     public ResponseEntity<List<com.sublex.model.Word>> downloadAuditProblems() {
         List<com.sublex.model.Word> words = wordRepository.findAll(
-                org.springframework.data.jpa.domain.Specification.where((root, query, cb) -> cb.equal(root.get("problemFound"), true)),
+                org.springframework.data.jpa.domain.Specification
+                        .where((root, query, cb) -> cb.equal(root.get("problemFound"), true)),
                 org.springframework.data.domain.Sort.by("id").descending());
 
         String filename = "audit_problems_" + java.time.LocalDate.now() + ".json";
 
         return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + filename + "\"")
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .body(words);
     }
@@ -702,7 +708,7 @@ public class AdminController {
         long totalAuditedClean = wordRepository.countAuditedClean();
         long totalFixed = wordRepository.countFixed();
         long totalIgnored = wordRepository.countIgnored();
-        
+
         long totalAudited = totalAuditedClean + totalProblems + totalFixed + totalIgnored;
         long totalPending = totalEnriched - totalAudited;
 
@@ -737,7 +743,8 @@ public class AdminController {
             // Update definition
             if (fix.containsKey("definition")) {
                 try {
-                    com.sublex.model.WordDefinition newDef = mapper.convertValue(fix.get("definition"), com.sublex.model.WordDefinition.class);
+                    com.sublex.model.WordDefinition newDef = mapper.convertValue(fix.get("definition"),
+                            com.sublex.model.WordDefinition.class);
                     word.setDefinition(newDef);
                 } catch (Exception e) {
                     log.error("Failed to parse definition for word ID {}: {}", wordId, e.getMessage());
@@ -890,7 +897,7 @@ public class AdminController {
     public ResponseEntity<List<Map<String, Object>>> getShorteningCandidates(
             @RequestParam(defaultValue = "50") int limit) {
         List<com.sublex.model.Word> candidates = definitionShorteningService.findCandidates(limit);
-        
+
         // Build a lightweight response (not full Word objects)
         List<Map<String, Object>> result = new java.util.ArrayList<>();
         for (com.sublex.model.Word w : candidates) {
@@ -898,7 +905,7 @@ public class AdminController {
             entry.put("id", w.getId());
             entry.put("word", w.getWord());
             entry.put("difficulty", w.getDifficulty());
-            
+
             // Add current definitions with their lengths
             List<Map<String, Object>> meanings = new java.util.ArrayList<>();
             if (w.getDefinition() != null && w.getDefinition().getMeanings() != null) {
@@ -913,7 +920,7 @@ public class AdminController {
             entry.put("meanings", meanings);
             result.add(entry);
         }
-        
+
         return ResponseEntity.ok(result);
     }
 
@@ -921,7 +928,7 @@ public class AdminController {
     @Operation(summary = "Downloads all shortening candidates as JSON")
     public ResponseEntity<List<Map<String, Object>>> downloadShorteningCandidates() {
         List<com.sublex.model.Word> candidates = definitionShorteningService.findCandidates(Integer.MAX_VALUE);
-        
+
         List<Map<String, Object>> result = new java.util.ArrayList<>();
         for (com.sublex.model.Word w : candidates) {
             Map<String, Object> entry = new java.util.LinkedHashMap<>();
@@ -934,15 +941,19 @@ public class AdminController {
 
         String filename = "shortening_candidates_" + java.time.LocalDate.now() + ".json";
         return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + filename + "\"")
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .body(result);
     }
 
     @GetMapping("/pipeline/shortening/processed/download")
-    @Operation(summary = "Downloads all processed (shortened) words as JSON")
-    public ResponseEntity<List<Map<String, Object>>> downloadShorteningProcessed() {
-        List<com.sublex.model.Word> processed = wordRepository.findByAuditNotesContainingOrderByEnrichedAtDesc("Definition shortened");
+    @Operation(summary = "Downloads processed (shortened) words as JSON, optionally filtered by batch ID")
+    public ResponseEntity<List<Map<String, Object>>> downloadShorteningProcessed(
+            @RequestParam(required = false) String batchId) {
+        
+        String queryStr = (batchId != null && !batchId.isBlank()) ? batchId : "Definition shortened";
+        List<com.sublex.model.Word> processed = wordRepository.findByAuditNotesContainingOrderByEnrichedAtDesc(queryStr);
         
         List<Map<String, Object>> result = new java.util.ArrayList<>();
         for (com.sublex.model.Word w : processed) {
@@ -955,7 +966,7 @@ public class AdminController {
             result.add(entry);
         }
 
-        String filename = "already_shortened_" + java.time.LocalDate.now() + ".json";
+        String filename = "already_shortened_" + (batchId != null ? batchId : java.time.LocalDate.now().toString()) + ".json";
         return ResponseEntity.ok()
                 .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)

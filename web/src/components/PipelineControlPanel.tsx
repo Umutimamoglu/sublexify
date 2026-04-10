@@ -171,9 +171,9 @@ const PipelineControlPanel = () => {
                                 Download Candidates
                             </button>
                         )}
-                        {shorteningStats?.alreadyShortened > 0 && (
-                            <button onClick={() => PipelineAPI.downloadShorteningProcessed()} className="ml-2 px-4 py-2.5 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 rounded-xl transition-colors font-bold text-sm text-green-700 dark:text-green-400">
-                                Download Processed ({shorteningStats.alreadyShortened})
+                        {shorteningStats?.lastBatchProcessed > 0 && (
+                            <button onClick={() => PipelineAPI.downloadShorteningProcessed(shorteningStats.lastBatchId)} className="ml-2 px-4 py-2.5 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-900/50 rounded-xl transition-colors font-bold text-sm text-green-700 dark:text-green-400">
+                                Download Last Batch ({shorteningStats.lastBatchProcessed})
                             </button>
                         )}
                 </div>
@@ -211,6 +211,12 @@ const PipelineControlPanel = () => {
                         value={shorteningStats?.pendingShortening || 0} 
                         icon={<Database className="w-4 h-4" />} 
                         color="cyan"
+                    />
+                    <StatCard 
+                        label="Total Shortened" 
+                        value={shorteningStats?.alreadyShortened || 0} 
+                        icon={<Zap className="w-4 h-4" />} 
+                        color="green"
                     />
                 </div>
 
