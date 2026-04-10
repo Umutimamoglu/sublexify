@@ -107,7 +107,7 @@ public class DefinitionShorteningService {
 
         log.info("Found {} words with verbose definitions. Processing...", total);
 
-        int gpuBatchSize = 30; // 30 words per GPT call
+        int gpuBatchSize = 10; // 10 words per GPT call
         AtomicInteger processed = new AtomicInteger(0);
         String batchId = "B-" + System.currentTimeMillis();
 
