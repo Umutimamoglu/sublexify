@@ -938,4 +938,27 @@ public class AdminController {
                 .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                 .body(result);
     }
+
+    @GetMapping("/pipeline/shortening/processed/download")
+    @Operation(summary = "Downloads all processed (shortened) words as JSON")
+    public ResponseEntity<List<Map<String, Object>>> downloadShorteningProcessed() {
+        List<com.sublex.model.Word> processed = wordRepository.findByAuditNotesContainingOrderByEnrichedAtDesc("Definition shortened");
+        
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (com.sublex.model.Word w : processed) {
+            Map<String, Object> entry = new java.util.LinkedHashMap<>();
+            entry.put("id", w.getId());
+            entry.put("word", w.getWord());
+            entry.put("difficulty", w.getDifficulty());
+            entry.put("auditNotes", w.getAuditNotes());
+            entry.put("definition", w.getDefinition());
+            result.add(entry);
+        }
+
+        String filename = "already_shortened_" + java.time.LocalDate.now() + ".json";
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .body(result);
+    }
 }

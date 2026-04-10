@@ -404,6 +404,21 @@ const PipelineAPI = {
         document.body.appendChild(link);
         link.click();
         link.parentNode?.removeChild(link);
+    },
+
+    downloadShorteningProcessed: async (): Promise<void> => {
+        const response = await api.get<Blob>('/admin/pipeline/shortening/processed/download', {
+            responseType: 'blob'
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        link.setAttribute('download', `already_shortened_${date}.json`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
     }
 };
 

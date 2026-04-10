@@ -162,6 +162,7 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
 
     // ======= DEFINITION SHORTENING QUERIES =======
     long countByAuditNotesContaining(String keyword);
+    List<Word> findByAuditNotesContainingOrderByEnrichedAtDesc(String keyword);
 
     @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND w.language = :language AND w.difficulty IN :difficulties ORDER BY w.id ASC")
     List<Word> findByIsEnrichedTrueAndLanguageAndDifficultyIn(@Param("language") String language, @Param("difficulties") List<String> difficulties);
