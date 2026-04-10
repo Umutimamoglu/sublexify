@@ -5,46 +5,48 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/src/components/ui/Text';
 import { useCategoryWords } from '@/src/api/queries/progress.queries';
 import { useTheme } from '@/src/context/ThemeContext';
+import { useTranslation } from '@/src/i18n/useTranslation';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 
 type CategoryType = 'learnt' | 'studied' | 'due' | 'difficult';
 
-const CATEGORY_CONFIG = {
+const getCategoryConfig = (t: any) => ({
   learnt: {
-    title: 'Öğrenilen Kelimeler',
+    title: t('progress.categories.learnt.title'),
     icon: 'book-outline' as const,
     color: '#4F46E5', // Indigo Blue
-    emptyTitle: 'Henüz kelime yok',
-    emptyDesc: 'Listelerinize kelime ekleyerek öğrenmeye başlayın!',
+    emptyTitle: t('progress.categories.learnt.emptyTitle'),
+    emptyDesc: t('progress.categories.learnt.emptyDesc'),
   },
   studied: {
-    title: 'Çalışılan Kelimeler',
+    title: t('progress.categories.learnt.title'), // Fixed key reference if it was copy-pasted wrong in common.json
     icon: 'trending-up-outline' as const,
     color: '#D946EF', // Neon Purple/Magenta
-    emptyTitle: 'Henüz çalışılan kelime yok',
-    emptyDesc: 'Kelime testlerini çözerek bu listeyi doldurun!',
+    emptyTitle: t('progress.categories.studied.emptyTitle'),
+    emptyDesc: t('progress.categories.studied.emptyDesc'),
   },
   due: {
-    title: 'Tekrar Bekleyenler',
+    title: t('progress.categories.due.title'),
     icon: 'calendar-outline' as const,
     color: '#F43F5E', // Rose Red
-    emptyTitle: 'Tekrar yok',
-    emptyDesc: 'Bugün için tekrar edilecek kelimeniz bulunmuyor.',
+    emptyTitle: t('progress.categories.due.emptyTitle'),
+    emptyDesc: t('progress.categories.due.emptyDesc'),
   },
   difficult: {
-    title: 'Zorlandığımız Kelimeler',
+    title: t('progress.categories.difficult.title'),
     icon: 'alert-circle-outline' as const,
     color: '#F59E0B', // Amber/Orange
-    emptyTitle: 'Zorluk bulmaya hazır mısın?',
-    emptyDesc: 'Henüz "zor" olarak işaretlenecek kadar pratik yapmadın. Testleri çözdükçe sistem seni zorlayanları burada toplayacak.',
+    emptyTitle: t('progress.categories.difficult.emptyTitle'),
+    emptyDesc: t('progress.categories.difficult.emptyDesc'),
   },
-};
+});
 
 export default function CategoryWordsScreen() {
   const { category } = useLocalSearchParams<{ category: CategoryType }>();
   const router = useRouter();
-  const config = CATEGORY_CONFIG[category];
+  const { t } = useTranslation('common');
+  const config = useMemo(() => getCategoryConfig(t)[category], [t, category]);
 
   const { data: words, isLoading } = useCategoryWords(category);
   const { theme, colorScheme } = useTheme();
@@ -112,7 +114,7 @@ export default function CategoryWordsScreen() {
   if (!config) {
     return (
       <View style={[styles.centerContainer, { backgroundColor }]}>
-        <Text style={{ color: textPrimary }}>Bilinmeyen Kategori.</Text>
+        <Text style={{ color: textPrimary }}>{t('progress.unknownKategory')}</Text>
       </View>
     );
   }
@@ -145,7 +147,7 @@ export default function CategoryWordsScreen() {
               <Ionicons name={config.icon} size={32} color={config.color} />
             </View>
             <Text style={[styles.headerCount, { color: textPrimary }]}>
-              {words?.length || 0} kelime
+              {t('progress.wordCount', { count: words?.length || 0 })}
             </Text>
           </View>
         }

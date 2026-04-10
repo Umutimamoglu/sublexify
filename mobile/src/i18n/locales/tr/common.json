@@ -73,5 +73,31 @@
         "description": "Öğrendiğin kelimeleri aralıklı tekrar (Spaced Repetition) yöntemiyle tam zamanında tekrar ederek asla unutma."
       }
     }
+  },
+  "progress": {
+    "categories": {
+      "learnt": {
+        "title": "Öğrenilen Kelimeler",
+        "emptyTitle": "Henüz kelime yok",
+        "emptyDesc": "Listelerinize kelime ekleyerek öğrenmeye başlayın!"
+      },
+      "studied": {
+        "title": "Çalışılan Kelimeler",
+        "emptyTitle": "Henüz çalışılan kelime yok",
+        "emptyDesc": "Kelime testlerini çözerek bu listeyi doldurun!"
+      },
+      "due": {
+        "title": "Tekrar Bekleyenler",
+        "emptyTitle": "Tekrar yok",
+        "emptyDesc": "Bugün için tekrar edilecek kelimeniz bulunmuyor."
+      },
+      "difficult": {
+        "title": "Zorlandığımız Kelimeler",
+        "emptyTitle": "Zorluk bulmaya hazır mısın?",
+        "emptyDesc": "Henüz 'zor' olarak işaretlenecek kadar pratik yapmadın. Testleri çözdükçe sistem seni zorlayanları burada toplayacak."
+      }
+    },
+    "unknownKategory": "Bilinmeyen Kategori.",
+    "wordCount": "{{count}} kelime"
   }
 }

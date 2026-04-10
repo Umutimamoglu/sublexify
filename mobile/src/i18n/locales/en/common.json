@@ -73,5 +73,31 @@
         "description": "Never forget words you learn with the Spaced Repetition method."
       }
     }
+  },
+  "progress": {
+    "categories": {
+      "learnt": {
+        "title": "Learnt Words",
+        "emptyTitle": "No words yet",
+        "emptyDesc": "Start learning by adding words to your lists!"
+      },
+      "studied": {
+        "title": "Studied Words",
+        "emptyTitle": "No studied words yet",
+        "emptyDesc": "Fill this list by solving word quizzes!"
+      },
+      "due": {
+        "title": "Due for Review",
+        "emptyTitle": "No reviews",
+        "emptyDesc": "You have no words to review for today."
+      },
+      "difficult": {
+        "title": "Difficult Words",
+        "emptyTitle": "Ready to find challenges?",
+        "emptyDesc": "You haven't practiced enough to mark words as 'difficult' yet. As you solve quizzes, the system will collect the ones that challenge you here."
+      }
+    },
+    "unknownKategory": "Unknown Category.",
+    "wordCount": "{{count}} words"
   }
 }
