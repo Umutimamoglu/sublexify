@@ -37,12 +37,22 @@ public class DefinitionShorteningService {
         stats.put("pendingShortening", candidates.size());
         stats.put("alreadyShortened", shortened);
 
-        // Extract grouped daily batch info
-        String todayTag = java.time.LocalDate.now().toString();
-        long lastBatchCount = wordRepository.countByAuditNotesContaining(todayTag);
+        // Extract last batch info
+        String lastNote = wordRepository.findLastShorteningNote();
+        String lastBatchId = null;
+        if (lastNote != null && lastNote.contains("[BATCH:")) {
+            int start = lastNote.indexOf("[BATCH:") + 7;
+            int end = lastNote.indexOf("]", start);
+            if (end > start) lastBatchId = lastNote.substring(start, end);
+        }
+
+        long lastBatchCount = 0;
+        if (lastBatchId != null) {
+            lastBatchCount = wordRepository.countByAuditNotesContaining(lastBatchId);
+        }
         
         stats.put("lastBatchProcessed", lastBatchCount);
-        stats.put("lastBatchId", todayTag);
+        stats.put("lastBatchId", lastBatchId);
 
         // Breakdown by difficulty
         Map<String, Long> byDifficulty = new LinkedHashMap<>();
@@ -99,7 +109,7 @@ public class DefinitionShorteningService {
 
         int gpuBatchSize = 30; // 30 words per GPT call
         AtomicInteger processed = new AtomicInteger(0);
-        String batchId = java.time.LocalDate.now().toString();
+        String batchId = "B-" + System.currentTimeMillis();
 
         for (int i = 0; i < candidates.size(); i += gpuBatchSize) {
             int end = Math.min(i + gpuBatchSize, candidates.size());
@@ -231,7 +241,7 @@ public class DefinitionShorteningService {
                 }
 
                 if (updated) {
-                    word.setAuditNotes("Definition shortened by AI [" + batchId + "]");
+                    word.setAuditNotes("Definition shortened by AI [BATCH:" + batchId + "]");
                     word.setEnrichedAt(LocalDateTime.now());
                     
                     // Reset auditor flags so it gets re-audited
