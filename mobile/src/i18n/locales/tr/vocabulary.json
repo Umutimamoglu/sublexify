@@ -8,8 +8,12 @@
   "difficulty": "Zorluk",
   "allLevels": "Tüm Seviyeler",
   "statsKnown": "Bilinen",
+  "statsDisplayed": "Gösterilen",
   "statsTop60": "Top 60'ta bilinen",
   "searchResultsFor": "\"{{query}}\" için sonuçlar",
   "frequentWords": "EN SIK KULLANILAN KELİMELER",
-  "noSearchResults": "\"{{query}}\" için sonuç bulunamadı"
+  "noSearchResults": "\"{{query}}\" için sonuç bulunamadı",
+  "filterUnknown": "Bilinmeyenler",
+  "noWordsFound": "Kelime bulunamadı",
+  "practice": "Pratik"
 }

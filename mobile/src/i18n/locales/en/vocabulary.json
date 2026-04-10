@@ -8,8 +8,12 @@
   "difficulty": "Difficulty",
   "allLevels": "All Levels",
   "statsKnown": "Known",
+  "statsDisplayed": "Shown",
   "statsTop60": "Known in Top 60",
   "searchResultsFor": "Results for \"{{query}}\"",
   "frequentWords": "MOST FREQUENT WORDS",
-  "noSearchResults": "No results for \"{{query}}\""
+  "noSearchResults": "No results for \"{{query}}\"",
+  "filterUnknown": "Unknowns",
+  "noWordsFound": "No words found",
+  "practice": "Practice"
 }

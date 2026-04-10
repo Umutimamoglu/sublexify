@@ -646,7 +646,7 @@ export default function VocabularyScreen() {
       }
       return (
         <View style={styles.center}>
-          <Text style={styles.emptyText}>Kelime bulunamadı</Text>
+          <Text style={styles.emptyText}>{t('noWordsFound')}</Text>
         </View>
       );
     }
@@ -756,7 +756,7 @@ export default function VocabularyScreen() {
                 onPress={() => setShowQuizModal(true)}
               >
                 <Ionicons name="play" size={14} color={c.PURPLE} />
-                <Text style={styles.studyBtnText}>{tCommon('onboarding.slides.4.title') === 'Permanent Memory' ? 'Practice' : 'Pratik'}</Text>
+                <Text style={styles.studyBtnText}>{t('practice')}</Text>
               </TouchableOpacity>
 
               <View style={styles.toggleRow}>
@@ -824,7 +824,7 @@ export default function VocabularyScreen() {
                         ]}
                       >
                         <Text style={[styles.chipText, { color: onlyUnknown ? '#fff' : c.TEXT_S }]}>
-                          Bilinmeyenler
+                          {t('filterUnknown')}
                         </Text>
                       </TouchableOpacity>
                       <View style={{ width: 1, height: 20, backgroundColor: c.BORDER, alignSelf: 'center', marginHorizontal: 4 }} />
@@ -865,7 +865,7 @@ export default function VocabularyScreen() {
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNum}>{displayWords.length}</Text>
-              <Text style={styles.statLabel}>Gösterilen</Text>
+              <Text style={styles.statLabel}>{t('statsDisplayed')}</Text>
             </View>
           </View>
         )}
