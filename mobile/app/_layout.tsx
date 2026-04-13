@@ -18,6 +18,9 @@ import { useAuthStore } from '@/src/store/authStore';
 import { Audio } from 'expo-av';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import type { SupportedLanguage } from '@/src/i18n';
+import { Platform } from 'react-native';
+import * as NavigationBar from 'expo-navigation-bar';
+import { StatusBar } from 'expo-status-bar';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -42,6 +45,16 @@ export default function RootLayout() {
       router.replace('/(auth)/login');
     }
   }, [isAuthenticated, ready, hasHydrated, segments]);
+
+  // Android Navigation Bar (Immersive Mode) settings
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      // Hide the navigation bar (buttons/gestures) until the user swipes
+      NavigationBar.setVisibilityAsync('hidden');
+      // Set behavior to overlay-swipe so the bar doesn't push the layout up when revealed
+      NavigationBar.setBehaviorAsync('overlay-swipe');
+    }
+  }, []);
 
   useEffect(() => {
     async function prepare() {
@@ -95,6 +108,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <I18nextProvider i18n={i18n}>
+        <StatusBar style="auto" translucent />
         <PersistQueryClientProvider
           client={queryClient}
           persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 }}

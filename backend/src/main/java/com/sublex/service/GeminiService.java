@@ -54,8 +54,7 @@ public class GeminiService implements AIService {
 
         try {
             String jsonInput = objectMapper.writeValueAsString(words);
-            String prompt = String.format(
-                    """
+            String systemPrompt = """
                             Sana bir kelime listesi ve bağlam cümleleri veriyorum. Her kelime için:
                             1. Cümledeki kullanımına bakarak kelimenin sözlük kökünü (lemma) bul.
                                - Eğer kelime bir isim veya sıfat olarak kalıplaşmışsa (örn: 'meeting' -> Toplantı, 'building' -> Bina), kökünü BOZMA, aynen bırak.
@@ -77,19 +76,17 @@ public class GeminiService implements AIService {
                                - Eğer kelime İngilizce ise veya yaygın bir İngilizce alıntı kelime (loanword - örn: café, taco, sushi) ise 'en' olarak işaretle.
                                - Eğer kelime KESİN olarak başka bir dilde (İspanyolca, Fransızca, Vietnamca, Almanca vb.) ve İngilizce sözlüklerde yaygın değilse, o dilin ISO kodunu ver (es, fr, vi, de, it vb.).
 
-                            Girdi JSON:
-                            %s
-
                             Çıktıyı şu JSON formatında bir liste olarak ver:
                             [
                               { "word": "meeting", "root": "meeting", "difficulty": "B1", "is_proper_noun": false, "language": "en" },
                               { "word": "mija", "root": "mija", "difficulty": "A1", "is_proper_noun": false, "language": "es" }
                             ]
                             Sadece JSON dizisi döndür.
-                            """,
-                    jsonInput);
+                            """;
 
-            String response = generateContent(prompt, ANALYSIS_MODEL);
+            String userPrompt = String.format("Girdi JSON:\n%s", jsonInput);
+
+            String response = generateContent(systemPrompt, userPrompt, ANALYSIS_MODEL);
             if (response == null)
                 return List.of();
 
@@ -273,7 +270,7 @@ public class GeminiService implements AIService {
 
         for (int attempt = 1; attempt <= 2; attempt++) {
             try {
-                String response = generateContent(systemPrompt + "\n\n" + userPrompt, PIPELINE_MODEL);
+                String response = generateContent(systemPrompt, userPrompt, PIPELINE_MODEL);
                 if (response == null) {
                     Thread.sleep(2000);
                     continue;
@@ -393,7 +390,7 @@ public class GeminiService implements AIService {
 
         for (int attempt = 1; attempt <= 2; attempt++) {
             try {
-                String response = generateContent(fullPrompt, SPECIALIST_MODEL);
+                String response = generateContent(systemPrompt, userPrompt, SPECIALIST_MODEL);
                 if (response == null)
                     continue;
 
@@ -553,7 +550,7 @@ public class GeminiService implements AIService {
         // RETRY MECHANISM (2 Attempts)
         for (int attempt = 1; attempt <= 2; attempt++) {
             try {
-                String response = generateContent(fullPrompt, SPECIALIST_MODEL);
+                String response = generateContent(systemPrompt, userPrompt, SPECIALIST_MODEL);
                 if (response == null)
                     continue;
 
