@@ -50,24 +50,28 @@ public class AuditService {
                 ? wordRepository.findTopEnrichedWords(limit)
                 : wordRepository.findTopEnrichedWordsByMediaId(mediaId, limit);
 
-        if (pendingWords.isEmpty()) {
+        auditSpecificWords(pendingWords, progressCallback, useGPT5);
+    }
+
+    public void auditSpecificWords(List<Word> wordsToAudit, BiConsumer<Integer, Integer> progressCallback, boolean useGPT5) {
+        if (wordsToAudit.isEmpty()) {
             log.info("No words pending audit.");
             return;
         }
 
-        log.info("Found {} words pending audit.", pendingWords.size());
+        log.info("Found {} words pending audit.", wordsToAudit.size());
 
         List<List<Word>> batches = new ArrayList<>();
         int batchSize = 10;
-        for (int i = 0; i < pendingWords.size(); i += batchSize) {
-            int end = Math.min(i + batchSize, pendingWords.size());
-            batches.add(new ArrayList<>(pendingWords.subList(i, end)));
+        for (int i = 0; i < wordsToAudit.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, wordsToAudit.size());
+            batches.add(new ArrayList<>(wordsToAudit.subList(i, end)));
         }
 
         log.info("Sheriff splitting into {} parallel batches of {} words.", batches.size(), batchSize);
 
         AtomicInteger doneCount = new AtomicInteger(0);
-        int totalToAudit = pendingWords.size();
+        int totalToAudit = wordsToAudit.size();
 
         try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
             // Max 5 parallel Gemini calls to avoid rate limiting

@@ -246,9 +246,14 @@ public class PipelineService {
                 .build());
 
         try {
-            auditService.auditRecentWords(actualSize, mediaId, (done, total) -> {
+            List<Word> wordsToAudit = words.stream()
+                    .filter(w -> !Boolean.TRUE.equals(w.getIsVerified()))
+                    .filter(w -> w.getDefinition() != null)
+                    .toList();
+
+            auditService.auditSpecificWords(wordsToAudit, (done, total) -> {
                 updateProgress(PipelineStatus.Step.SHERIFF, done, total);
-            });
+            }, false);
         } catch (Exception e) {
             log.error("Sheriff audit failed: {}", e.getMessage());
             addFailure("SHERIFF", "BATCH", e.getMessage());
@@ -267,10 +272,11 @@ public class PipelineService {
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.SPECIALIST);
 
-        List<Word> allFlagged = specialistService.getFlaggedWords("en", mediaId);
-        int specialistTotal = Math.min(allFlagged.size(), actualSize);
-        List<Word> flaggedWords = allFlagged.subList(0, specialistTotal);
+        List<Word> flaggedWords = words.stream()
+                .filter(w -> Boolean.TRUE.equals(w.getIsEnriched()) && Boolean.TRUE.equals(w.getNeedsReEnrichment()))
+                .toList();
         
+        int specialistTotal = flaggedWords.size();
         log.info("Gemini Specialist fixing {} words in PARALLEL...", specialistTotal);
 
         currentStatus.updateAndGet(s -> s.toBuilder()
@@ -323,15 +329,9 @@ public class PipelineService {
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.JUDGE);
 
-        // CRITICAL FIX: Re-fetch words from DB to get fresh state (Specialist/Sheriff
-        // updates)
-        List<Word> freshWords = (mediaId == null)
-                ? wordRepository.findTopEnrichedWords(batchSize * 2) // Safety buffer
-                : wordRepository.findTopEnrichedWordsByMediaId(mediaId, batchSize * 2);
-
-        // Find all C1/C2 words from this batch
-        List<Word> judgeQueue = freshWords.stream()
-                .filter(w -> w.getIsEnriched() != null && w.getIsEnriched())
+        // Ensure we only judge words processed in this specific pipeline run
+        List<Word> judgeQueue = words.stream()
+                .filter(w -> Boolean.TRUE.equals(w.getIsEnriched()))
                 .filter(w -> {
                     String diff = w.getDifficulty();
                     return diff != null && (diff.equalsIgnoreCase("C1") || diff.equalsIgnoreCase("C2"));
