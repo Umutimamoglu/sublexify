@@ -17,7 +17,7 @@ import java.util.List;
 public class SpecialistService {
 
     private final WordRepository wordRepository;
-    private final GeminiService geminiService;
+    private final OpenAIService openAIService;
     private final JudgeService judgeService;
 
     // @Transactional removed to prevent connection holding during HTTP calls
@@ -85,7 +85,7 @@ public class SpecialistService {
 
         try {
             log.info("Specialist fixing batch of {} words...", batch.size());
-            Map<String, WordDefinition> fixedDefinitions = geminiService.fixWordsBatch(batch);
+            Map<String, WordDefinition> fixedDefinitions = openAIService.fixWordsBatch(batch);
 
             for (Word word : batch) {
                 WordDefinition fixedDef = fixedDefinitions.get(word.getWord());
@@ -104,8 +104,9 @@ public class SpecialistService {
     public void fixSingleWord(Word word, java.time.LocalDateTime batchTime) {
         try {
             log.info("Specialist fixing word '{}'. Reason: {}", word.getWord(), word.getAuditNotes());
-            WordDefinition fixedDef = geminiService.fixWord(word.getWord(), word.getAuditNotes(),
-                    word.getContextSentence());
+            // Use OpenAI batch fix for single word (wrap in list)
+            Map<String, WordDefinition> result = openAIService.fixWordsBatch(List.of(word));
+            WordDefinition fixedDef = result.get(word.getWord());
 
             if (fixedDef != null) {
                 applySpecialistFix(word, fixedDef, batchTime);
@@ -149,7 +150,7 @@ public class SpecialistService {
         word.setIsVerified(true);
         word.setNeedsReEnrichment(false);
         word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
-        word.setAuditNotes("Fixed by Specialist (Gemini 2.5 Pro)");
+        word.setAuditNotes("Fixed by Specialist (OpenAI gpt-5-mini)");
         log.info("AFTER Specialist flag update for '{}': needs_re_enrichment={}, is_verified={}",
                 word.getWord(), word.getNeedsReEnrichment(), word.getIsVerified());
 

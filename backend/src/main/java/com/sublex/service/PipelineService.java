@@ -253,7 +253,7 @@ public class PipelineService {
 
             auditService.auditSpecificWords(wordsToAudit, (done, total) -> {
                 updateProgress(PipelineStatus.Step.SHERIFF, done, total);
-            }, false);
+            }, true);
         } catch (Exception e) {
             log.error("Sheriff audit failed: {}", e.getMessage());
             addFailure("SHERIFF", "BATCH", e.getMessage());

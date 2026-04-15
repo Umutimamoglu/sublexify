@@ -345,4 +345,129 @@ public class OpenAIService implements AIService {
 
                 return results;
         }
+
+        /**
+         * Fixes a batch of rejected words using OpenAI gpt-5-mini.
+         * Mirrors the logic of GeminiService.fixWordsBatch.
+         */
+        public Map<String, WordDefinition> fixWordsBatch(List<Word> words) {
+                if (words == null || words.isEmpty()) {
+                        return Collections.emptyMap();
+                }
+
+                log.info("OpenAI Specialist fixing batch of {} words", words.size());
+
+                StringBuilder batchInput = new StringBuilder();
+                for (int i = 0; i < words.size(); i++) {
+                        Word w = words.get(i);
+                        batchInput.append(String.format("%d. WORD: \"%s\", REASON: \"%s\", CONTEXT: \"%s\"\n",
+                                        i + 1, w.getWord(), w.getAuditNotes(),
+                                        w.getContextSentence() != null ? w.getContextSentence() : ""));
+                }
+
+                String systemPrompt = """
+                                You are a meticulous Senior Lexicographer and Turkish Language Expert.
+                                Your mission is to fix rejected dictionary entries with 100% linguistic accuracy.
+
+                                ### MANDATORY QUALITY CONTROLS:
+                                1. **TURKISH TRANSLATION IS STRICTLY REQUIRED**:
+                                   - Every 'definition' MUST be written in fluent Turkish.
+                                   - Every English 'example' MUST include its Turkish translation in parentheses.
+                                   - **CONCISE DEFINITIONS (CRITICAL)**: Use the shortest, most direct Turkish equivalent.
+                                     - WRONG: "Motorlu, dört tekerlekli, insanları taşımak için kullanılan kara taşıtı." → RIGHT: "Araba, otomobil."
+                                     - RULE: If a Turkish person would answer with ONE WORD, use that one word.
+                                2. **ROOT MATCHING (CRITICAL)**:
+                                   - If the rejection reason is 'Root mismatch', you MUST change the "word" field to the correct base root.
+                                3. **SEMANTIC UNIQUENESS (CRITICAL)**:
+                                   - Do NOT provide redundant or near-identical meanings.
+                                4. **NO NESTED LISTS (CRITICAL)**:
+                                   - Each 'definition' must be a SINGLE string. Do NOT use numbered lists inside a definition string.
+                                5. **STRICT VERB FORM KEYS (CRITICAL)**:
+                                   - Use keys `v1`, `v2`, `v3`, and `ing` for the `verb_forms` object.
+                                6. **PROPER NOUN LABELING**:
+                                   - Every word identified as a Name, Place, Brand, or Person MUST have `pos: "proper noun"`.
+                                7. **NO NULL LISTS (CRITICAL)**:
+                                   - If there are no `phrasal_verbs` or `meanings`, return an empty list `[]`.
+
+                                ### CONTEXTUAL ALIGNMENT (CRITICAL):
+                                For each word, look at the 'CONTEXT' provided. The definition MUST match how the word is used in that sentence.
+
+                                ### JSON STRUCTURE:
+                                Return a JSON array of objects:
+                                [
+                                  {
+                                    "word": "correct_root",
+                                    "difficulty": "B2",
+                                    "meanings": [{ "pos": "verb", "definition": "Türkçe tanım.", "example": "English example. (Türkçe çeviri.)" }],
+                                    "phrasal_verbs": [],
+                                    "verb_forms": { "v1": "...", "v2": "...", "v3": "...", "ing": "..." }
+                                  }
+                                ]
+                                Return ONLY JSON. No conversational filler.
+                                """;
+
+                String userPrompt = String.format("""
+                                STRICT RECTIFICATION REQUIRED FOR THE FOLLOWING WORDS:
+
+                                %s
+
+                                Provide the corrected JSON array now:
+                                """, batchInput.toString());
+
+                for (int attempt = 1; attempt <= 2; attempt++) {
+                        try {
+                                Map<String, Object> requestBody = Map.of(
+                                                "model", MODEL,
+                                                "messages", List.of(
+                                                                Map.of("role", "system", "content", systemPrompt),
+                                                                Map.of("role", "user", "content", userPrompt)),
+                                                "response_format", Map.of("type", "json_object"));
+
+                                String response = restClient.post()
+                                                .uri(OPENAI_URL)
+                                                .header("Authorization", "Bearer " + apiKey)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .body(requestBody)
+                                                .retrieve()
+                                                .body(String.class);
+
+                                Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
+                                List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+                                Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                                String content = (String) message.get("content");
+                                String cleanContent = content.replace("```json", "").replace("```", "").trim();
+
+                                // OpenAI json_object mode returns a wrapper object, handle both array and object
+                                Object parsed = objectMapper.readValue(cleanContent, Object.class);
+                                List<WordDefinition> definitions;
+                                if (parsed instanceof List) {
+                                        definitions = objectMapper.readValue(cleanContent,
+                                                        new com.fasterxml.jackson.core.type.TypeReference<List<WordDefinition>>() {});
+                                } else if (parsed instanceof Map) {
+                                        // Might be wrapped like { "words": [...] }
+                                        Map<String, Object> wrapper = (Map<String, Object>) parsed;
+                                        Object inner = wrapper.values().iterator().next();
+                                        String innerJson = objectMapper.writeValueAsString(inner);
+                                        definitions = objectMapper.readValue(innerJson,
+                                                        new com.fasterxml.jackson.core.type.TypeReference<List<WordDefinition>>() {});
+                                } else {
+                                        definitions = List.of();
+                                }
+
+                                log.info("OpenAI Specialist parsed {} definitions", definitions.size());
+
+                                Map<String, WordDefinition> result = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+                                for (WordDefinition def : definitions) {
+                                        if (def.getWord() != null) {
+                                                result.put(def.getWord(), def);
+                                        }
+                                }
+                                return result;
+
+                        } catch (Exception e) {
+                                log.warn("OpenAI Specialist failed batch fix (Attempt {}). Error: {}", attempt, e.getMessage());
+                        }
+                }
+                return Collections.emptyMap();
+        }
 }
