@@ -18,7 +18,6 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Primary
 public class GeminiService implements AIService {
 
     @Value("${GEMINI_API_KEY}")
