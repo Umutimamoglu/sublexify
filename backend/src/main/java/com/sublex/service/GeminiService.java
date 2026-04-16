@@ -60,7 +60,8 @@ public class GeminiService implements AIService {
                                - Eğer kelime bir isim veya sıfat olarak kalıplaşmışsa (örn: 'meeting' -> Toplantı, 'building' -> Bina), kökünü BOZMA, aynen bırak.
                                - Eğer fiil çekimiyse (örn: 'is meeting' -> meet), kökünü fiil olarak bul.
                                - Eğer kelime kesme işareti veya tire içeriyorsa (örn: 'don't', 'long-term'), bunu tek bir bütün olarak ele al ve bağlama göre en uygun kökü bul (örn: 'don't' -> 'do', 'long-term' -> 'long-term').
-                            2. Kelimenin zorluk seviyesini (A1-C2) belirle.
+                            2. Kelimenin zorluk seviyesini (A1, A2, B1, B2, C1, C2) belirle.
+                               - DİKKAT: Ana akım konuşma dilinde çok nadir kullanılan, edebi, karmaşık, akademik veya oldukça spesifik bir nüansı olan kelimeleri C1'e indirme, onları cesurca 'C2' olarak işaretle (Örn: ubiquitous, ephemeral, fastidious, sycophant, idiosyncratic vb.).
                             3. Özel isim tespiti (is_proper_noun):
                                Aşağıdaki kategorilere giren ve İngilizcede başka yaygın bir sözlük anlamı (fiil, sıfat, genel isim vb.) BULUNMAYAN kelimeleri MUTLAKA 'is_proper_noun: true' olarak işaretle:
                                 - Kişi adları ve soyadları (örn: belushi, poitier, stevens, clark, morgan, brady, stearn, kurtz, jasper, levi, rockwell)

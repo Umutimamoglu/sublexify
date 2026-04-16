@@ -70,6 +70,14 @@ public class AdminController {
         return ResponseEntity.ok("Word analysis triggered in background.");
     }
 
+    @GetMapping(value = "/word-analysis/download-test", produces = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Downloads temporary analysis log")
+    public ResponseEntity<String> getAnalysisTestLog() {
+        return ResponseEntity.ok()
+            .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"analysis_test.json\"")
+            .body(com.sublex.service.WordAnalysisService.lastTestResult);
+    }
+
     @PostMapping("/word-analysis/reset-failed")
     @Operation(summary = "Resets all permanently FAILED words back to PENDING and triggers analysis")
     @Transactional

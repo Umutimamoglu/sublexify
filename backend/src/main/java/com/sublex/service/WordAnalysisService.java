@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class WordAnalysisService {
 
     private final WordRepository wordRepository;
-    private final GeminiService geminiService;
+    private final OpenAIService openAIService;
     private final TransactionTemplate transactionTemplate;
 
     private static final int BATCH_SIZE = 20; // Process 20 words at a time to avoid heavy transaction timeouts
@@ -68,9 +68,8 @@ public class WordAnalysisService {
         }, DEBOUNCE_DELAY_SECONDS, TimeUnit.SECONDS);
     }
 
-    /**
-     * Processes a single batch of pending words (50 max).
-     */
+    public static volatile String lastTestResult = "{}";
+
     public void processPendingWords() {
         // 1. Fetch pending words
         Pageable pageable = PageRequest.of(0, BATCH_SIZE);
@@ -83,16 +82,28 @@ public class WordAnalysisService {
         log.info("Found {} pending words for analysis", pendingWords.size());
 
         try {
-            // 2. Prepare payload for Gemini
+            // 2. Prepare payload for OpenAI
             List<WordContextDTO> payload = pendingWords.stream()
                     .map(w -> new WordContextDTO(w.getWord(), w.getContextSentence()))
                     .collect(Collectors.toList());
 
-            // 3. Call Gemini
-            List<WordAnalysisResultDTO> results = geminiService.analyzeWordsWithContext(payload);
+            // 3. Call OpenAI
+            List<WordAnalysisResultDTO> results = openAIService.analyzeWordsWithContext(payload);
+
+            // GEÇİCİ TEST KODU - BAŞLANGIÇ
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                java.util.Map<String, Object> debugMap = new java.util.HashMap<>();
+                debugMap.put("before_pending_words", pendingWords);
+                debugMap.put("after_openai_results", results);
+                lastTestResult = mapper.writeValueAsString(debugMap);
+            } catch (Exception ex) {
+                log.error("Failed to set temporary test JSONs", ex);
+            }
+            // GEÇİCİ TEST KODU - BİTİŞ
 
             if (results.isEmpty()) {
-                log.warn("Gemini returned empty results for specific batch. Marking as failed.");
+                log.warn("OpenAI returned empty results for specific batch. Marking as failed.");
                 handleBatchFailure(pendingWords);
                 return;
             }

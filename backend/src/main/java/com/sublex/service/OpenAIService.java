@@ -240,6 +240,64 @@ public class OpenAIService implements AIService {
                 }
         }
 
+        public List<com.sublex.dto.WordAnalysisResultDTO> analyzeWordsWithContext(
+                        List<com.sublex.dto.WordContextDTO> words) {
+                if (words == null || words.isEmpty()) {
+                        return List.of();
+                }
+
+                try {
+                        String jsonInput = objectMapper.writeValueAsString(words);
+                        String systemPrompt = """
+                                        Sana bir kelime listesi ve bağlam cümleleri veriyorum. Her kelime için:
+                                        1. Cümledeki kullanımına bakarak kelimenin sözlük kökünü (lemma) bul.
+                                           - Eğer kelime bir isim veya sıfat olarak kalıplaşmışsa (örn: 'meeting' -> Toplantı, 'building' -> Bina), kökünü BOZMA, aynen bırak.
+                                           - Eğer fiil çekimiyse (örn: 'is meeting' -> meet), kökünü fiil olarak bul.
+                                           - Eğer kelime kesme işareti veya tire içeriyorsa (örn: 'don't', 'long-term'), bunu tek bir bütün olarak ele al ve bağlama göre en uygun kökü bul (örn: 'don't' -> 'do', 'long-term' -> 'long-term').
+                                        2. Kelimenin zorluk seviyesini (A1, A2, B1, B2, C1, C2) belirle.
+                                           - DİKKAT: Ana akım konuşma dilinde çok nadir kullanılan, edebi, karmaşık, akademik veya oldukça spesifik bir nüansı olan kelimeleri C1'e indirme, onları cesurca 'C2' olarak işaretle (Örn: ubiquitous, ephemeral, fastidious, syophonat, idiosyncratic vb.).
+                                        3. Özel isim tespiti (is_proper_noun):
+                                           Aşağıdaki kategorilere giren ve İngilizcede başka yaygın bir sözlük anlamı (fiil, sıfat, genel isim vb.) BULUNMAYAN kelimeleri MUTLAKA 'is_proper_noun: true' olarak işaretle:
+                                            - Kişi adları ve soyadları (örn: belushi, poitier, stevens, clark, morgan, brady, stearn, kurtz, jasper, levi, rockwell)
+                                            - Şehir, eyalet, ülke ve yer adları (örn: omaha, danville, paris, brooklyn)
+                                            - Marka, şirket ve müzik grubu adları (örn: porsche, purina, playboy, nike, radiohead)
+                                            - Film, dizi, karakter adları (örn: bambi, terminator, gandalf, elric)
+                                            - Uydurma/kurgu özel isimleri (örn: friesenstinlender, lecroix)
+                                            DİKKAT: Kelimeler küçük harfle yazılmış olabilir.
+                                            ALTIN KURAL: Eğer bir kelimenin yaygın bir sözlük anlamı varsa (örn: 'hefty', 'scotch', 'will', 'can', 'bridge') ve bağlamda bir özel isim olarak KESİN olarak (büyük harfle başlama, unvan eşlik etmesi vb.) kullanılmıyorsa özel isim İŞARETLEME.
+                                            HYPHENATED INTEGRITY: Treat long hyphenated strings (e.g., 'married-to-the-job', 'once-in-a-lifetime') as a SINGLE concept/word. Do not break them up into fragments.
+                                        4. Dil Tespiti (language):
+                                           Kelimenin hangi dilde olduğunu tespit et.
+                                           - Eğer kelime İngilizce ise veya yaygın bir İngilizce alıntı kelime (loanword - örn: café, taco, sushi) ise 'en' olarak işaretle.
+                                           - Eğer kelime KESİN olarak başka bir dilde (İspanyolca, Fransızca, Vietnamca, Almanca vb.) ve İngilizce sözlüklerde yaygın değilse, o dilin ISO kodunu ver (es, fr, vi, de, it vb.).
+
+                                        Çıktıyı şu JSON formatında bir liste olarak ver:
+                                        [
+                                          { "word": "meeting", "root": "meeting", "difficulty": "B1", "is_proper_noun": false, "language": "en" },
+                                          { "word": "mija", "root": "mija", "difficulty": "A1", "is_proper_noun": false, "language": "es" }
+                                        ]
+                                        Sadece JSON dizisi döndür.
+                                        """;
+
+                        String userPrompt = String.format("Girdi JSON:\n%s", jsonInput);
+
+                        // GPT-5 Mini (veya varsayılan modelimiz) kullanarak yanıt üret
+                        String response = generateContent(systemPrompt, userPrompt, MODEL);
+                        if (response == null)
+                                return List.of();
+
+                        // Clean up markdown code blocks if present
+                        String cleanResponse = response.replace("```json", "").replace("```", "").trim();
+
+                        return objectMapper.readValue(cleanResponse,
+                                        new com.fasterxml.jackson.core.type.TypeReference<List<com.sublex.dto.WordAnalysisResultDTO>>() {
+                                        });
+
+                } catch (Exception e) {
+                        log.error("Error analyzing words with context", e);
+                        return List.of();
+                }
+        }
 
         @Override
         public Map<String, Map<String, Object>> auditWordsBatch(List<Word> words) {

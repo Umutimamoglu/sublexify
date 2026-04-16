@@ -792,6 +792,35 @@ const AdminPage = () => {
             {/* Judge Review Panel */}
             <JudgeReviewPanel />
 
+            {/* Test Download Section */}
+            <div className="mb-8 p-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-2xl flex items-center justify-between">
+                <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white">Analysis Test Output</h3>
+                    <p className="text-sm text-gray-500">Download the temporary JSON snapshots of words before and after OpenAI analysis.</p>
+                </div>
+                <button
+                    onClick={async () => {
+                        try {
+                            const data = await MediaService.getAnalysisTestLog();
+                            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = 'analysis_test_log.json';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        } catch (e) {
+                            alert('Failed to download test log. Backend might not be ready or no logs present.');
+                        }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
+                >
+                    <Download className="w-4 h-4" />
+                    Download JSON Log
+                </button>
+            </div>
+
             {/* Pipeline Control Panel */}
             <div className="mb-8">
                 <PipelineControlPanel />
