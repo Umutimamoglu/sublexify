@@ -44,7 +44,6 @@ public class SecurityConfig {
 
                 // Admin endpoints
                 .requestMatchers("/api/admin/word-analysis/trigger").permitAll()
-                .requestMatchers("/api/admin/word-analysis/download-test").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                 // Everything else requires authentication

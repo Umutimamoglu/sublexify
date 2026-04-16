@@ -68,8 +68,6 @@ public class WordAnalysisService {
         }, DEBOUNCE_DELAY_SECONDS, TimeUnit.SECONDS);
     }
 
-    public static volatile java.util.Map<String, Object> lastTestResult = new java.util.HashMap<>();
-
     public void processPendingWords() {
         // 1. Fetch pending words
         Pageable pageable = PageRequest.of(0, BATCH_SIZE);
@@ -94,7 +92,7 @@ public class WordAnalysisService {
             try {
                 java.util.Map<String, Object> debugMap = new java.util.HashMap<>();
                 
-                // Entity yerine sadece loglamak istediğimiz alanları alıyoruz ki JSON serialization patlamasın (Infinite Recursion)
+                // Sadece loglamak istediğimiz alanları alıyoruz ki Entity serializasyon hatası vermesin
                 java.util.List<java.util.Map<String, Object>> outPending = new java.util.ArrayList<>();
                 for(Word w : pendingWords) {
                     java.util.Map<String, Object> wm = new java.util.LinkedHashMap<>();
@@ -107,9 +105,12 @@ public class WordAnalysisService {
                 
                 debugMap.put("before_pending_words", outPending);
                 debugMap.put("after_openai_results", results);
-                lastTestResult = debugMap;
+                
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                String testJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(debugMap);
+                log.info("\n\n=============== OPENAI ANALYSIS TEST SNAPSHOT ===============\n{}\n===========================================================\n\n", testJson);
             } catch (Exception ex) {
-                log.error("Failed to set temporary test JSONs", ex);
+                log.error("Failed to print temporary test JSONs", ex);
             }
             // GEÇİCİ TEST KODU - BİTİŞ
 
