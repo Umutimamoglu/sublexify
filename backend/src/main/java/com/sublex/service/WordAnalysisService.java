@@ -68,6 +68,8 @@ public class WordAnalysisService {
         }, DEBOUNCE_DELAY_SECONDS, TimeUnit.SECONDS);
     }
 
+    public static volatile java.util.Map<String, Object> lastTestResult = new java.util.HashMap<>();
+
     public void processPendingWords() {
         // 1. Fetch pending words
         Pageable pageable = PageRequest.of(0, BATCH_SIZE);
@@ -105,6 +107,8 @@ public class WordAnalysisService {
                 
                 debugMap.put("before_pending_words", outPending);
                 debugMap.put("after_openai_results", results);
+                
+                lastTestResult = debugMap;
                 
                 com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                 String testJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(debugMap);
