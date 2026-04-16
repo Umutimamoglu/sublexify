@@ -246,14 +246,9 @@ public class PipelineService {
                 .build());
 
         try {
-            List<Word> wordsToAudit = words.stream()
-                    .filter(w -> !Boolean.TRUE.equals(w.getIsVerified()))
-                    .filter(w -> w.getDefinition() != null)
-                    .toList();
-
-            auditService.auditSpecificWords(wordsToAudit, (done, total) -> {
+            auditService.auditRecentWords(actualSize, null, (done, total) -> {
                 updateProgress(PipelineStatus.Step.SHERIFF, done, total);
-            }, true);
+            });
         } catch (Exception e) {
             log.error("Sheriff audit failed: {}", e.getMessage());
             addFailure("SHERIFF", "BATCH", e.getMessage());

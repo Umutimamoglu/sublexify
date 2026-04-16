@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class WordAnalysisService {
 
     private final WordRepository wordRepository;
-    private final OpenAIService openAIService;
+    private final GeminiService geminiService;
     private final TransactionTemplate transactionTemplate;
 
     private static final int BATCH_SIZE = 20; // Process 20 words at a time to avoid heavy transaction timeouts
@@ -80,46 +80,19 @@ public class WordAnalysisService {
         log.info("Found {} pending words for analysis", pendingWords.size());
 
         try {
-            // 2. Prepare payload for OpenAI
+            // 2. Prepare payload for Gemini
             List<WordContextDTO> payload = pendingWords.stream()
                     .map(w -> new WordContextDTO(w.getWord(), w.getContextSentence()))
                     .collect(Collectors.toList());
 
-            // 3. Call OpenAI
-            List<WordAnalysisResultDTO> results = openAIService.analyzeWordsWithContext(payload);
-
-            // GEÇİCİ TEST KODU - BAŞLANGIÇ
-            try {
-                java.util.Map<String, Object> debugMap = new java.util.HashMap<>();
-                
-                // Sadece loglamak istediğimiz alanları alıyoruz ki Entity serializasyon hatası vermesin
-                java.util.List<java.util.Map<String, Object>> outPending = new java.util.ArrayList<>();
-                for(Word w : pendingWords) {
-                    java.util.Map<String, Object> wm = new java.util.LinkedHashMap<>();
-                    wm.put("id", w.getId());
-                    wm.put("word", w.getWord());
-                    wm.put("status", w.getStatus());
-                    wm.put("contextSentence", w.getContextSentence());
-                    outPending.add(wm);
-                }
-                
-                debugMap.put("before_pending_words", outPending);
-                debugMap.put("after_openai_results", results);
-                
-                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                String testJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(debugMap);
-                log.info("\n\n=============== OPENAI ANALYSIS TEST SNAPSHOT ===============\n{}\n===========================================================\n\n", testJson);
-            } catch (Exception ex) {
-                log.error("Failed to print temporary test JSONs", ex);
-            }
-            // GEÇİCİ TEST KODU - BİTİŞ
+            // 3. Call Gemini
+            List<WordAnalysisResultDTO> results = geminiService.analyzeWordsWithContext(payload);
 
             if (results.isEmpty()) {
-                log.warn("OpenAI returned empty results for specific batch. Marking as failed.");
+                log.warn("Gemini returned empty results for specific batch. Marking as failed.");
                 handleBatchFailure(pendingWords);
                 return;
             }
-
             // 4. Process results transactionally
             processResults(pendingWords, results);
 
@@ -128,6 +101,7 @@ public class WordAnalysisService {
             handleBatchFailure(pendingWords);
         }
     }
+
 
     private void processResults(List<Word> words, List<WordAnalysisResultDTO> results) {
         Map<String, WordAnalysisResultDTO> resultMap = results.stream()
