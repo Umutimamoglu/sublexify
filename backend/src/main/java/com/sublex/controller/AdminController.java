@@ -70,9 +70,9 @@ public class AdminController {
         return ResponseEntity.ok("Word analysis triggered in background.");
     }
 
-    @GetMapping(value = "/word-analysis/download-test", produces = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping("/word-analysis/download-test")
     @Operation(summary = "Downloads temporary analysis log")
-    public ResponseEntity<String> getAnalysisTestLog() {
+    public ResponseEntity<java.util.Map<String, Object>> getAnalysisTestLog() {
         return ResponseEntity.ok()
             .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"analysis_test.json\"")
             .body(com.sublex.service.WordAnalysisService.lastTestResult);
