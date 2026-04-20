@@ -57,6 +57,8 @@ public class ProgressService {
                     dto.setIsKnown(true);
                     dto.setIsEnriched(word.getIsEnriched());
                     dto.setIsProperNoun(word.getIsProperNoun());
+                    dto.setDefinition(word.getDefinition());
+                    dto.setContextSentence(word.getContextSentence());
                     return dto;
                 })
                 .collect(java.util.stream.Collectors.toList());

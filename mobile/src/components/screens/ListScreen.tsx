@@ -44,6 +44,7 @@ import { useResponsive } from '@/src/hooks/useResponsive';
 import { useListDetail, useLists, useRemoveWordFromList, useCreateSubListFromUnknown } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries';
+import { useCategoryWords } from '@/src/api/queries/progress.queries';
 import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import { FlashCardBack } from '@/src/components/ui/FlashCard';
@@ -704,7 +705,7 @@ function SwipeableWordRow({
 // ─── FLASHCARD BACK MOVED TO UI/FLASHCARD.TSX ─────────────────
 
 // ─── Main Screen ──────────────────────────────────────────────
-export default function ListScreen({ listId }: { listId: number }) {
+export default function ListScreen({ listId, category }: { listId?: number; category?: 'learnt' | 'studied' | 'due' | 'difficult' }) {
   const router = useRouter();
   const { t } = useTranslation('lists');
   const { t: tCommon } = useTranslation('common');
@@ -727,28 +728,51 @@ export default function ListScreen({ listId }: { listId: number }) {
 
   // ─── Data ─────────────────────────────────────────────────
   const isKnownList = listId === -1;
+  const isCategoryMode = !!category;
+  
   const { data: allLists = [] } = useLists();
   const isSystemList = useMemo(() => allLists.some((l) => l.id === listId && l.isSystem), [allLists, listId]);
-  const { data: list, isLoading: listLoading } = useListDetail(listId);
+  
+  const { data: list, isLoading: listLoading } = useListDetail((listId || 0), { enabled: !!listId && !isKnownList && !isCategoryMode });
+  const { data: categoryWords = [], isLoading: catLoading } = useCategoryWords(category || 'learnt', { enabled: isCategoryMode });
   const { data: knownWordsData = [], isLoading: knownLoading } = useKnownWords();
+  
   const { mutate: toggleKnown } = useMarkKnown();
   const { mutate: removeWord } = useRemoveWordFromList();
   const { mutate: generateSubList, isPending: generating } = useCreateSubListFromUnknown();
   const { mutate: markKnownBatch, isPending: marking } = useMarkKnownBatch();
 
-  // listId=-1 için knownWordsData'yı ListDetailDTO formatına çevir
-  const knownWordsAsDetail = useMemo<typeof list>(() => {
-    if (!isKnownList) return undefined;
-    return {
-      id: -1,
-      name: t('knownWords'),
-      words: knownWordsData as any as ListWord[],
-      createdAt: new Date().toISOString(),
-    };
-  }, [isKnownList, knownWordsData, t]);
+  const getCategoryTitle = (cat: string) => {
+    switch(cat) {
+      case 'learnt': return tCommon('progress.categories.learnt.title');
+      case 'studied': return tCommon('progress.categories.learnt.title'); // Note: was matching legacy code
+      case 'due': return tCommon('progress.categories.due.title');
+      case 'difficult': return tCommon('progress.categories.difficult.title');
+      default: return 'Category';
+    }
+  };
 
-  const effectiveList = isKnownList ? knownWordsAsDetail : list;
-  const isLoading = isKnownList ? knownLoading : listLoading;
+  const effectiveList = useMemo(() => {
+    if (isCategoryMode && category) {
+      return {
+        id: -2,
+        name: getCategoryTitle(category),
+        words: categoryWords as any as ListWord[],
+        createdAt: new Date().toISOString(),
+      };
+    }
+    if (isKnownList) {
+      return {
+        id: -1,
+        name: t('knownWords'),
+        words: knownWordsData as any as ListWord[],
+        createdAt: new Date().toISOString(),
+      };
+    }
+    return list;
+  }, [isCategoryMode, category, categoryWords, isKnownList, knownWordsData, list, t, tCommon]);
+
+  const isLoading = isCategoryMode ? catLoading : (isKnownList ? knownLoading : listLoading);
 
   // ─── State ────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -818,7 +842,9 @@ export default function ListScreen({ listId }: { listId: number }) {
 
   // ─── Remove word from list ────────────────────────────────
   const handleRemove = useCallback((wordId: number) => {
-    removeWord({ listId, wordId });
+    if (listId !== undefined) {
+      removeWord({ listId, wordId });
+    }
   }, [removeWord, listId]);
 
   // ─── Mark known batch ─────────────────────────────────────
@@ -855,9 +881,13 @@ export default function ListScreen({ listId }: { listId: number }) {
       [
         { text: tCommon('actions.cancel'), style: 'cancel' },
         {
-          text: tCommon('actions.create'), onPress: () => generateSubList(listId, {
-            onSuccess: (newList) => Alert.alert(tCommon('success'), t('subListCreated', { name: newList.name })),
-          })
+          text: tCommon('actions.create'), onPress: () => {
+            if (listId !== undefined) {
+              generateSubList(listId, {
+                onSuccess: (newList) => Alert.alert(tCommon('success'), t('subListCreated', { name: newList.name })),
+              });
+            }
+          }
         },
       ],
     );

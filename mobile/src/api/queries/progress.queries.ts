@@ -14,12 +14,13 @@ export function useProgressStats() {
   });
 }
 
-export function useCategoryWords(category: 'learnt' | 'studied' | 'due' | 'difficult') {
+export function useCategoryWords(category: 'learnt' | 'studied' | 'due' | 'difficult', options?: { enabled?: boolean }) {
   return useQuery<any[]>({
     queryKey: ['progress', category],
     queryFn: async () => {
       const res = await apiClient.get<any[]>(ENDPOINTS.progress[category]);
       return res.data;
     },
+    enabled: options?.enabled ?? true,
   });
 }

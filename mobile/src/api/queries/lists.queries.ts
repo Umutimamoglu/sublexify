@@ -35,7 +35,7 @@ type WordListWordsResponse = {
   words: ListDetailDTO['words'];
 };
 
-export function useListDetail(id: number) {
+export function useListDetail(id: number, options?: { enabled?: boolean }) {
   return useQuery<ListDetailDTO>({
     queryKey: listKeys.detail(id),
     queryFn:  async () => {
@@ -47,7 +47,7 @@ export function useListDetail(id: number) {
         createdAt: res.data.list.createdAt,
       };
     },
-    enabled: id > 0,
+    enabled: options?.enabled !== undefined ? options.enabled : id > 0,
   });
 }
 
