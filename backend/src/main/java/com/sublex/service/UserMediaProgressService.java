@@ -44,6 +44,38 @@ public class UserMediaProgressService {
         progressRepository.save(progress);
     }
 
+    @Transactional
+    public boolean toggleWatched(Long userId, Long mediaId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
+
+        UserMediaProgress progress = progressRepository.findByUserIdAndMediaId(userId, mediaId)
+                .orElse(UserMediaProgress.builder()
+                        .user(user)
+                        .media(media)
+                        .status("STARTED")
+                        .build());
+
+        boolean nowWatched;
+        if ("WATCHED".equals(progress.getStatus())) {
+            progress.setStatus("STARTED");
+            nowWatched = false;
+        } else {
+            progress.setStatus("WATCHED");
+            nowWatched = true;
+        }
+        // Always update lastAccessedAt so Continue Learning carousel reorders correctly
+        progress.setLastAccessedAt(LocalDateTime.now());
+        progressRepository.save(progress);
+        return nowWatched;
+    }
+
+    public List<Long> getWatchedMediaIds(Long userId) {
+        return progressRepository.findWatchedMediaIdsByUserId(userId);
+    }
+
     public List<Media> getRecentMediaForUser(Long userId, int limit) {
         List<UserMediaProgress> progresses = progressRepository.findAllByUserIdOrderByLastAccessedAtDesc(userId);
         
@@ -70,3 +102,4 @@ public class UserMediaProgressService {
         return result;
     }
 }
+

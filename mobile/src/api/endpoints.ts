@@ -5,6 +5,8 @@ export const ENDPOINTS = {
     words:            (id: number) => `/media/${id}/words`,
     continueLearning: '/media/continue-learning',
     seriesEpisodes:   (imdbId: string) => `/media/series/${imdbId}/episodes`,
+    watchToggle:      (id: number) => `/media/${id}/watch`,
+    watchedIds:       '/media/watched-ids',
   },
   words: {
     search:    '/words/search',

@@ -23,7 +23,8 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
-import { useMediaDetail, useMediaWords, useGenerateListFromMedia } from '@/src/api/queries/media.queries';
+import { useMediaDetail, useMediaWords, useGenerateListFromMedia, useSeriesEpisodes } from '@/src/api/queries/media.queries';
+import { useLocalSearchParams } from 'expo-router';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries';
 import { Ionicons } from '@expo/vector-icons';
@@ -314,6 +315,25 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const { mutate: generateList, isPending: generating }     = useGenerateListFromMedia();
   const { mutate: markKnownBatch, isPending: marking }      = useMarkKnownBatch();
 
+  // ─── Next Episode (Continue Learning) ───────────────────────
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const fromContinue = from === 'continue';
+  const seriesImdbId = media?.imdbId ?? '';
+  const { data: seriesEpisodes = [] } = useSeriesEpisodes(
+    fromContinue && !!seriesImdbId ? seriesImdbId : '',
+  );
+  const nextEpisode = useMemo(() => {
+    if (!fromContinue || !media || !seriesEpisodes.length) return null;
+    const sorted = [...seriesEpisodes].sort((a, b) => {
+      const sa = (a.seasonNumber ?? 0) * 1000 + (a.episodeNumber ?? 0);
+      const sb = (b.seasonNumber ?? 0) * 1000 + (b.episodeNumber ?? 0);
+      return sa - sb;
+    });
+    const idx = sorted.findIndex(ep => ep.id === media.id);
+    return idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null;
+  }, [fromContinue, media, seriesEpisodes]);
+
+
   // Init knownIds once
   React.useEffect(() => {
     if (!knownIdsInitialized.current && knownWordsData.length > 0) {
@@ -599,6 +619,44 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
             )}
           </View>
         )}
+
+        {/* Next Episode Bar — only shown when coming from Continue Learning */}
+        {fromContinue && nextEpisode && (() => {
+          const epName = (() => {
+            const idx = nextEpisode.title.indexOf(' - ');
+            return idx > 0 ? nextEpisode.title.slice(idx + 3) : nextEpisode.title;
+          })();
+          return (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => router.push(`/media/${nextEpisode.id}?from=continue` as any)}
+              style={{
+                flexDirection: 'row', alignItems: 'center',
+                paddingHorizontal: 16, paddingVertical: 14,
+                borderTopWidth: 1, borderTopColor: isDark ? '#ffffff12' : '#e0e0ea',
+                backgroundColor: isDark ? '#1a1a1c' : '#ffffff',
+                gap: 12,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
+                  Sonraki Bölüm
+                </Text>
+                <Text style={{ color: c.TEXT_P, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
+                  S{nextEpisode.seasonNumber}:E{nextEpisode.episodeNumber} · {epName}
+                </Text>
+              </View>
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                paddingHorizontal: 14, paddingVertical: 8,
+                backgroundColor: c.PURPLE, borderRadius: 10,
+              }}>
+                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Geç</Text>
+                <Ionicons name="arrow-forward" size={15} color="#fff" />
+              </View>
+            </TouchableOpacity>
+          );
+        })()}
 
       </SafeAreaView>
 

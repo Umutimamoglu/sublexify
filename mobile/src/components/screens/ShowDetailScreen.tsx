@@ -7,6 +7,7 @@ import {
   StyleSheet,
   StatusBar,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
-import { useSeriesEpisodes } from '@/src/api/queries/media.queries';
+import { useSeriesEpisodes, useWatchedMediaIds, useToggleWatched } from '@/src/api/queries/media.queries';
 import type { MediaDTO } from '@/src/types/api';
 
 type Palette = {
@@ -49,6 +50,7 @@ function makeStyles(c: Palette, isTablet: boolean) {
     // Episode row
     episodeRow:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: c.BORDER, backgroundColor: c.BG },
     epNumberBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+    epNumberBoxWatched: { backgroundColor: '#22C55E' },
     epNumber:    { color: c.TEXT_S, fontSize: 13, fontWeight: '700' },
     epInfo:      { flex: 1 },
     epTitle:     { color: c.TEXT_P, fontSize: 15, fontWeight: '600', marginBottom: 2 },
@@ -88,6 +90,46 @@ type RowSeason  = { kind: 'season';  season: number; epCount: number; isOpen: bo
 type RowEpisode = { kind: 'episode'; item: MediaDTO };
 type Row = RowSeason | RowEpisode;
 
+// ─── WatchButton ───────────────────────────────────────────────
+function WatchButton({ mediaId, isWatched, onToggle }: { mediaId: number; isWatched: boolean; onToggle: () => void }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.spring(scaleAnim, { toValue: 1.25, useNativeDriver: true, speed: 50 }),
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 30 }),
+    ]).start();
+    onToggle();
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={0.75}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Animated.View
+        style={[
+          {
+            width: 36, height: 36, borderRadius: 10,
+            alignItems: 'center', justifyContent: 'center',
+            marginRight: 14,
+            backgroundColor: isWatched ? '#22C55E' : 'rgba(34,197,94,0.1)',
+            borderWidth: isWatched ? 0 : 1.5,
+            borderColor: '#22C55E44',
+          },
+          { transform: [{ scale: scaleAnim }] },
+        ]}
+      >
+        {isWatched
+          ? <Ionicons name="checkmark" size={20} color="#fff" />
+          : <Ionicons name="ellipse-outline" size={18} color="#22C55E66" />
+        }
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
 // ─── Main Screen ──────────────────────────────────────────────
 export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
   const { t } = useTranslation('discover');
@@ -107,6 +149,8 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
   const router = useRouter();
 
   const { data: episodes = [], isLoading, isError } = useSeriesEpisodes(imdbId);
+  const { data: watchedIds = [] } = useWatchedMediaIds();
+  const { mutate: toggleWatched } = useToggleWatched();
 
   const sections = useMemo(() => groupBySeasons(episodes), [episodes]);
 
@@ -197,15 +241,18 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
               }
               const ep = row.item;
               const name = episodeName(ep.title);
+              const isWatched = watchedIds.includes(ep.id);
               return (
                 <TouchableOpacity
                   style={styles.episodeRow}
                   activeOpacity={0.75}
                   onPress={() => router.push(`/media/${ep.id}` as any)}
                 >
-                  <View style={styles.epNumberBox}>
-                    <Text style={styles.epNumber}>{ep.episodeNumber}</Text>
-                  </View>
+                  <WatchButton
+                    mediaId={ep.id}
+                    isWatched={isWatched}
+                    onToggle={() => toggleWatched(ep.id)}
+                  />
                   <View style={styles.epInfo}>
                     <Text style={styles.epTitle} numberOfLines={1}>{name}</Text>
                     <Text style={styles.epSubtitle}>
@@ -225,3 +272,4 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
     </View>
   );
 }
+

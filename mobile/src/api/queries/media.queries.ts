@@ -6,6 +6,7 @@ import type { MediaDTO, MediaWordsResponseDTO, WordListDTO } from '@/src/types/a
 export const mediaKeys = {
   all:              ['media'] as const,
   continueLearning: ['media', 'continue-learning'] as const,
+  watchedIds:       ['media', 'watched-ids'] as const,
   detail:           (id: number) => ['media', id] as const,
   words:            (id: number, onlyUnknown?: boolean) => ['media', id, 'words', onlyUnknown] as const,
 };
@@ -84,3 +85,46 @@ export function useGenerateListFromMedia() {
     },
   });
 }
+
+// ─── Watch Toggle ───────────────────────────────────────────────
+
+export function useWatchedMediaIds() {
+  return useQuery<number[]>({
+    queryKey: mediaKeys.watchedIds,
+    queryFn: async () => {
+      const res = await apiClient.get<number[]>(ENDPOINTS.media.watchedIds);
+      return res.data;
+    },
+    staleTime: 0,
+  });
+}
+
+export function useToggleWatched() {
+  const qc = useQueryClient();
+  return useMutation<{ watched: boolean; mediaId: number }, Error, number>({
+    mutationFn: async (mediaId: number) => {
+      const res = await apiClient.post<{ watched: boolean; mediaId: number }>(
+        ENDPOINTS.media.watchToggle(mediaId),
+      );
+      return res.data;
+    },
+    // Optimistic update: immediately toggle the watched state in cache
+    onMutate: async (mediaId) => {
+      await qc.cancelQueries({ queryKey: mediaKeys.watchedIds });
+      const prev = qc.getQueryData<number[]>(mediaKeys.watchedIds) ?? [];
+      const isCurrentlyWatched = prev.includes(mediaId);
+      qc.setQueryData<number[]>(
+        mediaKeys.watchedIds,
+        isCurrentlyWatched ? prev.filter(id => id !== mediaId) : [...prev, mediaId],
+      );
+      return { prev };
+    },
+    onError: (_err, _mediaId, context: any) => {
+      if (context?.prev) qc.setQueryData(mediaKeys.watchedIds, context.prev);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mediaKeys.continueLearning });
+    },
+  });
+}
+

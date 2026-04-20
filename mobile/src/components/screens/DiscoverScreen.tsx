@@ -438,6 +438,19 @@ function ListCard({ item, index, styles, onPress }: { item: WordListDTO; index: 
   const knownWords = item.totalWords - (item.unknownWords || 0);
   const percentage = item.totalWords > 0 ? Math.round((knownWords / item.totalWords) * 100) : 0;
 
+  // Derive a dynamic CEFR level label from level distribution (highest level with >10% words)
+  const dynamicLevel = (() => {
+    if (!item.levelCounts) return null;
+    const levels = ['C2', 'C1', 'B2', 'B1', 'A2', 'A1'];
+    const total = Object.values(item.levelCounts).reduce((a, b) => a + b, 0);
+    if (total === 0) return null;
+    for (const lv of levels) {
+      const count = item.levelCounts[lv] ?? 0;
+      if (count / total >= 0.1) return lv;
+    }
+    return null;
+  })();
+
   return (
     <TouchableOpacity style={styles.listRow} activeOpacity={0.85} onPress={onPress}>
       <View style={[styles.listRowAccent, { backgroundColor: iconColor }]} />
@@ -457,7 +470,9 @@ function ListCard({ item, index, styles, onPress }: { item: WordListDTO; index: 
         ) : (
           <Text style={styles.listRowStatNum}>{item.totalWords.toLocaleString()}</Text>
         )}
-        <Text style={[styles.listRowStatLabel, { color: '#666' }]}>{isOxford ? 'LEVEL B2' : 'NOT STARTED'}</Text>
+        <Text style={[styles.listRowStatLabel, { color: '#666' }]}>
+          {isOxford ? (dynamicLevel ? `LEVEL ${dynamicLevel}` : 'OXFORD') : 'NOT STARTED'}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -502,7 +517,13 @@ export default function DiscoverScreen() {
     refetchContinue();
   }, [refetchContinue]));
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
-  const { data: allLists = [], isLoading: listsLoading } = useLists();
+  const { data: allLists = [], isLoading: listsLoading, refetch: refetchLists } = useLists();
+
+  // Refresh lists when screen comes into focus so Oxford % stays up-to-date
+  useFocusEffect(useCallback(() => {
+    refetchLists();
+  }, [refetchLists]));
+
   const systemLists = useMemo(() => allLists.filter((l) => l.isSystem), [allLists]);
   const { data: userStats, isLoading: knownLoading } = useUserStats();
 
@@ -588,7 +609,7 @@ export default function DiscoverScreen() {
           if (item.generatedListId) {
             router.push(`/list/${item.generatedListId}` as any);
           } else {
-            router.push(`/media/${item.id}` as any);
+            router.push(`/media/${item.id}?from=continue` as any);
           }
         }}
       >

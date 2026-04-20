@@ -4,6 +4,7 @@ import com.sublex.dto.MediaDTO;
 import com.sublex.dto.MediaWordsResponseDTO;
 import com.sublex.service.MediaService;
 import com.sublex.service.TmdbService;
+import com.sublex.service.UserMediaProgressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,7 @@ public class MediaController {
 
     private final MediaService mediaService;
     private final TmdbService tmdbService;
+    private final UserMediaProgressService userMediaProgressService;
 
 
     /**
@@ -44,6 +46,35 @@ public class MediaController {
         }
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(mediaService.getRecentMediaForUser(userId, limit));
+    }
+
+    /**
+     * POST /api/media/{id}/watch
+     * Toggle watched status for a media episode
+     */
+    @PostMapping("/{id}/watch")
+    public ResponseEntity<java.util.Map<String, Object>> toggleWatch(
+            @PathVariable Long id,
+            Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        Long userId = (Long) authentication.getPrincipal();
+        boolean nowWatched = userMediaProgressService.toggleWatched(userId, id);
+        return ResponseEntity.ok(java.util.Map.of("watched", nowWatched, "mediaId", id));
+    }
+
+    /**
+     * GET /api/media/watched-ids
+     * Get all media IDs the user has marked as WATCHED
+     */
+    @GetMapping("/watched-ids")
+    public ResponseEntity<List<Long>> getWatchedIds(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(userMediaProgressService.getWatchedMediaIds(userId));
     }
 
     /**
