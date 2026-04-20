@@ -775,13 +775,16 @@ public class AdminController {
     public ResponseEntity<String> resetDefinitions(@RequestBody List<Long> wordIds) {
         List<com.sublex.model.Word> words = wordRepository.findAllById(wordIds);
         words.forEach(w -> {
-            // we don't wipe definition so Specialist can see it if needed (or just overwrite it)
-            w.setNeedsReEnrichment(true); // Flag for Specialist
+            w.setDefinition(null);
+            w.setIsEnriched(false);
+            w.setEnrichedAt(null);
+            w.setNeedsReEnrichment(false);
             w.setIsVerified(false);
             w.setJudgeVerdict(null);
             w.setJudgeStatus(null);
-            // DON'T clear problemFound or step3Error so Specialist can read the exact error.
-            w.setAuditNotes("Sent to Specialist with error: " + (w.getStep3Error() != null ? w.getStep3Error() : "Unknown"));
+            w.setProblemFound(false);
+            w.setStep3Error(null);
+            w.setAuditNotes("Reset by admin for re-enrichment");
         });
         wordRepository.saveAll(words);
         return ResponseEntity.ok("Successfully reset " + words.size() + " words for re-enrichment.");
