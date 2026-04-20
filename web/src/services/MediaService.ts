@@ -34,11 +34,6 @@ export interface MediaWordsResponse {
 }
 
 const MediaService = {
-    getAnalysisTestLog: async (): Promise<any> => {
-        const response = await api.get('/admin/word-analysis/download-test');
-        return response.data;
-    },
-
     getAllMedia: async (userId?: number): Promise<Media[]> => {
         const response = await api.get<Media[]>('/media', {
             params: { userId },

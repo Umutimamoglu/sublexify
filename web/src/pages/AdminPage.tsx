@@ -792,42 +792,6 @@ const AdminPage = () => {
             {/* Judge Review Panel */}
             <JudgeReviewPanel />
 
-            {/* Test Download Section */}
-            <div className="mb-8 p-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-2xl flex items-center justify-between">
-                <div>
-                    <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 flex items-center gap-2">
-                        <Download className="w-5 h-5" />
-                        Download Analysis Test Log (JSON)
-                    </h3>
-                    <p className="text-blue-700 dark:text-blue-300 text-sm mt-1">
-                        Download the `before_pending_words` and `after_openai_results` arrays generated from the last triggered batch. 
-                        Useful for debugging the OpenAI pipeline transitions.
-                    </p>
-                </div>
-                <button
-                    onClick={async () => {
-                        try {
-                            const data = await MediaService.getAnalysisTestLog();
-                            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'analysis_test_log.json';
-                            document.body.appendChild(a);
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                            document.body.removeChild(a);
-                        } catch (err) {
-                            console.error('Failed to download test log', err);
-                            alert('Failed to download test log. Check console.');
-                        }
-                    }}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all shadow-sm hover:shadow-md font-medium"
-                >
-                    <Download className="w-5 h-5" />
-                    Download JSON
-                </button>
-            </div>
 
             {/* Pipeline Control Panel */}
             <div className="mb-8">

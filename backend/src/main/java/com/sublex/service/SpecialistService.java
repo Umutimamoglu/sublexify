@@ -145,10 +145,11 @@ public class SpecialistService {
             }
         }
 
-        log.info("BEFORE Specialist flag update for '{}': needs_re_enrichment={}, is_verified={}",
-                word.getWord(), word.getNeedsReEnrichment(), word.getIsVerified());
-        word.setIsVerified(true);
+        // Torpil yok: Sheriff (Step 2) ve Auditor (Step 3) kelimeyi baştan tekrar incelesin!
+        word.setIsVerified(false); 
         word.setNeedsReEnrichment(false);
+        word.setProblemFound(false);
+        word.setStep3Error(null);
         word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
         word.setAuditNotes("Fixed by Specialist (OpenAI gpt-5-mini)");
         log.info("AFTER Specialist flag update for '{}': needs_re_enrichment={}, is_verified={}",

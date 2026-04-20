@@ -70,14 +70,6 @@ public class AdminController {
         return ResponseEntity.ok("Word analysis triggered in background.");
     }
 
-    @GetMapping("/word-analysis/download-test")
-    @Operation(summary = "Downloads temporary analysis log")
-    public ResponseEntity<java.util.Map<String, Object>> getAnalysisTestLog() {
-        return ResponseEntity.ok()
-            .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"analysis_test.json\"")
-            .body(com.sublex.service.WordAnalysisService.lastTestResult);
-    }
-
     @PostMapping("/word-analysis/reset-failed")
     @Operation(summary = "Resets all permanently FAILED words back to PENDING and triggers analysis")
     @Transactional
@@ -783,16 +775,13 @@ public class AdminController {
     public ResponseEntity<String> resetDefinitions(@RequestBody List<Long> wordIds) {
         List<com.sublex.model.Word> words = wordRepository.findAllById(wordIds);
         words.forEach(w -> {
-            w.setDefinition(null);
-            w.setIsEnriched(false);
-            w.setEnrichedAt(null);
-            w.setNeedsReEnrichment(false);
+            // we don't wipe definition so Specialist can see it if needed (or just overwrite it)
+            w.setNeedsReEnrichment(true); // Flag for Specialist
             w.setIsVerified(false);
             w.setJudgeVerdict(null);
             w.setJudgeStatus(null);
-            w.setProblemFound(false);
-            w.setStep3Error(null);
-            w.setAuditNotes("Reset by admin for re-enrichment");
+            // DON'T clear problemFound or step3Error so Specialist can read the exact error.
+            w.setAuditNotes("Sent to Specialist with error: " + (w.getStep3Error() != null ? w.getStep3Error() : "Unknown"));
         });
         wordRepository.saveAll(words);
         return ResponseEntity.ok("Successfully reset " + words.size() + " words for re-enrichment.");
