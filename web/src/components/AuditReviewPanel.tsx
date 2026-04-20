@@ -239,7 +239,30 @@ const AuditReviewPanel = () => {
                     <p className="text-sm text-gray-500 dark:text-gray-400">GPT-5 tarafından bayraklanan sorunlu kelimeleri gözden geçir</p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        onClick={async () => {
+                            if (stats && selectedIds.length === stats.totalProblems) {
+                                setSelectedIds([]);
+                            } else {
+                                setActionLoading('selectAll');
+                                try {
+                                    const allIds = await PipelineAPI.getAllAuditProblemIds();
+                                    setSelectedIds(allIds);
+                                } catch(e) {
+                                    alert('Tümünü seçme başarısız oldu.');
+                                } finally {
+                                    setActionLoading(null);
+                                }
+                            }
+                        }}
+                        disabled={!!actionLoading}
+                        className="px-4 py-2 text-xs font-bold bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                    >
+                        {actionLoading === 'selectAll' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : 
+                            (stats && selectedIds.length === stats.totalProblems && stats.totalProblems > 0) ? 'Seçimi Kaldır' : `Veritabanındaki Tümünü Seç (${stats?.totalProblems || 0})`
+                        }
+                    </button>
                     <button
                         onClick={() => handleBatchAction('resolve')}
                         disabled={selectedIds.length === 0 || !!actionLoading}

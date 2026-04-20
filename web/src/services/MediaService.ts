@@ -351,6 +351,11 @@ const PipelineAPI = {
         return response.data;
     },
 
+    getAllAuditProblemIds: async (): Promise<number[]> => {
+        const response = await api.get('/admin/words/audit-problems/all-ids');
+        return response.data;
+    },
+
     resolveAuditProblems: async (wordIds: number[]): Promise<string> => {
         const response = await api.post('/admin/words/audit-resolve', wordIds);
         return response.data;

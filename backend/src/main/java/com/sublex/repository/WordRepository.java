@@ -160,6 +160,9 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
     @Query("SELECT COUNT(w) FROM Word w WHERE w.step3Error = 'Ignored'")
     long countIgnored();
 
+    @Query("SELECT w.id FROM Word w WHERE w.problemFound = true")
+    List<Long> findAllProblematicWordIds();
+
     // ======= DEFINITION SHORTENING QUERIES =======
     long countByAuditNotesContaining(String keyword);
     List<Word> findByAuditNotesContainingOrderByEnrichedAtDesc(String keyword);
