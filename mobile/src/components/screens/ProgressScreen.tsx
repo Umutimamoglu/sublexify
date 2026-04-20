@@ -186,7 +186,8 @@ export default function ProgressScreen() {
   const isLoading = statsLoading || knownLoading;
 
   const totalKnown = knownWords.length;
-  const dailyCount = Math.min(dailyReviewCount, totalKnown);
+  const totalLearnt = stats?.totalWordsLearnt ?? 0;
+  const dailyCount = Math.min(dailyReviewCount, stats?.wordsToReviewToday ?? 0);
 
   const hasData = (stats && (stats.totalWordsLearnt > 0 || stats.totalWordsStudied > 0 || stats.difficultWords > 0)) || totalKnown > 0;
 
@@ -241,7 +242,7 @@ export default function ProgressScreen() {
                 icon="🎯"
                 value={dailyCount}
                 label={t('dueTodayTitle')}
-                desc={t('dueTodayProgress', { count: dailyCount, total: totalKnown })}
+                desc={t('dueTodayProgress', { count: dailyCount, total: stats?.totalWordsLearnt ?? 0 })}
                 styles={styles}
                 color="#F43F5E"
                 onPress={() => router.push('/progress/due' as any)}

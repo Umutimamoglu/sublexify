@@ -45,6 +45,7 @@ import { useListDetail, useLists, useRemoveWordFromList, useCreateSubListFromUnk
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries';
 import { useCategoryWords } from '@/src/api/queries/progress.queries';
+import { useSettingsStore } from '@/src/store/settingsStore';
 import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import { FlashCardBack } from '@/src/components/ui/FlashCard';
@@ -741,6 +742,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const { mutate: removeWord } = useRemoveWordFromList();
   const { mutate: generateSubList, isPending: generating } = useCreateSubListFromUnknown();
   const { mutate: markKnownBatch, isPending: marking } = useMarkKnownBatch();
+  const { dailyReviewCount } = useSettingsStore();
 
   const getCategoryTitle = (cat: string) => {
     switch(cat) {
@@ -754,10 +756,19 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
   const effectiveList = useMemo(() => {
     if (isCategoryMode && category) {
+      let words = categoryWords as any as ListWord[];
+      if (category === 'due') {
+        const seed = new Date().getDate(); // Changes every day of the month
+        words = [...words].sort((a, b) => {
+           const hashA = ((a.id || 0) * 31 + seed * 17) % 101;
+           const hashB = ((b.id || 0) * 31 + seed * 17) % 101;
+           return hashA - hashB;
+        }).slice(0, dailyReviewCount);
+      }
       return {
         id: -2,
         name: getCategoryTitle(category),
-        words: categoryWords as any as ListWord[],
+        words: words,
         createdAt: new Date().toISOString(),
       };
     }
@@ -770,7 +781,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
       };
     }
     return list;
-  }, [isCategoryMode, category, categoryWords, isKnownList, knownWordsData, list, t, tCommon]);
+  }, [isCategoryMode, category, categoryWords, isKnownList, knownWordsData, list, t, tCommon, dailyReviewCount]);
 
   const isLoading = isCategoryMode ? catLoading : (isKnownList ? knownLoading : listLoading);
 

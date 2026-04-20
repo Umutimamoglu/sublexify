@@ -722,6 +722,14 @@ public class AdminController {
         return ResponseEntity.ok(stats);
     }
 
+    @GetMapping("/words/audit-problems/all-ids")
+    @Operation(summary = "Get all IDs of words with problem_found=true (for bulk selection)")
+    public ResponseEntity<List<Long>> getAllAuditProblemIds() {
+        List<Long> ids = wordRepository.findAllProblematicWordIds();
+        log.info("Returning {} problematic word IDs for bulk selection", ids.size());
+        return ResponseEntity.ok(ids);
+    }
+
     @PostMapping("/words/bulk-fix-definitions")
     @Operation(summary = "Bulk update definitions for flagged words and clear audit flags")
     @Transactional
