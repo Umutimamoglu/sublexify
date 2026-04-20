@@ -104,11 +104,22 @@ public class AuditService {
         try {
             log.info("Auditing batch of {} words...", batch.size());
 
-            // 1. Filtreleme: Tanımı olmayanları ayır (Silent Approval Fix)
+            // 1. Filtreleme: Tanımı olmayanları ve köke bağlı temiz kelimeleri ayır
             List<Map<String, Object>> auditInput = new ArrayList<>();
             List<Word> validWordsForGemini = new ArrayList<>();
 
             for (Word w : batch) {
+                // ROOT WORD BYPASS: Köke bağlı ve kök temizse → AI'ya gönderme, direkt onayla
+                if (w.getRootWord() != null && Boolean.FALSE.equals(w.getRootWord().getProblemFound())) {
+                    log.info("Root bypass: auto-approving '{}' (root '{}' is clean)",
+                            w.getWord(), w.getRootWord().getWord());
+                    w.setIsVerified(true);
+                    w.setNeedsReEnrichment(false);
+                    w.setProblemFound(false);
+                    w.setAuditNotes("Auto-approved: root word '" + w.getRootWord().getWord() + "' is clean.");
+                    continue;
+                }
+
                 if (w.getDefinition() != null && w.getDefinition().getMeanings() != null) {
                     auditInput.add(Map.of(
                             "id", w.getId(),

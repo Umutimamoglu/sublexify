@@ -420,8 +420,16 @@ public class OpenAIService implements AIService {
                 StringBuilder batchInput = new StringBuilder();
                 for (int i = 0; i < words.size(); i++) {
                         Word w = words.get(i);
-                        batchInput.append(String.format("%d. WORD: \"%s\", REASON: \"%s\", CONTEXT: \"%s\"\n",
-                                        i + 1, w.getWord(), w.getAuditNotes(),
+                        // Include step3Error (Sheriff's specific finding) so AI knows exactly what to fix
+                        String previousError = (w.getStep3Error() != null && !w.getStep3Error().isBlank())
+                                        ? w.getStep3Error()
+                                        : (w.getAuditNotes() != null ? w.getAuditNotes() : "Unspecified error.");
+                        batchInput.append(String.format(
+                                        "%d. WORD: \"%s\"\n" +
+                                        "   PREVIOUS AUDITOR ERROR: \"%s\"\n" +
+                                        "   CONTEXT SENTENCE: \"%s\"\n" +
+                                        "   ⚠️ DO NOT repeat the above error. Fix it specifically.\n\n",
+                                        i + 1, w.getWord(), previousError,
                                         w.getContextSentence() != null ? w.getContextSentence() : ""));
                 }
 

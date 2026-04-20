@@ -90,7 +90,7 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
         List<Word> findByLanguageAndJudgeApprovedAtPrecision(@Param("language") String language,
                         @Param("dateTime") String dateTime);
 
-        @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND (w.needsReEnrichment = false OR w.needsReEnrichment IS NULL) AND (w.isVerified = false OR w.isVerified IS NULL) ORDER BY w.enrichedAt ASC LIMIT :limit")
+        @Query("SELECT w FROM Word w LEFT JOIN FETCH w.rootWord rw WHERE w.isEnriched = true AND (w.needsReEnrichment = false OR w.needsReEnrichment IS NULL) AND (w.isVerified = false OR w.isVerified IS NULL) ORDER BY w.enrichedAt ASC LIMIT :limit")
         List<Word> findTopEnrichedWords(@Param("limit") int limit);
 
         @Query("SELECT w FROM Word w WHERE w.status = 'PROCESSED' AND (w.isEnriched = false OR w.isEnriched IS NULL) AND w.rootWord IS NULL AND w.language = 'en' ORDER BY w.id ASC")
@@ -106,7 +106,7 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
 
         // ======= MEDIA-TARGETED QUERIES =======
 
-        @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND mw.word.isEnriched = true AND (mw.word.needsReEnrichment = false OR mw.word.needsReEnrichment IS NULL) AND (mw.word.isVerified = false OR mw.word.isVerified IS NULL) ORDER BY mw.word.enrichedAt ASC LIMIT :limit")
+        @Query("SELECT mw.word FROM MediaWord mw LEFT JOIN FETCH mw.word.rootWord WHERE mw.media.id = :mediaId AND mw.word.isEnriched = true AND (mw.word.needsReEnrichment = false OR mw.word.needsReEnrichment IS NULL) AND (mw.word.isVerified = false OR mw.word.isVerified IS NULL) ORDER BY mw.word.enrichedAt ASC LIMIT :limit")
         List<Word> findTopEnrichedWordsByMediaId(@Param("mediaId") Long mediaId, @Param("limit") int limit);
 
         @Query("SELECT mw.word FROM MediaWord mw WHERE mw.media.id = :mediaId AND mw.word.difficulty IN :levels")
