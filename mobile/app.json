@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sublexify",
     "slug": "sublexify",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/sublexify_transparent.png",
     "scheme": "sublexify",
@@ -10,15 +10,13 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.umutimamoglu.sublexifyapp",
-      "buildNumber": "1",
+      "bundleIdentifier": "com.umutimamoglu.sublexify",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.umutimamoglu.sublexifyapp",
-      "versionCode": 1,
+      "package": "com.umutimamoglu.sublexify",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/sublexify_transparent.png",

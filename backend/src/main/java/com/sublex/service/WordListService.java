@@ -135,9 +135,11 @@ public class WordListService {
                                 .map(ukw -> ukw.getWord().getId())
                                 .collect(Collectors.toSet());
 
-                // Filter for unknown words
+                // Filter for unknown words, resolving root words
                 List<Word> unknownWords = mediaWords.stream()
                                 .map(MediaWord::getWord)
+                                .map(word -> word.getRootWord() != null ? word.getRootWord() : word)
+                                .distinct()
                                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .filter(word -> !knownWordIds.contains(word.getId()))
                                 .collect(Collectors.toList());
@@ -183,6 +185,8 @@ public class WordListService {
                 // Filter and convert to DTOs, and calculate stats in a single pass if possible
                 // But for now, let's at least share the knownWordIds set
                 List<WordDTO> words = wordList.getWords().stream()
+                                .map(word -> word.getRootWord() != null ? word.getRootWord() : word)
+                                .distinct()
                                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .map(word -> convertToWordDTO(word, knownWordIds.contains(word.getId())))
                                 .filter(w -> !onlyUnknown || !w.getIsKnown())
@@ -214,6 +218,8 @@ public class WordListService {
                                 .collect(Collectors.toSet());
 
                 List<Word> unknownWords = sourceList.getWords().stream()
+                                .map(word -> word.getRootWord() != null ? word.getRootWord() : word)
+                                .distinct()
                                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .filter(word -> !knownWordIds.contains(word.getId()))
                                 .collect(Collectors.toList());
@@ -243,8 +249,15 @@ public class WordListService {
                 int totalWords = 0;
                 int unknownWords = 0;
                 java.util.Map<String, Long> levelCounts = new java.util.HashMap<>();
+                java.util.Set<Long> processedIds = new java.util.HashSet<>();
 
-                for (Word word : list.getWords()) {
+                for (Word w : list.getWords()) {
+                        Word word = w.getRootWord() != null ? w.getRootWord() : w;
+                        
+                        if (!processedIds.add(word.getId())) {
+                                continue;
+                        }
+
                         if (Boolean.TRUE.equals(word.getIsProperNoun())) {
                                 continue;
                         }
@@ -316,6 +329,7 @@ public class WordListService {
 
                 Set<Word> words = knownWords.stream()
                                 .map(UserKnownWord::getWord)
+                                .map(word -> word.getRootWord() != null ? word.getRootWord() : word)
                                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
                                 .collect(Collectors.toSet());
 

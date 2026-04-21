@@ -204,6 +204,7 @@ public class MediaService {
 
         List<MediaWord> mediaWords = mediaWordRepository.findByMediaId(mediaId).stream()
                 .filter(mw -> !Boolean.TRUE.equals(mw.getWord().getIsProperNoun()))
+                .filter(mw -> mw.getWord().getRootWord() == null)
                 .collect(Collectors.toList());
 
         // Get user's known words if userId provided
@@ -289,6 +290,7 @@ public class MediaService {
     private MediaDTO convertToDTO(Media media, Long userId) {
         List<MediaWord> mediaWords = mediaWordRepository.findByMediaId(media.getId()).stream()
                 .filter(mw -> !Boolean.TRUE.equals(mw.getWord().getIsProperNoun()))
+                .filter(mw -> mw.getWord().getRootWord() == null)
                 .collect(Collectors.toList());
         int totalWords = mediaWords.size();
 
