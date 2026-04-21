@@ -552,8 +552,20 @@ export default function DiscoverScreen() {
     }
   };
 
+  const hasContinue = continueMedia.length > 0;
+  
   // ─── Hero carousel state ────────────────────────────────────
-  const heroItems = useMemo(() => continueMedia.slice(0, 8), [continueMedia]);
+  const heroItems = useMemo(() => {
+    if (hasContinue) return continueMedia.slice(0, 8);
+    if (!allMedia || allMedia.length === 0) return [];
+    
+    // Fallback to recommended popular media for new users
+    return [...allMedia]
+      .filter(m => m.backdropUrl || m.posterUrl)
+      .sort((a, b) => b.totalWords - a.totalWords)
+      .slice(0, 5);
+  }, [continueMedia, allMedia, hasContinue]);
+  
   const [heroIndex, setHeroIndex] = useState(0);
   const heroRef = useRef<FlatList>(null);
   const autoScrollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -628,13 +640,14 @@ export default function DiscoverScreen() {
           style={styles.heroGradient}
         />
         <View style={styles.heroContent}>
-          <Text style={styles.heroEpisode}>{episodeLabel(item)}</Text>
+          <Text style={[styles.heroEpisode, !hasContinue && { color: '#FEE76C', letterSpacing: 1.2 }]}>
+            {hasContinue ? episodeLabel(item) : '🌟 ÖNERİLEN İÇERİK'}
+          </Text>
           <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
-          {item.knownWordPercentage != null && (
-            <Text style={styles.heroSubtitle}>
-              {item.totalWords} {t('words')} · %{Math.round(item.knownWordPercentage)} {t('knownWords').toLowerCase()}
-            </Text>
-          )}
+          <Text style={styles.heroSubtitle}>
+            {item.totalWords} {t('words')}
+            {hasContinue && item.knownWordPercentage != null ? ` · %${Math.round(item.knownWordPercentage)} ${t('knownWords').toLowerCase()}` : ''}
+          </Text>
           <View style={styles.heroBtnRow}>
             <TouchableOpacity 
               style={styles.heroBtnOuter} 
@@ -660,7 +673,9 @@ export default function DiscoverScreen() {
                     style={styles.heroBtnInner}
                 >
                     <Ionicons name="play" size={18} color="#FEE76C" style={{ marginRight: 8 }} />
-                    <Text style={styles.heroBtnPrimaryText} numberOfLines={1}>{t('continueLearning')}</Text>
+                    <Text style={styles.heroBtnPrimaryText} numberOfLines={1}>
+                      {hasContinue ? t('continueLearning') : 'Hemen Başla'}
+                    </Text>
                 </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -756,7 +771,7 @@ export default function DiscoverScreen() {
         )}
 
         {/* View All link for continue learning */}
-        {hasHero && continueMedia.length > 1 && (
+        {hasContinue && continueMedia.length > 1 && (
           <TouchableOpacity
             style={{ alignSelf: 'flex-end', paddingHorizontal: 16, marginTop: -20, marginBottom: 12 }}
             onPress={() => setContinueModalVisible(true)}

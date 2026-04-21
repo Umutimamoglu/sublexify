@@ -305,6 +305,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const [showMarkModal, setShowMarkModal]   = useState(false);
   const [knownIds, setKnownIds]             = useState<Set<number>>(new Set());
   const [addModal, setAddModal]             = useState<{ wordId: number; wordName: string } | null>(null);
+  const [dismissedNext, setDismissedNext]   = useState(false);
   const knownIdsInitialized                 = useRef(false);
 
   // ─── Data ─────────────────────────────────────────────────
@@ -621,40 +622,49 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         )}
 
         {/* Next Episode Bar — only shown when coming from Continue Learning */}
-        {fromContinue && nextEpisode && (() => {
+        {fromContinue && nextEpisode && !dismissedNext && (() => {
           const epName = (() => {
             const idx = nextEpisode.title.indexOf(' - ');
             return idx > 0 ? nextEpisode.title.slice(idx + 3) : nextEpisode.title;
           })();
           return (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => router.push(`/media/${nextEpisode.id}?from=continue` as any)}
-              style={{
-                flexDirection: 'row', alignItems: 'center',
-                paddingHorizontal: 16, paddingVertical: 14,
-                borderTopWidth: 1, borderTopColor: isDark ? '#ffffff12' : '#e0e0ea',
-                backgroundColor: isDark ? '#1a1a1c' : '#ffffff',
-                gap: 12,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: c.TEXT_S, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 }}>
-                  Sonraki Bölüm
+            <View style={{
+              flexDirection: 'row', alignItems: 'center',
+              paddingHorizontal: 12, paddingVertical: 10,
+              borderTopWidth: 1, borderTopColor: isDark ? '#ffffff0f' : '#0000000a',
+              backgroundColor: isDark ? '#1a1a1c' : '#fcfcfc',
+              gap: 10,
+            }}>
+              <View style={{ flex: 1, paddingLeft: 4 }}>
+                <Text style={{ color: c.TEXT_S, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', marginBottom: 2 }}>
+                  Sonraki: S{nextEpisode.seasonNumber} E{nextEpisode.episodeNumber}
                 </Text>
-                <Text style={{ color: c.TEXT_P, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>
-                  S{nextEpisode.seasonNumber}:E{nextEpisode.episodeNumber} · {epName}
+                <Text style={{ color: c.TEXT_P, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+                  {epName}
                 </Text>
               </View>
-              <View style={{
-                flexDirection: 'row', alignItems: 'center', gap: 6,
-                paddingHorizontal: 14, paddingVertical: 8,
-                backgroundColor: c.PURPLE, borderRadius: 10,
-              }}>
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Geç</Text>
-                <Ionicons name="arrow-forward" size={15} color="#fff" />
-              </View>
-            </TouchableOpacity>
+              
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => router.push(`/media/${nextEpisode.id}?from=continue` as any)}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                  paddingHorizontal: 10, paddingVertical: 6,
+                  backgroundColor: c.PURPLE, borderRadius: 8,
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Geç</Text>
+                <Ionicons name="arrow-forward" size={12} color="#fff" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.5}
+                onPress={() => setDismissedNext(true)}
+                style={{ padding: 4 }}
+              >
+                <Ionicons name="close" size={16} color={c.TEXT_S} />
+              </TouchableOpacity>
+            </View>
           );
         })()}
 
