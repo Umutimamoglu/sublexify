@@ -287,23 +287,33 @@ export default function SettingsScreen() {
                   Her gün tekrar edilecek kelime sayısı
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 <TouchableOpacity
                   onPress={() => setDailyReviewCount(Math.max(5, dailyReviewCount - 5))}
                   activeOpacity={0.7}
-                  style={[styles.chip, { width: 32, height: 32, borderRadius: 16 }]}
+                  style={{
+                    width: 36, height: 36, borderRadius: 18,
+                    backgroundColor: isDark ? '#ffffff15' : '#f0eeff',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}
                 >
-                  <Text style={[styles.chipText, { fontSize: 18, lineHeight: 22 }]}>−</Text>
+                  <Ionicons name="remove" size={20} color={c.TEXT_P} />
                 </TouchableOpacity>
-                <Text style={[styles.rowLabel, { minWidth: 28, textAlign: 'center', fontSize: 18, fontWeight: '800' }]}>
+                
+                <Text style={[styles.rowLabel, { minWidth: 32, textAlign: 'center', fontSize: 18, fontWeight: '800' }]}>
                   {dailyReviewCount}
                 </Text>
+                
                 <TouchableOpacity
                   onPress={() => setDailyReviewCount(Math.min(50, dailyReviewCount + 5))}
                   activeOpacity={0.7}
-                  style={[styles.chip, styles.chipActive, { width: 32, height: 32, borderRadius: 16 }]}
+                  style={{
+                    width: 36, height: 36, borderRadius: 18,
+                    backgroundColor: c.PURPLE,
+                    alignItems: 'center', justifyContent: 'center',
+                  }}
                 >
-                  <Text style={[styles.chipTextActive, { fontSize: 18, lineHeight: 22 }]}>+</Text>
+                  <Ionicons name="add" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
             </View>

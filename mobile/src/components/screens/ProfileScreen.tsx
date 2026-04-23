@@ -8,6 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -353,7 +354,16 @@ export default function ProfileScreen() {
           <SettingsTile
             icon="log-out-outline"
             label={t('logOut')}
-            onPress={logout}
+            onPress={() => {
+              Alert.alert(
+                t('logOut'),
+                t('logOutConfirm', { defaultValue: 'Hesabınızdan çıkış yapmak istediğinize emin misiniz?' }),
+                [
+                  { text: t('cancel', { defaultValue: 'İptal' }), style: 'cancel' },
+                  { text: t('logOut'), style: 'destructive', onPress: logout }
+                ]
+              );
+            }}
             styles={styles}
             isDark={isDark}
           />

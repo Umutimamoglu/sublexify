@@ -9,9 +9,14 @@ import UserListsPage from '@/pages/UserListsPage';
 import StudyPage from '@/pages/StudyPage';
 import ProgressDashboard from '@/pages/ProgressDashboard';
 import ProgressCategoryPage from '@/pages/ProgressCategoryPage';
+import ProfilePage from '@/pages/ProfilePage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
+import VocabularyPage from '@/pages/VocabularyPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
+
+import SettingsPage from '@/pages/SettingsPage';
+import OnboardingPage from '@/pages/OnboardingPage';
 
 function App() {
   return (
@@ -28,11 +33,15 @@ function App() {
           <Route path="browse/:type" element={<BrowsePage />} />
           <Route path="series/:tmdbId" element={<SeriesDetailPage />} />
           <Route path="media/:id" element={<MediaDetailPage />} />
+          <Route path="onboarding" element={<OnboardingPage />} />
 
           {/* Protected */}
           <Route element={<ProtectedRoute />}>
             <Route path="lists" element={<UserListsPage />} />
             <Route path="study/:listId" element={<StudyPage />} />
+            <Route path="vocabulary" element={<VocabularyPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="profile/settings" element={<SettingsPage />} />
             <Route path="progress" element={<ProgressDashboard />} />
             <Route path="progress/:category" element={<ProgressCategoryPage />} />
             <Route path="admin" element={<AdminPage />} />

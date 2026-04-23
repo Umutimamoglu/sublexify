@@ -91,7 +91,7 @@ type RowEpisode = { kind: 'episode'; item: MediaDTO };
 type Row = RowSeason | RowEpisode;
 
 // ─── WatchButton ───────────────────────────────────────────────
-function WatchButton({ mediaId, isWatched, onToggle }: { mediaId: number; isWatched: boolean; onToggle: () => void }) {
+function WatchButton({ isWatched, onToggle, isDark }: { isWatched: boolean; onToggle: () => void; isDark: boolean }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
@@ -102,6 +102,9 @@ function WatchButton({ mediaId, isWatched, onToggle }: { mediaId: number; isWatc
     onToggle();
   };
 
+  const unselectedBorder = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
+  const unselectedBg = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)';
+
   return (
     <TouchableOpacity
       onPress={handlePress}
@@ -111,19 +114,19 @@ function WatchButton({ mediaId, isWatched, onToggle }: { mediaId: number; isWatc
       <Animated.View
         style={[
           {
-            width: 36, height: 36, borderRadius: 10,
+            width: 32, height: 32, borderRadius: 16,
             alignItems: 'center', justifyContent: 'center',
             marginRight: 14,
-            backgroundColor: isWatched ? '#22C55E' : 'rgba(34,197,94,0.1)',
+            backgroundColor: isWatched ? '#22C55E' : unselectedBg,
             borderWidth: isWatched ? 0 : 1.5,
-            borderColor: '#22C55E44',
+            borderColor: isWatched ? 'transparent' : unselectedBorder,
           },
           { transform: [{ scale: scaleAnim }] },
         ]}
       >
         {isWatched
-          ? <Ionicons name="checkmark" size={20} color="#fff" />
-          : <Ionicons name="ellipse-outline" size={18} color="#22C55E66" />
+          ? <Ionicons name="checkmark" size={18} color="#fff" />
+          : <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }} />
         }
       </Animated.View>
     </TouchableOpacity>
@@ -249,9 +252,9 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
                   onPress={() => router.push(`/media/${ep.id}` as any)}
                 >
                   <WatchButton
-                    mediaId={ep.id}
                     isWatched={isWatched}
                     onToggle={() => toggleWatched(ep.id)}
+                    isDark={isDark}
                   />
                   <View style={styles.epInfo}>
                     <Text style={styles.epTitle} numberOfLines={1}>{name}</Text>
