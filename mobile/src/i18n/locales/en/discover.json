@@ -26,5 +26,11 @@
   "browseAll": "Full List",
   "contentCount": "items",
   "searchHint": "Type a series or movie name...",
-  "noSearchResult": "not found"
+  "noSearchResult": "not found",
+  "manageVocabulary": "Manage your vocabulary",
+  "learnedToday": "+{{count}} TODAY",
+  "coreEnglishProgress": "Core English progress",
+  "levelLabel": "LEVEL {{level}}",
+  "oxfordLabel": "OXFORD",
+  "notStarted": "NOT STARTED"
 }

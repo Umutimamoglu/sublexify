@@ -19,6 +19,7 @@ import {
   Alert,
   Modal,
   Platform,
+  InteractionManager,
 } from 'react-native';
 import Reanimated, {
   useSharedValue,
@@ -103,6 +104,8 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     chipScroll: { paddingHorizontal: pad, paddingBottom: 12, flexGrow: 0 },
     chip: { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     chipText: { fontSize: 12, fontWeight: '700' },
+    chipBadge: { position: 'absolute', top: -5, right: -5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+    chipBadgeText: { fontSize: 9, fontWeight: '800', color: c.TEXT_S },
 
     // Separator
     separator: { height: 1, backgroundColor: c.BORDER, marginHorizontal: pad },
@@ -620,9 +623,20 @@ function SwipeableWordRow({
   // Swipe hint: actually open the swipeable to reveal buttons, then close
   useEffect(() => {
     if (hintDelay == null) return;
-    const openTimer = setTimeout(() => { swipeRef.current?.openRight(); }, hintDelay);
-    const closeTimer = setTimeout(() => { swipeRef.current?.close(); }, hintDelay + 800);
-    return () => { clearTimeout(openTimer); clearTimeout(closeTimer); };
+    let openTimer: ReturnType<typeof setTimeout>;
+    let closeTimer: ReturnType<typeof setTimeout>;
+    
+    // Gecikmeli işlemi UI kilitlenmelerini önlemek için etkileşimler (layout/render) bittikten sonraya saklıyoruz
+    const task = InteractionManager.runAfterInteractions(() => {
+      openTimer = setTimeout(() => { swipeRef.current?.openRight(); }, hintDelay);
+      closeTimer = setTimeout(() => { swipeRef.current?.close(); }, hintDelay + 800);
+    });
+
+    return () => { 
+      task.cancel();
+      if (openTimer) clearTimeout(openTimer);
+      if (closeTimer) clearTimeout(closeTimer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -884,6 +898,14 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     () => (effectiveList?.words ?? []).filter((w) => !knownIds.has(w.id)).length,
     [effectiveList?.words, knownIds],
   );
+
+  const levelCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const w of effectiveList?.words ?? []) {
+      if (w.difficulty) counts[w.difficulty] = (counts[w.difficulty] ?? 0) + 1;
+    }
+    return counts;
+  }, [effectiveList?.words]);
 
   const handleGenerateSubList = useCallback(() => {
     Alert.alert(
@@ -1163,7 +1185,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             return (
               <TouchableOpacity
                 key={f}
-                style={[styles.chip, { borderColor: color, backgroundColor: active ? color + '33' : 'transparent' }]}
+                style={[styles.chip, { borderColor: color, backgroundColor: active ? color : 'transparent' }]}
                 onPress={() => {
                   if (f === 'all') {
                     setSelectedLevels(new Set());
@@ -1177,9 +1199,14 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
                 }}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.chipText, { color: active ? color : c.TEXT_S }]}>
+                <Text style={[styles.chipText, { color: active ? '#fff' : c.TEXT_S }]}>
                   {f === 'all' ? tCommon('actions.all') : f}
                 </Text>
+                {f !== 'all' && active && !!levelCounts[f] && (
+                  <View style={[styles.chipBadge, { backgroundColor: '#fff' }]}>
+                    <Text style={[styles.chipBadgeText, { color }]}>{levelCounts[f]}</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}

@@ -1,341 +1,515 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Film, Tv, List, PlayCircle, Search, X, BookOpen, ChevronRight } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import {
+    Search, X, Film, Tv, Library, BookOpen,
+    Flame, ChevronRight, List, PlayCircle,
+} from 'lucide-react';
 import MediaService, { type Media } from '@/services/MediaService';
-import MediaCard from '@/components/features/MediaCard';
 import WordListService, { type WordListDTO } from '@/services/WordListService';
+import { useAuthStore } from '@/store/useAuthStore';
+
+// ─── Helpers ──────────────────────────────────────────────────
+
+type MediaFilter = 'all' | 'movie' | 'series';
+
+function greeting(): string {
+    const h = new Date().getHours();
+    if (h < 12) return 'Günaydın';
+    if (h < 18) return 'İyi günler';
+    return 'İyi akşamlar';
+}
+
+function seriesTitle(m: Media): string {
+    if (!m) return 'Bilinmiyor';
+    if (m.type !== 'MOVIE') {
+        const idx = m.title?.indexOf(' - ') ?? -1;
+        if (idx > 0) return m.title.substring(0, idx);
+    }
+    return m.title || 'İsimsiz İçerik';
+}
+
+function episodeLabel(m: Media): string {
+    if (!m) return '';
+    if (m.type === 'MOVIE') return 'Film';
+    if (m.seasonNumber && m.episodeNumber)
+        return `S${m.seasonNumber}:E${m.episodeNumber}`;
+    return m.type || 'İçerik';
+}
+
+function deduplicateMedia(items: Media[], filter: MediaFilter): Media[] {
+    if (!Array.isArray(items)) return [];
+    const seen = new Set<string>();
+    return items.filter((m) => {
+        if (!m) return false;
+        if (m.type === 'MOVIE') {
+            if (filter === 'series') return false;
+            return true;
+        }
+        if (m.type === 'EPISODE' || m.type === 'SEASON') {
+            if (filter === 'movie') return false;
+            if (!m.imdbId) return false;
+            if (seen.has(m.imdbId)) return false;
+            seen.add(m.imdbId);
+            return true;
+        }
+        return false;
+    });
+}
+
+const CEFR_COLORS: Record<string, string> = {
+    A1: '#34D399', A2: '#4ADE80',
+    B1: '#FBBF24', B2: '#FB923C',
+    C1: '#EF4444', C2: '#A855F7',
+};
+
+const LIST_ICON_COLORS = ['#E91E63', '#9C27B0', '#3F51B5', '#00BCD4', '#4CAF50', '#FF9800'];
+
+// ─── Main Page ────────────────────────────────────────────────
 
 const LandingPage = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { user, isAuthenticated } = useAuthStore();
+    const firstName = user?.name?.split(' ')[0] ?? 'Kullanıcı';
+    const avatarInitial = firstName.charAt(0).toUpperCase();
 
-    const categories = [
-        {
-            id: 'series',
-            title: 'Series',
-            icon: Tv,
-            color: 'bg-indigo-500',
-            description: 'Browse your favorite TV shows and learn efficiently.',
-            path: '/browse/series'
-        },
-        {
-            id: 'movies',
-            title: 'Movies',
-            icon: Film,
-            color: 'bg-purple-500',
-            description: 'Dive into movies and expand your vocabulary.',
-            path: '/browse/movies'
-        },
-        {
-            id: 'lists',
-            title: 'My Lists',
-            icon: List,
-            color: 'bg-emerald-500',
-            description: 'Review your personal vocabulary lists.',
-            path: '/lists'
-        }
-    ];
-
-    return (
-        <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-                What do you want to learn today?
-            </h1>
-            <p className="text-lg text-gray-500 dark:text-gray-400 mb-12 text-center max-w-2xl">
-                Select a category to start your immersive language learning journey with Sublex.
-            </p>
-
-            {/* Global Search */}
-            <GlobalSearch />
-
-            {/* Continue Learning Section */}
-            <ContinueLearning />
-
-            {/* Categories Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mb-20">
-                {categories.map((category) => (
-                    <button
-                        key={category.id}
-                        onClick={() => navigate(category.path)}
-                        className="group relative flex flex-col items-center p-8 bg-white dark:bg-[#161822] border border-gray-200 dark:border-gray-800 rounded-3xl hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 text-center"
-                    >
-                        <div className={`p-4 rounded-2xl mb-6 ${category.color} bg-opacity-10 dark:bg-opacity-20`}>
-                            <CategoryIcon icon={category.icon} color={category.color} />
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                            {category.title}
-                        </h3>
-                        <p className="text-gray-500 dark:text-gray-400">
-                            {category.description}
-                        </p>
-                    </button>
-                ))}
-            </div>
-
-            {/* Featured Lists Section */}
-            <FeaturedLists />
-        </div>
-    );
-};
-
-const ContinueLearning = () => {
-    const [mediaList, setMediaList] = useState<Media[]>([]);
+    const [continueMedia, setContinueMedia] = useState<Media[]>([]);
+    const [allMedia, setAllMedia] = useState<Media[]>([]);
+    const [systemLists, setSystemLists] = useState<WordListDTO[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchContinueLearning = async () => {
-            try {
-                // For now use default limit of 5
-                const data = await MediaService.getContinueLearning(1);
-                setMediaList(data);
-            } catch (err) {
-                console.error('Failed to fetch continue learning media', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchContinueLearning();
-    }, []);
+    // Hero carousel
+    const [heroIndex, setHeroIndex] = useState(0);
+    const heroTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    if (loading || mediaList.length === 0) return null;
-
-    return (
-        <div className="w-full max-w-5xl mb-16">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-3">
-                <PlayCircle className="w-6 h-6 text-indigo-500" />
-                Continue Learning
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                {mediaList.map((media) => (
-                    <MediaCard key={media.id} media={media} imageUrl={media.posterUrl || media.backdropUrl} />
-                ))}
-            </div>
-        </div>
-    );
-};
-
-const CategoryIcon = ({ icon: Icon, color }: { icon: any, color: string }) => (
-    <Icon className={`w-10 h-10 ${color.replace('bg-', 'text-')}`} />
-);
-
-const GlobalSearch = () => {
-    const navigate = useNavigate();
+    // Search
     const [query, setQuery] = useState('');
-    const [mediaList, setMediaList] = useState<Media[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [showResults, setShowResults] = useState(false);
 
+    // Media filter
+    const [mediaFilter, setMediaFilter] = useState<MediaFilter>('series');
+
     useEffect(() => {
-        const fetchAllMedia = async () => {
+        const load = async () => {
             try {
-                const data = await MediaService.getAllMedia(1);
-                setMediaList(data);
+                const [cont, all, lists] = await Promise.all([
+                    MediaService.getContinueLearning(user?.id, 8),
+                    MediaService.getAllMedia(user?.id),
+                    WordListService.getStandardLists(),
+                ]);
+                setContinueMedia(cont || []);
+                setAllMedia(all || []);
+                setSystemLists(lists || []);
             } catch (err) {
-                console.error('Failed to fetch media for search', err);
-            } finally {
-                setIsLoading(false);
+                console.error("Failed to load landing page data", err);
             }
+            finally { setLoading(false); }
         };
-        fetchAllMedia();
-    }, []);
+        load();
+    }, [user?.id]);
 
-    const results = useMemo(() => {
-        if (!query.trim() || query.length < 2) return [];
+    // Hero auto-scroll
+    const heroItems = useMemo(() => {
+        if (continueMedia.length > 0) return continueMedia.slice(0, 6);
+        return [...allMedia]
+            .filter(m => m.backdropUrl || m.posterUrl)
+            .sort((a, b) => b.totalWords - a.totalWords)
+            .slice(0, 5);
+    }, [continueMedia, allMedia]);
 
-        const normalizedQuery = query.toLowerCase();
-        
-        // Group series items
-        const seriesMap = new Map<number, { id: number, tmdbId: number, title: string, type: string, knownWordPercentage?: number, image?: string }>();
-        const movies: any[] = [];
+    useEffect(() => {
+        if (heroItems.length <= 1) return;
+        heroTimer.current = setInterval(() => {
+            setHeroIndex(i => (i + 1) % heroItems.length);
+        }, 5000);
+        return () => { if (heroTimer.current) clearInterval(heroTimer.current); };
+    }, [heroItems]);
 
-        mediaList.forEach(m => {
-            if (m.title.toLowerCase().includes(normalizedQuery)) {
-                if (m.type === 'MOVIE') {
-                    movies.push(m);
-                } else if (m.tmdbId) {
-                    if (!seriesMap.has(m.tmdbId)) {
-                        // For series, try to get clean title (everything before ' - ')
-                        let cleanTitle = m.title;
-                        const sepIndex = m.title.indexOf(' - ');
-                        if (sepIndex > 0) cleanTitle = m.title.substring(0, sepIndex);
-                        
-                        seriesMap.set(m.tmdbId, {
-                            id: m.id,
-                            tmdbId: m.tmdbId,
-                            title: cleanTitle,
-                            type: 'SERIES',
-                            knownWordPercentage: m.knownWordPercentage,
-                            image: m.posterUrl || m.backdropUrl
-                        });
-                    }
-                }
-            }
-        });
+    const handleHeroNav = (dir: 1 | -1) => {
+        if (heroTimer.current) clearInterval(heroTimer.current);
+        setHeroIndex(i => (i + dir + heroItems.length) % heroItems.length);
+    };
 
-        return [...movies, ...Array.from(seriesMap.values())].slice(0, 8);
-    }, [query, mediaList]);
+    // Search results
+    const searchResults = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        if (q.length < 2 || !Array.isArray(allMedia) || allMedia.length === 0) return [];
+        const seen = new Set<string>();
+        const out: Media[] = [];
+        for (const m of allMedia) {
+            if (!m || !m.title) continue;
+            if (!m.title.toLowerCase().includes(q)) continue;
+            const key = m.type !== 'MOVIE' && m.imdbId ? m.imdbId : String(m.id);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push({ ...m, title: seriesTitle(m) });
+            if (out.length >= 8) break;
+        }
+        return out;
+    }, [query, allMedia]);
+
+    // Browse media
+    const browsedMedia = useMemo(() => deduplicateMedia(allMedia, mediaFilter), [allMedia, mediaFilter]);
+
+    const goToMedia = (m: Media) => {
+        if (m.type === 'MOVIE') navigate(`/media/${m.id}`);
+        else if (m.tmdbId) navigate(`/series/${m.tmdbId}`);
+        else navigate(`/media/${m.id}`);
+    };
+
+    const heroItem = heroItems[heroIndex];
 
     return (
-        <div className="w-full max-w-2xl mb-12 relative z-50">
-            <div className="relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-                <input
-                    type="text"
-                    placeholder="Search movies or series..."
-                    value={query}
-                    onChange={(e) => {
-                        setQuery(e.target.value);
-                        setShowResults(true);
-                    }}
-                    onFocus={() => setShowResults(true)}
-                    className="w-full pl-14 pr-12 py-5 bg-white dark:bg-[#161822] border-2 border-gray-100 dark:border-gray-800 rounded-[2rem] text-lg font-medium shadow-xl shadow-indigo-500/5 outline-none focus:border-indigo-500/50 dark:focus:border-indigo-500/50 transition-all"
-                />
-                {query && (
-                    <button 
-                        onClick={() => setQuery('')}
-                        className="absolute right-6 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-                    >
-                        <X className="w-4 h-4 text-gray-400" />
-                    </button>
+        <div className="min-h-screen -mx-4 sm:-mx-6 lg:-mx-8 -mt-8">
+            {/* ─── Hero Banner ─────────────────────────────────── */}
+            <div className="relative h-[52vh] min-h-[380px] max-h-[580px] overflow-hidden bg-gray-900">
+                {heroItem ? (
+                    <>
+                        {/* Backdrop image */}
+                        <div
+                            key={heroIndex}
+                            className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+                            style={{
+                                backgroundImage: `url(${heroItem.backdropUrl || heroItem.posterUrl})`,
+                                filter: 'brightness(0.55)',
+                            }}
+                        />
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/20" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
+
+                        {/* Floating header */}
+                        <div className="absolute top-0 left-0 right-0 px-6 lg:px-10 pt-6 flex items-center justify-between">
+                            {isAuthenticated ? (
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-white/15 border border-white/30 flex items-center justify-center">
+                                        <span className="text-white font-bold text-sm">{avatarInitial}</span>
+                                    </div>
+                                    <span className="text-white font-semibold text-base drop-shadow-md">
+                                        {greeting()}, {firstName}
+                                    </span>
+                                </div>
+                            ) : (
+                                <div />
+                            )}
+                            {/* Streak badge - placeholder; wire up real data if available */}
+                            <div className="flex items-center gap-2 bg-red-950/70 border border-red-500/40 px-3 py-1.5 rounded-xl">
+                                <Flame className="w-4 h-4 text-red-400" />
+                                <span className="text-red-400 font-bold text-sm">0</span>
+                            </div>
+                        </div>
+
+                        {/* Hero content */}
+                        <div className="absolute bottom-0 left-0 right-0 px-6 lg:px-10 pb-10">
+                            <p className="text-white/70 text-xs font-semibold tracking-widest uppercase mb-1">
+                                {continueMedia.length > 0 ? 'İzlemeye Devam Et' : 'Önerilen İçerik'} · {episodeLabel(heroItem)}
+                            </p>
+                            <h1 className="text-white text-3xl lg:text-4xl font-black tracking-tight mb-2 drop-shadow-lg">
+                                {seriesTitle(heroItem)}
+                            </h1>
+                            {heroItem.overview && (
+                                <p className="text-white/60 text-sm max-w-xl line-clamp-2 mb-4">{heroItem.overview}</p>
+                            )}
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => goToMedia(heroItem)}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black rounded-xl shadow-lg transition-all hover:scale-105"
+                                >
+                                    <PlayCircle className="w-4 h-4" /> Başla
+                                </button>
+                                <button
+                                    onClick={() => goToMedia(heroItem)}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-white/15 hover:bg-white/25 text-white font-semibold rounded-xl border border-white/25 backdrop-blur-sm transition-all"
+                                >
+                                    Detaylar
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Pagination dots */}
+                        {heroItems.length > 1 && (
+                            <div className="absolute bottom-3 right-6 flex items-center gap-1.5">
+                                {heroItems.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => { if (heroTimer.current) clearInterval(heroTimer.current); setHeroIndex(i); }}
+                                        className={`transition-all rounded-full ${i === heroIndex ? 'w-5 h-2 bg-yellow-400' : 'w-2 h-2 bg-white/30 hover:bg-white/60'}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    // Empty hero fallback
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center">
+                        <div className="text-center text-white">
+                            <Film className="w-12 h-12 opacity-30 mx-auto mb-3" />
+                            <p className="text-lg font-bold opacity-60">İçerik yükleniyor...</p>
+                        </div>
+                    </div>
                 )}
             </div>
 
-            {/* Results Dropdown */}
-            {showResults && query.length >= 2 && (
-                <div className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-[#161822] border border-gray-100 dark:border-gray-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                    {results.length > 0 ? (
-                        <div className="p-2">
-                            {results.map((item: any) => (
-                                <button
-                                    key={item.id + (item.tmdbId || 0)}
-                                    onClick={() => {
-                                        if (item.type === 'SERIES' && item.tmdbId) {
-                                            navigate(`/series/${item.tmdbId}`);
-                                        } else {
-                                            navigate(`/media/${item.id}`);
-                                        }
-                                        setShowResults(false);
-                                        setQuery('');
-                                    }}
-                                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-2xl transition-colors group/item"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-800">
-                                            {(item.image || item.posterUrl || item.backdropUrl) ? (
-                                                <img 
-                                                    src={item.image || item.posterUrl || item.backdropUrl} 
-                                                    alt={item.title}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className={`w-full h-full flex items-center justify-center ${item.type === 'MOVIE' ? 'text-purple-600' : 'text-indigo-600'}`}>
-                                                    {item.type === 'MOVIE' ? <Film className="w-5 h-5" /> : <Tv className="w-5 h-5" />}
+            {/* ─── Content Area ─────────────────────────────────── */}
+            <div className="px-4 sm:px-6 lg:px-8 py-8 space-y-10 max-w-7xl mx-auto">
+
+                {/* Search Bar */}
+                <div className="relative z-30">
+                    <div className="relative group">
+                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                        <input
+                            type="text"
+                            placeholder="Film veya dizi ara..."
+                            value={query}
+                            onChange={e => { setQuery(e.target.value); setShowResults(true); }}
+                            onFocus={() => setShowResults(true)}
+                            className="w-full pl-14 pr-12 py-4 bg-white dark:bg-[#161822] border-2 border-gray-100 dark:border-gray-800 rounded-2xl text-base font-medium shadow-xl shadow-indigo-500/5 outline-none focus:border-indigo-500/50 dark:focus:border-indigo-500/50 transition-all"
+                        />
+                        {query && (
+                            <button
+                                onClick={() => { setQuery(''); setShowResults(false); }}
+                                className="absolute right-5 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                            >
+                                <X className="w-4 h-4 text-gray-400" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Search Dropdown */}
+                    {showResults && query.length >= 2 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#161822] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+                            {searchResults.length === 0 ? (
+                                <div className="p-10 text-center text-gray-400">"{query}" için sonuç bulunamadı</div>
+                            ) : (
+                                <div className="p-2">
+                                    {searchResults.map(item => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => { goToMedia(item); setShowResults(false); setQuery(''); }}
+                                            className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-100 dark:bg-gray-800">
+                                                    {(item.posterUrl || item.backdropUrl) ? (
+                                                        <img src={item.posterUrl || item.backdropUrl} alt={item.title} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                            {item.type === 'MOVIE' ? <Film className="w-4 h-4" /> : <Tv className="w-4 h-4" />}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="font-bold text-gray-900 dark:text-white text-sm">{item.title}</p>
+                                                    <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{item.type === 'MOVIE' ? 'Film' : 'Dizi'}</p>
+                                                </div>
+                                            </div>
+                                            {item.knownWordPercentage != null && (
+                                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">%{Math.round(item.knownWordPercentage)} biliniyor</span>
+                                                    <div className="w-16 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-indigo-500" style={{ width: `${item.knownWordPercentage}%` }} />
+                                                    </div>
                                                 </div>
                                             )}
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="font-bold text-gray-900 dark:text-white group-hover/item:text-indigo-600 dark:group-hover/item:text-indigo-400 transition-colors">
-                                                {item.title}
-                                            </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">
-                                                {item.type}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {item.knownWordPercentage !== undefined && (
-                                        <div className="flex flex-col items-end gap-1">
-                                            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                                                %{Math.round(item.knownWordPercentage)} Uyum
-                                            </span>
-                                            <div className="w-16 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                                <div 
-                                                    className="h-full bg-indigo-500" 
-                                                    style={{ width: `${item.knownWordPercentage}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </button>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {showResults && query.length >= 2 && (
+                        <div className="fixed inset-0 z-[-1]" onClick={() => setShowResults(false)} />
+                    )}
+                </div>
+
+                {/* Category Cards */}
+                <div className="grid grid-cols-3 gap-4">
+                    {[
+                        { label: 'Diziler', icon: Tv, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'hover:border-blue-300 dark:hover:border-blue-700', onClick: () => { setMediaFilter('series'); } },
+                        { label: 'Filmler', icon: Film, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'hover:border-purple-300 dark:hover:border-purple-700', onClick: () => { setMediaFilter('movie'); } },
+                        { label: 'Listelerim', icon: Library, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'hover:border-emerald-300 dark:hover:border-emerald-700', onClick: () => navigate('/lists') },
+                    ].map(cat => (
+                        <button
+                            key={cat.label}
+                            onClick={cat.onClick}
+                            className={`flex flex-col items-center gap-3 p-6 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-2xl ${cat.border} transition-all hover:shadow-lg hover:-translate-y-0.5`}
+                        >
+                            <div className={`p-3 rounded-xl ${cat.bg}`}>
+                                <cat.icon className={`w-6 h-6 ${cat.color}`} />
+                            </div>
+                            <span className="font-bold text-gray-900 dark:text-white text-sm">{cat.label}</span>
+                        </button>
+                    ))}
+                </div>
+
+
+
+                {/* Browse Media */}
+                <section>
+                    {/* Filter chips */}
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                        <button
+                            onClick={() => setMediaFilter('all')}
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${mediaFilter === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-[#161822] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}
+                        >
+                            Tüm İçerik
+                        </button>
+                        {([{ key: 'movie', label: 'Filmler' }, { key: 'series', label: 'Diziler' }] as const).map(f => (
+                            <button
+                                key={f.key}
+                                onClick={() => setMediaFilter(f.key)}
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${mediaFilter === f.key ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-[#161822] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => navigate(mediaFilter === 'movie' ? '/browse/movies' : '/browse/series')}
+                            className="ml-auto flex items-center gap-1 text-xs font-bold text-yellow-500 uppercase tracking-wider hover:text-yellow-400 transition-colors"
+                        >
+                            Tümü <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+
+                    {loading ? (
+                        <div className="flex gap-4">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="w-[280px] h-36 shrink-0 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse" />
                             ))}
                         </div>
                     ) : (
-                        <div className="p-10 text-center text-gray-500 dark:text-gray-400">
-                            No results found for "{query}"
+                        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                            {browsedMedia.slice(0, 20).map(m => (
+                                <MediaLandscapeCard key={`${m.id}-${m.imdbId}`} media={m} onClick={() => goToMedia(m)} />
+                            ))}
                         </div>
                     )}
-                </div>
-            )}
-            
-            {/* Backdrop to close results when clicking outside */}
-            {showResults && query.length >= 2 && (
-                <div 
-                    className="fixed inset-0 z-[-1]" 
-                    onClick={() => setShowResults(false)}
-                />
-            )}
-        </div>
-    );
-};
+                </section>
 
+                {/* Curated Lists */}
+                {systemLists.length > 0 && (
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+                            <BookOpen className="w-5 h-5 text-indigo-500" />
+                            Seçilmiş Listeler
+                        </h2>
+                        <div className="space-y-3">
+                            {/* Known Words card */}
+                            <button
+                                onClick={() => navigate('/lists')}
+                                className="w-full flex items-center gap-4 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-2xl p-5 hover:border-pink-300 dark:hover:border-pink-800 transition-all hover:shadow-md group"
+                            >
+                                <div className="w-13 h-13 rounded-2xl bg-pink-500/15 flex items-center justify-center shadow-lg shadow-pink-500/20 shrink-0" style={{ width: 52, height: 52 }}>
+                                    <BookOpen className="w-6 h-6 text-pink-500" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                    <p className="font-bold text-gray-900 dark:text-white">Bildiğim Kelimeler</p>
+                                    <p className="text-sm text-gray-400">Kelime haznemizi yönet</p>
+                                </div>
+                                <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-indigo-500 transition-colors" />
+                            </button>
 
-const FeaturedLists = () => {
-    const navigate = useNavigate();
-    const [lists, setLists] = useState<WordListDTO[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchLists = async () => {
-            try {
-                const data = await WordListService.getStandardLists();
-                setLists(data);
-            } catch (err) {
-                console.error('Failed to fetch standard lists', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchLists();
-    }, []);
-
-    if (loading) return null;
-    if (lists.length === 0) return null;
-
-    return (
-        <div className="w-full max-w-5xl">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center gap-3">
-                <BookOpen className="w-6 h-6 text-indigo-500" />
-                Featured Collections
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {lists.map(list => (
-                    <button
-                        key={list.id}
-                        onClick={() => navigate(`/lists/${list.id}`)}
-                        className="group text-left bg-white dark:bg-[#161822] border border-gray-200 dark:border-gray-800 rounded-2xl p-6 hover:border-indigo-500 dark:hover:border-indigo-500 transition-all hover:shadow-lg hover:-translate-y-1"
-                    >
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                <List className="w-5 h-5" />
-                            </div>
-                            <span className="bg-gray-100 dark:bg-gray-800 text-xs font-semibold px-2.5 py-1 rounded-lg text-gray-600 dark:text-gray-300">
-                                Official
-                            </span>
+                            {systemLists.map((list, idx) => {
+                                if (!list) return null;
+                                const color = LIST_ICON_COLORS[idx % LIST_ICON_COLORS.length];
+                                const knownWords = list.totalWords - (list.unknownWords || 0);
+                                const pct = list.totalWords > 0 ? Math.round((knownWords / list.totalWords) * 100) : 0;
+                                const SafeName = list.name || "İsimsiz Liste";
+                                const isOxford = SafeName.toLowerCase().includes('oxford');
+                                return (
+                                    <button
+                                        key={list.id}
+                                        onClick={() => navigate(`/lists?id=${list.id}`)}
+                                        className="w-full flex items-center gap-4 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-2xl p-5 transition-all hover:shadow-md group"
+                                        style={{ borderLeftColor: color, borderLeftWidth: 3 }}
+                                    >
+                                        <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: color + '22' }}>
+                                            <List className="w-6 h-6" style={{ color }} />
+                                        </div>
+                                        <div className="flex-1 text-left min-w-0">
+                                            <p className="font-bold text-gray-900 dark:text-white truncate">{list.name}</p>
+                                            <p className="text-sm text-gray-400">{isOxford ? 'Core English progress' : `${list.totalWords} kelime`}</p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-xl font-black" style={{ color: isOxford ? color : undefined, ...(isOxford ? {} : { color: '#6b7280' }) }}>
+                                                {isOxford ? `${pct}%` : list.totalWords.toLocaleString()}
+                                            </p>
+                                            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                                {isOxford ? 'TAMAMLANDI' : 'KELIME'}
+                                            </p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
-                        <h3 className="font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">
-                            {list.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
-                            Standard vocabulary list to boost your language skills.
-                        </p>
-                        <div className="flex items-center text-indigo-600 dark:text-indigo-400 text-sm font-medium">
-                            Start Learning <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                    </button>
-                ))}
+                    </section>
+                )}
             </div>
         </div>
     );
 };
+
+// ─── Media Landscape Card ─────────────────────────────────────
+
+function MediaLandscapeCard({ media, onClick }: { media: Media; onClick: () => void }) {
+    const title = seriesTitle(media);
+    const cefrTotal = Object.values(media.levelCounts ?? {}).reduce((a, b) => a + b, 0);
+
+    return (
+        <button
+            onClick={onClick}
+            className="group w-[280px] h-36 shrink-0 rounded-2xl overflow-hidden relative border border-white/10 flex flex-row shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-200"
+        >
+            {/* Poster left */}
+            <div className="w-24 h-full bg-gray-900 shrink-0 overflow-hidden">
+                {media.posterUrl ? (
+                    <img src={media.posterUrl} alt={title} className="w-full h-full object-cover" />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-indigo-900/50">
+                        <span className="text-4xl font-black text-white/30">{title.charAt(0)}</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Right content */}
+            <div className="flex-1 bg-gradient-to-br from-gray-900 to-gray-800 p-3 flex flex-col justify-between text-left relative overflow-hidden">
+                {/* Backdrop blur behind */}
+                {media.backdropUrl && (
+                    <div
+                        className="absolute inset-0 opacity-20 bg-cover bg-center"
+                        style={{ backgroundImage: `url(${media.backdropUrl})` }}
+                    />
+                )}
+
+                <div className="relative">
+                    <p className="text-white font-bold text-sm line-clamp-2 leading-tight">{title}</p>
+                    <p className="text-white/50 text-xs mt-1">{episodeLabel(media)}</p>
+                </div>
+
+                <div className="relative space-y-2">
+                    <div className="flex items-center gap-1 text-white/60 text-[11px]">
+                        <span>{media.totalWords} kelime</span>
+                        {media.knownWordPercentage != null && (
+                            <span className="text-yellow-400 font-bold ml-1">· %{Math.round(media.knownWordPercentage)} biliniyor</span>
+                        )}
+                    </div>
+                    {cefrTotal > 0 && (
+                        <div className="h-1.5 rounded-full overflow-hidden flex gap-px">
+                            {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const).map(lv => {
+                                const cnt = media.levelCounts?.[lv] ?? 0;
+                                if (!cnt) return null;
+                                return (
+                                    <div
+                                        key={lv}
+                                        style={{ flex: cnt / cefrTotal, backgroundColor: CEFR_COLORS[lv] }}
+                                    />
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </button>
+    );
+}
 
 export default LandingPage;

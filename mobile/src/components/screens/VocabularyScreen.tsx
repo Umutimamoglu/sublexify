@@ -125,6 +125,8 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     // Chips
     chip: { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     chipText: { fontSize: 12, fontWeight: '700' },
+    chipBadge: { position: 'absolute', top: -5, right: -5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+    chipBadgeText: { fontSize: 9, fontWeight: '800', color: c.TEXT_S },
 
     // View mode toggle
     toggleRow: { flexDirection: 'row', backgroundColor: c.SURFACE2, borderRadius: 10, padding: 3, gap: 2 },
@@ -458,6 +460,14 @@ export default function VocabularyScreen() {
 
   const isSearching = query.trim().length >= 2;
   const displayWords: WordDTO[] = isSearching ? searchResults : frequentWords;
+
+  const levelCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const w of frequentWords) {
+      if (w.difficulty) counts[w.difficulty] = (counts[w.difficulty] ?? 0) + 1;
+    }
+    return counts;
+  }, [frequentWords]);
   const isQueryFetching = isSearching ? (searchingLoading || searchingFetching) : (freqLoading || freqFetching);
 
   // ─── Flashcard animations (Reanimated 4 + Gesture Handler) ──
@@ -546,7 +556,6 @@ export default function VocabularyScreen() {
     .activeOffsetX([-8, 8])
     .failOffsetY([-15, 15])
     .onUpdate((e) => {
-      if (isFlippedShared.value) return;
       cardX.value = e.translationX;
       cardY.value = e.translationY * 0.15;
       if (!hapticFired.value && Math.abs(e.translationX) > 80) {
@@ -560,7 +569,7 @@ export default function VocabularyScreen() {
     .onEnd((e) => {
       hapticFired.value = false;
       const committed = Math.abs(e.translationX) > 80 || Math.abs(e.velocityX) > 500;
-      if (!isFlippedShared.value && committed) {
+      if (committed) {
         const goLeft = e.velocityX < -200 ? true : e.velocityX > 200 ? false : e.translationX < 0;
         const total = totalSV.value;
         const cur = indexSV.value;
@@ -717,16 +726,17 @@ export default function VocabularyScreen() {
               <Text style={styles.flipHint}>Çevirmek için tıkla</Text>
             </Reanimated.View>
 
-            <FlashCardBack 
-              word={currentWord as any} 
+            <FlashCardBack
+              word={currentWord as any}
               isKnown={knownIdsSet.has(currentWord.id)}
               onToggle={() => handleToggle(currentWord.id)}
               onButtonPressIn={() => { buttonActiveRef.current = true; }}
               onButtonPressOut={() => { buttonActiveRef.current = false; }}
-              styles={styles as any} 
-              c={c} 
+              styles={styles as any}
+              c={c}
               animStyle={backAnimStyle}
               pointerEvents={isFlippedState ? 'auto' : 'none'}
+              scrollEnabled={false}
             />
           </Reanimated.View>
         </GestureDetector>
@@ -851,6 +861,11 @@ export default function VocabularyScreen() {
                     <Text style={[styles.chipText, { color: active ? '#fff' : c.TEXT_S }]}>
                       {lv === 'all' ? tCommon('actions.all') : lv}
                     </Text>
+                    {lv !== 'all' && active && !!levelCounts[lv as string] && (
+                      <View style={[styles.chipBadge, { backgroundColor: '#fff' }]}>
+                        <Text style={[styles.chipBadgeText, { color }]}>{levelCounts[lv as string]}</Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
               }}

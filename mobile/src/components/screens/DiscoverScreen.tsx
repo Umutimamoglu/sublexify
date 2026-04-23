@@ -16,7 +16,6 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   Platform,
-  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -34,6 +33,8 @@ import { ContinueLearningModal } from '@/src/components/ui/ContinueLearningModal
 import { useAuthStore } from '@/src/store/authStore';
 import { useStreakStore } from '@/src/store/streakStore';
 import type { MediaDTO, WordListDTO, UserStatistics } from '@/src/types/api';
+
+type HeroItem = MediaDTO & { _s01e01Id?: number; _seasonCount?: number; _episodeCount?: number };
 
 const CEFR_COLORS: Record<string, string> = {
   A1: '#34D399', A2: '#4ADE80',
@@ -305,6 +306,49 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, 
     emptySubtitle: { color: c.TEXT_S, fontSize: 12, textAlign: 'center', paddingHorizontal: 24 },
 
     loader: { marginVertical: 20 },
+
+    // ─── Search Bar ───────────────────────────────────────────
+    searchWrapper: {
+      marginHorizontal: pad, marginBottom: 16,
+      backgroundColor: isDark ? '#1c1c1e' : '#f2f2f7',
+      borderRadius: 18, borderWidth: 1,
+      borderColor: isDark ? '#ffffff12' : '#e0e0ea',
+      flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10,
+    },
+    searchInput: {
+      flex: 1, paddingVertical: 14,
+      color: c.TEXT_P, fontSize: 15,
+    },
+    searchDropdown: {
+      position: 'absolute', top: 58, left: 0, right: 0, zIndex: 99,
+      backgroundColor: isDark ? '#1c1c1e' : '#ffffff',
+      borderRadius: 18, borderWidth: 1, borderColor: isDark ? '#ffffff12' : '#e0e0ea',
+      overflow: 'hidden', marginHorizontal: pad,
+      shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
+    },
+    searchResultRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
+    searchResultThumb: { width: 42, height: 56, borderRadius: 8, backgroundColor: c.SURFACE, overflow: 'hidden' },
+    searchResultThumbImg: { width: '100%', height: '100%' },
+    searchResultTitle: { color: c.TEXT_P, fontSize: 14, fontWeight: '700', flex: 1 },
+    searchResultType: { color: c.TEXT_S, fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
+    searchResultKnown: { color: c.PURPLE, fontSize: 12, fontWeight: '700' },
+    searchResultDivider: { height: 1, backgroundColor: isDark ? '#ffffff0a' : '#f0f0f5', marginHorizontal: 16 },
+    searchEmpty: { paddingVertical: 20, alignItems: 'center' },
+    searchEmptyText: { color: c.TEXT_S, fontSize: 13 },
+
+    // ─── Category Cards ───────────────────────────────────────
+    categoryRow: { flexDirection: 'row', paddingHorizontal: pad, gap: 10, marginBottom: 24 },
+    categoryCard: {
+      flex: 1, borderRadius: 18, paddingVertical: 18, paddingHorizontal: 14,
+      alignItems: 'center', gap: 8,
+      borderWidth: 1, borderColor: isDark ? '#ffffff12' : '#e8e8f0',
+      backgroundColor: c.SURFACE,
+    },
+    categoryCardIcon: {
+      width: 46, height: 46, borderRadius: 14,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    categoryCardLabel: { color: c.TEXT_P, fontSize: 12, fontWeight: '800', textAlign: 'center' },
   });
 }
 
@@ -420,11 +464,11 @@ function KnownWordsCard({ count, stats, loading, styles, onPress }: { count: num
       </View>
       <View style={styles.listRowInfo}>
         <Text style={styles.listRowTitle}>{t('knownWords')}</Text>
-        <Text style={styles.listRowSubtitle}>Manage your vocabulary</Text>
+        <Text style={styles.listRowSubtitle}>{t('manageVocabulary')}</Text>
       </View>
       <View style={styles.listRowStats}>
         <Text style={styles.listRowStatNum}>{loading ? '...' : count.toLocaleString()}</Text>
-        <Text style={[styles.listRowStatLabel, { color: iconColor }]}>+{learnedToday} TODAY</Text>
+        <Text style={[styles.listRowStatLabel, { color: iconColor }]}>{t('learnedToday', { count: learnedToday })}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -432,6 +476,7 @@ function KnownWordsCard({ count, stats, loading, styles, onPress }: { count: num
 
 function ListCard({ item, index, styles, onPress }: { item: WordListDTO; index: number; styles: Styles; onPress: () => void }) {
   const { t } = useTranslation('lists');
+  const { t: tDiscover } = useTranslation('discover');
   const isOxford = item.name.toLowerCase().includes('oxford');
   const iconColor = isOxford ? '#FFCA28' : getListIconColor(item.name, index);
   
@@ -462,7 +507,7 @@ function ListCard({ item, index, styles, onPress }: { item: WordListDTO; index: 
       </View>
       <View style={styles.listRowInfo}>
         <Text style={styles.listRowTitle}>{item.name}</Text>
-        <Text style={styles.listRowSubtitle}>{isOxford ? 'Core English progress' : t('wordCount', { count: item.totalWords })}</Text>
+        <Text style={styles.listRowSubtitle}>{isOxford ? tDiscover('coreEnglishProgress') : t('wordCount', { count: item.totalWords })}</Text>
       </View>
       <View style={styles.listRowStats}>
         {isOxford ? (
@@ -471,7 +516,7 @@ function ListCard({ item, index, styles, onPress }: { item: WordListDTO; index: 
           <Text style={styles.listRowStatNum}>{item.totalWords.toLocaleString()}</Text>
         )}
         <Text style={[styles.listRowStatLabel, { color: '#666' }]}>
-          {isOxford ? (dynamicLevel ? `LEVEL ${dynamicLevel}` : 'OXFORD') : 'NOT STARTED'}
+          {isOxford ? (dynamicLevel ? tDiscover('levelLabel', { level: dynamicLevel }) : tDiscover('oxfordLabel')) : tDiscover('notStarted')}
         </Text>
       </View>
     </TouchableOpacity>
@@ -511,11 +556,6 @@ export default function DiscoverScreen() {
   const [allMediaModalVisible, setAllMediaModalVisible] = useState(false);
   const [continueModalVisible, setContinueModalVisible] = useState(false);
 
-  const { data: continueMedia = [], isLoading: continueLoading, refetch: refetchContinue } = useContinueLearning(50);
-
-  useFocusEffect(useCallback(() => {
-    refetchContinue();
-  }, [refetchContinue]));
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
   const { data: allLists = [], isLoading: listsLoading, refetch: refetchLists } = useLists();
 
@@ -526,6 +566,13 @@ export default function DiscoverScreen() {
 
   const systemLists = useMemo(() => allLists.filter((l) => l.isSystem), [allLists]);
   const { data: userStats, isLoading: knownLoading } = useUserStats();
+
+
+  const { data: continueMedia = [], isLoading: continueLoading, refetch: refetchContinue } = useContinueLearning(50);
+
+  useFocusEffect(useCallback(() => {
+    refetchContinue();
+  }, [refetchContinue]));
 
   // ─── User name & greeting ───────────────────────────────────
   const user = useAuthStore((s) => s.user);
@@ -556,15 +603,43 @@ export default function DiscoverScreen() {
   
   // ─── Hero carousel state ────────────────────────────────────
   const heroItems = useMemo(() => {
-    if (hasContinue) return continueMedia.slice(0, 8);
+    if (continueLoading) return []; // Wait for loading to finish before falling back
+    if (hasContinue) return continueMedia.slice(0, 8) as HeroItem[];
     if (!allMedia || allMedia.length === 0) return [];
     
-    // Fallback to recommended popular media for new users
-    return [...allMedia]
-      .filter(m => m.backdropUrl || m.posterUrl)
-      .sort((a, b) => b.totalWords - a.totalWords)
+    // Fallback to recommended popular media for new users — deduplicated series with S01E01 navigation
+    const seriesMap = new Map<string, { rep: MediaDTO; episodes: MediaDTO[] }>();
+    const movies: MediaDTO[] = [];
+
+    for (const m of allMedia) {
+      if (!(m.backdropUrl || m.posterUrl)) continue;
+      if (m.type === 'MOVIE') {
+        movies.push(m);
+      } else if (m.imdbId) {
+        if (!seriesMap.has(m.imdbId)) {
+          seriesMap.set(m.imdbId, { rep: m, episodes: [] });
+        }
+        const entry = seriesMap.get(m.imdbId)!;
+        entry.episodes.push(m);
+        if (!entry.rep.backdropUrl && m.backdropUrl) entry.rep = m;
+      }
+    }
+
+    const seriesItems: HeroItem[] = Array.from(seriesMap.values()).map(({ rep, episodes }) => {
+      const s01e01 = episodes.find(e => e.seasonNumber === 1 && e.episodeNumber === 1);
+      const maxSeason = Math.max(0, ...episodes.map(e => e.seasonNumber ?? 0));
+      return {
+        ...rep,
+        _s01e01Id: s01e01?.id ?? rep.id,
+        _seasonCount: maxSeason,
+        _episodeCount: episodes.length,
+      };
+    });
+
+    return [...movies, ...seriesItems]
+      .sort((a, b) => (b.voteAverage ?? 0) - (a.voteAverage ?? 0))
       .slice(0, 5);
-  }, [continueMedia, allMedia, hasContinue]);
+  }, [continueMedia, allMedia, hasContinue, continueLoading]);
   
   const [heroIndex, setHeroIndex] = useState(0);
   const heroRef = useRef<FlatList>(null);
@@ -611,19 +686,17 @@ export default function DiscoverScreen() {
     }, AUTO_SCROLL_INTERVAL);
   }, [heroItems.length]);
 
-  const renderHeroSlide = useCallback(({ item }: { item: MediaDTO }) => {
+  const renderHeroSlide = useCallback(({ item }: { item: HeroItem }) => {
     const title = seriesTitle(item);
+    const isSeries = item.type !== 'MOVIE';
+    const navTarget = hasContinue
+      ? item.generatedListId ? `/list/${item.generatedListId}` : `/media/${item.id}?from=continue`
+      : isSeries ? `/media/${item._s01e01Id ?? item.id}` : `/media/${item.id}`;
     return (
       <TouchableOpacity
         style={styles.heroSlide}
         activeOpacity={0.95}
-        onPress={() => {
-          if (item.generatedListId) {
-            router.push(`/list/${item.generatedListId}` as any);
-          } else {
-            router.push(`/media/${item.id}?from=continue` as any);
-          }
-        }}
+        onPress={() => router.push(navTarget as any)}
       >
         {item.posterUrl || item.backdropUrl ? (
           <Image
@@ -645,20 +718,17 @@ export default function DiscoverScreen() {
           </Text>
           <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
           <Text style={styles.heroSubtitle}>
-            {item.totalWords} {t('words')}
-            {hasContinue && item.knownWordPercentage != null ? ` · %${Math.round(item.knownWordPercentage)} ${t('knownWords').toLowerCase()}` : ''}
+            {hasContinue
+              ? `${item.totalWords} ${t('words')}${item.knownWordPercentage != null ? ` · %${Math.round(item.knownWordPercentage)} ${t('knownWords').toLowerCase()}` : ''}`
+              : isSeries && item._seasonCount
+                ? `${item._seasonCount} Sezon · ${item._episodeCount} Bölüm`
+                : `${item.totalWords} ${t('words')}`}
           </Text>
           <View style={styles.heroBtnRow}>
             <TouchableOpacity 
               style={styles.heroBtnOuter} 
               activeOpacity={0.8} 
-              onPress={() => {
-                if (item.generatedListId) {
-                  router.push(`/list/${item.generatedListId}` as any);
-                } else {
-                  router.push(`/media/${item.id}` as any);
-                }
-              }}
+              onPress={() => router.push(navTarget as any)}
             >
                 <LinearGradient
                     colors={[
@@ -682,7 +752,7 @@ export default function DiscoverScreen() {
         </View>
       </TouchableOpacity>
     );
-  }, [styles, router, t]);
+  }, [styles, router, t, hasContinue]);
 
   const hasHero = heroItems.length > 0 && !continueLoading;
 
@@ -748,6 +818,24 @@ export default function DiscoverScreen() {
               </View>
             )}
           </View>
+        ) : continueLoading ? (
+          <View style={styles.heroEmpty}>
+            <View style={[styles.headerOverlay, { position: 'relative', paddingTop: insets.top + 8 }]}>
+              <View style={styles.headerLeft}>
+                <View style={[styles.avatar, { backgroundColor: c.SURFACE2, borderColor: c.PURPLE + '66' }]}>
+                  <Text style={[styles.avatarText, { color: c.TEXT_P }]}>{avatarInitial}</Text>
+                </View>
+                <Text style={[styles.headerGreeting, { color: c.TEXT_P, textShadowColor: 'transparent' }]}>{greeting}, {firstName}</Text>
+              </View>
+              <View style={styles.headerRight}>
+                <View style={styles.streakBadge}>
+                  <Text style={styles.streakIcon}>🔥</Text>
+                  <Text style={styles.streakCount}>{currentStreak}</Text>
+                </View>
+              </View>
+            </View>
+            <ActivityIndicator color="#FEE76C" size="large" />
+          </View>
         ) : (
           <View style={styles.heroEmpty}>
             <View style={[styles.headerOverlay, { position: 'relative', paddingTop: insets.top + 8 }]}>
@@ -766,19 +854,12 @@ export default function DiscoverScreen() {
             </View>
             <Text style={styles.heroEmptyIcon}>🎬</Text>
             <Text style={styles.heroEmptyTitle}>{t('noContinueTitle')}</Text>
-            <Text style={styles.heroEmptySubtitle}>{t('noContinueSubtitle')}</Text>
           </View>
         )}
 
-        {/* View All link for continue learning */}
-        {hasContinue && continueMedia.length > 1 && (
-          <TouchableOpacity
-            style={{ alignSelf: 'flex-end', paddingHorizontal: 16, marginTop: -20, marginBottom: 12 }}
-            onPress={() => setContinueModalVisible(true)}
-          >
-            <Text style={styles.viewAll}>{t('viewAll')}</Text>
-          </TouchableOpacity>
-        )}
+
+        {/* Spacing after hero — devam eden içerik varsa tümünü gör'ün bıraktığı margin */}
+        {hasContinue && <View style={{ marginBottom: 12 }} />}
 
         {/* Browse Media */}
         <View style={styles.section}>

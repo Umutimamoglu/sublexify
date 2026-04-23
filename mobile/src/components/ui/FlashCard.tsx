@@ -30,13 +30,14 @@ export function FlashCardBack({
   c: any;
   animStyle?: any;
   pointerEvents?: 'auto' | 'none';
+  scrollEnabled?: boolean;
 }) {
   const { t } = useTranslation('lists');
   const def = word.definition;
 
   return (
     <Reanimated.View style={[styles.card, styles.cardBack, animStyle]} pointerEvents={pointerEvents}>
-      <ScrollView style={styles.cardBackInner} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.cardBackInner} showsVerticalScrollIndicator={false} scrollEnabled={scrollEnabled ?? true}>
         <Text style={styles.cardBackWord}>{word.word}</Text>
 
         {word.difficulty && (

@@ -26,5 +26,11 @@
   "browseAll": "Tüm Liste",
   "contentCount": "içerik",
   "searchHint": "Dizi veya film adı yaz...",
-  "noSearchResult": "için sonuç bulunamadı"
+  "noSearchResult": "için sonuç bulunamadı",
+  "manageVocabulary": "Kelime dağarcığını yönet",
+  "learnedToday": "+{{count}} BUGÜN",
+  "coreEnglishProgress": "Temel İngilizce ilerleme",
+  "levelLabel": "SEVİYE {{level}}",
+  "oxfordLabel": "OXFORD",
+  "notStarted": "BAŞLANMADI"
 }

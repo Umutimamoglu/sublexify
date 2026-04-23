@@ -69,25 +69,57 @@ export default function RootLayout() {
         // Wait for hydration if not already done
         if (!hasHydrated) return;
 
-        // Auth varsa kritik verileri splash süresinde önceden yükle
+        // Auth varsa kritik verileri splash süresinde paralel önceden yükle
         if (isAuthenticated) {
           await Promise.allSettled([
+            // Ana sayfa — içerik listesi (30 dk cache)
             queryClient.prefetchQuery({
               queryKey: ['media'],
-              queryFn: () =>
-                apiClient.get(ENDPOINTS.media.list).then((r) => r.data),
+              queryFn: () => apiClient.get(ENDPOINTS.media.list).then((r) => r.data),
               staleTime: 1000 * 60 * 30,
             }),
+            // Ana sayfa — devam edilen içerikler (her seferinde taze)
+            queryClient.prefetchQuery({
+              queryKey: ['media', 'continue-learning'],
+              queryFn: () => apiClient.get(`${ENDPOINTS.media.continueLearning}?limit=50`).then((r) => r.data),
+              staleTime: 0,
+            }),
+            // Seçilmiş listeler (5 dk cache)
             queryClient.prefetchQuery({
               queryKey: ['lists'],
-              queryFn: () =>
-                apiClient.get(ENDPOINTS.lists.list).then((r) => r.data),
+              queryFn: () => apiClient.get(ENDPOINTS.lists.list).then((r) => r.data),
               staleTime: 1000 * 60 * 5,
             }),
+            // Kullanıcı istatistikleri — ana sayfa + profil (5 dk cache)
             queryClient.prefetchQuery({
               queryKey: ['user', 'stats'],
-              queryFn: () =>
-                apiClient.get(ENDPOINTS.user.stats).then((r) => r.data),
+              queryFn: () => apiClient.get(ENDPOINTS.user.stats).then((r) => r.data),
+              staleTime: 1000 * 60 * 5,
+            }),
+            // Bilinen kelimeler — havuz + liste ekranları (5 dk cache)
+            queryClient.prefetchQuery({
+              queryKey: ['user', 'known-words'],
+              queryFn: () => apiClient.get(ENDPOINTS.user.knownWords).then((r) => r.data),
+              staleTime: 1000 * 60 * 5,
+            }),
+            // Havuz tab — sık kelimeler ilk sayfası (1 saat cache)
+            queryClient.prefetchInfiniteQuery({
+              queryKey: ['words', 'frequent', [], false, 50],
+              queryFn: () => apiClient.get(`${ENDPOINTS.words.frequent}?language=en&page=0&size=50&onlyUnknown=false`).then((r) => r.data),
+              initialPageParam: 0,
+              getNextPageParam: () => undefined,
+              staleTime: 1000 * 60 * 60,
+            }),
+            // İzlenen medya ID'leri — dizi detay ekranı bölüm toggle (10 dk cache)
+            queryClient.prefetchQuery({
+              queryKey: ['media', 'watched-ids'],
+              queryFn: () => apiClient.get(ENDPOINTS.media.watchedIds).then((r) => r.data),
+              staleTime: 1000 * 60 * 10,
+            }),
+            // İlerleme istatistikleri — progress ekranı (5 dk cache)
+            queryClient.prefetchQuery({
+              queryKey: ['progress', 'stats'],
+              queryFn: () => apiClient.get(ENDPOINTS.progress.stats).then((r) => r.data),
               staleTime: 1000 * 60 * 5,
             }),
           ]);
