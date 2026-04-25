@@ -29,6 +29,19 @@ spring:
       max-file-size: 50MB
       max-request-size: 50MB
 
+  mail:
+    host: smtp.resend.com
+    port: 587
+    username: resend
+    password: ${RESEND_API_KEY}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
 springdoc:
   api-docs:
     path: /v3/api-docs

@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -44,5 +46,37 @@ public class AuthController {
         Long userId = (Long) authentication.getPrincipal();
         authService.deleteAccount(userId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ─── Password Reset ──────────────────────────────────────────────────────
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email gerekli"));
+        }
+        // Always return 200 — never reveal whether email exists (security best practice)
+        authService.forgotPassword(email.trim().toLowerCase());
+        return ResponseEntity.ok(Map.of("message", "Eğer bu email sistemde kayıtlıysa, sıfırlama kodu gönderildi."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+        String code = body.get("code");
+        String newPassword = body.get("newPassword");
+
+        if (code == null || code.isBlank() || newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Kod ve yeni şifre gerekli"));
+        }
+        if (newPassword.length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Şifre en az 6 karakter olmalı"));
+        }
+        try {
+            AuthResponse response = authService.resetPassword(code.trim(), newPassword);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Geçersiz veya süresi dolmuş kod"));
+        }
     }
 }

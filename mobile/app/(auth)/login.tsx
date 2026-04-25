@@ -117,6 +117,15 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Forgot Password */}
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/forgot-password')}
+              style={styles.forgotBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.forgotText}>Şifremi Unuttum</Text>
+            </TouchableOpacity>
+
             {/* CTA */}
             <TouchableOpacity onPress={handleLogin} disabled={loading} activeOpacity={0.85} style={styles.btnOuter}>
               <LinearGradient colors={['#6366f1', '#8b5cf6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.btn}>
@@ -171,6 +180,9 @@ const styles = StyleSheet.create({
   btnOuter: { marginTop: 8, borderRadius: 14, overflow: 'hidden', shadowColor: '#6366f1', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 10 },
   btn:      { height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 14 },
   btnText:  { color: '#fff', fontSize: 16, fontWeight: '800' },
+
+  forgotBtn:  { alignSelf: 'flex-end', marginBottom: 4, marginTop: -4 },
+  forgotText: { color: '#818cf8', fontSize: 13, fontWeight: '600' },
 
   footer:     { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: '#6b7280', fontSize: 14 },

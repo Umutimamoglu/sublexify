@@ -63,7 +63,12 @@ const LoginPage = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Şifre</label>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Şifre</label>
+                                <Link to="/forgot-password" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                                    Şifremi Unuttum
+                                </Link>
+                            </div>
                             <input
                                 type="password"
                                 value={password}
