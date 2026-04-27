@@ -12,6 +12,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -20,6 +21,7 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useLists, useCreateList, useDeleteList, useUpdateList } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
+import { useMedia } from '@/src/api/queries/media.queries';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { WordListDTO } from '@/src/types/api';
@@ -70,8 +72,8 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
       shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 10,
     },
     listCardStrip: {
-       position: 'absolute', left: 0, top: 22, bottom: 22, width: 4,
-       borderTopRightRadius: 4, borderBottomRightRadius: 4,
+       position: 'absolute', left: 0, top: 0, bottom: 0, width: 10,
+       borderTopLeftRadius: 24, borderBottomLeftRadius: 24,
     },
     listIconCircle: {
       width: 52, height: 52, borderRadius: 20,
@@ -115,6 +117,16 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     modalCreate: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: c.PURPLE, alignItems: 'center' },
     modalCancelText: { color: c.TEXT_S, fontWeight: '600' },
     modalCreateText: { color: '#fff', fontWeight: '700' },
+
+    // Media select
+    mediaSelectScroll: { paddingVertical: 10 },
+    mediaCard: { width: 80, marginRight: 12, alignItems: 'center' },
+    mediaPosterBox: { width: 80, height: 120, borderRadius: 12, overflow: 'hidden', backgroundColor: c.SURFACE2, marginBottom: 6, borderWidth: 2, borderColor: 'transparent' },
+    mediaPosterSelected: { borderColor: c.PURPLE },
+    mediaPoster: { width: '100%', height: '100%' },
+    mediaTitle: { color: c.TEXT_P, fontSize: 11, textAlign: 'center', fontWeight: '600' },
+    mediaRemoveBtn: { paddingVertical: 10, alignSelf: 'flex-start' },
+    mediaRemoveText: { color: '#EF4444', fontSize: 13, fontWeight: '600' },
   });
 }
 
@@ -207,7 +219,7 @@ function ListCard({
         <View 
           style={[
             StyleSheet.absoluteFill, 
-            { backgroundColor: item.color, opacity: 0.05 }
+            { backgroundColor: item.color, opacity: 0.15 }
           ]} 
         />
       )}
@@ -246,7 +258,9 @@ function ListCard({
       <View style={styles.listCardBody}>
         <View style={styles.listCardRow}>
           <View style={[styles.listCardInfo, item.isSystem && { paddingRight: 40 }]}>
-            <Text style={styles.listCardName}>{item.name}</Text>
+            <Text style={styles.listCardName}>
+              {item.isSystem ? t(item.name as any, { defaultValue: item.name }) : item.name}
+            </Text>
             <Text style={styles.listCardStats}>
               {t('wordCount', { count: item.totalWords })} · {t('wordStatsPct', { pct: unknownPct })}
             </Text>
@@ -305,35 +319,34 @@ function CreateModal({
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-          <TouchableOpacity style={styles.modalSheet} activeOpacity={1}>
-            <Text style={styles.modalTitle}>{t('newList')}</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder={t('listNamePlaceholder')}
-              placeholderTextColor={c.TEXT_S}
-              value={name}
-              onChangeText={setName}
-              autoFocus
-              onSubmitEditing={handleCreate}
-            />
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
-                <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalCreate, (!name.trim() || creating) && { opacity: 0.5 }]}
-                onPress={handleCreate}
-                disabled={!name.trim() || creating}
-              >
-                {creating
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.modalCreateText}>{tCommon('actions.create')}</Text>
-                }
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: '#00000088' }} activeOpacity={1} onPress={onClose} />
+        <View style={styles.modalSheet}>
+          <Text style={styles.modalTitle}>{t('newList')}</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder={t('listNamePlaceholder')}
+            placeholderTextColor={c.TEXT_S}
+            value={name}
+            onChangeText={setName}
+            autoFocus
+            onSubmitEditing={handleCreate}
+          />
+          <View style={styles.modalBtns}>
+            <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
+              <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalCreate, (!name.trim() || creating) && { opacity: 0.5 }]}
+              onPress={handleCreate}
+              disabled={!name.trim() || creating}
+            >
+              {creating
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.modalCreateText}>{tCommon('actions.create')}</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -358,7 +371,7 @@ function EditListModal({
   item: WordListDTO | null;
   visible: boolean;
   onClose: () => void;
-  onSave: (name: string, color: string) => void;
+  onSave: (name: string, color: string, mediaId: number | null) => void;
   saving: boolean;
   styles: Styles;
   c: Palette;
@@ -366,12 +379,16 @@ function EditListModal({
   const { t: tCommon } = useTranslation('common');
   const [name, setName] = useState('');
   const [color, setColor] = useState('');
+  const [mediaId, setMediaId] = useState<number | null>(null);
+  
+  const { data: allMedia = [] } = useMedia();
 
   // item değişince formu doldur
   React.useEffect(() => {
     if (item) {
       setName(item.name);
       setColor(item.color ?? '');
+      setMediaId(item.sourceMediaId ?? null);
     }
   }, [item]);
 
@@ -381,60 +398,90 @@ function EditListModal({
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-          <TouchableOpacity style={styles.modalSheet} activeOpacity={1}>
-            <Text style={styles.modalTitle}>Listeyi Düzenle</Text>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: '#00000088' }} activeOpacity={1} onPress={onClose} />
+        <View style={styles.modalSheet}>
+          <Text style={styles.modalTitle}>Listeyi Düzenle</Text>
 
-            <TextInput
-              style={styles.modalInput}
-              value={name}
-              onChangeText={setName}
-              placeholderTextColor={c.TEXT_S}
-              placeholder="Liste adı"
-              autoFocus
-            />
+          <TextInput
+            style={styles.modalInput}
+            value={name}
+            onChangeText={setName}
+            placeholderTextColor={c.TEXT_S}
+            placeholder="Liste adı"
+            autoFocus
+          />
 
-            {/* Renk seçici */}
-            <Text style={[styles.modalTitle, { fontSize: 13, fontWeight: '600', color: c.TEXT_S }]}>Renk</Text>
-            <View style={styles.swatchRow}>
+          {/* Renk seçici */}
+          <Text style={[styles.modalTitle, { fontSize: 13, fontWeight: '600', color: c.TEXT_S }]}>Renk</Text>
+          <View style={styles.swatchRow}>
+            <TouchableOpacity
+              style={[
+                styles.swatch,
+                { backgroundColor: c.SURFACE2, borderWidth: 2, borderColor: color === '' ? c.TEXT_P : c.BORDER },
+              ]}
+              onPress={() => setColor('')}
+              activeOpacity={0.75}
+            >
+              <Ionicons name="close" size={14} color={c.TEXT_S} style={{ alignSelf: 'center', marginTop: 7 }} />
+            </TouchableOpacity>
+
+            {LIST_COLORS.map((col) => (
               <TouchableOpacity
-                style={[
-                  styles.swatch,
-                  { backgroundColor: c.SURFACE2, borderWidth: 2, borderColor: color === '' ? c.TEXT_P : c.BORDER },
-                ]}
-                onPress={() => setColor('')}
+                key={col}
+                style={[styles.swatch, { backgroundColor: col }, color === col && styles.swatchSelected]}
+                onPress={() => setColor(col)}
                 activeOpacity={0.75}
-              >
-                <Ionicons name="close" size={14} color={c.TEXT_S} style={{ alignSelf: 'center', marginTop: 7 }} />
-              </TouchableOpacity>
+              />
+            ))}
+          </View>
 
-              {LIST_COLORS.map((col) => (
-                <TouchableOpacity
-                  key={col}
-                  style={[styles.swatch, { backgroundColor: col }, color === col && styles.swatchSelected]}
-                  onPress={() => setColor(col)}
-                  activeOpacity={0.75}
-                />
-              ))}
-            </View>
-
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
-                <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
-              </TouchableOpacity>
+          {/* Dizi/Film İlişkilendir */}
+          <Text style={[styles.modalTitle, { fontSize: 13, fontWeight: '600', color: c.TEXT_S, marginTop: 10 }]}>İlişkilendirilecek Dizi/Film</Text>
+          <View style={{ maxHeight: 180 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mediaSelectScroll}>
               <TouchableOpacity
-                style={[styles.modalCreate, (!name.trim() || saving) && { opacity: 0.5 }]}
-                onPress={() => onSave(name.trim(), color)}
-                disabled={!name.trim() || saving}
+                style={styles.mediaCard}
+                onPress={() => setMediaId(null)}
+                activeOpacity={0.7}
               >
-                {saving
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.modalCreateText}>{tCommon('actions.save')}</Text>
-                }
+                <View style={[styles.mediaPosterBox, mediaId === null && styles.mediaPosterSelected, { alignItems: 'center', justifyContent: 'center' }]}>
+                  <Ionicons name="close-circle-outline" size={32} color={c.TEXT_S} />
+                </View>
+                <Text style={styles.mediaTitle} numberOfLines={2}>Hiçbiri</Text>
               </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+
+              {allMedia.map(media => (
+                <TouchableOpacity
+                  key={media.id}
+                  style={styles.mediaCard}
+                  onPress={() => setMediaId(media.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.mediaPosterBox, mediaId === media.id && styles.mediaPosterSelected]}>
+                    <Image source={{ uri: media.posterUrl ?? undefined }} style={styles.mediaPoster} contentFit="cover" />
+                  </View>
+                  <Text style={styles.mediaTitle} numberOfLines={2}>{media.title}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={styles.modalBtns}>
+            <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
+              <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalCreate, (!name.trim() || saving) && { opacity: 0.5 }]}
+              onPress={() => onSave(name.trim(), color, mediaId)}
+              disabled={!name.trim() || saving}
+            >
+              {saving
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={styles.modalCreateText}>{tCommon('actions.save')}</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -495,10 +542,10 @@ export default function ListsTabScreen() {
     );
   }, [deleteList, t, tCommon]);
 
-  const handleSaveEdit = useCallback((name: string, color: string) => {
+  const handleSaveEdit = useCallback((name: string, color: string, mediaId: number | null) => {
     if (!editingList) return;
     updateList(
-      { id: editingList.id, name, color },
+      { id: editingList.id, name, color, mediaId: mediaId === null ? -1 : mediaId },
       { onSuccess: () => setEditingList(null) },
     );
   }, [editingList, updateList]);

@@ -88,6 +88,13 @@ const LandingPage = () => {
     // Media filter
     const [mediaFilter, setMediaFilter] = useState<MediaFilter>('series');
 
+    // Series Intercept Modal
+    const [seriesListsModalOpen, setSeriesListsModalOpen] = useState(false);
+    const [seriesLists, setSeriesLists] = useState<WordListDTO[]>([]);
+    const [checkingSeriesId, setCheckingSeriesId] = useState<number | null>(null);
+    const [seriesToNavigate, setSeriesToNavigate] = useState<Media | null>(null);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
+
     useEffect(() => {
         const load = async () => {
             try {
@@ -150,10 +157,36 @@ const LandingPage = () => {
     // Browse media
     const browsedMedia = useMemo(() => deduplicateMedia(allMedia, mediaFilter), [allMedia, mediaFilter]);
 
-    const goToMedia = (m: Media) => {
-        if (m.type === 'MOVIE') navigate(`/media/${m.id}`);
-        else if (m.tmdbId) navigate(`/series/${m.tmdbId}`);
-        else navigate(`/media/${m.id}`);
+    const showToast = (msg: string) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 3000);
+    };
+
+    const goToMedia = async (m: Media) => {
+        if (m.type === 'MOVIE') {
+            navigate(`/media/${m.id}`);
+            return;
+        }
+
+        // Intercept Series click
+        const seriesId = m.imdbId || String(m.id);
+        setCheckingSeriesId(m.id);
+        try {
+            const lists = await WordListService.getListsBySeries(seriesId);
+            if (lists && lists.length > 0) {
+                setSeriesLists(lists);
+                setSeriesToNavigate(m);
+                setSeriesListsModalOpen(true);
+            } else {
+                showToast("Bu dizi için kayıtlı listeniz yok. Bölümlere yönlendiriliyorsunuz.");
+                setTimeout(() => navigate(m.tmdbId ? `/series/${m.tmdbId}` : `/media/${m.id}`), 1500);
+            }
+        } catch (error) {
+            console.error("Failed to check lists for series", error);
+            navigate(m.tmdbId ? `/series/${m.tmdbId}` : `/media/${m.id}`);
+        } finally {
+            setCheckingSeriesId(null);
+        }
     };
 
     const heroItem = heroItems[heroIndex];
@@ -284,7 +317,13 @@ const LandingPage = () => {
                                     {searchResults.map(item => (
                                         <button
                                             key={item.id}
-                                            onClick={() => { goToMedia(item); setShowResults(false); setQuery(''); }}
+                                            onClick={() => {
+                                                setShowResults(false);
+                                                setQuery('');
+                                                if (item.type === 'MOVIE') navigate(`/media/${item.id}`);
+                                                else if (item.tmdbId) navigate(`/series/${item.tmdbId}`);
+                                                else navigate(`/media/${item.id}`);
+                                            }}
                                             className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-colors"
                                         >
                                             <div className="flex items-center gap-3">
@@ -321,25 +360,7 @@ const LandingPage = () => {
                     )}
                 </div>
 
-                {/* Category Cards */}
-                <div className="grid grid-cols-3 gap-4">
-                    {[
-                        { label: 'Diziler', icon: Tv, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'hover:border-blue-300 dark:hover:border-blue-700', onClick: () => { setMediaFilter('series'); } },
-                        { label: 'Filmler', icon: Film, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'hover:border-purple-300 dark:hover:border-purple-700', onClick: () => { setMediaFilter('movie'); } },
-                        { label: 'Listelerim', icon: Library, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'hover:border-emerald-300 dark:hover:border-emerald-700', onClick: () => navigate('/lists') },
-                    ].map(cat => (
-                        <button
-                            key={cat.label}
-                            onClick={cat.onClick}
-                            className={`flex flex-col items-center gap-3 p-6 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-2xl ${cat.border} transition-all hover:shadow-lg hover:-translate-y-0.5`}
-                        >
-                            <div className={`p-3 rounded-xl ${cat.bg}`}>
-                                <cat.icon className={`w-6 h-6 ${cat.color}`} />
-                            </div>
-                            <span className="font-bold text-gray-900 dark:text-white text-sm">{cat.label}</span>
-                        </button>
-                    ))}
-                </div>
+
 
 
 
@@ -379,7 +400,15 @@ const LandingPage = () => {
                     ) : (
                         <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                             {browsedMedia.slice(0, 20).map(m => (
-                                <MediaLandscapeCard key={`${m.id}-${m.imdbId}`} media={m} onClick={() => goToMedia(m)} />
+                                <MediaLandscapeCard
+                                    key={`${m.id}-${m.imdbId}`}
+                                    media={m}
+                                    onClick={() => {
+                                        if (m.type === 'MOVIE') navigate(`/media/${m.id}`);
+                                        else if (m.tmdbId) navigate(`/series/${m.tmdbId}`);
+                                        else navigate(`/media/${m.id}`);
+                                    }}
+                                />
                             ))}
                         </div>
                     )}
@@ -444,6 +473,51 @@ const LandingPage = () => {
                     </section>
                 )}
             </div>
+
+            {/* Series Lists Modal */}
+            {seriesListsModalOpen && seriesToNavigate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-[#161822] rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-gray-200 dark:border-gray-800">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                                {seriesToNavigate.title} Listeleriniz
+                            </h3>
+                            <button onClick={() => setSeriesListsModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <p className="text-gray-500 mb-4 text-sm">Bu diziden oluşturduğunuz kelime listelerine hemen çalışmaya başlayabilir veya dizinin bölümler sayfasına gidebilirsiniz.</p>
+                        
+                        <div className="max-h-60 overflow-y-auto space-y-2 mb-6 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 pr-2">
+                            {seriesLists.map(list => (
+                                <button key={list.id} onClick={() => navigate(`/lists?id=${list.id}`)} className="w-full text-left p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/10 transition-all flex items-center justify-between group">
+                                    <div>
+                                        <div className="font-bold text-gray-900 dark:text-gray-100">{list.name}</div>
+                                        <div className="text-xs text-gray-500 mt-1">{list.totalWords} kelime • {list.unknownWords} öğrenilecek</div>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-500" />
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button onClick={() => navigate(seriesToNavigate.tmdbId ? `/series/${seriesToNavigate.tmdbId}` : `/media/${seriesToNavigate.id}`)} className="flex-1 py-3 px-4 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                Bölümlere Git
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Message */}
+            {toastMessage && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-5">
+                    <div className="bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl font-medium text-sm flex items-center gap-2 border border-gray-700">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                        {toastMessage}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

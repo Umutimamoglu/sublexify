@@ -40,10 +40,25 @@ public class StudyService {
         if (listId != null) {
             WordList list = wordListRepository.findById(listId)
                     .orElseThrow(() -> new RuntimeException("List not found"));
-            if (!list.getUser().getId().equals(userId)) {
+            if (!Boolean.TRUE.equals(list.getIsSystem()) && !list.getUser().getId().equals(userId)) {
                 throw new RuntimeException("Unauthorized");
             }
             allWords = new ArrayList<>(list.getWords());
+
+            // Apply difficulty filter
+            if (difficulties != null && !difficulties.isEmpty()) {
+                allWords = allWords.stream()
+                        .filter(w -> w.getDifficulty() != null && difficulties.contains(w.getDifficulty()))
+                        .collect(Collectors.toList());
+            }
+
+            // Apply onlyUnknown filter
+            if (onlyUnknown) {
+                java.util.Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
+                allWords = allWords.stream()
+                        .filter(w -> !knownWordIds.contains(w.getId()))
+                        .collect(Collectors.toList());
+            }
         } else {
             // Havuz (Vocabulary) mode
             boolean applyDifficultyFilter = difficulties != null && !difficulties.isEmpty();

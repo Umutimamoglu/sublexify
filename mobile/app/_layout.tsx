@@ -147,7 +147,7 @@ export default function RootLayout() {
         >
           <ThemeProvider>
             <AuthProvider>
-              <Stack screenOptions={{ headerShown: false }}>
+              <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 200 }}>
                 <Stack.Screen name="index" />
                 <Stack.Screen name="onboarding" />
                 <Stack.Screen name="(tabs)" />

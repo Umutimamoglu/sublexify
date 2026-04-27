@@ -32,5 +32,8 @@
   "coreEnglishProgress": "Core English progress",
   "levelLabel": "LEVEL {{level}}",
   "oxfordLabel": "OXFORD",
-  "notStarted": "NOT STARTED"
+  "notStarted": "NOT STARTED",
+  "streakInfoTitle": "About Your Streak",
+  "streakInfoBody": "Your streak shows the number of consecutive days you've learned a new word. To keep your streak alive, you must mark at least one word as 'known' every day. If you skip a full day, your streak will reset to 0. Don't forget to practice daily!",
+  "streakInfoOk": "Got it"
 }

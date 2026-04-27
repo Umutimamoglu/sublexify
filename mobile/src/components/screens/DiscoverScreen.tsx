@@ -26,7 +26,8 @@ import { useTheme } from '@/src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { OverallDifficultyBadge } from '@/src/components/ui';
 import { useMedia, useContinueLearning } from '@/src/api/queries/media.queries';
-import { useLists } from '@/src/api/queries/lists.queries';
+import { useLists, useListsBySeries } from '@/src/api/queries/lists.queries';
+import { Modal } from 'react-native';
 import { useUserStats } from '@/src/api/queries/user.queries';
 import { AllMediaModal } from '@/src/components/ui/AllMediaModal';
 import { ContinueLearningModal } from '@/src/components/ui/ContinueLearningModal';
@@ -205,6 +206,16 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, 
     },
     streakIcon: { fontSize: 16, color: '#ef4444' },
     streakCount: { color: '#ef4444', fontSize: 16, fontWeight: '800' },
+
+    // Streak Modal
+    streakModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: pad },
+    streakModalContent: { backgroundColor: c.SURFACE, width: '100%', maxWidth: 400, borderRadius: 24, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
+    streakModalIconBox: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(239, 68, 68, 0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+    streakModalIcon: { fontSize: 32 },
+    streakModalTitle: { color: c.TEXT_P, fontSize: 20, fontWeight: '800', marginBottom: 12, textAlign: 'center' },
+    streakModalBody: { color: c.TEXT_S, fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 24 },
+    streakModalBtn: { backgroundColor: c.PURPLE, paddingVertical: 14, paddingHorizontal: 32, borderRadius: 14, width: '100%', alignItems: 'center' },
+    streakModalBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
     // ─── Empty hero (no continue learning) ────────────────────
     heroEmpty: {
@@ -556,6 +567,12 @@ export default function DiscoverScreen() {
   const [allMediaModalVisible, setAllMediaModalVisible] = useState(false);
   const [continueModalVisible, setContinueModalVisible] = useState(false);
 
+  // Series Intercept
+  const [selectedSeriesImdbId, setSelectedSeriesImdbId] = useState<string | null>(null);
+  const [seriesListsModalVisible, setSeriesListsModalVisible] = useState(false);
+  const [pendingSeriesItem, setPendingSeriesItem] = useState<MediaDTO | null>(null);
+  const [showStreakModal, setShowStreakModal] = useState(false);
+
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
   const { data: allLists = [], isLoading: listsLoading, refetch: refetchLists } = useLists();
 
@@ -591,9 +608,18 @@ export default function DiscoverScreen() {
 
   const browsedMedia = useMemo(() => deduplicateMedia(allMedia, mediaFilter), [allMedia, mediaFilter]);
 
-  const handleNavigate = (item: MediaDTO) => {
+  const { data: seriesListsData = [], isFetching: checkingSeriesLists } = useListsBySeries(selectedSeriesImdbId);
+
+  const handleNavigate = async (item: MediaDTO) => {
     if (item.type === 'MOVIE') {
       router.push(`/media/${item.id}` as any);
+      return;
+    }
+    const imdbId = item.imdbId;
+    if (imdbId) {
+      setSelectedSeriesImdbId(imdbId);
+      setPendingSeriesItem(item);
+      setSeriesListsModalVisible(true);
     } else {
       router.push(`/show/${item.imdbId}` as any);
     }
@@ -692,11 +718,20 @@ export default function DiscoverScreen() {
     const navTarget = hasContinue
       ? item.generatedListId ? `/list/${item.generatedListId}` : `/media/${item.id}?from=continue`
       : isSeries ? `/media/${item._s01e01Id ?? item.id}` : `/media/${item.id}`;
+
+    const handleHeroPress = () => {
+      if (isSeries) {
+        handleNavigate(item);
+      } else {
+        router.push(navTarget as any);
+      }
+    };
+
     return (
       <TouchableOpacity
         style={styles.heroSlide}
         activeOpacity={0.95}
-        onPress={() => router.push(navTarget as any)}
+        onPress={handleHeroPress}
       >
         {item.posterUrl || item.backdropUrl ? (
           <Image
@@ -728,7 +763,7 @@ export default function DiscoverScreen() {
             <TouchableOpacity 
               style={styles.heroBtnOuter} 
               activeOpacity={0.8} 
-              onPress={() => router.push(navTarget as any)}
+              onPress={handleHeroPress}
             >
                 <LinearGradient
                     colors={[
@@ -783,16 +818,16 @@ export default function DiscoverScreen() {
             {/* Floating header over hero */}
             <Animated.View style={[styles.headerOverlay, { opacity: headerOpacity }]}>
               <View style={styles.headerLeft}>
-                <View style={styles.avatar}>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/profile' as any)} activeOpacity={0.7} style={styles.avatar}>
                   <Text style={styles.avatarText}>{avatarInitial}</Text>
-                </View>
+                </TouchableOpacity>
                 <Text style={styles.headerGreeting}>{greeting}, {firstName}</Text>
               </View>
               <View style={styles.headerRight}>
-                <View style={styles.streakBadge}>
+                <TouchableOpacity onPress={() => setShowStreakModal(true)} style={styles.streakBadge} activeOpacity={0.7}>
                   <Text style={styles.streakIcon}>🔥</Text>
                   <Text style={styles.streakCount}>{currentStreak}</Text>
-                </View>
+                </TouchableOpacity>
               </View>
             </Animated.View>
 
@@ -822,16 +857,16 @@ export default function DiscoverScreen() {
           <View style={styles.heroEmpty}>
             <View style={[styles.headerOverlay, { position: 'relative', paddingTop: insets.top + 8 }]}>
               <View style={styles.headerLeft}>
-                <View style={[styles.avatar, { backgroundColor: c.SURFACE2, borderColor: c.PURPLE + '66' }]}>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/profile' as any)} activeOpacity={0.7} style={[styles.avatar, { backgroundColor: c.SURFACE2, borderColor: c.PURPLE + '66' }]}>
                   <Text style={[styles.avatarText, { color: c.TEXT_P }]}>{avatarInitial}</Text>
-                </View>
+                </TouchableOpacity>
                 <Text style={[styles.headerGreeting, { color: c.TEXT_P, textShadowColor: 'transparent' }]}>{greeting}, {firstName}</Text>
               </View>
               <View style={styles.headerRight}>
-                <View style={styles.streakBadge}>
+                <TouchableOpacity onPress={() => setShowStreakModal(true)} style={styles.streakBadge} activeOpacity={0.7}>
                   <Text style={styles.streakIcon}>🔥</Text>
                   <Text style={styles.streakCount}>{currentStreak}</Text>
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
             <ActivityIndicator color="#FEE76C" size="large" />
@@ -840,16 +875,16 @@ export default function DiscoverScreen() {
           <View style={styles.heroEmpty}>
             <View style={[styles.headerOverlay, { position: 'relative', paddingTop: insets.top + 8 }]}>
               <View style={styles.headerLeft}>
-                <View style={[styles.avatar, { backgroundColor: c.SURFACE2, borderColor: c.PURPLE + '66' }]}>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/profile' as any)} activeOpacity={0.7} style={[styles.avatar, { backgroundColor: c.SURFACE2, borderColor: c.PURPLE + '66' }]}>
                   <Text style={[styles.avatarText, { color: c.TEXT_P }]}>{avatarInitial}</Text>
-                </View>
+                </TouchableOpacity>
                 <Text style={[styles.headerGreeting, { color: c.TEXT_P, textShadowColor: 'transparent' }]}>{greeting}, {firstName}</Text>
               </View>
               <View style={styles.headerRight}>
-                <View style={styles.streakBadge}>
+                <TouchableOpacity onPress={() => setShowStreakModal(true)} style={styles.streakBadge} activeOpacity={0.7}>
                   <Text style={styles.streakIcon}>🔥</Text>
                   <Text style={styles.streakCount}>{currentStreak}</Text>
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
             <Text style={styles.heroEmptyIcon}>🎬</Text>
@@ -955,6 +990,104 @@ export default function DiscoverScreen() {
         loading={mediaLoading}
         onNavigate={handleNavigate}
       />
+
+      {/* Series Lists Intercept Modal */}
+      <Modal
+        visible={seriesListsModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => { setSeriesListsModalVisible(false); setSelectedSeriesImdbId(null); }}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' }}>
+          <View style={{
+            backgroundColor: isDark ? '#161822' : '#ffffff',
+            borderTopLeftRadius: 28, borderTopRightRadius: 28,
+            padding: 24, paddingBottom: 40,
+            maxHeight: '80%',
+          }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ color: c.TEXT_P, fontSize: 18, fontWeight: '800' }} numberOfLines={1}>
+                {pendingSeriesItem ? seriesTitle(pendingSeriesItem) : ''}
+              </Text>
+              <TouchableOpacity onPress={() => { setSeriesListsModalVisible(false); setSelectedSeriesImdbId(null); }}>
+                <Ionicons name="close" size={24} color={c.TEXT_S} />
+              </TouchableOpacity>
+            </View>
+
+            {checkingSeriesLists ? (
+              <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                <ActivityIndicator color={c.PURPLE} size="large" />
+              </View>
+            ) : seriesListsData.length === 0 ? (
+              <View style={{ paddingVertical: 28, alignItems: 'center', gap: 12 }}>
+                <Text style={{ fontSize: 36 }}>📭</Text>
+                <Text style={{ color: c.TEXT_P, fontSize: 16, fontWeight: '700' }}>Bu dizi için listeniz yok</Text>
+                <Text style={{ color: c.TEXT_S, fontSize: 13, textAlign: 'center' }}>Bir bölüme girerek "Bilinmeyen Kelimeler Listesi" oluşturabilirsiniz.</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSeriesListsModalVisible(false);
+                    setSelectedSeriesImdbId(null);
+                    if (pendingSeriesItem) router.push(`/show/${pendingSeriesItem.imdbId}` as any);
+                  }}
+                  style={{ marginTop: 8, backgroundColor: c.PURPLE, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16 }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Bölümlere Git</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <Text style={{ color: c.TEXT_S, fontSize: 13, marginBottom: 16 }}>Bu diziden oluşturduğunuz kelime listelerinden devam edin.</Text>
+                <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 360 }}>
+                  {seriesListsData.map((list) => (
+                    <TouchableOpacity
+                      key={list.id}
+                      onPress={() => { setSeriesListsModalVisible(false); setSelectedSeriesImdbId(null); router.push(`/list/${list.id}` as any); }}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                        backgroundColor: isDark ? '#1a1a2e' : '#f5f5fa',
+                        borderRadius: 16, padding: 16, marginBottom: 10,
+                      }}
+                    >
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <Text style={{ color: c.TEXT_P, fontSize: 15, fontWeight: '700' }} numberOfLines={1}>{list.name}</Text>
+                        <Text style={{ color: c.TEXT_S, fontSize: 12 }}>{list.totalWords} kelime • {list.unknownWords} öğrenilecek</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={c.PURPLE} />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSeriesListsModalVisible(false);
+                    setSelectedSeriesImdbId(null);
+                    if (pendingSeriesItem) router.push(`/show/${pendingSeriesItem.imdbId}` as any);
+                  }}
+                  style={{ marginTop: 12, borderRadius: 16, paddingVertical: 13, alignItems: 'center', backgroundColor: isDark ? '#1a1a2e' : '#f0f0f8' }}
+                >
+                  <Text style={{ color: c.TEXT_S, fontWeight: '700', fontSize: 14 }}>Bölümlere Git</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Streak Info Modal */}
+      <Modal visible={showStreakModal} transparent animationType="fade" onRequestClose={() => setShowStreakModal(false)}>
+        <TouchableOpacity style={styles.streakModalOverlay} activeOpacity={1} onPress={() => setShowStreakModal(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.streakModalContent}>
+            <View style={styles.streakModalIconBox}>
+              <Text style={styles.streakModalIcon}>🔥</Text>
+            </View>
+            <Text style={styles.streakModalTitle}>{t('streakInfoTitle')}</Text>
+            <Text style={styles.streakModalBody}>{t('streakInfoBody')}</Text>
+            <TouchableOpacity style={styles.streakModalBtn} onPress={() => setShowStreakModal(false)} activeOpacity={0.8}>
+              <Text style={styles.streakModalBtnText}>{t('streakInfoOk')}</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }

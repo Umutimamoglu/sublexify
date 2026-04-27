@@ -38,5 +38,9 @@
   "generateListMessage": "Bu medyadaki bilinmeyen kelimeleri yeni bir listeye eklemek istiyor musunuz?",
   "generateListCreated": "\"{{name}}\" listesi oluşturuldu.",
   "unknownOnlyToggle": "Sadece bilinmeyenler",
-  "createSubListCtaMedia": "Bilinmeyenlerden Liste Oluştur ({{count}})"
+  "createSubListCtaMedia": "Bilinmeyenlerden Liste Oluştur ({{count}})",
+  "Top Verbs": "En Sık Kullanılan Fiiller",
+  "Top Adjectives": "En Sık Kullanılan Sıfatlar",
+  "Top Adverbs": "En Sık Kullanılan Zarflar",
+  "200 Common Phrasal Verbs": "200 Yaygın Phrasal Verb"
 }

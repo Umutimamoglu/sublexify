@@ -46,6 +46,8 @@ export interface WordListDTO {
     color?: string;
     sourceMediaId?: number;
     sourceMediaPosterUrl?: string | null;
+    sourceMediaTmdbId?: number;
+    sourceMediaImdbId?: string;
 }
 
 export interface WordListWordsResponseDTO {
@@ -72,6 +74,11 @@ const WordListService = {
 
     getStandardLists: async (): Promise<WordListDTO[]> => {
         const response = await api.get<WordListDTO[]>('/lists/standard');
+        return response.data;
+    },
+
+    getListsBySeries: async (imdbId: string): Promise<WordListDTO[]> => {
+        const response = await api.get<WordListDTO[]>(`/lists/media/imdb/${imdbId}`);
         return response.data;
     },
 
@@ -131,6 +138,46 @@ const WordListService = {
     getFrequentWords: async (language: string = 'en', limit: number = 100, userId?: number): Promise<(Word & { isKnown: boolean, frequency: number })[]> => {
         const response = await api.get<(Word & { isKnown: boolean, frequency: number })[]>('/words/frequent', {
             params: { language, limit, userId }
+        });
+        return response.data;
+    },
+
+    getFrequentWordsPaginated: async (
+        page: number = 0,
+        size: number = 50,
+        language: string = 'en',
+        difficulties?: string[],
+        onlyUnknown: boolean = false,
+        userId?: number
+    ): Promise<(Word & { isKnown: boolean, frequency: number })[]> => {
+        const response = await api.get<(Word & { isKnown: boolean, frequency: number })[]>('/words/frequent', {
+            params: {
+                page,
+                size,
+                language,
+                difficulties: difficulties?.join(','),
+                onlyUnknown,
+                userId
+            }
+        });
+        return response.data;
+    },
+
+    searchWords: async (
+        query: string,
+        language: string = 'en',
+        difficulties?: string[],
+        onlyUnknown: boolean = false,
+        userId?: number
+    ): Promise<(Word & { isKnown: boolean, frequency: number })[]> => {
+        const response = await api.get<(Word & { isKnown: boolean, frequency: number })[]>('/words/search', {
+            params: {
+                q: query,
+                language,
+                difficulties: difficulties?.join(','),
+                onlyUnknown,
+                userId
+            }
         });
         return response.data;
     }

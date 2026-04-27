@@ -8,6 +8,8 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -263,8 +265,9 @@ export default function AddToListModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity style={styles.sheet} activeOpacity={1}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={onClose} />
+        <View style={styles.sheet}>
 
           <View style={styles.handle} />
 
@@ -345,8 +348,8 @@ export default function AddToListModal({
             </TouchableOpacity>
           </View>
 
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

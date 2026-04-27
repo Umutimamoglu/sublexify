@@ -28,6 +28,12 @@ public class WordListController {
         return ResponseEntity.ok(userLists);
     }
 
+    @GetMapping("/media/imdb/{imdbId}")
+    public ResponseEntity<List<WordListDTO>> getListsBySeries(@PathVariable String imdbId, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(wordListService.getListsBySeries(userId, imdbId));
+    }
+
     @GetMapping("/standard")
     public ResponseEntity<List<WordListDTO>> getStandardLists(Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
@@ -68,7 +74,11 @@ public class WordListController {
             @RequestBody java.util.Map<String, String> body,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
-        return ResponseEntity.ok(wordListService.updateList(id, body.get("name"), body.get("color"), userId));
+        Long mediaId = null;
+        if (body.containsKey("mediaId") && body.get("mediaId") != null) {
+            mediaId = Long.parseLong(String.valueOf(body.get("mediaId")));
+        }
+        return ResponseEntity.ok(wordListService.updateList(id, body.get("name"), body.get("color"), mediaId, userId));
     }
 
     @DeleteMapping("/{id}")

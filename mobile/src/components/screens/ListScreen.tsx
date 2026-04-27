@@ -409,7 +409,7 @@ function MarkKnownModal({
 
 function WordRow({
   word,
-  isKnown,
+  isKnown: isKnownProp,
   onToggle,
   styles,
   c,
@@ -421,6 +421,16 @@ function WordRow({
   c: Palette;
 }) {
   const meaning = word.definition?.meanings?.[0]?.definition;
+  const [isKnown, setIsKnown] = useState(isKnownProp);
+
+  // Sync from prop when it changes externally (batch mark, screen refocus, etc.)
+  useEffect(() => { setIsKnown(isKnownProp); }, [isKnownProp]);
+
+  const handlePress = () => {
+    setIsKnown(v => !v); // instant — no parent re-render needed
+    onToggle();
+  };
+
   return (
     <View style={styles.row}>
       <View style={styles.rowInfo}>
@@ -433,14 +443,14 @@ function WordRow({
         style={[
           styles.checkBtn,
           {
-            borderColor: isKnown ? c.PURPLE : c.TEXT_S,
-            backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
+            borderColor: isKnown ? c.PURPLE : c.BORDER,
+            backgroundColor: isKnown ? c.PURPLE : 'transparent',
           },
         ]}
-        onPress={onToggle}
-        activeOpacity={0.7}
+        onPress={handlePress}
+        activeOpacity={0.6}
       >
-        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+        <Text style={[styles.checkText, { color: isKnown ? '#fff' : c.TEXT_S }]}>✓</Text>
       </TouchableOpacity>
     </View>
   );
@@ -811,11 +821,11 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const [selectedQuizTypes, setSelectedQuizTypes] = useState<Set<string>>(new Set(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']));
   const [cardIndex, setCardIndex] = useState(0);
   const [isFlippedState, setIsFlippedState] = useState(false);
-  const [knownIds, setKnownIds] = useState<Set<number>>(new Set());
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
   const [previewWord, setPreviewWord] = useState<ListWord | null>(null);
-  const knownInitialized = useRef(false);
   const hintShown = useRef(false);
+  // Derive from query cache — onMutate updates it instantly (same pattern as VocabularyScreen)
+  const knownIdsSet = useMemo(() => new Set(knownWordsData.map((w) => w.id)), [knownWordsData]);
 
   // Mark hint as shown after enough time for all 3 rows to complete
   useEffect(() => {
@@ -823,20 +833,14 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     return () => clearTimeout(timer);
   }, []);
 
-  // ─── Init known IDs once ───────────────────────────────────
-  useEffect(() => {
-    if (!knownInitialized.current && knownWordsData.length > 0) {
-      setKnownIds(new Set(knownWordsData.map((w) => w.id)));
-      knownInitialized.current = true;
-    }
-  }, [knownWordsData]);
+
 
   // ─── Filtered words ───────────────────────────────────────
   const filteredWords = useMemo<ListWord[]>(() => {
     if (!effectiveList?.words) return [];
     let words = effectiveList.words;
     if (onlyUnknown) {
-      words = words.filter((w) => !knownIds.has(w.id));
+      words = words.filter((w) => !knownIdsSet.has(w.id));
     }
     if (selectedLevels.size > 0) {
       words = words.filter((w) => w.difficulty && selectedLevels.has(w.difficulty));
@@ -849,21 +853,19 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
       );
     }
     return words;
-  }, [effectiveList?.words, onlyUnknown, knownIds, selectedLevels, searchQuery]);
+  }, [effectiveList?.words, onlyUnknown, knownIdsSet, selectedLevels, searchQuery]);
 
   // Reset card index on filter change
   useEffect(() => { setCardIndex(0); }, [selectedLevels]);
 
   // ─── Toggle known ─────────────────────────────────────────
   const handleToggle = useCallback((wordId: number) => {
-    const currentlyKnown = knownIds.has(wordId);
-    setKnownIds((prev) => {
-      const next = new Set(prev);
-      currentlyKnown ? next.delete(wordId) : next.add(wordId);
-      return next;
-    });
+    const currentlyKnown = knownIdsSet.has(wordId);
+    Haptics.impactAsync(
+      currentlyKnown ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium
+    );
     toggleKnown({ wordId, isKnown: currentlyKnown });
-  }, [knownIds, toggleKnown]);
+  }, [knownIdsSet, toggleKnown]);
 
   // ─── Remove word from list ────────────────────────────────
   const handleRemove = useCallback((wordId: number) => {
@@ -875,9 +877,9 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   // ─── Mark known batch ─────────────────────────────────────
   const wordsToMark = useMemo(
     () => (effectiveList?.words ?? []).filter(
-      (w) => w.difficulty && selectedLevels.has(w.difficulty) && !knownIds.has(w.id),
+      (w) => w.difficulty && selectedLevels.has(w.difficulty) && !knownIdsSet.has(w.id),
     ),
-    [effectiveList?.words, selectedLevels, knownIds],
+    [effectiveList?.words, selectedLevels, knownIdsSet],
   );
 
   const handleMarkKnown = useCallback(() => {
@@ -887,7 +889,6 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
       onSuccess: () => {
         setShowMarkModal(false);
         setSelectedLevels(new Set());
-        setKnownIds((prev) => new Set([...prev, ...ids]));
       },
     });
   }, [wordsToMark, markKnownBatch]);
@@ -895,8 +896,8 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   // ─── Generate sub-list from unknowns ─────────────────────
   // Tüm liste kelimeleri üzerinden (filtreden bağımsız) — generateSubList zaten tüm listeyi işliyor
   const unknownCount = useMemo(
-    () => (effectiveList?.words ?? []).filter((w) => !knownIds.has(w.id)).length,
-    [effectiveList?.words, knownIds],
+    () => (effectiveList?.words ?? []).filter((w) => !knownIdsSet.has(w.id)).length,
+    [effectiveList?.words, knownIdsSet],
   );
 
   const levelCounts = useMemo(() => {
@@ -939,8 +940,12 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const handleStartStudy = useCallback(() => {
     setShowQuizModal(false);
     const typesStr = Array.from(selectedQuizTypes).join(',');
-    router.push(`/study/${listId}?types=${typesStr}` as any);
-  }, [listId, selectedQuizTypes, router]);
+    const diffsStr = Array.from(selectedLevels).join(',');
+    let url = `/study/${listId}?types=${typesStr}`;
+    if (diffsStr) url += `&difficulties=${diffsStr}`;
+    if (onlyUnknown) url += `&onlyUnknown=true`;
+    router.push(url as any);
+  }, [listId, selectedQuizTypes, selectedLevels, onlyUnknown, router]);
 
   // ─── Flashcard animations (Reanimated 4 + Gesture Handler) ──
   const cardX = useSharedValue(0);
@@ -1000,7 +1005,6 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     .activeOffsetX([-8, 8])
     .failOffsetY([-15, 15])
     .onUpdate((e) => {
-      if (isFlipped.value) return;
       cardX.value = e.translationX;
       cardY.value = e.translationY * 0.15;
       if (!hapticFired.value && Math.abs(e.translationX) > 80) {
@@ -1014,7 +1018,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     .onEnd((e) => {
       hapticFired.value = false;
       const committed = Math.abs(e.translationX) > 80 || Math.abs(e.velocityX) > 500;
-      if (!isFlipped.value && committed) {
+      if (committed) {
         const goLeft = e.velocityX < -200 ? true : e.velocityX > 200 ? false : e.translationX < 0;
         const total = totalSV.value;
         const cur = indexSV.value;
@@ -1075,7 +1079,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             <Ionicons name="arrow-back" size={24} color={c.TEXT_P} />
           </TouchableOpacity>
           <Text style={styles.title} numberOfLines={1}>{effectiveList?.name ?? '...'}</Text>
-          {!isKnownList && !isSystemList && (
+          {!isKnownList && (
             <TouchableOpacity
               style={styles.studyBtn}
               onPress={() => setShowQuizModal(true)}
@@ -1140,7 +1144,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
         {/* Stats + progress bar — bilinen listesi hariç */}
         {!isKnownList && (() => {
           const totalWords = effectiveList?.words?.length ?? 0;
-          const knownCount = (effectiveList?.words ?? []).filter(w => knownIds.has(w.id)).length;
+          const knownCount = (effectiveList?.words ?? []).filter(w => knownIdsSet.has(w.id)).length;
           const unknownCnt = totalWords - knownCount;
           const knownPct = totalWords > 0 ? Math.round((knownCount / totalWords) * 100) : 0;
           return totalWords > 0 ? (
@@ -1225,7 +1229,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             renderItem={({ item, index }) => (
               <SwipeableWordRow
                 word={item}
-                isKnown={knownIds.has(item.id)}
+                isKnown={knownIdsSet.has(item.id)}
                 onToggle={() => handleToggle(item.id)}
                 onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
                 onRemove={!isKnownList && !isSystemList ? () => handleRemove(item.id) : undefined}
@@ -1238,6 +1242,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             )}
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             showsVerticalScrollIndicator={false}
+            extraData={knownIdsSet}
             ListFooterComponent={() => <View style={{ height: 16 }} />}
           />
         ) : (
@@ -1297,22 +1302,22 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.cardKnownBtn, {
-                        borderColor: knownIds.has(currentWord.id) ? c.PURPLE : c.TEXT_S,
-                        backgroundColor: knownIds.has(currentWord.id) ? c.PURPLE + '22' : 'transparent',
+                        borderColor: knownIdsSet.has(currentWord.id) ? c.PURPLE : c.TEXT_S,
+                        backgroundColor: knownIdsSet.has(currentWord.id) ? c.PURPLE + '22' : 'transparent',
                       }]}
                       onPress={() => handleToggle(currentWord.id)}
                       onPressIn={() => { buttonActiveRef.current = true; }}
                       onPressOut={() => { buttonActiveRef.current = false; }}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.checkText, { color: knownIds.has(currentWord.id) ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+                      <Text style={[styles.checkText, { color: knownIdsSet.has(currentWord.id) ? c.PURPLE : c.TEXT_S }]}>✓</Text>
                     </TouchableOpacity>
                   </Reanimated.View>
 
                   {/* Back */}
                   <FlashCardBack
                     word={currentWord}
-                    isKnown={knownIds.has(currentWord.id)}
+                    isKnown={knownIdsSet.has(currentWord.id)}
                     onToggle={() => handleToggle(currentWord.id)}
                     onButtonPressIn={() => { buttonActiveRef.current = true; }}
                     onButtonPressOut={() => { buttonActiveRef.current = false; }}

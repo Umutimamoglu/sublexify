@@ -282,7 +282,7 @@ function RightActions({
 // ─── Word row ──────────────────────────────────────────────────
 function WordRow({
   word,
-  isKnown,
+  isKnown: isKnownProp,
   onToggle,
   onLongPress,
   onAddToList,
@@ -303,9 +303,20 @@ function WordRow({
   const meaning = word.definition?.meanings?.[0]?.definition;
   const diffColor = word.difficulty ? DIFF_COLORS[word.difficulty] : null;
 
+  // Local state = instant visual feedback without waiting for parent re-render
+  const [isKnown, setIsKnown] = useState(isKnownProp);
+  useEffect(() => { setIsKnown(isKnownProp); }, [isKnownProp]);
+
+  const handleTogglePress = () => {
+    const next = !isKnown;
+    setIsKnown(next); // instant
+    Haptics.impactAsync(next ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
+    onToggle();
+  };
+
   const tapGesture = Gesture.Tap()
     .maxDistance(8)
-    .onEnd(() => { runOnJS(onToggle)(); });
+    .onEnd(() => { runOnJS(handleTogglePress)(); });
 
   const longPressGesture = Gesture.LongPress()
     .minDuration(400)
@@ -349,14 +360,14 @@ function WordRow({
             style={[
               styles.checkBtn,
               {
-                borderColor: isKnown ? c.PURPLE : c.TEXT_S,
-                backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
+                borderColor: isKnown ? c.PURPLE : c.BORDER,
+                backgroundColor: isKnown ? c.PURPLE : 'transparent',
               },
             ]}
-            onPress={onToggle}
-            activeOpacity={0.7}
+            onPress={handleTogglePress}
+            activeOpacity={0.6}
           >
-            <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+            <Text style={[styles.checkText, { color: isKnown ? '#fff' : c.TEXT_S }]}>✓</Text>
           </TouchableOpacity>
         </View>
       </GestureDetector>

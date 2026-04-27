@@ -321,7 +321,10 @@ const VocabularyPage = () => {
     const [onlyUnknown, setOnlyUnknown] = useState(false);
     const [viewMode, setViewMode] = useState<ViewMode>('list');
     const [cardIndex, setCardIndex] = useState(0);
-    const [visibleCount, setVisibleCount] = useState(50);
+
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     // Modals
     const [previewWord, setPreviewWord] = useState<VocabWord | null>(null);
@@ -329,16 +332,62 @@ const VocabularyPage = () => {
     const [showQuizModal, setShowQuizModal] = useState(false);
     const [selectedQuizTypes, setSelectedQuizTypes] = useState<Set<string>>(new Set(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']));
 
-    useEffect(() => { fetchWords(); }, []);
-
-    const fetchWords = async () => {
+    const fetchWords = useCallback(async (reset: boolean = false) => {
         try {
-            setLoading(true);
-            const data = await WordListService.getFrequentWords('en', 500, MOCK_USER_ID);
-            setWords(data);
+            if (reset) {
+                setLoading(true);
+                setPage(0);
+                setHasMore(true);
+            } else {
+                setLoadingMore(true);
+            }
+            
+            const currentPage = reset ? 0 : page;
+            const diffs = selectedLevels.size > 0 ? Array.from(selectedLevels) : undefined;
+            const q = query.trim();
+            
+            let data: VocabWord[] = [];
+            if (q.length >= 2) {
+                if (reset) {
+                    data = await WordListService.searchWords(q, 'en', diffs, onlyUnknown, MOCK_USER_ID);
+                    setHasMore(false);
+                }
+            } else {
+                data = await WordListService.getFrequentWordsPaginated(currentPage, 50, 'en', diffs, onlyUnknown, MOCK_USER_ID);
+                setHasMore(data.length === 50);
+            }
+            
+            if (reset || data.length > 0) {
+                setWords(prev => reset ? data : [...prev, ...data]);
+            }
+            if (!reset && data.length > 0) {
+                setPage(p => p + 1);
+            }
+            if (reset && data.length === 50 && q.length < 2) {
+                setPage(1);
+            }
         } catch (err) { console.error(err); }
-        finally { setLoading(false); }
-    };
+        finally { setLoading(false); setLoadingMore(false); }
+    }, [page, query, selectedLevels, onlyUnknown]);
+
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchWords(true);
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [query, selectedLevels, onlyUnknown]); // Fetch only when filters change
+
+    const observer = useRef<IntersectionObserver | null>(null);
+    const lastElementRef = useCallback((node: HTMLDivElement | null) => {
+        if (loading || loadingMore) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore) {
+                fetchWords(false);
+            }
+        });
+        if (node) observer.current.observe(node);
+    }, [loading, loadingMore, hasMore, fetchWords]);
 
     const handleToggleKnown = useCallback(async (wordId: number) => {
         const word = words.find(w => w.id === wordId);
@@ -367,28 +416,16 @@ const VocabularyPage = () => {
     };
 
     const isSearching = query.trim().length >= 2;
-
-    const filtered = useMemo(() => {
-        let result = words;
-        if (isSearching) {
-            const q = query.trim().toLowerCase();
-            result = result.filter(w => w.word.toLowerCase().includes(q));
-            result.sort((a, b) => {
-                const aw = a.word.toLowerCase(), bw = b.word.toLowerCase(), qt = q;
-                const rank = (w: string) => w === qt ? 0 : w.startsWith(qt) ? 1 : 2;
-                return (rank(aw) - rank(bw)) || aw.length - bw.length;
-            });
-        } else {
-            if (selectedLevels.size > 0) result = result.filter(w => w.difficulty && selectedLevels.has(w.difficulty));
-            if (onlyUnknown) result = result.filter(w => !w.isKnown);
-        }
-        return result;
-    }, [words, query, selectedLevels, onlyUnknown, isSearching]);
-
     const knownCount = words.filter(w => w.isKnown).length;
-    const totalCount = words.length;
+    const currentCard = words[cardIndex];
 
-    const currentCard = filtered[cardIndex];
+    const levelCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const w of words) {
+            if (w.difficulty) counts[w.difficulty] = (counts[w.difficulty] || 0) + 1;
+        }
+        return counts;
+    }, [words]);
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl relative pb-40">
@@ -442,11 +479,17 @@ const VocabularyPage = () => {
                         {CEFR_LEVELS.map(lv => {
                             const active = selectedLevels.has(lv);
                             const col = CEFR_COLORS[lv];
+                            const count = levelCounts[lv] || 0;
                             return (
                                 <button key={lv} onClick={() => toggleLevel(lv)}
-                                    className={cn('w-12 h-8 rounded-xl text-xs font-bold border transition-all', active ? 'text-white border-transparent' : 'bg-white dark:bg-[#161822] text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-300')}
+                                    className={cn('h-8 px-3 flex items-center gap-1.5 rounded-xl text-xs font-bold border transition-all', active ? 'text-white border-transparent' : 'bg-white dark:bg-[#161822] text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-300')}
                                     style={active ? { backgroundColor: col.pill, borderColor: col.pill } : {}}>
                                     {lv}
+                                    {count > 0 && (
+                                        <span className={cn("px-1 py-0.5 rounded-md text-[9px]", active ? "bg-white/20 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400")}>
+                                            {count}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
@@ -459,10 +502,10 @@ const VocabularyPage = () => {
                     <div className="grid grid-cols-2 gap-3 mb-5">
                         <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-2xl p-4 text-center">
                             <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{knownCount.toLocaleString()}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">Bilinenler</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Bilinenler (Yüklenen)</p>
                         </div>
                         <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-2xl p-4 text-center">
-                            <p className="text-2xl font-black text-gray-900 dark:text-white">{filtered.length.toLocaleString()}</p>
+                            <p className="text-2xl font-black text-gray-900 dark:text-white">{words.length.toLocaleString()}</p>
                             <p className="text-xs text-gray-400 mt-0.5">Gösterilen</p>
                         </div>
                     </div>
@@ -478,17 +521,17 @@ const VocabularyPage = () => {
 
             {/* Flashcard mode */}
             {!loading && viewMode === 'flashcard' && !isSearching && (
-                filtered.length === 0 ? (
+                words.length === 0 ? (
                     <div className="text-center py-20 text-gray-400"><p>Kelime bulunamadı.</p></div>
                 ) : currentCard ? (
                     <FlashCard
                         word={currentCard}
                         index={cardIndex}
-                        total={filtered.length}
+                        total={words.length}
                         isKnown={currentCard.isKnown}
                         onToggleKnown={() => handleToggleKnown(currentCard.id)}
                         onPrev={() => setCardIndex(i => Math.max(0, i - 1))}
-                        onNext={() => setCardIndex(i => Math.min(filtered.length - 1, i + 1))}
+                        onNext={() => setCardIndex(i => Math.min(words.length - 1, i + 1))}
                         onAddToList={() => setAddModal({ wordId: currentCard.id, wordName: currentCard.word })}
                     />
                 ) : null
@@ -498,9 +541,9 @@ const VocabularyPage = () => {
             {!loading && (viewMode === 'list' || isSearching) && (
                 <>
                     {isSearching && (
-                        <p className="text-xs text-gray-400 mb-3 px-1">"{query}" için {filtered.length} sonuç</p>
+                        <p className="text-xs text-gray-400 mb-3 px-1">"{query}" için {words.length} sonuç</p>
                     )}
-                    {filtered.length === 0 ? (
+                    {words.length === 0 ? (
                         <div className="text-center py-20 text-gray-400 bg-white dark:bg-[#161822] rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
                             <BookOpen className="w-10 h-10 opacity-20 mx-auto mb-3" />
                             <p>Kelime bulunamadı.</p>
@@ -508,11 +551,13 @@ const VocabularyPage = () => {
                     ) : (
                         <>
                             <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                                {filtered.slice(0, visibleCount).map((word, idx) => {
+                                {words.map((word, idx) => {
                                     const col = word.difficulty ? CEFR_COLORS[word.difficulty] : null;
                                     const meaning = word.definition?.meanings?.[0]?.definition;
+                                    const isLast = idx === words.length - 1;
                                     return (
                                         <div key={word.id}
+                                            ref={isLast ? lastElementRef : null}
                                             className="flex items-center px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/40 group transition-colors cursor-pointer"
                                             onClick={() => setPreviewWord(word)}
                                         >
@@ -549,12 +594,9 @@ const VocabularyPage = () => {
                                     );
                                 })}
                             </div>
-                            {visibleCount < filtered.length && (
-                                <div className="mt-4 flex justify-center">
-                                    <button onClick={() => setVisibleCount(p => p + 100)}
-                                        className="px-8 py-3 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-all shadow-sm">
-                                        Daha Fazla Yükle ({filtered.length - visibleCount} kaldı)
-                                    </button>
+                            {loadingMore && (
+                                <div className="py-4 flex justify-center">
+                                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                                 </div>
                             )}
                         </>
@@ -563,11 +605,11 @@ const VocabularyPage = () => {
             )}
 
             {/* Glass batch-mark button — list mode only */}
-            {!loading && viewMode === 'list' && !isSearching && filtered.length > 0 && (
+            {!loading && viewMode === 'list' && !isSearching && words.length > 0 && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20">
                     <button
                         onClick={async () => {
-                            const unknownIds = filtered.filter(w => !w.isKnown).map(w => w.id);
+                            const unknownIds = words.filter(w => !w.isKnown).map(w => w.id);
                             if (unknownIds.length === 0) return;
                             setWords(prev => prev.map(w => unknownIds.includes(w.id) ? { ...w, isKnown: true } : w));
                             for (const id of unknownIds) {

@@ -93,6 +93,8 @@ export type WordListDTO = {
   color?: string;
   sourceMediaId?: number;
   sourceMediaPosterUrl?: string | null;
+  sourceMediaTmdbId?: number | null;
+  sourceMediaImdbId?: string | null;
 };
 
 export type ApiError = {

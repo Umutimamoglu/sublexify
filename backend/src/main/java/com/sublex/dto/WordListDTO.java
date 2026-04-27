@@ -21,4 +21,6 @@ public class WordListDTO {
     private String color;
     private Long sourceMediaId;
     private String sourceMediaPosterUrl;
+    private Long sourceMediaTmdbId;
+    private String sourceMediaImdbId;
 }

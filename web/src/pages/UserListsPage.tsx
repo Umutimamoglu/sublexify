@@ -671,7 +671,10 @@ const UserListsPage = () => {
                             <button 
                                 onClick={() => {
                                     setIsQuizModalOpen(false);
-                                    navigate(`/study/${selectedList.id}?types=${selectedQuizTypes.join(',')}`);
+                                    let url = `/study/${selectedList.id}?types=${selectedQuizTypes.join(',')}`;
+                                    if (selectedLevels.length > 0) url += `&difficulties=${selectedLevels.join(',')}`;
+                                    if (filterUnknown) url += `&onlyUnknown=true`;
+                                    navigate(url);
                                 }}
                                 disabled={selectedQuizTypes.length === 0}
                                 className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

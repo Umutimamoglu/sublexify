@@ -165,11 +165,17 @@ public class WordListService {
         }
 
         @Transactional(readOnly = true)
-        public List<WordListDTO> getStandardLists(Long userId) {
-                // Standard lists are seeded under system user (id=1), but known-word
-                // status must reflect the actual authenticated user.
+        public List<WordListDTO> getListsBySeries(Long userId, String imdbId) {
                 Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
-                return wordListRepository.findAllByUserIdWithWords(1L).stream()
+                return wordListRepository.findByUserIdAndSourceMediaImdbIdWithWords(userId, imdbId).stream()
+                                .map(list -> convertToDTO(list, userId, knownWordIds))
+                                .collect(Collectors.toList());
+        }
+
+        @Transactional(readOnly = true)
+        public List<WordListDTO> getStandardLists(Long userId) {
+                Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
+                return wordListRepository.findAllByIsSystemTrueWithWords().stream()
                                 .map(list -> convertToDTO(list, userId, knownWordIds))
                                 .collect(Collectors.toList());
         }
@@ -281,13 +287,15 @@ public class WordListService {
                 if (list.getSourceMedia() != null) {
                         dto.setSourceMediaId(list.getSourceMedia().getId());
                         dto.setSourceMediaPosterUrl(list.getSourceMedia().getPosterUrl());
+                        dto.setSourceMediaTmdbId(list.getSourceMedia().getTmdbId());
+                        dto.setSourceMediaImdbId(list.getSourceMedia().getImdbId());
                 }
 
                 return dto;
         }
 
         @Transactional
-        public WordListDTO updateList(Long listId, String name, String color, Long userId) {
+        public WordListDTO updateList(Long listId, String name, String color, Long mediaId, Long userId) {
                 WordList list = wordListRepository.findById(listId)
                                 .orElseThrow(() -> new RuntimeException("List not found: " + listId));
                 if (name != null && !name.isBlank()) {
@@ -296,6 +304,13 @@ public class WordListService {
                 // null = don't touch, empty string = remove color
                 if (color != null) {
                         list.setColor(color.isBlank() ? null : color);
+                }
+                if (mediaId != null) {
+                        if (mediaId == -1) {
+                                list.setSourceMedia(null);
+                        } else {
+                                list.setSourceMedia(mediaRepository.findById(mediaId).orElse(null));
+                        }
                 }
                 WordList saved = wordListRepository.save(list);
                 return convertToDTO(saved, userId, getKnownWordIds(userId));

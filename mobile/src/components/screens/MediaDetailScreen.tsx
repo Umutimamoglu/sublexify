@@ -5,6 +5,7 @@ import React, {
   useRef,
 } from 'react';
 import * as Speech from 'expo-speech';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
@@ -101,6 +102,8 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     chipScroll:   { paddingHorizontal: 16, paddingBottom: 12, flexGrow: 0 },
     chip:         { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     chipText:     { fontSize: 12, fontWeight: '700' },
+    chipBadge:    { position: 'absolute', top: -5, right: -5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+    chipBadgeText:{ fontSize: 9, fontWeight: '800' },
 
     // Separator
     separator: { height: 1, backgroundColor: c.BORDER, marginHorizontal: 16 },
@@ -226,7 +229,7 @@ function CefrBar({
 // ─── Word row ──────────────────────────────────────────────────
 function WordRow({
   word,
-  isKnown,
+  isKnown: isKnownProp,
   onToggle,
   onAddToList,
   styles,
@@ -240,6 +243,17 @@ function WordRow({
   c: Palette;
 }) {
   const meaning = word.definition?.meanings?.[0]?.definition;
+  // Local state = instant visual feedback without waiting for parent re-render
+  const [isKnown, setIsKnown] = React.useState(isKnownProp);
+
+  // Sync from prop only when it changes externally (e.g. after batch-mark)
+  React.useEffect(() => { setIsKnown(isKnownProp); }, [isKnownProp]);
+
+  const handlePress = () => {
+    setIsKnown(v => !v); // instant — no parent involved
+    onToggle();
+  };
+
   return (
     <View style={styles.row}>
       <View style={styles.rowInfo}>
@@ -267,14 +281,14 @@ function WordRow({
         style={[
           styles.checkBtn,
           {
-            borderColor: isKnown ? c.PURPLE : c.TEXT_S,
-            backgroundColor: isKnown ? c.PURPLE + '22' : 'transparent',
+            borderColor: isKnown ? c.PURPLE : c.BORDER,
+            backgroundColor: isKnown ? c.PURPLE : 'transparent',
           },
         ]}
-        onPress={onToggle}
-        activeOpacity={0.7}
+        onPress={handlePress}
+        activeOpacity={0.6}
       >
-        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+        <Text style={[styles.checkText, { color: isKnown ? '#fff' : c.TEXT_S }]}>✓</Text>
       </TouchableOpacity>
     </View>
   );
@@ -303,15 +317,15 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const [onlyUnknown, setOnlyUnknown]   = useState(false);
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
   const [showMarkModal, setShowMarkModal]   = useState(false);
-  const [knownIds, setKnownIds]             = useState<Set<number>>(new Set());
   const [addModal, setAddModal]             = useState<{ wordId: number; wordName: string } | null>(null);
   const [dismissedNext, setDismissedNext]   = useState(false);
-  const knownIdsInitialized                 = useRef(false);
 
   // ─── Data ─────────────────────────────────────────────────
   const { data: media, isLoading: mediaLoading }            = useMediaDetail(mediaId);
   const { data: wordData, isLoading: wordsLoading }         = useMediaWords(mediaId, onlyUnknown);
   const { data: knownWordsData = [] }                       = useKnownWords();
+  // Derive directly from query cache — onMutate keeps it in sync instantly (same as VocabularyScreen)
+  const knownIdsSet = useMemo(() => new Set(knownWordsData.map((w) => w.id)), [knownWordsData]);
   const { mutate: toggleKnown }                             = useMarkKnown();
   const { mutate: generateList, isPending: generating }     = useGenerateListFromMedia();
   const { mutate: markKnownBatch, isPending: marking }      = useMarkKnownBatch();
@@ -335,14 +349,6 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   }, [fromContinue, media, seriesEpisodes]);
 
 
-  // Init knownIds once
-  React.useEffect(() => {
-    if (!knownIdsInitialized.current && knownWordsData.length > 0) {
-      setKnownIds(new Set(knownWordsData.map((w) => w.id)));
-      knownIdsInitialized.current = true;
-    }
-  }, [knownWordsData]);
-
 
   // ─── Filtered words ───────────────────────────────────────
   const filteredWords = useMemo<WordDTO[]>(() => {
@@ -354,9 +360,9 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   // ─── Mark known batch ─────────────────────────────────────
   const wordsToMark = useMemo(
     () => (wordData?.words ?? []).filter(
-      (w) => w.difficulty && selectedLevels.has(w.difficulty) && !knownIds.has(w.id),
+      (w) => w.difficulty && selectedLevels.has(w.difficulty) && !knownIdsSet.has(w.id),
     ),
-    [wordData?.words, selectedLevels, knownIds],
+    [wordData?.words, selectedLevels, knownIdsSet],
   );
 
   const handleMarkKnown = useCallback(() => {
@@ -366,21 +372,18 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
       onSuccess: () => {
         setShowMarkModal(false);
         setSelectedLevels(new Set());
-        setKnownIds((prev) => new Set([...prev, ...ids]));
       },
     });
   }, [wordsToMark, markKnownBatch]);
 
   // ─── Toggle known ─────────────────────────────────────────
   const handleToggle = useCallback((wordId: number) => {
-    const currentlyKnown = knownIds.has(wordId);
-    setKnownIds((prev) => {
-      const next = new Set(prev);
-      currentlyKnown ? next.delete(wordId) : next.add(wordId);
-      return next;
-    });
+    const currentlyKnown = knownIdsSet.has(wordId);
+    Haptics.impactAsync(
+      currentlyKnown ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium
+    );
     toggleKnown({ wordId, isKnown: currentlyKnown, mediaId });
-  }, [knownIds, toggleKnown, mediaId]);
+  }, [knownIdsSet, toggleKnown, mediaId]);
 
   // ─── Generate list ────────────────────────────────────────
   const handleGenerate = useCallback(() => {
@@ -514,7 +517,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
           return (
             <TouchableOpacity
               key={f}
-              style={[styles.chip, { borderColor: color, backgroundColor: active ? color + '33' : 'transparent' }]}
+              style={[styles.chip, { borderColor: color, backgroundColor: active ? color : 'transparent' }]}
               onPress={() => {
                 if (f === 'all') {
                   setSelectedLevels(new Set());
@@ -528,9 +531,14 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
               }}
               activeOpacity={0.75}
             >
-              <Text style={[styles.chipText, { color: active ? color : c.TEXT_S }]}>
+              <Text style={[styles.chipText, { color: active ? '#fff' : c.TEXT_S }]}>
                 {f === 'all' ? tCommon('actions.all') : f}
               </Text>
+              {f !== 'all' && active && !!levelCounts[f] && (
+                <View style={styles.chipBadge}>
+                  <Text style={[styles.chipBadgeText, { color }]}>{levelCounts[f]}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           );
         })}
@@ -569,7 +577,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
             renderItem={({ item }) => (
               <WordRow
                 word={item}
-                isKnown={knownIds.has(item.id)}
+                isKnown={knownIdsSet.has(item.id)}
                 onToggle={() => handleToggle(item.id)}
                 onAddToList={() => setAddModal({ wordId: item.id, wordName: item.word })}
                 styles={styles}
@@ -583,6 +591,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
               </View>
             )}
             showsVerticalScrollIndicator={false}
+            extraData={knownIdsSet}
             contentContainerStyle={{ paddingBottom: 16 }}
           />
         )}

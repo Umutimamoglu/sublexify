@@ -32,5 +32,8 @@
   "coreEnglishProgress": "Temel İngilizce ilerleme",
   "levelLabel": "SEVİYE {{level}}",
   "oxfordLabel": "OXFORD",
-  "notStarted": "BAŞLANMADI"
+  "notStarted": "BAŞLANMADI",
+  "streakInfoTitle": "Seri (Streak) Hakkında",
+  "streakInfoBody": "Seri, uygulamada aralıksız olarak yeni kelimeler öğrendiğin gün sayısını gösterir. Serini hayatta tutmak için her gün en az bir kelimeyi \"öğrenildi\" olarak işaretlemelisin. Eğer araya tam bir gün boşluk girerse, serin maalesef sıfırlanır. Her gün pratik yapmayı unutma!",
+  "streakInfoOk": "Anladım"
 }

@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, LayoutGrid, Settings, Sun, Moon, BookOpen, Menu, X, Shield, TrendingUp, LogOut, LogIn, User, FlaskConical } from 'lucide-react';
+import { Home, LayoutGrid, Settings, Sun, Moon, BookOpen, Menu, X, Shield, TrendingUp, LogOut, LogIn, User, FlaskConical, Tv, Film } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -40,11 +40,13 @@ const MainLayout = () => {
     }, [location.pathname]);
 
     const navItems = [
-        { name: 'Discover', path: '/', icon: Home },
-        { name: 'Havuz', path: '/vocabulary', icon: FlaskConical },
+        { name: 'Ana Sayfa', path: '/', icon: Home },
+        { name: 'Diziler', path: '/browse/series', icon: Tv },
+        { name: 'Filmler', path: '/browse/movies', icon: Film },
+        // { name: 'Havuz', path: '/vocabulary', icon: FlaskConical },
         { name: 'Lists', path: '/lists', icon: BookOpen },
         { name: 'Profile', path: '/profile', icon: User },
-        { name: 'Admin', path: '/admin', icon: Shield },
+        // { name: 'Admin', path: '/admin', icon: Shield },
     ];
 
     return (

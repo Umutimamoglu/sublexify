@@ -21,6 +21,7 @@ export const ENDPOINTS = {
   lists: {
     list:               '/lists',
     standard:           '/lists/standard',
+    bySeries:           (imdbId: string) => `/lists/media/imdb/${imdbId}`,
     detail:             (id: number) => `/lists/${id}`,
     update:             (id: number) => `/lists/${id}`,
     words:              (id: number) => `/lists/${id}/words`,

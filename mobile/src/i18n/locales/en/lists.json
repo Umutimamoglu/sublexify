@@ -38,5 +38,9 @@
   "generateListMessage": "Do you want to add the unknown words from this media to a new list?",
   "generateListCreated": "\"{{name}}\" list created.",
   "unknownOnlyToggle": "Unknown only",
-  "createSubListCtaMedia": "Create List from Unknowns ({{count}})"
+  "createSubListCtaMedia": "Create List from Unknowns ({{count}})",
+  "Top Verbs": "Top Verbs",
+  "Top Adjectives": "Top Adjectives",
+  "Top Adverbs": "Top Adverbs",
+  "200 Common Phrasal Verbs": "200 Common Phrasal Verbs"
 }

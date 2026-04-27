@@ -30,6 +30,18 @@ export function useStandardLists() {
   });
 }
 
+export function useListsBySeries(imdbId: string | null) {
+  return useQuery<WordListDTO[]>({
+    queryKey: ['lists', 'bySeries', imdbId],
+    queryFn:  async () => {
+      if (!imdbId) return [];
+      const res = await apiClient.get<WordListDTO[]>(ENDPOINTS.lists.bySeries(imdbId));
+      return res.data;
+    },
+    enabled: !!imdbId,
+  });
+}
+
 type WordListWordsResponse = {
   list: { id: number; name: string; createdAt: string };
   words: ListDetailDTO['words'];
@@ -69,8 +81,8 @@ export function useCreateList() {
 export function useUpdateList() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, name, color }: { id: number; name?: string; color?: string }) => {
-      const res = await apiClient.patch<WordListDTO>(ENDPOINTS.lists.update(id), { name, color });
+    mutationFn: async ({ id, name, color, mediaId }: { id: number; name?: string; color?: string; mediaId?: number | null }) => {
+      const res = await apiClient.patch<WordListDTO>(ENDPOINTS.lists.update(id), { name, color, mediaId });
       return res.data;
     },
     onSuccess: () => {
