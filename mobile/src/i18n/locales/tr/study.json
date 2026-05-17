@@ -20,5 +20,7 @@
   "listen": "Dinle",
   "typeAnswer": "Cevabını yaz...",
   "correct_count": "Doğru",
-  "wrong_count": "Yanlış"
+  "wrong_count": "Yanlış",
+  "skip": "Pas Geç",
+  "skipped": "Pas Geçildi"
 }

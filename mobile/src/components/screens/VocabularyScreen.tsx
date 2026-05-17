@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   View,
   Text,
@@ -383,6 +385,7 @@ export default function VocabularyScreen() {
   const { t: tCommon } = useTranslation('common');
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   const { isTablet } = useResponsive();
   const { width, height } = useWindowDimensions();
   const router = useRouter();
@@ -787,29 +790,17 @@ export default function VocabularyScreen() {
             <Text style={[styles.headerTitle, { marginBottom: 0 }]}>{t('title')}</Text>
             
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-              <TouchableOpacity 
-                style={styles.studyBtn}
-                activeOpacity={0.7}
-                onPress={() => setShowQuizModal(true)}
+              <TouchableOpacity
+                style={styles.toggleBtn}
+                onPress={() => setViewMode(viewMode === 'list' ? 'flashcard' : 'list')}
+                activeOpacity={0.75}
               >
-                <Ionicons name="play" size={14} color={c.PURPLE} />
-                <Text style={styles.studyBtnText}>{t('practice')}</Text>
+                <Ionicons 
+                  name={viewMode === 'list' ? 'albums-outline' : 'list-outline'} 
+                  size={18} 
+                  color={c.TEXT_S} 
+                />
               </TouchableOpacity>
-
-              <View style={styles.toggleRow}>
-                <TouchableOpacity
-                  style={[styles.toggleBtn, viewMode === 'list' && styles.toggleActive]}
-                  onPress={() => setViewMode('list')}
-                >
-                  <Ionicons name="list" color={viewMode === 'list' ? '#fff' : c.TEXT_S} size={18} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.toggleBtn, viewMode === 'flashcard' && styles.toggleActive]}
-                  onPress={() => setViewMode('flashcard')}
-                >
-                  <Ionicons name="grid" color={viewMode === 'flashcard' ? '#fff' : c.TEXT_S} size={18} />
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
 
@@ -936,6 +927,42 @@ export default function VocabularyScreen() {
         wordName={addModal?.wordName || ''}
         onClose={() => setAddModal(null)}
       />
+
+      <TouchableOpacity
+        onPress={() => setShowQuizModal(true)}
+        activeOpacity={0.85}
+        style={{
+          position: 'absolute',
+          // Tab bar bottom offset (24 iOS / android varies) + tab bar height (64/68) + 12px gap
+          bottom: Platform.OS === 'android'
+            ? Math.max(insets.bottom + 12, 24) + 68 + 12
+            : 24 + 64 + 12,
+          right: 20,
+          zIndex: 100,
+          shadowColor: c.PURPLE,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.4,
+          shadowRadius: 16,
+          elevation: 12,
+        }}
+      >
+        <LinearGradient
+          colors={[c.PURPLE, '#6366f1']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: '#ffffff20',
+          }}
+        >
+          <Ionicons name="school" size={24} color="#fff" />
+        </LinearGradient>
+      </TouchableOpacity>
 
       <QuizTypeModal
         visible={showQuizModal}

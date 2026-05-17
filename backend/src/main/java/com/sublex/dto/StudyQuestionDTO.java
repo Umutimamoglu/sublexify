@@ -20,4 +20,5 @@ public class StudyQuestionDTO {
     private List<String> choices; // For multiple choice / listening
     private String correctAnswer;
     private String contextSentence;
+    private String pos;
 }

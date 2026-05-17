@@ -131,6 +131,8 @@ export type StudyQuestionDTO = {
   choices: string[];
   contextSentence: string | null;
   correctAnswer: string;
+  difficulty?: string;
+  pos?: string;
 };
 
 export type StudyResultDTO = {

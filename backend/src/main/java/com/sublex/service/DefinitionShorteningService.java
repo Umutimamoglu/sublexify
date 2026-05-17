@@ -25,15 +25,12 @@ public class DefinitionShorteningService {
 
     private static final int MAX_DEFINITION_LENGTH = 60;
 
-    /**
-     * Returns count of words that need definition shortening.
-     */
     public Map<String, Object> getStats() {
-        List<Word> candidates = findCandidates(Integer.MAX_VALUE);
+        long pendingShortening = wordRepository.countShorteningCandidates("en", MAX_DEFINITION_LENGTH);
         long shortened = wordRepository.countByAuditNotesContaining("Definition shortened");
 
         Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("pendingShortening", candidates.size());
+        stats.put("pendingShortening", pendingShortening);
         stats.put("alreadyShortened", shortened);
 
         // Extract last batch info
@@ -54,12 +51,19 @@ public class DefinitionShorteningService {
         stats.put("lastBatchProcessed", lastBatchCount);
         stats.put("lastBatchId", lastBatchId);
 
-        // Breakdown by difficulty
+        // Breakdown by difficulty from native query GROUP BY
+        List<Object[]> difficultyCounts = wordRepository.countShorteningCandidatesByDifficulty("en", MAX_DEFINITION_LENGTH);
         Map<String, Long> byDifficulty = new LinkedHashMap<>();
         for (String diff : List.of("A1", "A2", "B1", "B2", "C1", "C2")) {
-            byDifficulty.put(diff, candidates.stream()
-                    .filter(w -> diff.equalsIgnoreCase(w.getDifficulty()))
-                    .count());
+            long count = 0;
+            for (Object[] row : difficultyCounts) {
+                String d = (String) row[0];
+                if (diff.equalsIgnoreCase(d)) {
+                    count = ((Number) row[1]).longValue();
+                    break;
+                }
+            }
+            byDifficulty.put(diff, count);
         }
         stats.put("byDifficulty", byDifficulty);
 
@@ -70,25 +74,11 @@ public class DefinitionShorteningService {
      * Finds words with verbose definitions (A1-B1, definition > 60 chars).
      */
     public List<Word> findCandidates(int limit) {
-        List<Word> enrichedWords = wordRepository.findByLanguageAndIsEnrichedTrue("en");
-
-        return enrichedWords.stream()
-                .filter(w -> w.getDifficulty() != null)
-                .filter(w -> w.getDefinition() != null && w.getDefinition().getMeanings() != null)
-                .filter(w -> !w.getDefinition().getMeanings().isEmpty())
-                .filter(w -> {
-                    // Check if any meaning's definition is too long
-                    return w.getDefinition().getMeanings().stream()
-                            .anyMatch(m -> m.getDefinition() != null
-                                    && m.getDefinition().length() > MAX_DEFINITION_LENGTH);
-                })
-                .filter(w -> {
-                    // Skip already shortened words
-                    String notes = w.getAuditNotes();
-                    return notes == null || !notes.contains("Definition shortened");
-                })
-                .limit(limit)
-                .toList();
+        if (limit == Integer.MAX_VALUE) {
+            return wordRepository.findShorteningCandidatesWithoutPageable("en", MAX_DEFINITION_LENGTH);
+        }
+        return wordRepository.findShorteningCandidates("en", MAX_DEFINITION_LENGTH, 
+                org.springframework.data.domain.PageRequest.of(0, limit));
     }
 
     /**

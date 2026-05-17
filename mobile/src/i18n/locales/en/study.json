@@ -20,5 +20,7 @@
   "listen": "Listen",
   "typeAnswer": "Type your answer...",
   "correct_count": "Correct",
-  "wrong_count": "Wrong"
+  "wrong_count": "Wrong",
+  "skip": "Skip",
+  "skipped": "Skipped"
 }

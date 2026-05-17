@@ -105,11 +105,13 @@ public class StudyService {
 
             String definitionText = "No definition available";
             String exampleSentence = null;
+            String pos = null;
             if (word.getDefinition() != null && word.getDefinition().getMeanings() != null
                     && !word.getDefinition().getMeanings().isEmpty()) {
                 WordDefinition.Meaning firstMeaning = word.getDefinition().getMeanings().get(0);
                 definitionText = firstMeaning.getDefinition();
                 exampleSentence = firstMeaning.getExample();
+                pos = firstMeaning.getPos();
             }
 
             StudyQuestionDTO dto = StudyQuestionDTO.builder()
@@ -120,6 +122,7 @@ public class StudyService {
                     .questionType(questionType)
                     .difficulty(word.getDifficulty())
                     .correctAnswer(word.getWord())
+                    .pos(pos)
                     .build();
 
             if ("MULTIPLE_CHOICE".equals(questionType) || "LISTENING".equals(questionType)) {

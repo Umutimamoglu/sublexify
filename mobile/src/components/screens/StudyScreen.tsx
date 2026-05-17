@@ -70,13 +70,37 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
       backgroundColor: c.SURFACE,
       borderRadius: 20, borderWidth: 1,
       borderColor: isDark ? '#ffffff18' : c.BORDER,
-      padding: 32, alignItems: 'center', justifyContent: 'center',
+      paddingHorizontal: 24,
+      paddingVertical: 36,
+      alignItems: 'center', justifyContent: 'center',
       minHeight: isTablet ? 220 : 160, marginBottom: 24,
+      position: 'relative',
+    },
+    hintBadge: {
+      position: 'absolute',
+      top: 14,
+      left: 16,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: c.PURPLE,
+      backgroundColor: c.PURPLE + '12',
+    },
+    hintText: {
+      color: c.PURPLE,
+      fontSize: 10,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
     },
     wordText: {
       color: c.TEXT_P,
-      fontSize: isTablet ? 52 : 40,
-      fontWeight: '900', textAlign: 'center',
+      fontSize: isTablet ? 32 : 22,
+      fontWeight: '600',
+      textAlign: 'center',
+      lineHeight: isTablet ? 42 : 30,
+      marginTop: 20,
     },
 
     // Context sentence card (for FILL_IN_THE_BLANKS)
@@ -135,6 +159,7 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     },
     feedbackCorrect: { backgroundColor: '#22C55E22', borderColor: '#22C55E' },
     feedbackWrong: { backgroundColor: '#EF444422', borderColor: '#EF4444' },
+    feedbackSkipped: { backgroundColor: '#EAB30815', borderColor: '#EAB308' },
     feedbackLabel: { fontSize: 18, fontWeight: '900' },
     feedbackAnswer: { color: c.TEXT_S, fontSize: 14, textAlign: 'center' },
 
@@ -144,6 +169,16 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
       paddingVertical: 16, alignItems: 'center',
     },
     nextText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+    // Skip button
+    skipBtn: {
+      marginTop: 16, borderWidth: 1.5,
+      borderColor: isDark ? '#ffffff20' : c.BORDER,
+      borderRadius: 14, paddingVertical: 14,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: 'transparent',
+    },
+    skipText: { color: c.TEXT_S, fontSize: 15, fontWeight: '600' },
 
     // Empty state
     emptyBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingHorizontal: pad },
@@ -258,6 +293,7 @@ export default function StudyScreen({
   const [answers, setAnswers] = useState<StudyResultDTO[]>([]);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [skipped, setSkipped] = useState(false);
   const [fillValue, setFillValue] = useState('');
   const [fillFocused, setFillFocused] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -284,11 +320,6 @@ export default function StudyScreen({
     setRevealed(true);
     const isCorrect = choice === question.correctAnswer;
     setAnswers((prev) => [...prev, { wordId: question.wordId, isCorrect }]);
-    if (isCorrect) {
-      setTimeout(() => {
-        handleNextRef.current?.();
-      }, 1000); // Wait 1 second before auto-advancing
-    }
   }, [revealed, question]);
 
   const handleFillCheck = useCallback(() => {
@@ -296,16 +327,19 @@ export default function StudyScreen({
     const isCorrect = fillValue.trim().toLowerCase() === question.correctAnswer.toLowerCase();
     setRevealed(true);
     setAnswers((prev) => [...prev, { wordId: question.wordId, isCorrect }]);
-    if (isCorrect) {
-      setTimeout(() => {
-        handleNextRef.current?.();
-      }, 1000); // Wait 1 second before auto-advancing
-    }
   }, [fillValue, revealed, question]);
+
+  const handleSkip = useCallback(() => {
+    if (revealed) return;
+    setSkipped(true);
+    setRevealed(true);
+    setAnswers((prev) => [...prev, { wordId: question.wordId, isCorrect: false }]);
+  }, [revealed, question]);
 
   const handleNext = useCallback(() => {
     setSelectedChoice(null);
     setRevealed(false);
+    setSkipped(false);
     setFillValue('');
     setFillFocused(false);
     setPreviewWord(null);
@@ -410,6 +444,13 @@ export default function StudyScreen({
               </View>
             ) : (
               <View style={styles.wordCard}>
+                {(question?.difficulty || question?.pos) && (
+                  <View style={styles.hintBadge}>
+                    <Text style={styles.hintText}>
+                      {[question.difficulty, question.pos].filter(Boolean).join(' · ')}
+                    </Text>
+                  </View>
+                )}
                 <Text style={styles.wordText} adjustsFontSizeToFit numberOfLines={4}>
                   {question?.definition}
                 </Text>
@@ -473,20 +514,46 @@ export default function StudyScreen({
               </View>
             )}
 
+            {/* Skip Button */}
+            {!revealed && (
+              <TouchableOpacity
+                style={styles.skipBtn}
+                onPress={handleSkip}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.skipText}>{t('skip')}</Text>
+              </TouchableOpacity>
+            )}
+
             {/* Feedback */}
             {revealed && (
               <>
                 <View style={[
                   styles.feedbackRow,
-                  answers[answers.length - 1]?.isCorrect ? styles.feedbackCorrect : styles.feedbackWrong,
+                  skipped 
+                    ? styles.feedbackSkipped 
+                    : answers[answers.length - 1]?.isCorrect 
+                      ? styles.feedbackCorrect 
+                      : styles.feedbackWrong,
                 ]}>
                   <Text style={[
                     styles.feedbackLabel,
-                    { color: answers[answers.length - 1]?.isCorrect ? '#22C55E' : '#EF4444' },
+                    { 
+                      color: skipped 
+                        ? '#EAB308' 
+                        : answers[answers.length - 1]?.isCorrect 
+                          ? '#22C55E' 
+                          : '#EF4444' 
+                    },
                   ]}>
-                    {answers[answers.length - 1]?.isCorrect ? t('correct') : t('wrong')}
+                    {skipped 
+                      ? t('skipped') 
+                      : answers[answers.length - 1]?.isCorrect 
+                        ? t('correct') 
+                        : t('wrong')
+                    }
                   </Text>
-                  {!answers[answers.length - 1]?.isCorrect && (
+                  {(!answers[answers.length - 1]?.isCorrect || skipped) && (
                     <Text style={styles.feedbackAnswer}>
                       {t('correctAnswer', { answer: question?.correctAnswer })}
                     </Text>
@@ -520,19 +587,17 @@ export default function StudyScreen({
                   </TouchableOpacity>
                 )}
 
-                {(!answers[answers.length - 1]?.isCorrect || currentIndex === questions.length - 1) && (
-                  <TouchableOpacity
-                    style={[styles.nextBtn, submitting && { opacity: 0.6 }]}
-                    onPress={handleNext}
-                    disabled={submitting}
-                    activeOpacity={0.85}
-                  >
-                    {submitting
-                      ? <ActivityIndicator color="#fff" />
-                      : <Text style={styles.nextText}>{t('next')}</Text>
-                    }
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={[styles.nextBtn, submitting && { opacity: 0.6 }]}
+                  onPress={handleNext}
+                  disabled={submitting}
+                  activeOpacity={0.85}
+                >
+                  {submitting
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.nextText}>{t('next')}</Text>
+                  }
+                </TouchableOpacity>
               </>
             )}
 

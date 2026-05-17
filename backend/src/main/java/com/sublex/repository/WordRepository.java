@@ -172,4 +172,35 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
 
     @Query("SELECT w FROM Word w WHERE w.isEnriched = true AND w.language = :language AND w.difficulty IN :difficulties ORDER BY w.id ASC")
     List<Word> findByIsEnrichedTrueAndLanguageAndDifficultyIn(@Param("language") String language, @Param("difficulties") List<String> difficulties);
+
+    @Query(value = "SELECT * FROM word w WHERE w.is_enriched = true AND w.language = :language " +
+                   "AND w.difficulty IS NOT NULL " +
+                   "AND (w.audit_notes IS NULL OR w.audit_notes NOT LIKE '%Definition shortened%') " +
+                   "AND EXISTS (SELECT 1 FROM jsonb_array_elements(w.definition->'meanings') m WHERE length(m->>'definition') > :maxLen)",
+           nativeQuery = true)
+    List<Word> findShorteningCandidates(@Param("language") String language, @Param("maxLen") int maxLen, org.springframework.data.domain.Pageable pageable);
+
+    @Query(value = "SELECT * FROM word w WHERE w.is_enriched = true AND w.language = :language " +
+                   "AND w.difficulty IS NOT NULL " +
+                   "AND (w.audit_notes IS NULL OR w.audit_notes NOT LIKE '%Definition shortened%') " +
+                   "AND EXISTS (SELECT 1 FROM jsonb_array_elements(w.definition->'meanings') m WHERE length(m->>'definition') > :maxLen)",
+           nativeQuery = true)
+    List<Word> findShorteningCandidatesWithoutPageable(@Param("language") String language, @Param("maxLen") int maxLen);
+
+    @Query(value = "SELECT COUNT(*) FROM word w WHERE w.is_enriched = true AND w.language = :language " +
+                   "AND w.difficulty IS NOT NULL " +
+                   "AND (w.audit_notes IS NULL OR w.audit_notes NOT LIKE '%Definition shortened%') " +
+                   "AND EXISTS (SELECT 1 FROM jsonb_array_elements(w.definition->'meanings') m WHERE length(m->>'definition') > :maxLen)",
+           nativeQuery = true)
+    long countShorteningCandidates(@Param("language") String language, @Param("maxLen") int maxLen);
+
+    @Query(value = "SELECT w.difficulty AS difficulty, COUNT(*) AS count " +
+                   "FROM word w " +
+                   "WHERE w.is_enriched = true AND w.language = :language " +
+                   "AND w.difficulty IS NOT NULL " +
+                   "AND (w.audit_notes IS NULL OR w.audit_notes NOT LIKE '%Definition shortened%') " +
+                   "AND EXISTS (SELECT 1 FROM jsonb_array_elements(w.definition->'meanings') m WHERE length(m->>'definition') > :maxLen) " +
+                   "GROUP BY w.difficulty",
+           nativeQuery = true)
+    List<Object[]> countShorteningCandidatesByDifficulty(@Param("language") String language, @Param("maxLen") int maxLen);
 }

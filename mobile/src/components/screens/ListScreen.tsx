@@ -5,6 +5,8 @@ import React, {
   useCallback,
   useEffect,
 } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   View,
   Text,
@@ -739,6 +741,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const isDark = colorScheme === 'dark';
   const { isTablet } = useResponsive();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const c = useMemo<Palette>(() => ({
     BG: theme.colors.background,
     SURFACE: theme.colors.surface,
@@ -1080,15 +1083,6 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             <Ionicons name="arrow-back" size={24} color={c.TEXT_P} />
           </TouchableOpacity>
           <Text style={styles.title} numberOfLines={1}>{effectiveList?.name ?? '...'}</Text>
-          {!isKnownList && (
-            <TouchableOpacity
-              style={styles.studyBtn}
-              onPress={() => setShowQuizModal(true)}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="school-outline" size={16} color={c.PURPLE} />
-            </TouchableOpacity>
-          )}
           <TouchableOpacity
             style={[styles.toggleBtn, searchActive && styles.toggleActive]}
             onPress={() => {
@@ -1103,20 +1097,17 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
           >
             <Ionicons name="search-outline" size={16} color={searchActive ? '#fff' : c.TEXT_S} />
           </TouchableOpacity>
-          <View style={styles.toggleRow}>
-            <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === 'list' && styles.toggleActive]}
-              onPress={() => setViewMode('list')}
-            >
-              <Text style={[styles.toggleIcon, { color: viewMode === 'list' ? '#fff' : c.TEXT_S }]}>☰</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === 'flashcard' && styles.toggleActive]}
-              onPress={() => setViewMode('flashcard')}
-            >
-              <Text style={[styles.toggleIcon, { color: viewMode === 'flashcard' ? '#fff' : c.TEXT_S }]}>⧉</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.toggleBtn}
+            onPress={() => setViewMode(viewMode === 'list' ? 'flashcard' : 'list')}
+            activeOpacity={0.75}
+          >
+            <Ionicons 
+              name={viewMode === 'list' ? 'albums-outline' : 'list-outline'} 
+              size={18} 
+              color={c.TEXT_S} 
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Search bar */}
@@ -1381,6 +1372,41 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
         wordName={addModal?.wordName ?? ''}
         onClose={() => setAddModal(null)}
       />
+
+      {!isKnownList && (
+        <TouchableOpacity
+          onPress={() => setShowQuizModal(true)}
+          activeOpacity={0.85}
+          style={{
+            position: 'absolute',
+            bottom: insets.bottom + 64,
+            right: 20,
+            zIndex: 100,
+            shadowColor: c.PURPLE,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.4,
+            shadowRadius: 16,
+            elevation: 12,
+          }}
+        >
+          <LinearGradient
+            colors={[c.PURPLE, '#6366f1']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: '#ffffff20',
+            }}
+          >
+            <Ionicons name="school" size={24} color="#fff" />
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
 
       <MarkKnownModal
         visible={showMarkModal}
