@@ -22,5 +22,10 @@
   "correct_count": "Correct",
   "wrong_count": "Wrong",
   "skip": "Skip",
-  "skipped": "Skipped"
+  "skipped": "Skipped",
+  "recapTitle": "Study Recap",
+  "skipped_count": "Skipped",
+  "yourAnswer": "Your Answer:",
+  "inspect": "Inspect Word",
+  "correctAnswerLabel": "Correct Answer:"
 }

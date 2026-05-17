@@ -22,5 +22,10 @@
   "correct_count": "Doğru",
   "wrong_count": "Yanlış",
   "skip": "Pas Geç",
-  "skipped": "Pas Geçildi"
+  "skipped": "Pas Geçildi",
+  "recapTitle": "Çalışma Özeti",
+  "skipped_count": "Pas Geçilen",
+  "yourAnswer": "Senin Cevabın:",
+  "inspect": "Kelimeyi İncele",
+  "correctAnswerLabel": "Doğru Cevap:"
 }

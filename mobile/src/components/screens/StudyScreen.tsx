@@ -22,7 +22,7 @@ import { useResponsive } from '@/src/hooks/useResponsive';
 import { useStudyBatch, useSubmitStudyResults } from '@/src/api/queries/study.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
-import type { StudyResultDTO, ListWord } from '@/src/types/api';
+import type { StudyResultDTO, ListWord, StudyQuestionDTO } from '@/src/types/api';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 
@@ -191,23 +191,47 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     },
     emptyBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
-    // Summary modal
-    overlay: { flex: 1, backgroundColor: '#00000088', alignItems: 'center', justifyContent: 'center', padding: 24 },
-    summaryCard: {
-      backgroundColor: c.SURFACE, borderRadius: 24, padding: 28,
-      width: '100%', maxWidth: 420, alignItems: 'center', gap: 16,
-    },
-    summaryTitle: { color: c.TEXT_P, fontSize: 22, fontWeight: '900' },
-    scoreText: { color: c.PURPLE, fontSize: 32, fontWeight: '900' },
-    statsRow: { flexDirection: 'row', gap: 24 },
-    statItem: { alignItems: 'center', gap: 4 },
-    statNum: { fontSize: 24, fontWeight: '800' },
-    statLabel: { color: c.TEXT_S, fontSize: 12 },
+    // Summary modal (Full-screen high-fidelity Recap Dashboard)
+    overlay: { flex: 1, backgroundColor: c.BG, paddingHorizontal: pad, paddingTop: 30 },
+    summaryCard: { flex: 1, width: '100%', gap: 16 },
+    summaryTitle: { color: c.TEXT_P, fontSize: 24, fontWeight: '900', textAlign: 'center' },
+    scoreText: { color: c.PURPLE, fontSize: 36, fontWeight: '900', textAlign: 'center', marginTop: 4 },
+    statsRow: { flexDirection: 'row', gap: 16, justifyContent: 'center', width: '100%', marginTop: 8 },
+    statItem: { flex: 1, backgroundColor: isDark ? '#ffffff06' : '#00000004', borderRadius: 14, paddingVertical: 12, alignItems: 'center', gap: 2, borderWidth: 1, borderColor: isDark ? '#ffffff10' : c.BORDER },
+    statNum: { fontSize: 20, fontWeight: '800' },
+    statLabel: { color: c.TEXT_S, fontSize: 11, fontWeight: '600' },
     finishBtn: {
       backgroundColor: c.PURPLE, borderRadius: 14,
-      paddingVertical: 14, paddingHorizontal: 48, marginTop: 8,
+      paddingVertical: 15, alignItems: 'center', marginVertical: 16,
+      shadowColor: c.PURPLE, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4,
     },
     finishBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+    // Recap list styles
+    recapScroll: { flex: 1, marginTop: 12 },
+    recapItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 12,
+      gap: 12,
+    },
+    recapCorrect: { backgroundColor: '#22C55E10', borderColor: '#22C55E40' },
+    recapWrong: { backgroundColor: '#EF444410', borderColor: '#EF444440' },
+    recapSkipped: { backgroundColor: '#EAB30810', borderColor: '#EAB30840' },
+    recapInfo: { flex: 1, gap: 4 },
+    recapHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    recapWord: { fontSize: 16, fontWeight: '800', color: c.TEXT_P },
+    recapPos: { fontSize: 10, fontWeight: '700', color: c.TEXT_S, backgroundColor: isDark ? '#ffffff12' : '#00000008', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, textTransform: 'uppercase' },
+    recapDefinition: { fontSize: 13, color: c.TEXT_S, lineHeight: 18, marginTop: 2 },
+    recapAnswers: { fontSize: 12, fontWeight: '600', color: c.TEXT_P, marginTop: 4 },
+    recapInspectBtn: {
+      width: 36, height: 36, borderRadius: 18,
+      backgroundColor: c.PURPLE + '15',
+      alignItems: 'center', justifyContent: 'center',
+    },
 
     // ─── Word Chip (after answer reveal) ─────────────────────
     wordChip: {
@@ -222,9 +246,9 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
       borderColor: isDark ? '#ffffff15' : c.BORDER,
       backgroundColor: isDark ? '#ffffff08' : c.SURFACE,
     },
-    wordChipLeft: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10 },
+    wordChipLeft: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10, marginRight: 12 },
     wordChipWord: { color: c.TEXT_P, fontSize: 16, fontWeight: '800' },
-    wordChipDiff: { color: c.TEXT_S, fontSize: 12, fontWeight: '600' },
+    wordChipDiff: { flex: 1, color: c.TEXT_S, fontSize: 12, fontWeight: '600' },
     wordChipInfoBtn: {
       width: 34, height: 34, borderRadius: 17,
       backgroundColor: c.PURPLE + '20',
@@ -234,6 +258,13 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
+
+interface SessionAnswer {
+  question: StudyQuestionDTO;
+  userAnswer: string | null;
+  isCorrect: boolean;
+  skipped: boolean;
+}
 
 export default function StudyScreen({ 
   listId, 
@@ -291,6 +322,7 @@ export default function StudyScreen({
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<StudyResultDTO[]>([]);
+  const [sessionAnswers, setSessionAnswers] = useState<SessionAnswer[]>([]);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [skipped, setSkipped] = useState(false);
@@ -320,6 +352,7 @@ export default function StudyScreen({
     setRevealed(true);
     const isCorrect = choice === question.correctAnswer;
     setAnswers((prev) => [...prev, { wordId: question.wordId, isCorrect }]);
+    setSessionAnswers((prev) => [...prev, { question, userAnswer: choice, isCorrect, skipped: false }]);
   }, [revealed, question]);
 
   const handleFillCheck = useCallback(() => {
@@ -327,6 +360,7 @@ export default function StudyScreen({
     const isCorrect = fillValue.trim().toLowerCase() === question.correctAnswer.toLowerCase();
     setRevealed(true);
     setAnswers((prev) => [...prev, { wordId: question.wordId, isCorrect }]);
+    setSessionAnswers((prev) => [...prev, { question, userAnswer: fillValue.trim(), isCorrect, skipped: false }]);
   }, [fillValue, revealed, question]);
 
   const handleSkip = useCallback(() => {
@@ -334,6 +368,7 @@ export default function StudyScreen({
     setSkipped(true);
     setRevealed(true);
     setAnswers((prev) => [...prev, { wordId: question.wordId, isCorrect: false }]);
+    setSessionAnswers((prev) => [...prev, { question, userAnswer: null, isCorrect: false, skipped: true }]);
   }, [revealed, question]);
 
   const handleNext = useCallback(() => {
@@ -607,28 +642,112 @@ export default function StudyScreen({
       </SafeAreaView>
 
       {/* Summary modal */}
-      <Modal visible={showSummary} transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>{t('sessionComplete')}</Text>
-            <Text style={styles.scoreText}>
-              {t('score', { correct: correctCount, total })}
-            </Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statNum, { color: '#22C55E' }]}>{correctCount}</Text>
-                <Text style={styles.statLabel}>{t('correct_count')}</Text>
+      <Modal visible={showSummary} transparent={false} animationType="slide">
+        <SafeAreaView style={{ flex: 1, backgroundColor: c.BG }}>
+          <View style={styles.overlay}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>{t('sessionComplete')}</Text>
+              <Text style={styles.scoreText}>
+                {t('score', { correct: correctCount, total })}
+              </Text>
+              
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statNum, { color: '#22C55E' }]}>{correctCount}</Text>
+                  <Text style={styles.statLabel}>{t('correct_count')}</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statNum, { color: '#EF4444' }]}>
+                    {total - correctCount - sessionAnswers.filter((sa) => sa.skipped).length}
+                  </Text>
+                  <Text style={styles.statLabel}>{t('wrong_count')}</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statNum, { color: '#EAB308' }]}>
+                    {sessionAnswers.filter((sa) => sa.skipped).length}
+                  </Text>
+                  <Text style={styles.statLabel}>{t('skipped_count')}</Text>
+                </View>
               </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statNum, { color: '#EF4444' }]}>{total - correctCount}</Text>
-                <Text style={styles.statLabel}>{t('wrong_count')}</Text>
-              </View>
+
+              <Text style={[styles.summaryTitle, { marginTop: 16, fontSize: 18, textAlign: 'left', alignSelf: 'flex-start' }]}>
+                {t('recapTitle')}
+              </Text>
+
+              <ScrollView style={styles.recapScroll} showsVerticalScrollIndicator={false}>
+                {sessionAnswers.map((item, idx) => {
+                  const isCorrect = item.isCorrect;
+                  const isSkipped = item.skipped;
+                  const statusStyle = isCorrect 
+                    ? styles.recapCorrect 
+                    : isSkipped 
+                      ? styles.recapSkipped 
+                      : styles.recapWrong;
+                  
+                  const iconName = isCorrect 
+                    ? 'checkmark-circle' 
+                    : isSkipped 
+                      ? 'ban' 
+                      : 'close-circle';
+                  
+                  const iconColor = isCorrect 
+                    ? '#22C55E' 
+                    : isSkipped 
+                      ? '#EAB308' 
+                      : '#EF4444';
+
+                  return (
+                    <View key={idx} style={[styles.recapItem, statusStyle]}>
+                      <View style={styles.recapInfo}>
+                        <View style={styles.recapHeader}>
+                          <Ionicons name={iconName} size={20} color={iconColor} />
+                          <Text style={styles.recapWord}>{item.question.word}</Text>
+                          {!!item.question.pos && (
+                            <Text style={styles.recapPos}>{item.question.pos}</Text>
+                          )}
+                          {!!item.question.difficulty && (
+                            <Text style={styles.recapPos}>{item.question.difficulty}</Text>
+                          )}
+                        </View>
+                        <Text style={styles.recapDefinition} numberOfLines={2}>
+                          {item.question.definition}
+                        </Text>
+                        
+                        {/* Answer Comparison details */}
+                        {isCorrect ? (
+                          <Text style={[styles.recapAnswers, { color: '#22C55E' }]}>
+                            {t('yourAnswer')} "{item.userAnswer}" ✓
+                          </Text>
+                        ) : isSkipped ? (
+                          <Text style={[styles.recapAnswers, { color: '#EAB308' }]}>
+                            {t('skipped')} | {t('correctAnswerLabel')} "{item.question.correctAnswer}"
+                          </Text>
+                        ) : (
+                          <Text style={[styles.recapAnswers, { color: '#EF4444' }]}>
+                            {t('yourAnswer')} "{item.userAnswer || '-'}" | {t('correctAnswerLabel')} "{item.question.correctAnswer}"
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Word Preview/Inspection Info button */}
+                      <TouchableOpacity
+                        style={styles.recapInspectBtn}
+                        onPress={() => setPreviewWord(questionToListWord(item.question))}
+                        activeOpacity={0.75}
+                      >
+                        <Ionicons name="information-circle-outline" size={20} color={c.PURPLE} />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+
+              <TouchableOpacity style={styles.finishBtn} onPress={() => router.back()} activeOpacity={0.85}>
+                <Text style={styles.finishBtnText}>{t('finish')}</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.finishBtn} onPress={() => router.back()} activeOpacity={0.85}>
-              <Text style={styles.finishBtnText}>{t('finish')}</Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {/* Word Preview Overlay */}
