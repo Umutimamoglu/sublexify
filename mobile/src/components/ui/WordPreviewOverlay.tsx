@@ -86,9 +86,12 @@ export function WordPreviewOverlay({
     },
     cardWrapper: {
       width: cardW,
-      height: cardH + (onAddToList || onToggleKnown ? 60 : 0),
+      height: cardH,
       gap: 10,
     },
+    cardListBtn: { position: 'absolute' as const, top: 14, left: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center' as const, justifyContent: 'center' as const },
+    cardKnownBtn: { position: 'absolute' as const, top: 14, right: 14, width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center' as const, justifyContent: 'center' as const },
+    listBtnText: { color: c.TEXT_S, fontSize: 16 },
     cardOuter: {
       width: cardW,
       height: cardH,
@@ -211,6 +214,32 @@ export function WordPreviewOverlay({
         <Pressable style={previewStyles.cardOuter} onPress={doFlip}>
           {/* Front */}
           <Reanimated.View style={[previewStyles.card, previewStyles.cardFront, frontAnimStyle]} pointerEvents={isFlipped ? 'none' : 'auto'}>
+            {onAddToList && (
+              <TouchableOpacity
+                style={[previewStyles.cardListBtn, { borderColor: c.BORDER }]}
+                onPress={() => onAddToList(word.id, word.word)}
+                onPressIn={() => { buttonActiveRef.current = true; }}
+                onPressOut={() => { buttonActiveRef.current = false; }}
+                activeOpacity={0.7}
+              >
+                <Text style={previewStyles.listBtnText}>+</Text>
+              </TouchableOpacity>
+            )}
+            {onToggleKnown && (
+              <TouchableOpacity
+                style={[previewStyles.cardKnownBtn, {
+                  borderColor: localKnown ? c.PURPLE : c.TEXT_S,
+                  backgroundColor: localKnown ? c.PURPLE + '22' : 'transparent',
+                }]}
+                onPress={handleToggleKnown}
+                onPressIn={() => { buttonActiveRef.current = true; }}
+                onPressOut={() => { buttonActiveRef.current = false; }}
+                activeOpacity={0.7}
+              >
+                <Text style={[previewStyles.checkText, { color: localKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+              </TouchableOpacity>
+            )}
+
             <Text style={previewStyles.cardBigWord}>{word.word}</Text>
             <View style={previewStyles.ttsRow}>
               <TouchableOpacity
@@ -249,7 +278,7 @@ export function WordPreviewOverlay({
             )}
             <Text style={previewStyles.flipHint}>{t('cardFlipHint')}</Text>
           </Reanimated.View>
-
+ 
           {/* Back */}
           <FlashCardBack 
             word={word}
@@ -263,50 +292,6 @@ export function WordPreviewOverlay({
             pointerEvents={isFlipped ? 'auto' : 'none'}
           />
         </Pressable>
-
-        {/* Action buttons */}
-        {(onAddToList || onToggleKnown) && (
-          <View style={previewStyles.actionRow}>
-            {onToggleKnown && (
-              <TouchableOpacity
-                style={[
-                  previewStyles.actionBtn,
-                  {
-                    borderColor: localKnown ? '#22C55E' : c.BORDER,
-                    backgroundColor: localKnown ? '#22C55E22' : (isDark ? '#ffffff08' : c.SURFACE),
-                  }
-                ]}
-                onPress={handleToggleKnown}
-                activeOpacity={0.75}
-              >
-                <Ionicons
-                  name={localKnown ? 'checkmark-circle' : 'checkmark-circle-outline'}
-                  size={18}
-                  color={localKnown ? '#22C55E' : c.TEXT_S}
-                />
-                <Text style={[previewStyles.actionBtnText, { color: localKnown ? '#22C55E' : c.TEXT_S }]}>
-                  {localKnown ? 'Biliniyor' : 'Bilinmiyor'}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {onAddToList && (
-              <TouchableOpacity
-                style={[
-                  previewStyles.actionBtn,
-                  { borderColor: c.PURPLE, backgroundColor: c.PURPLE + '15' }
-                ]}
-                onPress={() => onAddToList(word.id, word.word)}
-                activeOpacity={0.75}
-              >
-                <Ionicons name="add-circle-outline" size={18} color={c.PURPLE} />
-                <Text style={[previewStyles.actionBtnText, { color: c.PURPLE }]}>
-                  Listeye Ekle
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
       </Reanimated.View>
     </View>
   );
