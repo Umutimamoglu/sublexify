@@ -266,11 +266,13 @@ export function WordPreviewOverlay({
             </View>
             {word.definition?.meanings?.[0] && (
               <>
-                <View style={previewStyles.posBadge}>
-                  <Text style={previewStyles.posBadgeText}>
-                    {word.definition.meanings[0].pos}
-                  </Text>
-                </View>
+                {!!word.definition.meanings[0].pos && (
+                  <View style={previewStyles.posBadge}>
+                    <Text style={previewStyles.posBadgeText}>
+                      {word.definition.meanings[0].pos}
+                    </Text>
+                  </View>
+                )}
                 <Text style={previewStyles.cardExample} numberOfLines={3}>
                   {stripTr(word.definition.meanings[0].example)}
                 </Text>
