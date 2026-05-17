@@ -103,8 +103,8 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
 
     // Chips
     chipScrollWrap: { flexShrink: 0, flexGrow: 0 },
-    chipScroll: { paddingHorizontal: pad, paddingBottom: 12, flexGrow: 0 },
-    chip: { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    chipScroll: { paddingHorizontal: pad, paddingTop: 8, paddingBottom: 12, flexGrow: 0 },
+    chip: { overflow: 'visible' as const, width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     chipText: { fontSize: 12, fontWeight: '700' },
     chipBadge: { position: 'absolute', top: -5, right: -5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
     chipBadgeText: { fontSize: 9, fontWeight: '800', color: c.TEXT_S },

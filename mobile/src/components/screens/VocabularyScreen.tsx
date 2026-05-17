@@ -125,7 +125,7 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     statLabel:  { color: c.TEXT_S, fontSize: 11 },
 
     // Chips
-    chip: { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+    chip: { overflow: 'visible' as const, width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     chipText: { fontSize: 12, fontWeight: '700' },
     chipBadge: { position: 'absolute', top: -5, right: -5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
     chipBadgeText: { fontSize: 9, fontWeight: '800', color: c.TEXT_S },
@@ -833,7 +833,7 @@ export default function VocabularyScreen() {
               horizontal
               data={['unknown', ...FILTERS]}
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: isTablet ? 32 : 16, paddingBottom: 12, gap: 8 }}
+              contentContainerStyle={{ paddingHorizontal: isTablet ? 32 : 16, paddingTop: 8, paddingBottom: 12, gap: 8 }}
               renderItem={({ item: lv }) => {
                 if (lv === 'unknown') {
                   return (
