@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, LayoutGrid, Settings, Sun, Moon, BookOpen, Menu, X, Shield, TrendingUp, LogOut, LogIn, User, FlaskConical, Tv, Film } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -8,6 +9,15 @@ const MainLayout = () => {
 
     const { isAuthenticated, user, clearAuth } = useAuthStore();
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
+
+    const toggleLanguage = () => {
+        const newLang = i18n.language === 'tr' ? 'en' : 'tr';
+        i18n.changeLanguage(newLang);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('language', newLang);
+        }
+    };
 
     const handleLogout = () => {
         clearAuth();
@@ -40,13 +50,13 @@ const MainLayout = () => {
     }, [location.pathname]);
 
     const navItems = [
-        { name: 'Ana Sayfa', path: '/', icon: Home },
-        { name: 'Diziler', path: '/browse/series', icon: Tv },
-        { name: 'Filmler', path: '/browse/movies', icon: Film },
+        { name: t('nav.home'), path: '/', icon: Home },
+        { name: t('nav.series'), path: '/browse/series', icon: Tv },
+        { name: t('nav.movies'), path: '/browse/movies', icon: Film },
         // { name: 'Havuz', path: '/vocabulary', icon: FlaskConical },
-        { name: 'Lists', path: '/lists', icon: BookOpen },
-        { name: 'Profile', path: '/profile', icon: User },
-        // { name: 'Admin', path: '/admin', icon: Shield },
+        { name: t('nav.lists'), path: '/lists', icon: BookOpen },
+        { name: t('nav.profile'), path: '/profile', icon: User },
+        // { name: t('nav.admin'), path: '/admin', icon: Shield },
     ];
 
     return (
@@ -90,9 +100,16 @@ const MainLayout = () => {
                         {/* Right side */}
                         <div className="flex items-center space-x-2">
                             <button
+                                onClick={toggleLanguage}
+                                className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold transition-all"
+                                title={t('nav.change_language')}
+                            >
+                                {i18n.language === 'tr' ? 'EN' : 'TR'}
+                            </button>
+                            <button
                                 onClick={() => setIsDark(!isDark)}
                                 className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-all"
-                                aria-label="Toggle theme"
+                                aria-label={t('nav.toggle_theme')}
                             >
                                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                             </button>
@@ -106,7 +123,7 @@ const MainLayout = () => {
                                     <button
                                         onClick={handleLogout}
                                         className="p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-all"
-                                        title="Çıkış Yap"
+                                        title={t('nav.logout')}
                                     >
                                         <LogOut className="w-5 h-5" />
                                     </button>
@@ -117,7 +134,7 @@ const MainLayout = () => {
                                     className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/25"
                                 >
                                     <LogIn className="w-4 h-4" />
-                                    Giriş Yap
+                                    {t('nav.login')}
                                 </Link>
                             )}
 
@@ -167,7 +184,7 @@ const MainLayout = () => {
             <footer className="border-t border-gray-200/60 dark:border-gray-800/60 mt-auto">
                 <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-gray-400 dark:text-gray-600">
-                        <p>Made for language learners</p>
+                        <p>{t('footer.tagline')}</p>
                         <p>&copy; {new Date().getFullYear()} Sublex</p>
                     </div>
                 </div>

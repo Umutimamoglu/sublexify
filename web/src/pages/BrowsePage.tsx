@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MediaService, { type Media } from '@/services/MediaService';
 import MediaCard from '@/components/features/MediaCard';
 import { Loader2, Search, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const BrowsePage = () => {
     const { type } = useParams<{ type: string }>();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -89,7 +91,7 @@ const BrowsePage = () => {
                     <ArrowLeft className="w-6 h-6 text-gray-500 dark:text-gray-400" />
                 </button>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white capitalize">
-                    {type === 'series' ? 'TV Series' : 'Movies'}
+                    {type === 'series' ? t('browse.title_series') : t('browse.title_movies')}
                 </h1>
             </div>
 
@@ -98,7 +100,7 @@ const BrowsePage = () => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                     type="text"
-                    placeholder={`Search ${type}...`}
+                    placeholder={type === 'series' ? t('browse.search_series') : t('browse.search_movies')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl text-sm"
@@ -108,7 +110,7 @@ const BrowsePage = () => {
             {/* Grid */}
             {filteredMedia.length === 0 ? (
                 <div className="text-center py-16 text-gray-500">
-                    No content found.
+                    {t('browse.no_content')}
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -121,7 +123,9 @@ const BrowsePage = () => {
                             const seriesEpisodes = mediaList.filter(m => m.tmdbId === media.tmdbId);
                             const seasonCount = new Set(seriesEpisodes.map(m => m.seasonNumber)).size;
                             const episodeCount = seriesEpisodes.length;
-                            stats = `${seasonCount} Season${seasonCount !== 1 ? 's' : ''} • ${episodeCount} Episode${episodeCount !== 1 ? 's' : ''}`;
+                            const seasonLabel = seasonCount !== 1 ? t('browse.season_plural') : t('browse.season_single');
+                            const episodeLabel = episodeCount !== 1 ? t('browse.episode_plural') : t('browse.episode_single');
+                            stats = `${seasonCount} ${seasonLabel} • ${episodeCount} ${episodeLabel}`;
 
                             // Try to find the best image from all episodes if the current one is missing
                             if (!imageUrl) {

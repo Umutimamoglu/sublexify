@@ -1,0 +1,235 @@
+{
+  "nav": {
+    "home": "Home",
+    "series": "TV Series",
+    "movies": "Movies",
+    "lists": "My Lists",
+    "profile": "Profile",
+    "admin": "Admin",
+    "login": "Login",
+    "logout": "Logout",
+    "change_language": "Change Language",
+    "toggle_theme": "Toggle Theme"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search...",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "series": "Series",
+    "words": "words",
+    "compatibility": "Compatibility",
+    "done": "Done",
+    "known": "known",
+    "movie": "Movie",
+    "series": "Series",
+    "episode": "Episode",
+    "song": "Song",
+    "other": "Other",
+    "filter_unknown": "Unknown only",
+    "filter_all": "All status",
+    "preparing": "Preparing...",
+    "ready": "Ready!",
+    "clear_levels": "Clear levels",
+    "error_occurred": "An error occurred during the process.",
+    "word_count": "{{count}} word",
+    "word_count_plural": "{{count}} words",
+    "load_more": "Load More Words ({{count}} remaining)"
+  },
+  "browse": {
+    "title_series": "TV Series",
+    "title_movies": "Movies",
+    "search_series": "Search series...",
+    "search_movies": "Search movies...",
+    "no_content": "No content found.",
+    "season_plural": "Seasons",
+    "season_single": "Season",
+    "episode_plural": "Episodes",
+    "episode_single": "Episode"
+  },
+  "landing": {
+    "greeting_morning": "Good morning",
+    "greeting_afternoon": "Good afternoon",
+    "greeting_evening": "Good evening",
+    "unknown": "Unknown",
+    "unnamed_content": "Unnamed Content",
+    "movie": "Movie",
+    "series": "Series",
+    "content": "Content",
+    "user": "User",
+    "continue_watching": "Continue Watching",
+    "recommended": "Recommended",
+    "start": "Start",
+    "details": "Details",
+    "loading_content": "Loading content...",
+    "search_placeholder": "Search movie or series...",
+    "no_results_for": "No results found for \"{{query}}\"",
+    "known_pct": "{{pct}}% known",
+    "all_content": "All Content",
+    "filter_movies": "Movies",
+    "filter_series": "Series",
+    "view_all": "View All",
+    "curated_lists": "Curated Lists",
+    "known_words_title": "Known Words",
+    "known_words_desc": "Manage your vocabulary",
+    "core_english": "Core English progress",
+    "words_count": "{{count}} words",
+    "completed": "COMPLETED",
+    "word_label": "WORD",
+    "list_modal_title": "Your lists for {{title}}",
+    "list_modal_desc": "You can start studying your word lists for this series immediately or go to the episodes page.",
+    "words_to_learn": "{{unknown}} to learn",
+    "go_to_episodes": "Go to Episodes",
+    "no_list_toast": "You have no saved lists for this series. Redirecting to episodes."
+  },
+  "lists": {
+    "enter_name": "Enter list name:",
+    "error_occurred": "An error occurred",
+    "confirm_remove_word": "Remove this word from the list?",
+    "confirm_delete_list": "Are you sure you want to delete this list?",
+    "create_failed": "Failed to create list.",
+    "title": "Vocabulary Center",
+    "tab_my_lists": "My Lists",
+    "tab_rankings": "Global Rankings",
+    "create_new": "Create New List",
+    "no_lists": "No lists yet.",
+    "words": "words",
+    "unknown": "unknown",
+    "known": "known",
+    "mastery": "Mastery",
+    "study_list": "Study List",
+    "filter_unknown": "Unknown only",
+    "filter_all": "All status",
+    "preparing": "Preparing...",
+    "ready": "Ready!",
+    "create_from_unknown": "Create from Unknown",
+    "clear_levels": "Clear levels",
+    "no_words": "No words match your filters.",
+    "load_more": "Load More Words ({{count}} remaining)",
+    "loading_words": "Loading word list...",
+    "select_list_to_view": "Select a list to view",
+    "rankings_title": "Global Frequency Rankings",
+    "rankings_desc": "Most common words across all movies and series in our library.",
+    "edit_list": "Edit List",
+    "name": "Name",
+    "color": "Color",
+    "no_color": "No color",
+    "saving": "Saving...",
+    "start_practice": "Start Practice",
+    "quiz_desc": "Which exercises would you like to do? Select at least one.",
+    "quiz_multiple": "Multiple Choice",
+    "quiz_fill": "Fill in the Blanks",
+    "quiz_listen": "Listening",
+    "start": "Start"
+  },
+  "profile": {
+    "title": "Profile",
+    "logout_confirm": "Are you sure you want to log out?",
+    "request_content": "Request Content",
+    "suggest_content": "Suggest movies & series",
+    "feedback": "Feedback",
+    "help_us": "Help us improve",
+    "vocabulary": "Vocabulary",
+    "progressing_towards": "Progressing towards {{next}} level",
+    "words_progress": "{{known}} / {{total}} words",
+    "settings": "Settings",
+    "progress": "Progress",
+    "guide": "Guide",
+    "logout": "LOGOUT"
+  },
+  "settings": {
+    "title": "Settings",
+    "sections": {
+      "account": "Account",
+      "preferences": "Preferences"
+    },
+    "items": {
+      "account_info": {
+        "title": "Account Info",
+        "subtitle": "Update your personal information"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "subtitle": "Manage your notification preferences"
+      },
+      "privacy": {
+        "title": "Privacy",
+        "subtitle": "Data sharing and privacy settings"
+      },
+      "appearance": {
+        "title": "Appearance",
+        "subtitle": "Light/Dark theme settings"
+      },
+      "language": {
+        "title": "Language",
+        "subtitle": "Change application language"
+      },
+      "study_settings": {
+        "title": "Study Settings",
+        "subtitle": "Daily target word count (In development)"
+      }
+    }
+  },
+  "word_card": {
+    "mark_unknown": "Mark Unknown",
+    "mark_known": "Mark Known",
+    "add_to_list": "Add to List",
+    "click_to_flip": "Click to flip",
+    "remove": "Remove",
+    "verb_forms": "Verb Forms",
+    "phrases": "Phrases",
+    "no_definition": "No detailed definition available yet."
+  },
+  "list_modal": {
+    "add_to": "Add \"{{word}}\" to...",
+    "create_placeholder": "Create new list...",
+    "loading": "Loading lists...",
+    "no_lists": "No custom lists found. Create one above!"
+  },
+  "media_detail": {
+    "no_words_to_mark": "No new words found to mark at these levels.",
+    "mark_batch_confirm": "⚠️ Add to Known\n\nAre you sure you want to add {{count}} words of level {{levels}} to your known list? This will update your progress in bulk.",
+    "create_failed": "Failed to create list. Please try again.",
+    "not_found": "Media not found",
+    "back_to_library": "Back to Library",
+    "vocabulary": "Vocabulary",
+    "sort_frequent": "Most Frequent",
+    "sort_normal": "Normal Order",
+    "create_from_unknown": "Create from Unknown",
+    "mark_level_known": "Mark all {{level}} words as known",
+    "mark_levels_known": "Mark all {{levels}} words as known",
+    "unique_words": "Unique Words",
+    "added": "Added",
+    "view_page": "View Page"
+  },
+  "footer": {
+    "tagline": "Made for language learners"
+  },
+  "series_detail": {
+    "not_found": "Series not found",
+    "back_to_series": "Back to Series",
+    "overview": "Overview",
+    "season_label": "Season {{count}}",
+    "no_overview": "No overview available."
+  },
+  "login": {
+    "error_invalid": "Invalid email or password.",
+    "tagline": "Learn English with movies and series",
+    "email": "Email",
+    "password": "Password",
+    "forgot_password": "Forgot Password",
+    "no_account": "Don't have an account?",
+    "register": "Register"
+  },
+  "onboarding": {
+    "welcome": "Welcome",
+    "coming_soon": "The user guide and interactive tour will be added to our web platform soon. For now, you can start exploring!",
+    "back_home": "Back to Home"
+  }
+}

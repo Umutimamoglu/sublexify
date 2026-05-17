@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { X, Plus, Check, Lock } from 'lucide-react';
 import WordListService, { type WordListDTO } from '@/services/WordListService';
 import { cn } from '@/utils/cn';
+import { useTranslation } from 'react-i18next';
+import { useListPreferencesStore } from '@/store/useListPreferencesStore';
 
 interface ListSelectionModalProps {
     isOpen: boolean;
@@ -11,11 +13,13 @@ interface ListSelectionModalProps {
 }
 
 const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModalProps) => {
+    const { t } = useTranslation();
     const [lists, setLists] = useState<WordListDTO[]>([]);
     const [loading, setLoading] = useState(false);
     const [newListName, setNewListName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [addedLists, setAddedLists] = useState<Set<number>>(new Set());
+    const { hiddenIds } = useListPreferencesStore();
 
     useEffect(() => {
         if (isOpen) {
@@ -98,7 +102,7 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
             <div className="w-full max-w-md bg-white dark:bg-[#161822] rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Add "{word}" to...
+                        {t('list_modal.add_to', { word: word })}
                     </h3>
                     <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                         <X className="w-5 h-5" />
@@ -112,7 +116,7 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
                             type="text"
                             value={newListName}
                             onChange={(e) => setNewListName(e.target.value)}
-                            placeholder="Create new list..."
+                            placeholder={t('list_modal.create_placeholder')}
                             className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                         <button
@@ -127,11 +131,11 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
                     {/* List of Lists */}
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                         {loading ? (
-                            <div className="text-center py-4 text-gray-400">Loading lists...</div>
-                        ) : lists.filter(l => !l.isSystem).length === 0 ? (
-                            <div className="text-center py-4 text-gray-400">No custom lists found. Create one above!</div>
+                            <div className="text-center py-4 text-gray-400">{t('list_modal.loading')}</div>
+                        ) : lists.filter(l => !l.isSystem && !hiddenIds.includes(l.id)).length === 0 ? (
+                            <div className="text-center py-4 text-gray-400">{t('list_modal.no_lists')}</div>
                         ) : (
-                            lists.filter(l => !l.isSystem).map(list => {
+                            lists.filter(l => !l.isSystem && !hiddenIds.includes(l.id)).map(list => {
                                 const isAdded = addedLists.has(list.id);
                                 return (
                                     <button
@@ -179,7 +183,7 @@ const ListSelectionModal = ({ isOpen, onClose, wordId, word }: ListSelectionModa
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm"
                     >
-                        Done
+                        {t('common.done')}
                     </button>
                 </div>
             </div>

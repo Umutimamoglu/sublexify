@@ -7,33 +7,34 @@ import {
 import MediaService, { type Media } from '@/services/MediaService';
 import WordListService, { type WordListDTO } from '@/services/WordListService';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useTranslation } from 'react-i18next';
 
 // ─── Helpers ──────────────────────────────────────────────────
 
 type MediaFilter = 'all' | 'movie' | 'series';
 
-function greeting(): string {
+function greeting(t: any): string {
     const h = new Date().getHours();
-    if (h < 12) return 'Günaydın';
-    if (h < 18) return 'İyi günler';
-    return 'İyi akşamlar';
+    if (h < 12) return t('landing.greeting_morning');
+    if (h < 18) return t('landing.greeting_afternoon');
+    return t('landing.greeting_evening');
 }
 
-function seriesTitle(m: Media): string {
-    if (!m) return 'Bilinmiyor';
+function seriesTitle(m: Media, t: any): string {
+    if (!m) return t('landing.unknown');
     if (m.type !== 'MOVIE') {
         const idx = m.title?.indexOf(' - ') ?? -1;
         if (idx > 0) return m.title.substring(0, idx);
     }
-    return m.title || 'İsimsiz İçerik';
+    return m.title || t('landing.unnamed_content');
 }
 
-function episodeLabel(m: Media): string {
+function episodeLabel(m: Media, t: any): string {
     if (!m) return '';
-    if (m.type === 'MOVIE') return 'Film';
+    if (m.type === 'MOVIE') return t('landing.movie');
     if (m.seasonNumber && m.episodeNumber)
         return `S${m.seasonNumber}:E${m.episodeNumber}`;
-    return m.type || 'İçerik';
+    return m.type || t('landing.content');
 }
 
 function deduplicateMedia(items: Media[], filter: MediaFilter): Media[] {
@@ -68,8 +69,9 @@ const LIST_ICON_COLORS = ['#E91E63', '#9C27B0', '#3F51B5', '#00BCD4', '#4CAF50',
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { user, isAuthenticated } = useAuthStore();
-    const firstName = user?.name?.split(' ')[0] ?? 'Kullanıcı';
+    const firstName = user?.name?.split(' ')[0] ?? t('landing.user');
     const avatarInitial = firstName.charAt(0).toUpperCase();
 
     const [continueMedia, setContinueMedia] = useState<Media[]>([]);
@@ -148,7 +150,7 @@ const LandingPage = () => {
             const key = m.type !== 'MOVIE' && m.imdbId ? m.imdbId : String(m.id);
             if (seen.has(key)) continue;
             seen.add(key);
-            out.push({ ...m, title: seriesTitle(m) });
+            out.push({ ...m, title: seriesTitle(m, t) });
             if (out.length >= 8) break;
         }
         return out;
@@ -178,7 +180,7 @@ const LandingPage = () => {
                 setSeriesToNavigate(m);
                 setSeriesListsModalOpen(true);
             } else {
-                showToast("Bu dizi için kayıtlı listeniz yok. Bölümlere yönlendiriliyorsunuz.");
+                showToast(t('landing.no_list_toast'));
                 setTimeout(() => navigate(m.tmdbId ? `/series/${m.tmdbId}` : `/media/${m.id}`), 1500);
             }
         } catch (error) {
@@ -218,7 +220,7 @@ const LandingPage = () => {
                                         <span className="text-white font-bold text-sm">{avatarInitial}</span>
                                     </div>
                                     <span className="text-white font-semibold text-base drop-shadow-md">
-                                        {greeting()}, {firstName}
+                                        {greeting(t)}, {firstName}
                                     </span>
                                 </div>
                             ) : (
@@ -234,10 +236,10 @@ const LandingPage = () => {
                         {/* Hero content */}
                         <div className="absolute bottom-0 left-0 right-0 px-6 lg:px-10 pb-10">
                             <p className="text-white/70 text-xs font-semibold tracking-widest uppercase mb-1">
-                                {continueMedia.length > 0 ? 'İzlemeye Devam Et' : 'Önerilen İçerik'} · {episodeLabel(heroItem)}
+                                {continueMedia.length > 0 ? t('landing.continue_watching') : t('landing.recommended')} · {episodeLabel(heroItem, t)}
                             </p>
                             <h1 className="text-white text-3xl lg:text-4xl font-black tracking-tight mb-2 drop-shadow-lg">
-                                {seriesTitle(heroItem)}
+                                {seriesTitle(heroItem, t)}
                             </h1>
                             {heroItem.overview && (
                                 <p className="text-white/60 text-sm max-w-xl line-clamp-2 mb-4">{heroItem.overview}</p>
@@ -247,13 +249,13 @@ const LandingPage = () => {
                                     onClick={() => goToMedia(heroItem)}
                                     className="flex items-center gap-2 px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-black font-black rounded-xl shadow-lg transition-all hover:scale-105"
                                 >
-                                    <PlayCircle className="w-4 h-4" /> Başla
+                                    <PlayCircle className="w-4 h-4" /> {t('landing.start')}
                                 </button>
                                 <button
                                     onClick={() => goToMedia(heroItem)}
                                     className="flex items-center gap-2 px-5 py-2.5 bg-white/15 hover:bg-white/25 text-white font-semibold rounded-xl border border-white/25 backdrop-blur-sm transition-all"
                                 >
-                                    Detaylar
+                                    {t('landing.details')}
                                 </button>
                             </div>
                         </div>
@@ -276,7 +278,7 @@ const LandingPage = () => {
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center">
                         <div className="text-center text-white">
                             <Film className="w-12 h-12 opacity-30 mx-auto mb-3" />
-                            <p className="text-lg font-bold opacity-60">İçerik yükleniyor...</p>
+                            <p className="text-lg font-bold opacity-60">{t('landing.loading_content')}</p>
                         </div>
                     </div>
                 )}
@@ -291,7 +293,7 @@ const LandingPage = () => {
                         <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Film veya dizi ara..."
+                            placeholder={t('landing.search_placeholder')}
                             value={query}
                             onChange={e => { setQuery(e.target.value); setShowResults(true); }}
                             onFocus={() => setShowResults(true)}
@@ -311,7 +313,7 @@ const LandingPage = () => {
                     {showResults && query.length >= 2 && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#161822] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
                             {searchResults.length === 0 ? (
-                                <div className="p-10 text-center text-gray-400">"{query}" için sonuç bulunamadı</div>
+                                <div className="p-10 text-center text-gray-400">{t('landing.no_results_for', { query })}</div>
                             ) : (
                                 <div className="p-2">
                                     {searchResults.map(item => (
@@ -338,12 +340,12 @@ const LandingPage = () => {
                                                 </div>
                                                 <div className="text-left">
                                                     <p className="font-bold text-gray-900 dark:text-white text-sm">{item.title}</p>
-                                                    <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{item.type === 'MOVIE' ? 'Film' : 'Dizi'}</p>
+                                                    <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{item.type === 'MOVIE' ? t('landing.movie') : t('landing.series')}</p>
                                                 </div>
                                             </div>
                                             {item.knownWordPercentage != null && (
                                                 <div className="flex flex-col items-end gap-1 shrink-0">
-                                                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">%{Math.round(item.knownWordPercentage)} biliniyor</span>
+                                                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{t('landing.known_pct', { pct: Math.round(item.knownWordPercentage) })}</span>
                                                     <div className="w-16 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                                                         <div className="h-full bg-indigo-500" style={{ width: `${item.knownWordPercentage}%` }} />
                                                     </div>
@@ -372,9 +374,9 @@ const LandingPage = () => {
                             onClick={() => setMediaFilter('all')}
                             className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${mediaFilter === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-[#161822] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}
                         >
-                            Tüm İçerik
+                            {t('landing.all_content')}
                         </button>
-                        {([{ key: 'movie', label: 'Filmler' }, { key: 'series', label: 'Diziler' }] as const).map(f => (
+                        {([{ key: 'movie', label: t('landing.filter_movies') }, { key: 'series', label: t('landing.filter_series') }] as const).map(f => (
                             <button
                                 key={f.key}
                                 onClick={() => setMediaFilter(f.key)}
@@ -387,7 +389,7 @@ const LandingPage = () => {
                             onClick={() => navigate(mediaFilter === 'movie' ? '/browse/movies' : '/browse/series')}
                             className="ml-auto flex items-center gap-1 text-xs font-bold text-yellow-500 uppercase tracking-wider hover:text-yellow-400 transition-colors"
                         >
-                            Tümü <ChevronRight className="w-3.5 h-3.5" />
+                            {t('landing.view_all')} <ChevronRight className="w-3.5 h-3.5" />
                         </button>
                     </div>
 
@@ -403,6 +405,7 @@ const LandingPage = () => {
                                 <MediaLandscapeCard
                                     key={`${m.id}-${m.imdbId}`}
                                     media={m}
+                                    t={t}
                                     onClick={() => {
                                         if (m.type === 'MOVIE') navigate(`/media/${m.id}`);
                                         else if (m.tmdbId) navigate(`/series/${m.tmdbId}`);
@@ -419,7 +422,7 @@ const LandingPage = () => {
                     <section>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
                             <BookOpen className="w-5 h-5 text-indigo-500" />
-                            Seçilmiş Listeler
+                            {t('landing.curated_lists')}
                         </h2>
                         <div className="space-y-3">
                             {/* Known Words card */}
@@ -431,8 +434,8 @@ const LandingPage = () => {
                                     <BookOpen className="w-6 h-6 text-pink-500" />
                                 </div>
                                 <div className="flex-1 text-left">
-                                    <p className="font-bold text-gray-900 dark:text-white">Bildiğim Kelimeler</p>
-                                    <p className="text-sm text-gray-400">Kelime haznemizi yönet</p>
+                                    <p className="font-bold text-gray-900 dark:text-white">{t('landing.known_words_title')}</p>
+                                    <p className="text-sm text-gray-400">{t('landing.known_words_desc')}</p>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:text-indigo-500 transition-colors" />
                             </button>
@@ -456,14 +459,14 @@ const LandingPage = () => {
                                         </div>
                                         <div className="flex-1 text-left min-w-0">
                                             <p className="font-bold text-gray-900 dark:text-white truncate">{list.name}</p>
-                                            <p className="text-sm text-gray-400">{isOxford ? 'Core English progress' : `${list.totalWords} kelime`}</p>
+                                            <p className="text-sm text-gray-400">{isOxford ? t('landing.core_english') : t('landing.words_count', { count: list.totalWords })}</p>
                                         </div>
                                         <div className="text-right shrink-0">
                                             <p className="text-xl font-black" style={{ color: isOxford ? color : undefined, ...(isOxford ? {} : { color: '#6b7280' }) }}>
                                                 {isOxford ? `${pct}%` : list.totalWords.toLocaleString()}
                                             </p>
                                             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                                {isOxford ? 'TAMAMLANDI' : 'KELIME'}
+                                                {isOxford ? t('landing.completed') : t('landing.word_label')}
                                             </p>
                                         </div>
                                     </button>
@@ -480,20 +483,20 @@ const LandingPage = () => {
                     <div className="bg-white dark:bg-[#161822] rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl border border-gray-200 dark:border-gray-800">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                                {seriesToNavigate.title} Listeleriniz
+                                {t('landing.list_modal_title', { title: seriesToNavigate.title })}
                             </h3>
                             <button onClick={() => setSeriesListsModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <p className="text-gray-500 mb-4 text-sm">Bu diziden oluşturduğunuz kelime listelerine hemen çalışmaya başlayabilir veya dizinin bölümler sayfasına gidebilirsiniz.</p>
+                        <p className="text-gray-500 mb-4 text-sm">{t('landing.list_modal_desc')}</p>
                         
                         <div className="max-h-60 overflow-y-auto space-y-2 mb-6 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 pr-2">
                             {seriesLists.map(list => (
                                 <button key={list.id} onClick={() => navigate(`/lists?id=${list.id}`)} className="w-full text-left p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/10 transition-all flex items-center justify-between group">
                                     <div>
                                         <div className="font-bold text-gray-900 dark:text-gray-100">{list.name}</div>
-                                        <div className="text-xs text-gray-500 mt-1">{list.totalWords} kelime • {list.unknownWords} öğrenilecek</div>
+                                        <div className="text-xs text-gray-500 mt-1">{list.totalWords} {t('landing.word_label').toLowerCase()} • {t('landing.words_to_learn', { unknown: list.unknownWords })}</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-500" />
                                 </button>
@@ -502,7 +505,7 @@ const LandingPage = () => {
 
                         <div className="flex gap-3">
                             <button onClick={() => navigate(seriesToNavigate.tmdbId ? `/series/${seriesToNavigate.tmdbId}` : `/media/${seriesToNavigate.id}`)} className="flex-1 py-3 px-4 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                                Bölümlere Git
+                                {t('landing.go_to_episodes')}
                             </button>
                         </div>
                     </div>
@@ -524,8 +527,8 @@ const LandingPage = () => {
 
 // ─── Media Landscape Card ─────────────────────────────────────
 
-function MediaLandscapeCard({ media, onClick }: { media: Media; onClick: () => void }) {
-    const title = seriesTitle(media);
+function MediaLandscapeCard({ media, onClick, t }: { media: Media; onClick: () => void; t: any }) {
+    const title = seriesTitle(media, t);
     const cefrTotal = Object.values(media.levelCounts ?? {}).reduce((a, b) => a + b, 0);
 
     return (
@@ -556,14 +559,14 @@ function MediaLandscapeCard({ media, onClick }: { media: Media; onClick: () => v
 
                 <div className="relative">
                     <p className="text-white font-bold text-sm line-clamp-2 leading-tight">{title}</p>
-                    <p className="text-white/50 text-xs mt-1">{episodeLabel(media)}</p>
+                    <p className="text-white/50 text-xs mt-1">{episodeLabel(media, t)}</p>
                 </div>
 
                 <div className="relative space-y-2">
                     <div className="flex items-center gap-1 text-white/60 text-[11px]">
-                        <span>{media.totalWords} kelime</span>
+                        <span>{t('landing.words_count', { count: media.totalWords })}</span>
                         {media.knownWordPercentage != null && (
-                            <span className="text-yellow-400 font-bold ml-1">· %{Math.round(media.knownWordPercentage)} biliniyor</span>
+                            <span className="text-yellow-400 font-bold ml-1">· {t('landing.known_pct', { pct: Math.round(media.knownWordPercentage) })}</span>
                         )}
                     </div>
                     {cefrTotal > 0 && (

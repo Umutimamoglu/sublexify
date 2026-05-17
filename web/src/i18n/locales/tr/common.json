@@ -1,0 +1,235 @@
+{
+  "nav": {
+    "home": "Ana Sayfa",
+    "series": "Diziler",
+    "movies": "Filmler",
+    "lists": "Listelerim",
+    "profile": "Profil",
+    "admin": "Admin",
+    "login": "Giriş Yap",
+    "logout": "Çıkış Yap",
+    "change_language": "Dili Değiştir",
+    "toggle_theme": "Temayı Değiştir"
+  },
+  "common": {
+    "loading": "Yükleniyor...",
+    "error": "Bir hata oluştu",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "search": "Ara...",
+    "easy": "Kolay",
+    "medium": "Orta",
+    "hard": "Zor",
+    "series": "Dizi",
+    "words": "kelime",
+    "compatibility": "Uyum",
+    "done": "Tamam",
+    "known": "biliniyor",
+    "movie": "Film",
+    "series": "Dizi",
+    "episode": "Bölüm",
+    "song": "Şarkı",
+    "other": "Diğer",
+    "filter_unknown": "Sadece bilinmeyenler",
+    "filter_all": "Tümü",
+    "preparing": "Hazırlanıyor...",
+    "ready": "Hazır!",
+    "clear_levels": "Seviyeleri temizle",
+    "error_occurred": "İşlem sırasında bir hata oluştu.",
+    "word_count": "{{count}} kelime",
+    "word_count_plural": "{{count}} kelime",
+    "load_more": "Daha Fazla Yükle ({{count}} kaldı)"
+  },
+  "browse": {
+    "title_series": "Diziler",
+    "title_movies": "Filmler",
+    "search_series": "Dizi ara...",
+    "search_movies": "Film ara...",
+    "no_content": "İçerik bulunamadı.",
+    "season_plural": "Sezon",
+    "season_single": "Sezon",
+    "episode_plural": "Bölüm",
+    "episode_single": "Bölüm"
+  },
+  "landing": {
+    "greeting_morning": "Günaydın",
+    "greeting_afternoon": "İyi günler",
+    "greeting_evening": "İyi akşamlar",
+    "unknown": "Bilinmiyor",
+    "unnamed_content": "İsimsiz İçerik",
+    "movie": "Film",
+    "series": "Dizi",
+    "content": "İçerik",
+    "user": "Kullanıcı",
+    "continue_watching": "İzlemeye Devam Et",
+    "recommended": "Önerilen İçerik",
+    "start": "Başla",
+    "details": "Detaylar",
+    "loading_content": "İçerik yükleniyor...",
+    "search_placeholder": "Film veya dizi ara...",
+    "no_results_for": "\"{{query}}\" için sonuç bulunamadı",
+    "known_pct": "%{{pct}} biliniyor",
+    "all_content": "Tüm İçerik",
+    "filter_movies": "Filmler",
+    "filter_series": "Diziler",
+    "view_all": "Tümü",
+    "curated_lists": "Seçilmiş Listeler",
+    "known_words_title": "Bildiğim Kelimeler",
+    "known_words_desc": "Kelime haznemizi yönet",
+    "core_english": "Temel İngilizce ilerlemesi",
+    "words_count": "{{count}} kelime",
+    "completed": "TAMAMLANDI",
+    "word_label": "KELİME",
+    "list_modal_title": "{{title}} Listeleriniz",
+    "list_modal_desc": "Bu diziden oluşturduğunuz kelime listelerine hemen çalışmaya başlayabilir veya dizinin bölümler sayfasına gidebilirsiniz.",
+    "words_to_learn": "{{unknown}} öğrenilecek",
+    "go_to_episodes": "Bölümlere Git",
+    "no_list_toast": "Bu dizi için kayıtlı listeniz yok. Bölümlere yönlendiriliyorsunuz."
+  },
+  "lists": {
+    "enter_name": "Liste adını girin:",
+    "error_occurred": "Bir hata oluştu",
+    "confirm_remove_word": "Bu kelimeyi listeden çıkarmak istiyor musunuz?",
+    "confirm_delete_list": "Bu listeyi silmek istediğinizden emin misiniz?",
+    "create_failed": "Liste oluşturulamadı.",
+    "title": "Kelime Merkezi",
+    "tab_my_lists": "Listelerim",
+    "tab_rankings": "Küresel Sıralama",
+    "create_new": "Yeni Liste Oluştur",
+    "no_lists": "Henüz liste yok.",
+    "words": "kelime",
+    "unknown": "bilinmeyen",
+    "known": "bilinen",
+    "mastery": "Hakimiyet",
+    "study_list": "Çalışmaya Başla",
+    "filter_unknown": "Sadece bilinmeyenler",
+    "filter_all": "Tümü",
+    "preparing": "Hazırlanıyor...",
+    "ready": "Hazır!",
+    "create_from_unknown": "Bilinmeyenlerden Liste",
+    "clear_levels": "Seviyeleri temizle",
+    "no_words": "Filtrelerinize uygun kelime bulunamadı.",
+    "load_more": "Daha Fazla Yükle ({{count}} kaldı)",
+    "loading_words": "Kelime listesi yükleniyor...",
+    "select_list_to_view": "Görüntülemek için bir liste seçin",
+    "rankings_title": "Küresel Sıklık Sıralaması",
+    "rankings_desc": "Kütüphanemizdeki tüm dizi ve filmlerde en sık geçen kelimeler.",
+    "edit_list": "Listeyi Düzenle",
+    "name": "İsim",
+    "color": "Renk",
+    "no_color": "Renk yok",
+    "saving": "Kaydediliyor...",
+    "start_practice": "Pratiğe Başla",
+    "quiz_desc": "Hangi egzersizleri yapmak istersiniz? En az birini seçin.",
+    "quiz_multiple": "Çoktan Seçmeli (Multiple Choice)",
+    "quiz_fill": "Boşluk Doldurma (Fill in)",
+    "quiz_listen": "Dinleme (Listening)",
+    "start": "Başla"
+  },
+  "profile": {
+    "title": "Profil",
+    "logout_confirm": "Hesabınızdan çıkış yapmak istediğinize emin misiniz?",
+    "request_content": "İçerik İste",
+    "suggest_content": "Film & Dizi tavsiyesi yap",
+    "feedback": "Geri Bildirim",
+    "help_us": "Bize yardımcı ol",
+    "vocabulary": "Kelime Dağarcığı",
+    "progressing_towards": "{{next}} seviyesine ilerliyorsun",
+    "words_progress": "{{known}} / {{total}} kelime",
+    "settings": "Ayarlar",
+    "progress": "İlerleme",
+    "guide": "Rehber",
+    "logout": "ÇIKIŞ YAP"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "sections": {
+      "account": "Hesap",
+      "preferences": "Tercihler"
+    },
+    "items": {
+      "account_info": {
+        "title": "Hesap Bilgileri",
+        "subtitle": "Kişisel bilgilerinizi güncelleyin"
+      },
+      "notifications": {
+        "title": "Bildirimler",
+        "subtitle": "Bildirim tercihlerinizi yönetin"
+      },
+      "privacy": {
+        "title": "Gizlilik",
+        "subtitle": "Veri paylaşımı ve gizlilik ayarları"
+      },
+      "appearance": {
+        "title": "Görünüm",
+        "subtitle": "Açık/Koyu tema ayarı"
+      },
+      "language": {
+        "title": "Dil",
+        "subtitle": "Uygulama dilini değiştirin"
+      },
+      "study_settings": {
+        "title": "Çalışma Ayarları",
+        "subtitle": "Günlük hedef kelime sayısı (Geliştiriliyor)"
+      }
+    }
+  },
+  "word_card": {
+    "mark_unknown": "Bilinmiyor İşaretle",
+    "mark_known": "Biliyorum İşaretle",
+    "add_to_list": "Listeye Ekle",
+    "click_to_flip": "Çevirmek için tıkla",
+    "remove": "Kaldır",
+    "verb_forms": "Fiil Halleri",
+    "phrases": "Deyimler / Öbekler",
+    "no_definition": "Henüz detaylı tanım bulunmuyor."
+  },
+  "list_modal": {
+    "add_to": "\"{{word}}\" kelimesini şuraya ekle...",
+    "create_placeholder": "Yeni liste oluştur...",
+    "loading": "Listeler yükleniyor...",
+    "no_lists": "Özel liste bulunamadı. Yukarıdan bir tane oluşturun!"
+  },
+  "media_detail": {
+    "no_words_to_mark": "Bu seviyelerde işaretlenecek yeni kelime bulunamadı.",
+    "mark_batch_confirm": "⚠️ Bildiklerine Ekle\n\nSeçili olan {{count}} adet {{levels}} seviyesi kelimeyi bildiklerim listesine eklemek istediğinize emin misiniz? Bu işlem ilerleme durumunuzu toplu olarak değiştirecektir.",
+    "create_failed": "Liste oluşturulamadı. Lütfen tekrar deneyin.",
+    "not_found": "İçerik bulunamadı",
+    "back_to_library": "Kütüphaneye Dön",
+    "vocabulary": "Kelime Dağarcığı",
+    "sort_frequent": "En Sık Geçenler",
+    "sort_normal": "Normal Sıralama",
+    "create_from_unknown": "Bilinmeyenlerden Liste Oluştur",
+    "mark_level_known": "Tüm {{level}} Seviyesini Bildiklerime Ekle",
+    "mark_levels_known": "Tüm {{levels}} Seviyelerini Bildiklerime Ekle",
+    "unique_words": "Özgün Kelime",
+    "added": "Eklendi",
+    "view_page": "Görüntüle"
+  },
+  "footer": {
+    "tagline": "Dil öğrenenler için geliştirildi"
+  },
+  "series_detail": {
+    "not_found": "Dizi bulunamadı",
+    "back_to_series": "Dizilere Dön",
+    "overview": "Özet",
+    "season_label": "{{count}}. Sezon",
+    "no_overview": "Özet bulunmuyor."
+  },
+  "login": {
+    "error_invalid": "Email veya şifre hatalı.",
+    "tagline": "Film ve dizilerle İngilizce öğren",
+    "email": "Email",
+    "password": "Şifre",
+    "forgot_password": "Şifremi Unuttum",
+    "no_account": "Hesabın yok mu?",
+    "register": "Kayıt Ol"
+  },
+  "onboarding": {
+    "welcome": "Hoş Geldiniz",
+    "coming_soon": "Kullanım rehberi ve etkileşimli deneme turu çok yakında web platformumuza eklenecek. Şimdilik keşfetmeye başlayabilirsiniz!",
+    "back_home": "Ana Sayfaya Dön"
+  }
+}

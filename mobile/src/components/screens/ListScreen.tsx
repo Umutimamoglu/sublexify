@@ -818,6 +818,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
   const [showMarkModal, setShowMarkModal] = useState(false);
   const [showQuizModal, setShowQuizModal] = useState(false);
+  const [quizSize, setQuizSize] = useState(10);
   const [selectedQuizTypes, setSelectedQuizTypes] = useState<Set<string>>(new Set(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']));
   const [cardIndex, setCardIndex] = useState(0);
   const [isFlippedState, setIsFlippedState] = useState(false);
@@ -941,11 +942,11 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     setShowQuizModal(false);
     const typesStr = Array.from(selectedQuizTypes).join(',');
     const diffsStr = Array.from(selectedLevels).join(',');
-    let url = `/study/${listId}?types=${typesStr}`;
+    let url = `/study/${listId}?types=${typesStr}&size=${quizSize}`;
     if (diffsStr) url += `&difficulties=${diffsStr}`;
     if (onlyUnknown) url += `&onlyUnknown=true`;
     router.push(url as any);
-  }, [listId, selectedQuizTypes, selectedLevels, onlyUnknown, router]);
+  }, [listId, selectedQuizTypes, selectedLevels, onlyUnknown, quizSize, router]);
 
   // ─── Flashcard animations (Reanimated 4 + Gesture Handler) ──
   const cardX = useSharedValue(0);
@@ -1396,6 +1397,19 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
         visible={showQuizModal}
         selectedTypes={selectedQuizTypes}
         onToggleType={handleToggleQuizType}
+        selectedDifficulties={selectedLevels}
+        onToggleDifficulty={(diff) => {
+          setSelectedLevels((prev) => {
+            const next = new Set(prev);
+            if (next.has(diff)) next.delete(diff);
+            else next.add(diff);
+            return next;
+          });
+        }}
+        onlyUnknown={onlyUnknown}
+        onToggleOnlyUnknown={setOnlyUnknown}
+        quizSize={quizSize}
+        onSizeChange={setQuizSize}
         onClose={() => setShowQuizModal(false)}
         onConfirm={handleStartStudy}
         styles={styles}

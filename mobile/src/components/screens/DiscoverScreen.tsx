@@ -34,6 +34,7 @@ import { ContinueLearningModal } from '@/src/components/ui/ContinueLearningModal
 import { useAuthStore } from '@/src/store/authStore';
 import { useStreakStore } from '@/src/store/streakStore';
 import type { MediaDTO, WordListDTO, UserStatistics } from '@/src/types/api';
+import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
 
 type HeroItem = MediaDTO & { _s01e01Id?: number; _seasonCount?: number; _episodeCount?: number };
 
@@ -573,6 +574,36 @@ export default function DiscoverScreen() {
   const [pendingSeriesItem, setPendingSeriesItem] = useState<MediaDTO | null>(null);
   const [showStreakModal, setShowStreakModal] = useState(false);
 
+  // ─── Study (FAB) state ───────────────────────────────────────
+  const [showStudyModal, setShowStudyModal] = useState(false);
+  const [studyQuizTypes, setStudyQuizTypes] = useState<Set<string>>(new Set(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']));
+  const [studyDifficulties, setStudyDifficulties] = useState<Set<string>>(new Set());
+  const [studyOnlyUnknown, setStudyOnlyUnknown] = useState(false);
+  const [studySize, setStudySize] = useState(20);
+
+  const handleToggleStudyType = useCallback((type: string) => {
+    setStudyQuizTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type); else next.add(type);
+      return next;
+    });
+  }, []);
+
+  const handleToggleStudyDiff = useCallback((diff: string) => {
+    setStudyDifficulties((prev) => {
+      const next = new Set(prev);
+      if (next.has(diff)) next.delete(diff); else next.add(diff);
+      return next;
+    });
+  }, []);
+
+  const handleStartStudyFromDiscover = useCallback(() => {
+    setShowStudyModal(false);
+    const typesStr = Array.from(studyQuizTypes).join(',');
+    const diffsStr = Array.from(studyDifficulties).join(',');
+    router.push(`/study/havuz?types=${typesStr}&difficulties=${diffsStr}&onlyUnknown=${studyOnlyUnknown}&size=${studySize}` as any);
+  }, [studyQuizTypes, studyDifficulties, studyOnlyUnknown, studySize, router]);
+
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
   const { data: allLists = [], isLoading: listsLoading, refetch: refetchLists } = useLists();
 
@@ -1088,6 +1119,67 @@ export default function DiscoverScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+      {/* ─── Floating Action Button (Pratik) ─────────────────── */}
+      {/* Tab bar: position=absolute, bottom=24 (iOS) / bottom=max(insets.bottom+12,24) (Android), height=64/68 */}
+      <TouchableOpacity
+        onPress={() => setShowStudyModal(true)}
+        activeOpacity={0.85}
+        style={{
+          position: 'absolute',
+          // Tab bar bottom offset (24 iOS / android varies) + tab bar height (64/68) + 12px gap
+          bottom: Platform.OS === 'android'
+            ? Math.max(insets.bottom + 12, 24) + 68 + 12
+            : 24 + 64 + 12,
+          right: 20,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          backgroundColor: c.PURPLE,
+          paddingHorizontal: 20,
+          paddingVertical: 14,
+          borderRadius: 28,
+          zIndex: 100,
+          shadowColor: c.PURPLE,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.5,
+          shadowRadius: 16,
+          elevation: 20,
+        }}
+      >
+        <Ionicons name="play" size={16} color="#fff" />
+        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Pratik</Text>
+      </TouchableOpacity>
+
+      {/* ─── Study Modal ─────────────────────────────────────── */}
+      <QuizTypeModal
+        visible={showStudyModal}
+        selectedTypes={studyQuizTypes}
+        onToggleType={handleToggleStudyType}
+        selectedDifficulties={studyDifficulties}
+        onToggleDifficulty={handleToggleStudyDiff}
+        onlyUnknown={studyOnlyUnknown}
+        onToggleOnlyUnknown={setStudyOnlyUnknown}
+        quizSize={studySize}
+        onSizeChange={setStudySize}
+        onClose={() => setShowStudyModal(false)}
+        onConfirm={handleStartStudyFromDiscover}
+        styles={{
+          mkOverlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' },
+          mkSheet: {
+            backgroundColor: isDark ? '#161822' : '#ffffff',
+            borderTopLeftRadius: 24, borderTopRightRadius: 24,
+            padding: 24, maxHeight: '90%',
+          },
+          mkTitle: { color: c.TEXT_P, fontSize: 17, fontWeight: '800' },
+          mkWarningText: { color: c.TEXT_S, fontSize: 13, lineHeight: 19 },
+          mkBtnRow: { flexDirection: 'row', gap: 10 },
+          mkCancelBtn: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: isDark ? '#1a1a2e' : '#f0f0f8', alignItems: 'center' },
+          mkConfirmBtn: { flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: c.PURPLE, alignItems: 'center' },
+          mkCancelText: { color: c.TEXT_S, fontWeight: '600', fontSize: 15 },
+          mkConfirmText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+        }}
+        c={c}
+      />
     </View>
   );
 }

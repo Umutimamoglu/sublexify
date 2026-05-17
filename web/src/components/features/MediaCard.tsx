@@ -1,6 +1,7 @@
 import type { Media } from '@/services/MediaService';
 import { Film, Music, Tv as TvIcon, FileQuestion, BookOpen, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface MediaCardProps {
     media: Media;
@@ -24,13 +25,14 @@ const cefrColors: Record<string, string> = {
     C2: 'bg-purple-500',
 };
 
-const difficultyConfig: Record<string, { label: string; color: string }> = {
-    EASY: { label: 'Kolay', color: 'bg-emerald-500 text-white' },
-    MEDIUM: { label: 'Orta', color: 'bg-amber-500 text-white' },
-    HARD: { label: 'Zor', color: 'bg-rose-500 text-white' }
+const difficultyConfig: Record<string, { labelKey: string; color: string }> = {
+    EASY: { labelKey: 'common.easy', color: 'bg-emerald-500 text-white' },
+    MEDIUM: { labelKey: 'common.medium', color: 'bg-amber-500 text-white' },
+    HARD: { labelKey: 'common.hard', color: 'bg-rose-500 text-white' }
 };
 
 const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
+    const { t } = useTranslation();
     const config = typeConfig[media.type] || typeConfig.OTHER;
 
     const getIcon = () => {
@@ -71,11 +73,11 @@ const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
 
                     <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-black/60 text-white backdrop-blur-md shadow-sm">
-                            {media.type === 'EPISODE' && media.tmdbId ? 'SERIES' : media.type}
+                            {media.type === 'EPISODE' && media.tmdbId ? t('common.series').toUpperCase() : media.type}
                         </span>
                         {media.overallDifficulty && difficultyConfig[media.overallDifficulty] && (
                             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md backdrop-blur-md shadow-sm ${difficultyConfig[media.overallDifficulty].color}`}>
-                                {difficultyConfig[media.overallDifficulty].label}
+                                {t(difficultyConfig[media.overallDifficulty].labelKey)}
                             </span>
                         )}
                     </div>
@@ -103,7 +105,7 @@ const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
                                         key={level}
                                         className={`${cefrColors[level]} h-full first:rounded-l-full last:rounded-r-full`}
                                         style={{ width: `${(count / total) * 100}%` }}
-                                        title={`${level}: ${count} kelime`}
+                                        title={`${level}: ${count} ${t('common.words')}`}
                                     />
                                 );
                             })}
@@ -131,7 +133,7 @@ const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
                             {media.knownWordPercentage !== undefined && (
                                 <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                     <BookOpen className="w-3 h-3 text-indigo-500" />
-                                    %{Math.round(media.knownWordPercentage)} Uyum
+                                    %{Math.round(media.knownWordPercentage)} {t('common.compatibility')}
                                 </span>
                             )}
                         </div>

@@ -406,6 +406,9 @@ export default function VocabularyScreen() {
 
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [selectedQuizTypes, setSelectedQuizTypes] = useState<Set<string>>(new Set(['MULTIPLE_CHOICE', 'FILL_IN_THE_BLANKS', 'LISTENING']));
+  const [quizDifficulties, setQuizDifficulties] = useState<Set<string>>(new Set());
+  const [poolOnlyUnknown, setPoolOnlyUnknown] = useState(false);
+  const [quizSize, setQuizSize] = useState(20);
 
   const handleToggleQuizType = useCallback((type: string) => {
     setSelectedQuizTypes((prev) => {
@@ -415,6 +418,16 @@ export default function VocabularyScreen() {
       return next;
     });
   }, []);
+
+  const handleToggleQuizDifficulty = useCallback((diff: string) => {
+    setQuizDifficulties((prev) => {
+      const next = new Set(prev);
+      if (next.has(diff)) next.delete(diff);
+      else next.add(diff);
+      return next;
+    });
+  }, []);
+
   const [previewWord, setPreviewWord] = useState<WordDTO | null>(null);
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
   const knownInitialized = useRef(false);
@@ -428,9 +441,9 @@ export default function VocabularyScreen() {
   const handleStartStudy = useCallback(() => {
     setShowQuizModal(false);
     const typesStr = Array.from(selectedQuizTypes).join(',');
-    const diffsStr = difficultyList.join(',');
-    router.push(`/study/havuz?types=${typesStr}&difficulties=${diffsStr}&onlyUnknown=${onlyUnknown}` as any);
-  }, [selectedQuizTypes, difficultyList, onlyUnknown, router]);
+    const diffsStr = Array.from(quizDifficulties).join(',');
+    router.push(`/study/havuz?types=${typesStr}&difficulties=${diffsStr}&onlyUnknown=${poolOnlyUnknown}&size=${quizSize}` as any);
+  }, [selectedQuizTypes, quizDifficulties, poolOnlyUnknown, quizSize, router]);
 
   const { 
     data: frequentWordsData, 
@@ -928,6 +941,12 @@ export default function VocabularyScreen() {
         visible={showQuizModal}
         selectedTypes={selectedQuizTypes}
         onToggleType={handleToggleQuizType}
+        selectedDifficulties={quizDifficulties}
+        onToggleDifficulty={handleToggleQuizDifficulty}
+        onlyUnknown={poolOnlyUnknown}
+        onToggleOnlyUnknown={setPoolOnlyUnknown}
+        quizSize={quizSize}
+        onSizeChange={setQuizSize}
         onClose={() => setShowQuizModal(false)}
         onConfirm={handleStartStudy}
         styles={styles}

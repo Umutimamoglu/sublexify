@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Moon, Globe, Settings2, Bell, Shield, BellRing, User } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { useTranslation } from 'react-i18next';
 
 const SettingsPage = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-2xl relative pb-20">
@@ -14,27 +16,27 @@ const SettingsPage = () => {
                 >
                     <ArrowLeft className="w-5 h-5 text-gray-900 dark:text-white" />
                 </button>
-                <h1 className="text-2xl font-black text-gray-900 dark:text-white">Ayarlar</h1>
+                <h1 className="text-2xl font-black text-gray-900 dark:text-white">{t('settings.title')}</h1>
             </div>
 
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* Account Section */}
                 <div>
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">Hesap</h3>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">{t('settings.sections.account')}</h3>
                     <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-3xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                        <SettingsItem icon={User} title="Hesap Bilgileri" subtitle="Kişisel bilgilerinizi güncelleyin" />
-                        <SettingsItem icon={BellRing} title="Bildirimler" subtitle="Bildirim tercihlerinizi yönetin" />
-                        <SettingsItem icon={Shield} title="Gizlilik" subtitle="Veri paylaşımı ve gizlilik ayarları" />
+                        <SettingsItem icon={User} title={t('settings.items.account_info.title')} subtitle={t('settings.items.account_info.subtitle')} />
+                        <SettingsItem icon={BellRing} title={t('settings.items.notifications.title')} subtitle={t('settings.items.notifications.subtitle')} />
+                        <SettingsItem icon={Shield} title={t('settings.items.privacy.title')} subtitle={t('settings.items.privacy.subtitle')} />
                     </div>
                 </div>
 
                 {/* Preferences Section */}
                 <div>
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">Tercihler</h3>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">{t('settings.sections.preferences')}</h3>
                     <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-3xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                        <SettingsItem icon={Moon} title="Görünüm" subtitle="Açık/Koyu tema ayarı" />
-                        <SettingsItem icon={Globe} title="Dil" subtitle="Uygulama dilini değiştirin" />
-                        <SettingsItem icon={Settings2} title="Çalışma Ayarları" subtitle="Günlük hedef kelime sayısı (Geliştiriliyor)" />
+                        <SettingsItem icon={Moon} title={t('settings.items.appearance.title')} subtitle={t('settings.items.appearance.subtitle')} />
+                        <SettingsItem icon={Globe} title={t('settings.items.language.title')} subtitle={t('settings.items.language.subtitle')} />
+                        <SettingsItem icon={Settings2} title={t('settings.items.study_settings.title')} subtitle={t('settings.items.study_settings.subtitle')} />
                     </div>
                 </div>
             </div>

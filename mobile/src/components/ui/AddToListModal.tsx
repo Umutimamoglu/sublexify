@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useListPreferences } from '@/src/hooks/useListPreferences';
 import {
   View,
   Text,
@@ -168,6 +169,7 @@ export default function AddToListModal({
   const { t } = useTranslation('lists');
   const { t: tCommon } = useTranslation('common');
   const { theme } = useTheme();
+  const { prefs } = useListPreferences();
   const c = useMemo<Palette>(() => ({
     BG: theme.colors.background,
     SURFACE: theme.colors.surface,
@@ -257,10 +259,10 @@ export default function AddToListModal({
     });
   }, [newListName, createList, addWord, wordId]);
 
-  // Only user-created lists — system/curated lists are locked
+  // Only user-created & visible lists — system/curated lists are locked
   const customLists = useMemo(
-    () => lists.filter((l) => !l.isSystem),
-    [lists],
+    () => lists.filter((l) => !l.isSystem && !prefs.hiddenIds.includes(l.id)),
+    [lists, prefs.hiddenIds],
   );
 
   return (

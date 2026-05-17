@@ -74,6 +74,9 @@ public class StudyService {
         List<Long> wordIds = allWords.stream().map(Word::getId).collect(Collectors.toList());
         List<UserWordProgress> progresses = userWordProgressRepository.findByUserIdAndWordIdIn(userId, wordIds);
 
+        // Shuffle first so elements with equal sorting scores are randomized
+        Collections.shuffle(allWords);
+
         allWords.sort((w1, w2) -> {
             UserWordProgress p1 = getProgress(progresses, w1.getId());
             UserWordProgress p2 = getProgress(progresses, w2.getId());

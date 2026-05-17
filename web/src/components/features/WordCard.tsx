@@ -3,6 +3,7 @@ import { CheckCircle2, Bookmark, Volume2, Trash2, ChevronDown, ChevronUp, Gradua
 import { cn } from '@/utils/cn';
 import ListSelectionModal from './ListSelectionModal';
 import { WordDefinition } from '@/services/WordListService';
+import { useTranslation } from 'react-i18next';
 
 interface WordProps {
     id: number;
@@ -17,6 +18,7 @@ interface WordProps {
 }
 
 const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onToggleKnown, onRemove, isSystemProtected = false }: WordProps) => {
+    const { t } = useTranslation();
     // Frequency to visual width (cap at 100%)
     const freqWidth = Math.min(frequency * 5, 100);
     const [showListModal, setShowListModal] = useState(false);
@@ -111,14 +113,14 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                                 ? "text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30"
                                                 : "text-gray-400 bg-gray-50 border-gray-100 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 dark:bg-gray-800/50 dark:border-gray-700 dark:hover:bg-emerald-500/10 dark:hover:border-emerald-500/30"
                                         )}
-                                        title={isKnown ? "Mark Unknown" : "Mark Known"}
+                                        title={isKnown ? t('word_card.mark_unknown') : t('word_card.mark_known')}
                                     >
                                         <CheckCircle2 className="w-4 h-4" />
                                     </button>
                                     <button
                                         onClick={(e) => handleAction(e, () => setShowListModal(true))}
                                         className="p-1.5 rounded-lg text-gray-400 bg-gray-50 border border-gray-100 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 dark:bg-gray-800/50 dark:border-gray-700 dark:hover:bg-indigo-500/10 dark:hover:border-indigo-500/30 transition-colors"
-                                        title="Add to List"
+                                        title={t('word_card.add_to_list')}
                                     >
                                         <Bookmark className="w-4 h-4" />
                                     </button>
@@ -156,7 +158,7 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                         <div className="w-full mt-auto">
                             <div className="flex items-center justify-center gap-2 text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest font-medium">
                                 <span className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-700 animate-pulse"></span>
-                                Click to flip
+                                {t('word_card.click_to_flip')}
                             </div>
                         </div>
 
@@ -189,14 +191,14 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                             ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400"
                                             : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
                                     )}
-                                    title={isKnown ? "Mark Unknown" : "Mark Known"}
+                                    title={isKnown ? t('word_card.mark_unknown') : t('word_card.mark_known')}
                                 >
                                     <CheckCircle2 className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={(e) => handleAction(e, () => setShowListModal(true))}
                                     className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
-                                    title="Add to List"
+                                    title={t('word_card.add_to_list')}
                                 >
                                     <Bookmark className="w-4 h-4" />
                                 </button>
@@ -204,7 +206,7 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                     <button
                                         onClick={(e) => handleAction(e, onRemove)}
                                         className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                        title="Remove"
+                                        title={t('word_card.remove')}
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -232,7 +234,7 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                     {/* Verb Forms */}
                                     {definition.verb_forms && (
                                         <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
-                                            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">Verb Forms</h4>
+                                            <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase mb-2">{t('word_card.verb_forms')}</h4>
                                             <div className="grid grid-cols-4 gap-1.5">
                                                 {[
                                                     { label: 'V1', val: definition.verb_forms.v1 },
@@ -253,7 +255,7 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                     {definition.phrasal_verbs && definition.phrasal_verbs.length > 0 && (
                                         <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
                                             <div className="flex items-center justify-between mb-2">
-                                                <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">Phrases</h4>
+                                                <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{t('word_card.phrases')}</h4>
                                             </div>
                                             <div className="space-y-2">
                                                 {definition.phrasal_verbs.slice(0, 2).map((pv, idx) => (
@@ -273,7 +275,7 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                 </>
                             ) : (
                                 <div className="flex items-center justify-center h-full text-center p-4 text-gray-400 text-sm">
-                                    <p>No detailed definition available yet.</p>
+                                    <p>{t('word_card.no_definition')}</p>
                                 </div>
                             )}
                         </div>

@@ -1,27 +1,23 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import trCommon from './locales/tr/common.json';
+import enCommon from './locales/en/common.json';
+
+const savedLanguage = typeof window !== 'undefined' ? localStorage.getItem('language') || 'tr' : 'tr';
 
 i18n
     .use(initReactI18next)
     .init({
         resources: {
             en: {
-                translation: {
-                    "welcome": "Welcome to Sublex",
-                    "media_list": "Media List",
-                    "words": "Words"
-                }
+                translation: enCommon
             },
             tr: {
-                translation: {
-                    "welcome": "Sublex'e Hoşgeldiniz",
-                    "media_list": "Medya Listesi",
-                    "words": "Kelimeler"
-                }
+                translation: trCommon
             }
         },
-        lng: "en",
-        fallbackLng: "en",
+        lng: savedLanguage,
+        fallbackLng: 'tr',
         interpolation: {
             escapeValue: false
         }

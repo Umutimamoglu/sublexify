@@ -20,7 +20,12 @@ import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useStudyBatch, useSubmitStudyResults } from '@/src/api/queries/study.queries';
-import type { StudyResultDTO } from '@/src/types/api';
+import { useKnownWords } from '@/src/api/queries/user.queries';
+import { useMarkKnown } from '@/src/api/queries/words.queries';
+import type { StudyResultDTO, ListWord } from '@/src/types/api';
+import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
+import AddToListModal from '@/src/components/ui/AddToListModal';
+
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;
@@ -168,6 +173,28 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
       paddingVertical: 14, paddingHorizontal: 48, marginTop: 8,
     },
     finishBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+    // ─── Word Chip (after answer reveal) ─────────────────────
+    wordChip: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'space-between',
+      marginTop: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: isDark ? '#ffffff15' : c.BORDER,
+      backgroundColor: isDark ? '#ffffff08' : c.SURFACE,
+    },
+    wordChipLeft: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10 },
+    wordChipWord: { color: c.TEXT_P, fontSize: 16, fontWeight: '800' },
+    wordChipDiff: { color: c.TEXT_S, fontSize: 12, fontWeight: '600' },
+    wordChipInfoBtn: {
+      width: 34, height: 34, borderRadius: 17,
+      backgroundColor: c.PURPLE + '20',
+      alignItems: 'center' as const, justifyContent: 'center' as const,
+    },
   });
 }
 
@@ -177,12 +204,14 @@ export default function StudyScreen({
   listId, 
   types, 
   difficulties, 
-  onlyUnknown 
+  onlyUnknown,
+  size = 20,
 }: { 
   listId: number | null; 
   types?: string[];
   difficulties?: string[];
   onlyUnknown?: boolean;
+  size?: number;
 }) {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
@@ -202,8 +231,28 @@ export default function StudyScreen({
 
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
-  const { data: questions = [], isLoading } = useStudyBatch(listId, types, difficulties, onlyUnknown);
+  const { data: questions = [], isLoading } = useStudyBatch(listId, types, difficulties, onlyUnknown, size);
   const { mutate: submitResults, isPending: submitting } = useSubmitStudyResults();
+  const { mutate: toggleKnown } = useMarkKnown();
+  const { data: knownWordsData = [] } = useKnownWords();
+  const knownIdsSet = useMemo(() => new Set<number>(knownWordsData.map((w: { id: number }) => w.id)), [knownWordsData]);
+
+  // Helper: StudyQuestionDTO → ListWord (for preview overlay)
+  const questionToListWord = useCallback((q: typeof questions[0]): ListWord => ({
+    id: q.wordId,
+    word: q.word,
+    language: 'en',
+    difficulty: null,
+    definition: q.definition ? {
+      word: q.word,
+      difficulty: '',
+      meanings: [{ pos: '', definition: q.definition, example: q.contextSentence ?? '' }],
+      phrasal_verbs: [],
+      verb_forms: null,
+    } : null,
+    isEnriched: true,
+    isKnown: knownIdsSet.has(q.wordId),
+  }), [knownIdsSet]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<StudyResultDTO[]>([]);
@@ -212,6 +261,8 @@ export default function StudyScreen({
   const [fillValue, setFillValue] = useState('');
   const [fillFocused, setFillFocused] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [previewWord, setPreviewWord] = useState<ListWord | null>(null);
+  const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
 
   const handleNextRef = useRef<() => void>(null);
 
@@ -257,11 +308,12 @@ export default function StudyScreen({
     setRevealed(false);
     setFillValue('');
     setFillFocused(false);
+    setPreviewWord(null);
 
     if (currentIndex + 1 >= total) {
       submitResults(answers, {
         onSuccess: () => setShowSummary(true),
-        onError: () => setShowSummary(true), // show summary even on error
+        onError: () => setShowSummary(true),
       });
     } else {
       setCurrentIndex((i) => i + 1);
@@ -441,6 +493,33 @@ export default function StudyScreen({
                   )}
                 </View>
 
+                {/* ── Word Chip ── */}
+                {!!question && (
+                  <TouchableOpacity
+                    style={styles.wordChip}
+                    onPress={() => setPreviewWord(questionToListWord(question))}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.wordChipLeft}>
+                      <Text style={styles.wordChipWord}>{question.word}</Text>
+                      {!!question.definition && (
+                        <Text style={styles.wordChipDiff} numberOfLines={1}>
+                          {question.definition.length > 40
+                            ? question.definition.substring(0, 40) + '…'
+                            : question.definition}
+                        </Text>
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      style={styles.wordChipInfoBtn}
+                      onPress={() => setPreviewWord(questionToListWord(question))}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons name="information-circle-outline" size={20} color={c.PURPLE} />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                )}
+
                 {(!answers[answers.length - 1]?.isCorrect || currentIndex === questions.length - 1) && (
                   <TouchableOpacity
                     style={[styles.nextBtn, submitting && { opacity: 0.6 }]}
@@ -486,6 +565,31 @@ export default function StudyScreen({
           </View>
         </View>
       </Modal>
+
+      {/* Word Preview Overlay */}
+      <WordPreviewOverlay
+        word={previewWord}
+        visible={!!previewWord}
+        onClose={() => setPreviewWord(null)}
+        isDark={isDark}
+        c={c}
+        onAddToList={(wordId, wordName) => {
+          setPreviewWord(null);
+          setAddModal({ wordId, wordName });
+        }}
+        onToggleKnown={(wordId) => {
+          toggleKnown({ wordId, isKnown: knownIdsSet.has(wordId) });
+        }}
+        knownIdsSet={knownIdsSet}
+      />
+
+      {/* Add To List Modal */}
+      <AddToListModal
+        visible={!!addModal}
+        wordId={addModal?.wordId || 0}
+        wordName={addModal?.wordName || ''}
+        onClose={() => setAddModal(null)}
+      />
     </View>
   );
 }

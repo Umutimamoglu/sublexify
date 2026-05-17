@@ -2,10 +2,12 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MediaService, { type Media } from '@/services/MediaService';
 import { Loader2, ArrowLeft, Play, Clock, Star } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const SeriesDetailPage = () => {
     const { tmdbId } = useParams<{ tmdbId: string }>();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSeason, setSelectedSeason] = useState<number>(1);
@@ -52,7 +54,7 @@ const SeriesDetailPage = () => {
     }, [seriesEpisodes, selectedSeason]);
 
     if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin" /></div>;
-    if (!seriesMeta) return <div className="p-10 text-center">Series not found</div>;
+    if (!seriesMeta) return <div className="p-10 text-center">{t('series_detail.not_found')}</div>;
 
     return (
         <div>
@@ -69,22 +71,22 @@ const SeriesDetailPage = () => {
                         onClick={() => navigate('/browse/series')}
                         className="mb-4 flex items-center gap-2 text-white/80 hover:text-white transition-colors"
                     >
-                        <ArrowLeft className="w-5 h-5" /> Back to Series
+                        <ArrowLeft className="w-5 h-5" /> {t('series_detail.back_to_series')}
                     </button>
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{seriesMeta.title}</h1>
                     <div className="flex items-center gap-4 text-white/80 text-sm">
                         <span className="flex items-center gap-1">
                             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" /> {seriesMeta.voteAverage?.toFixed(1)}
                         </span>
-                        <span>{seasons.length} Seasons</span>
-                        <span>{seriesEpisodes.length} Episodes</span>
+                        <span>{t('browse.season_plural', { count: seasons.length })}</span>
+                        <span>{t('browse.episode_plural', { count: seriesEpisodes.length })}</span>
                     </div>
                 </div>
             </div>
 
             {/* Overview */}
             <div className="mb-10 max-w-4xl">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Overview</h2>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('series_detail.overview')}</h2>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                     {seriesMeta.overview}
                 </p>
@@ -101,7 +103,7 @@ const SeriesDetailPage = () => {
                                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
                     >
-                        Season {season}
+                        {t('series_detail.season_label', { count: season })}
                     </button>
                 ))}
             </div>
@@ -130,11 +132,11 @@ const SeriesDetailPage = () => {
                                 {episode.episodeNumber}. {episode.title}
                             </h4>
                             <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                                {episode.overview || "No overview available."}
+                                {episode.overview || t('series_detail.no_overview')}
                             </p>
                             <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
                                 <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" /> {episode.totalWords} words
+                                    <Clock className="w-3 h-3" /> {t('common.word_count', { count: episode.totalWords })}
                                 </span>
                             </div>
                         </div>

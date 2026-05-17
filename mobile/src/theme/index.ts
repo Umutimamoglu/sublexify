@@ -1,3 +1,3 @@
-export { lightTheme, type Theme } from './lightTheme';
-export { darkTheme } from './darkTheme';
+export { createLightTheme, type Theme } from './lightTheme';
+export { createDarkTheme } from './darkTheme';
 export * from './tokens';

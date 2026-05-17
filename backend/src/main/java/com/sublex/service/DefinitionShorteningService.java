@@ -24,7 +24,6 @@ public class DefinitionShorteningService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final int MAX_DEFINITION_LENGTH = 60;
-    private static final Set<String> TARGET_DIFFICULTIES = Set.of("A1", "A2", "B1");
 
     /**
      * Returns count of words that need definition shortening.
@@ -57,7 +56,7 @@ public class DefinitionShorteningService {
 
         // Breakdown by difficulty
         Map<String, Long> byDifficulty = new LinkedHashMap<>();
-        for (String diff : List.of("A1", "A2", "B1")) {
+        for (String diff : List.of("A1", "A2", "B1", "B2", "C1", "C2")) {
             byDifficulty.put(diff, candidates.stream()
                     .filter(w -> diff.equalsIgnoreCase(w.getDifficulty()))
                     .count());
@@ -71,11 +70,10 @@ public class DefinitionShorteningService {
      * Finds words with verbose definitions (A1-B1, definition > 60 chars).
      */
     public List<Word> findCandidates(int limit) {
-        List<Word> enrichedWords = wordRepository.findByIsEnrichedTrueAndLanguageAndDifficultyIn(
-                "en", List.of("A1", "A2", "B1"));
+        List<Word> enrichedWords = wordRepository.findByLanguageAndIsEnrichedTrue("en");
 
         return enrichedWords.stream()
-                .filter(w -> w.getDifficulty() != null && TARGET_DIFFICULTIES.contains(w.getDifficulty().toUpperCase()))
+                .filter(w -> w.getDifficulty() != null)
                 .filter(w -> w.getDefinition() != null && w.getDefinition().getMeanings() != null)
                 .filter(w -> !w.getDefinition().getMeanings().isEmpty())
                 .filter(w -> {

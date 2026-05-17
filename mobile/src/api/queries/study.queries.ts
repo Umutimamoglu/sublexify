@@ -4,21 +4,22 @@ import { ENDPOINTS } from '@/src/api/endpoints';
 import type { StudyQuestionDTO, StudyResultDTO } from '@/src/types/api';
 
 export const studyKeys = {
-  batch: (listId: number | null, types?: string[], difficulties?: string[], onlyUnknown?: boolean) => 
-    ['study', 'batch', listId, types, difficulties, onlyUnknown] as const,
+  batch: (listId: number | null, types?: string[], difficulties?: string[], onlyUnknown?: boolean, size?: number) => 
+    ['study', 'batch', listId, types, difficulties, onlyUnknown, size] as const,
 };
 
 export function useStudyBatch(
   listId: number | null, 
   types?: string[], 
   difficulties?: string[], 
-  onlyUnknown?: boolean
+  onlyUnknown?: boolean,
+  size: number = 20,
 ) {
   return useQuery<StudyQuestionDTO[]>({
-    queryKey: studyKeys.batch(listId, types, difficulties, onlyUnknown),
+    queryKey: studyKeys.batch(listId, types, difficulties, onlyUnknown, size),
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.append('size', '10');
+      params.append('size', size.toString());
       if (listId) params.append('listId', listId.toString());
       if (types && types.length > 0) params.append('types', types.join(','));
       if (difficulties && difficulties.length > 0) params.append('difficulties', difficulties.join(','));
@@ -29,7 +30,8 @@ export function useStudyBatch(
       );
       return res.data;
     },
-    enabled: !!listId || (difficulties !== undefined && onlyUnknown !== undefined),
+    // Always enabled — for pool mode (listId=null) it fetches from the word pool
+    enabled: listId !== undefined,
     staleTime: 0,
   });
 }

@@ -7,10 +7,12 @@ import WordListService from '@/services/WordListService';
 import { Loader2, ArrowLeft, Filter, CheckCircle2, BookOpen, Download, Wand2, Check } from 'lucide-react';
 import api from '@/services/api';
 import { cn } from '@/utils/cn';
+import { useTranslation } from 'react-i18next';
 
 
 const MediaDetailPage = () => {
     const { id } = useParams<{ id: string }>();
+    const { t } = useTranslation();
     const [media, setMedia] = useState<Media | null>(null);
     const [wordData, setWordData] = useState<MediaWordsResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -75,11 +77,11 @@ const MediaDetailPage = () => {
         ).length || 0;
 
         if (count === 0) {
-            alert('Bu seviyelerde işaretlenecek yeni kelime bulunamadı.');
+            alert(t('media_detail.no_words_to_mark'));
             return;
         }
 
-        const confirmMessage = `⚠️ Bildiklerine Ekle\n\nSeçili olan ${count} adet ${selectedLevels.join(' & ')} seviyesi kelimeyi bildiklerim listesine eklemek istediğinize emin misiniz? Bu işlem ilerleme durumunuzu toplu olarak değiştirecektir.`;
+        const confirmMessage = t('media_detail.mark_batch_confirm', { count, levels: selectedLevels.join(' & ') });
 
         if (window.confirm(confirmMessage)) {
             try {
@@ -102,7 +104,7 @@ const MediaDetailPage = () => {
                 }
             } catch (err) {
                 console.error('Failed to mark batch as known', err);
-                alert('İşlem sırasında bir hata oluştu.');
+                alert(t('common.error_occurred'));
             }
         }
     };
@@ -117,7 +119,7 @@ const MediaDetailPage = () => {
             setTimeout(() => setIsGenerationSuccess(false), 3000);
         } catch (error) {
             console.error('Failed to generate list:', error);
-            alert('Liste oluşturulamadı. Lütfen tekrar deneyin.');
+            alert(t('media_detail.create_failed'));
         } finally {
             setIsGeneratingList(false);
         }
@@ -127,13 +129,13 @@ const MediaDetailPage = () => {
         return (
             <div className="flex flex-col justify-center items-center h-64 gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                <span className="text-sm text-gray-500 dark:text-gray-400">Loading...</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{t('common.loading')}</span>
             </div>
         );
     }
 
     if (!media || !wordData) return (
-        <div className="text-center py-20 text-gray-500 dark:text-gray-400">Media not found</div>
+        <div className="text-center py-20 text-gray-500 dark:text-gray-400">{t('media_detail.not_found')}</div>
     );
 
     const knownCount = wordData.words.filter(w => w.isKnown).length;
@@ -147,7 +149,7 @@ const MediaDetailPage = () => {
                 to="/"
                 className="inline-flex items-center gap-2 px-4 py-2 mb-6 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-                <ArrowLeft className="w-4 h-4" /> Back to Library
+                <ArrowLeft className="w-4 h-4" /> {t('media_detail.back_to_library')}
             </Link>
 
             <MediaHeader media={media} />
@@ -159,10 +161,10 @@ const MediaDetailPage = () => {
                     <div className="flex items-center gap-4">
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <BookOpen className="w-5 h-5 text-indigo-500" />
-                            Vocabulary
+                            {t('media_detail.vocabulary')}
                         </h2>
                         <span className="text-sm text-gray-400 dark:text-gray-500">
-                            {totalCount} words
+                            {t('common.word_count', { count: totalCount })}
                         </span>
                     </div>
 
@@ -170,7 +172,7 @@ const MediaDetailPage = () => {
                         <div className="hidden sm:flex items-center gap-2 text-sm">
                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                             <span className="font-medium text-gray-700 dark:text-gray-300">{knownCount}</span>
-                            <span className="text-gray-400 dark:text-gray-500">known</span>
+                            <span className="text-gray-400 dark:text-gray-500">{t('common.known')}</span>
                             <span className="text-gray-300 dark:text-gray-700">·</span>
                             <span className="font-semibold text-indigo-600 dark:text-indigo-400">{progressPercent}%</span>
                         </div>
@@ -185,7 +187,7 @@ const MediaDetailPage = () => {
                             )}
                         >
                             <Filter className="w-3.5 h-3.5" />
-                            {filterUnknown ? 'Unknown only' : 'All status'}
+                            {filterUnknown ? t('common.filter_unknown') : t('common.filter_all')}
                         </button>
 
                         <button
@@ -198,7 +200,7 @@ const MediaDetailPage = () => {
                             )}
                         >
                             <Filter className="w-3.5 h-3.5" />
-                            {sortBy === 'frequency' ? 'Most Frequent' : 'Normal Order'}
+                            {sortBy === 'frequency' ? t('media_detail.sort_frequent') : t('media_detail.sort_normal')}
                         </button>
 
                         <button
@@ -218,7 +220,7 @@ const MediaDetailPage = () => {
                             ) : (
                                 <Wand2 className="w-4 h-4" />
                             )}
-                            {isGeneratingList ? 'Lise Hazırlanıyor...' : isGenerationSuccess ? 'Liste Hazır!' : 'Bilinmeyenlerden Liste Oluştur'}
+                            {isGeneratingList ? t('common.preparing') : isGenerationSuccess ? t('common.ready') : t('media_detail.create_from_unknown')}
                         </button>
                     </div>
                 </div>
@@ -269,14 +271,14 @@ const MediaDetailPage = () => {
                             >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                 {selectedLevels.length === 1
-                                    ? `Tüm ${selectedLevels[0]} Seviyesini Bildiklerime Ekle`
-                                    : `Tüm ${selectedLevels.join(' & ')} Seviyelerini Bildiklerime Ekle`}
+                                    ? t('media_detail.mark_level_known', { level: selectedLevels[0] })
+                                    : t('media_detail.mark_levels_known', { levels: selectedLevels.join(' & ') })}
                             </button>
                             <button
                                 onClick={() => setSelectedLevels([])}
                                 className="text-xs text-gray-400 hover:text-indigo-500 transition-colors ml-2"
                             >
-                                Clear levels
+                                {t('common.clear_levels')}
                             </button>
                         </>
                     )}
@@ -313,7 +315,7 @@ const MediaDetailPage = () => {
                         onClick={() => setVisibleCount(prev => prev + 100)}
                         className="px-8 py-3 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm"
                     >
-                        Load More Words ({wordData.words.length - visibleCount} remaining)
+                        {t('common.load_more', { count: wordData.words.length - visibleCount })}
                     </button>
                 </div>
             )}

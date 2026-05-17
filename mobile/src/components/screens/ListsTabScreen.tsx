@@ -14,6 +14,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -22,9 +23,11 @@ import { useResponsive } from '@/src/hooks/useResponsive';
 import { useLists, useCreateList, useDeleteList, useUpdateList } from '@/src/api/queries/lists.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMedia } from '@/src/api/queries/media.queries';
+import { useListPreferences } from '@/src/hooks/useListPreferences';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { WordListDTO } from '@/src/types/api';
+
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;
@@ -63,32 +66,33 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
     // Modern List card (matches Discover listRow)
     listCard: {
-      marginHorizontal: pad, marginBottom: 14,
+      marginHorizontal: pad, marginBottom: 10,
       flexDirection: 'row', alignItems: 'center',
       backgroundColor: isDark ? '#1a1a1c' : '#ffffff',
-      borderRadius: 24, paddingVertical: 18, paddingLeft: 20, paddingRight: 24,
+      borderRadius: 20, paddingVertical: 14, paddingLeft: 16, paddingRight: 20,
       elevation: isDark ? 0 : 2,
       shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
       shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 10,
     },
     listCardStrip: {
-       position: 'absolute', left: 0, top: 0, bottom: 0, width: 10,
-       borderTopLeftRadius: 24, borderBottomLeftRadius: 24,
+       position: 'absolute', left: 0, top: 0, bottom: 0, width: 8,
+       borderTopLeftRadius: 20, borderBottomLeftRadius: 20,
     },
     listIconCircle: {
-      width: 52, height: 52, borderRadius: 20,
+      width: 44, height: 44, borderRadius: 16,
       alignItems: 'center', justifyContent: 'center',
-      marginRight: 16,
+      marginRight: 12,
     },
     listCardBody: { flex: 1, gap: 4 },
     listCardRow: { flexDirection: 'row', alignItems: 'flex-start' },
     listCardInfo: { flex: 1 },
-    listCardName: { color: c.TEXT_P, fontSize: 16, fontWeight: '800' },
-    listCardStats: { color: c.TEXT_S, fontSize: 13, fontWeight: '500', marginTop: 2 },
+    listCardName: { color: c.TEXT_P, fontSize: 15, fontWeight: '800' },
+    listCardStats: { color: c.TEXT_S, fontSize: 12, fontWeight: '500', marginTop: 2 },
     listCardActions: { flexDirection: 'row', gap: 6, marginLeft: 8 },
-    editBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
-    deleteBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#EF444415', alignItems: 'center', justifyContent: 'center' },
-    lockIconBox: { marginLeft: 10, alignSelf: 'center', width: 28, height: 28, borderRadius: 14, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
+    editBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
+    deleteBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#EF444415', alignItems: 'center', justifyContent: 'center' },
+    hideBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
+    lockIconBox: { marginLeft: 10, alignSelf: 'center', width: 24, height: 24, borderRadius: 12, backgroundColor: c.SURFACE2, alignItems: 'center', justifyContent: 'center' },
 
     // Color swatches
     swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
@@ -127,6 +131,18 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     mediaTitle: { color: c.TEXT_P, fontSize: 11, textAlign: 'center', fontWeight: '600' },
     mediaRemoveBtn: { paddingVertical: 10, alignSelf: 'flex-start' },
     mediaRemoveText: { color: '#EF4444', fontSize: 13, fontWeight: '600' },
+
+    // Search bar for media
+    searchBarContainer: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: c.SURFACE2, borderRadius: 10,
+      paddingHorizontal: 12, paddingVertical: 8,
+      marginTop: 4, marginBottom: 4,
+      borderWidth: 1, borderColor: c.BORDER,
+    },
+    searchInput: {
+      flex: 1, color: c.TEXT_P, fontSize: 14,
+    },
   });
 }
 
@@ -171,6 +187,10 @@ function ListCard({
   onPress,
   onDelete,
   onEdit,
+  onToggleHidden,
+  isHidden,
+  drag,
+  isActive,
   styles,
   c,
 }: {
@@ -179,6 +199,10 @@ function ListCard({
   onPress: () => void;
   onDelete: () => void;
   onEdit: () => void;
+  onToggleHidden: () => void;
+  isHidden: boolean;
+  drag?: () => void;
+  isActive?: boolean;
   styles: Styles;
   c: Palette;
 }) {
@@ -205,15 +229,19 @@ function ListCard({
   else if (n.includes('business') || n.includes('professional')) iconName = 'briefcase-outline';
   else if (item.isSystem) iconName = 'albums-outline';
 
-  return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={onPress}
-      style={[
-        styles.listCard,
-        { overflow: 'hidden' }
-      ]}
-    >
+  const content = (
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onPress}
+        onLongPress={drag}
+        delayLongPress={200}
+        style={[
+          styles.listCard,
+          { overflow: 'hidden' },
+          isActive && { opacity: 0.85, elevation: 8, shadowOpacity: 0.15 },
+          isHidden && { opacity: 0.45 },
+        ]}
+      >
       {/* Background tint layer that preserves the opaque base color for Android elevation */}
       {!!item.color && (
         <View 
@@ -251,7 +279,7 @@ function ListCard({
         />
       ) : (
         <View style={[styles.listIconCircle, { backgroundColor: colorHex + '1A' }]}>
-          <Ionicons name={iconName} size={24} color={colorHex} />
+          <Ionicons name={iconName} size={20} color={colorHex} />
         </View>
       )}
 
@@ -267,11 +295,14 @@ function ListCard({
           </View>
           {!item.isSystem && (
             <View style={styles.listCardActions}>
+              <TouchableOpacity style={styles.hideBtn} onPress={onToggleHidden} activeOpacity={0.7}>
+                <Ionicons name={isHidden ? 'eye-off-outline' : 'eye-outline'} size={13} color={isHidden ? '#F59E0B' : c.TEXT_S} />
+              </TouchableOpacity>
               <TouchableOpacity style={styles.editBtn} onPress={onEdit} activeOpacity={0.7}>
-                <Ionicons name="pencil-outline" size={15} color={c.TEXT_S} />
+                <Ionicons name="pencil-outline" size={13} color={c.TEXT_S} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} activeOpacity={0.7}>
-                <Ionicons name="trash-outline" size={15} color="#EF4444" />
+                <Ionicons name="trash-outline" size={13} color="#EF4444" />
               </TouchableOpacity>
             </View>
           )}
@@ -284,6 +315,12 @@ function ListCard({
       </View>
     </TouchableOpacity>
   );
+
+  return drag ? (
+    <ScaleDecorator activeScale={0.97}>
+      {content}
+    </ScaleDecorator>
+  ) : content;
 }
 
 // ─── Create list modal ─────────────────────────────────────────
@@ -316,10 +353,12 @@ function CreateModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1, justifyContent: 'flex-end' }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <TouchableOpacity style={{ flex: 1, backgroundColor: '#00000088' }} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose}>
+          <View style={{ flex: 1, backgroundColor: '#00000088' }} />
+        </TouchableOpacity>
         <View style={styles.modalSheet}>
           <Text style={styles.modalTitle}>{t('newList')}</Text>
           <TextInput
@@ -354,8 +393,11 @@ function CreateModal({
 
 // ─── Renk paleti ───────────────────────────────────────────────
 const LIST_COLORS = [
-  '#7c3aed', '#2563eb', '#0891b2', '#059669',
-  '#d97706', '#dc2626', '#db2777', '#6b7280',
+  '#7c3aed', '#2563eb', '#0ea5e9', '#0891b2',
+  '#14b8a6', '#10b981', '#059669', '#84cc16',
+  '#eab308', '#f59e0b', '#d97706', '#ea580c',
+  '#ef4444', '#dc2626', '#ec4899', '#db2777',
+  '#d946ef', '#8b5cf6', '#6366f1', '#6b7280',
 ];
 
 // ─── Edit list modal ───────────────────────────────────────────
@@ -380,8 +422,15 @@ function EditListModal({
   const [name, setName] = useState('');
   const [color, setColor] = useState('');
   const [mediaId, setMediaId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const { data: allMedia = [] } = useMedia();
+
+  const filteredMedia = useMemo(() => {
+    if (!searchQuery.trim()) return allMedia;
+    const q = searchQuery.toLowerCase();
+    return allMedia.filter(m => m.title.toLowerCase().includes(q));
+  }, [allMedia, searchQuery]);
 
   // item değişince formu doldur
   React.useEffect(() => {
@@ -389,18 +438,22 @@ function EditListModal({
       setName(item.name);
       setColor(item.color ?? '');
       setMediaId(item.sourceMediaId ?? null);
+      setSearchQuery('');
     }
   }, [item]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1, justifyContent: 'flex-end' }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <TouchableOpacity style={{ flex: 1, backgroundColor: '#00000088' }} activeOpacity={1} onPress={onClose} />
-        <View style={styles.modalSheet}>
-          <Text style={styles.modalTitle}>Listeyi Düzenle</Text>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose}>
+          <View style={{ flex: 1, backgroundColor: '#00000088' }} />
+        </TouchableOpacity>
+        <View style={[styles.modalSheet, { maxHeight: '90%' }]}>
+          <ScrollView contentContainerStyle={{ gap: 14 }} keyboardShouldPersistTaps="handled">
+            <Text style={styles.modalTitle}>Listeyi Düzenle</Text>
 
           <TextInput
             style={styles.modalInput}
@@ -437,22 +490,43 @@ function EditListModal({
 
           {/* Dizi/Film İlişkilendir */}
           <Text style={[styles.modalTitle, { fontSize: 13, fontWeight: '600', color: c.TEXT_S, marginTop: 10 }]}>İlişkilendirilecek Dizi/Film</Text>
-          <View style={{ maxHeight: 180 }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mediaSelectScroll}>
-              <TouchableOpacity
-                style={styles.mediaCard}
-                onPress={() => setMediaId(null)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.mediaPosterBox, mediaId === null && styles.mediaPosterSelected, { alignItems: 'center', justifyContent: 'center' }]}>
-                  <Ionicons name="close-circle-outline" size={32} color={c.TEXT_S} />
-                </View>
-                <Text style={styles.mediaTitle} numberOfLines={2}>Hiçbiri</Text>
-              </TouchableOpacity>
+          
+          <View style={styles.searchBarContainer}>
+            <Ionicons name="search" size={16} color={c.TEXT_S} style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Dizi/Film ara..."
+              placeholderTextColor={c.TEXT_S}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
 
-              {allMedia.map(media => (
+          <View style={{ flex: 1, minHeight: 180 }}>
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.mediaSelectScroll}
+              data={filteredMedia}
+              keyExtractor={(m) => m.id.toString()}
+              initialNumToRender={5}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              keyboardShouldPersistTaps="handled"
+              ListHeaderComponent={
                 <TouchableOpacity
-                  key={media.id}
+                  style={styles.mediaCard}
+                  onPress={() => setMediaId(null)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.mediaPosterBox, mediaId === null && styles.mediaPosterSelected, { alignItems: 'center', justifyContent: 'center' }]}>
+                    <Ionicons name="close-circle-outline" size={32} color={c.TEXT_S} />
+                  </View>
+                  <Text style={styles.mediaTitle} numberOfLines={2}>Hiçbiri</Text>
+                </TouchableOpacity>
+              }
+              renderItem={({ item: media }) => (
+                <TouchableOpacity
                   style={styles.mediaCard}
                   onPress={() => setMediaId(media.id)}
                   activeOpacity={0.7}
@@ -462,25 +536,26 @@ function EditListModal({
                   </View>
                   <Text style={styles.mediaTitle} numberOfLines={2}>{media.title}</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              )}
+            />
           </View>
 
-          <View style={styles.modalBtns}>
-            <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
-              <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalCreate, (!name.trim() || saving) && { opacity: 0.5 }]}
-              onPress={() => onSave(name.trim(), color, mediaId)}
-              disabled={!name.trim() || saving}
-            >
-              {saving
-                ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={styles.modalCreateText}>{tCommon('actions.save')}</Text>
-              }
-            </TouchableOpacity>
-          </View>
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
+                <Text style={styles.modalCancelText}>{tCommon('actions.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalCreate, (!name.trim() || saving) && { opacity: 0.5 }]}
+                onPress={() => onSave(name.trim(), color, mediaId)}
+                disabled={!name.trim() || saving}
+              >
+                {saving
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.modalCreateText}>{tCommon('actions.save')}</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -508,18 +583,46 @@ export default function ListsTabScreen() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [editingList, setEditingList] = useState<WordListDTO | null>(null);
+  const [showOnlyVisible, setShowOnlyVisible] = useState(false);
+
+  const { prefs, saveOrder, toggleHidden } = useListPreferences();
 
   const { data: rawLists = [], isLoading } = useLists();
   const systemLists = useMemo(
     () => rawLists.filter((l) => l.isSystem),
     [rawLists],
   );
-  const personalLists = useMemo(
-    () => [...rawLists.filter((l) => !l.isSystem)].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    ),
-    [rawLists],
-  );
+
+  // Apply saved order, then filter hidden if showOnlyVisible is on
+  const personalLists = useMemo<WordListDTO[]>(() => {
+    const unsorted = rawLists.filter((l) => !l.isSystem);
+    const sorted: WordListDTO[] = [];
+    const unsortedSet = new Set(unsorted.map((l) => l.id));
+
+    // Process based on saved order first
+    for (const id of prefs.order) {
+      if (typeof id === 'number' && unsortedSet.has(id)) {
+        const list = unsorted.find(l => l.id === id);
+        if (list) {
+          sorted.push(list);
+          unsortedSet.delete(id);
+        }
+      }
+    }
+
+    // Add any remaining unsorted items that weren't in order array
+    unsorted.forEach(list => {
+      if (unsortedSet.has(list.id)) {
+        sorted.push(list);
+      }
+    });
+
+    // Filter hidden when showOnlyVisible is on
+    if (showOnlyVisible) {
+      return sorted.filter(item => !prefs.hiddenIds.includes(item.id));
+    }
+    return sorted;
+  }, [rawLists, prefs.order, prefs.hiddenIds, showOnlyVisible]);
   const { data: knownWords = [] } = useKnownWords();
   const { mutate: createList, isPending: creating } = useCreateList();
   const { mutate: deleteList } = useDeleteList();
@@ -550,6 +653,11 @@ export default function ListsTabScreen() {
     );
   }, [editingList, updateList]);
 
+  const handleDragEnd = useCallback(({ data }: any) => {
+    const newOrder = data.map((item: WordListDTO) => item.id);
+    saveOrder(newOrder);
+  }, [saveOrder]);
+
   return (
     <View style={styles.root}>
       <StatusBar
@@ -560,6 +668,16 @@ export default function ListsTabScreen() {
 
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{t('myLists')}</Text>
+          <TouchableOpacity
+            style={[styles.addBtn, { backgroundColor: c.SURFACE2, marginRight: 8 }]}
+            onPress={() => setShowOnlyVisible((v) => !v)}
+          >
+            <Ionicons
+              name={showOnlyVisible ? 'eye-outline' : 'eye-off-outline'}
+              size={18}
+              color={showOnlyVisible ? c.PURPLE : c.TEXT_S}
+            />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.addBtn} onPress={() => setShowCreate(true)}>
             <Text style={styles.addBtnText}>+</Text>
           </TouchableOpacity>
@@ -570,9 +688,11 @@ export default function ListsTabScreen() {
             <ActivityIndicator color={c.PURPLE} size="large" />
           </View>
         ) : (
-          <FlatList
+          <DraggableFlatList
             data={personalLists}
             keyExtractor={(item) => String(item.id)}
+            onDragEnd={handleDragEnd}
+            activationDistance={8}
             ListHeaderComponent={() => (
               <>
                 {/* Bilinen Kelimeler */}
@@ -589,18 +709,21 @@ export default function ListsTabScreen() {
                     </Text>
                   </View>
                 </TouchableOpacity>
-
                 {/* Kişisel Listeler başlığı */}
                 <Text style={styles.sectionLabel}>{t('personalLists')}</Text>
               </>
             )}
-            renderItem={({ item, index }) => (
+            renderItem={({ item, getIndex, drag, isActive }: RenderItemParams<WordListDTO>) => (
               <ListCard
                 item={item}
-                index={index}
+                index={getIndex() ?? 0}
+                drag={drag}
+                isActive={isActive}
+                isHidden={prefs.hiddenIds.includes(item.id)}
                 onPress={() => router.push(`/list/${item.id}` as any)}
                 onDelete={() => handleDelete(item)}
                 onEdit={() => setEditingList(item)}
+                onToggleHidden={() => toggleHidden(item.id)}
                 styles={styles}
                 c={c}
               />
@@ -619,6 +742,10 @@ export default function ListsTabScreen() {
                     key={item.id}
                     item={item}
                     index={index + 1}
+                    isHidden={false}
+                    onToggleHidden={() => {}}
+                    drag={undefined}
+                    isActive={false}
                     onPress={() => router.push(`/list/${item.id}` as any)}
                     onDelete={() => {}}
                     onEdit={() => {}}
