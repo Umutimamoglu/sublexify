@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
@@ -284,6 +284,7 @@ export default function StudyScreen({
   const { t } = useTranslation('study');
   const { isTablet } = useResponsive();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const c: Palette = {
     BG: theme.colors.background,
@@ -643,7 +644,7 @@ export default function StudyScreen({
 
       {/* Summary modal */}
       <Modal visible={showSummary} transparent={false} animationType="slide">
-        <SafeAreaView style={{ flex: 1, backgroundColor: c.BG }}>
+        <View style={{ flex: 1, backgroundColor: c.BG, paddingTop: Math.max(insets.top, 16) }}>
           <View style={styles.overlay}>
             <View style={styles.summaryCard}>
               <Text style={styles.summaryTitle}>{t('sessionComplete')}</Text>
@@ -747,7 +748,7 @@ export default function StudyScreen({
               </TouchableOpacity>
             </View>
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
 
       {/* Word Preview Overlay */}
