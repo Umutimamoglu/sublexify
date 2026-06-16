@@ -1,4 +1,5 @@
 import '../global.css';
+import '@/src/notifications/background'; // registers FCM background + notifee handlers (module scope)
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -15,6 +16,8 @@ import { queryClient } from '@/src/api/queryClient';
 import { apiClient } from '@/src/api/client';
 import { ENDPOINTS } from '@/src/api/endpoints';
 import { useAuthStore } from '@/src/store/authStore';
+import { usePushNotifications } from '@/src/hooks/usePushNotifications';
+import { useNotificationObserver } from '@/src/hooks/useNotificationObserver';
 import { Audio } from 'expo-av';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import type { SupportedLanguage } from '@/src/i18n';
@@ -23,6 +26,13 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 
 SplashScreen.preventAutoHideAsync();
+
+/** Activates push notifications (token registration + tap routing) inside the provider tree. */
+function NotificationsBridge() {
+  usePushNotifications();
+  useNotificationObserver();
+  return null;
+}
 
 const persister = createAsyncStoragePersister({
   storage: AsyncStorage,
@@ -147,6 +157,7 @@ export default function RootLayout() {
         >
           <ThemeProvider>
             <AuthProvider>
+              <NotificationsBridge />
               <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 200 }}>
                 <Stack.Screen name="index" />
                 <Stack.Screen name="onboarding" />

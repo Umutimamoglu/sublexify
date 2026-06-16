@@ -4,6 +4,13 @@
 .env.*.local
 **/.env
 
+# Firebase secrets & native config (PUBLIC repo — never commit these)
+backend/secrets/
+**/*firebase-adminsdk*.json
+**/firebase-service-account.json
+mobile/google-services.json
+mobile/GoogleService-Info.plist
+
 # Backend
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar

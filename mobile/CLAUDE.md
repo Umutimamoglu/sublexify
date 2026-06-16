@@ -56,7 +56,8 @@ mobile/
 - **Tailwind dinamik class yasak:** `className={`text-${color}`}` çalışmaz. Sabit class map kullan.
 - **Import path:** Her zaman `@/src/...` alias kullan.
 - **Route dosyaları:** `app/` klasörüne business logic koyma — sadece screen component'ı.
-- **Expo Go:** AsyncStorage kullanıyoruz (MMKV değil) → Expo Go ile test edilebilir.
+- **Dev build zorunlu:** Push (react-native-firebase + notifee) native modüller getirdi → **Expo Go artık çalışmaz**. `eas build --profile development` ile dev client gerekir.
+- **Push notifications:** FCM (`@react-native-firebase/messaging`) + `notifee`. Kod: `src/notifications/`, `src/hooks/usePushNotifications.ts`, `useNotificationObserver.ts`. Client config (`google-services.json`, `GoogleService-Info.plist`) gitignore'lu → EAS'e file env var olarak verilir (`GOOGLE_SERVICES_JSON`, `GOOGLE_SERVICE_INFO_PLIST`); `app.config.js` bunları okur.
 - **Android emulator:** API base URL `10.0.2.2:8080` (localhost değil) → `src/api/client.ts`'de Platform.OS kontrolü var.
 
 ---

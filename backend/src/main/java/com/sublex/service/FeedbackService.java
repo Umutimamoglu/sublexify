@@ -5,10 +5,12 @@ import com.sublex.dto.MediaRequestDTO;
 import com.sublex.model.Feedback;
 import com.sublex.model.MediaRequest;
 import com.sublex.model.User;
+import com.sublex.event.MediaRequestApprovedEvent;
 import com.sublex.repository.FeedbackRepository;
 import com.sublex.repository.MediaRequestRepository;
 import com.sublex.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ public class FeedbackService {
     private final FeedbackRepository feedbackRepository;
     private final MediaRequestRepository mediaRequestRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void submitMediaRequests(Long userId, List<MediaRequestDTO> requests) {
@@ -70,8 +73,15 @@ public class FeedbackService {
     public void updateRequestStatus(Long requestId, String status) {
         MediaRequest request = mediaRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
+        boolean wasApproved = "APPROVED".equalsIgnoreCase(request.getStatus());
         request.setStatus(status);
         mediaRequestRepository.save(request);
+
+        // Notify the requesting user the first time their request flips to APPROVED.
+        if (!wasApproved && "APPROVED".equalsIgnoreCase(status)) {
+            eventPublisher.publishEvent(
+                    new MediaRequestApprovedEvent(this, request.getUser().getId(), request.getTitle()));
+        }
     }
 
     private MediaRequestDTO mapToMediaRequestDTO(MediaRequest request) {

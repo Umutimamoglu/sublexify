@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sublexify",
     "slug": "sublexify",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/sublexify_transparent.png",
     "scheme": "sublexify",
@@ -11,12 +11,15 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.umutimamoglu.sublexify",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
       "package": "com.umutimamoglu.sublexify",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/sublexify_transparent.png",
@@ -44,7 +47,17 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

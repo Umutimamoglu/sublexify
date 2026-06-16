@@ -15,8 +15,9 @@ export const ENDPOINTS = {
     markKnown: (id: number) => `/words/${id}/mark-known`,
   },
   user: {
-    stats:      '/user/statistics',
-    knownWords: '/user/known-words',
+    stats:       '/user/statistics',
+    knownWords:  '/user/known-words',
+    deviceToken: '/user/device-token',
   },
   lists: {
     list:               '/lists',
