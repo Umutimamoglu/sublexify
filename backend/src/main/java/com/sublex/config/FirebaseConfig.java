@@ -12,26 +12,20 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 /**
  * Initializes the Firebase Admin SDK for sending FCM push notifications.
  *
  * Credentials are resolved in this order:
- *  1. FIREBASE_SERVICE_ACCOUNT_BASE64 — base64 of the service-account JSON (most robust on Railway:
- *                                       avoids newline/escaping issues with the private_key)
- *  2. FIREBASE_SERVICE_ACCOUNT_JSON   — the raw service-account JSON as a string
- *  3. FIREBASE_SERVICE_ACCOUNT_PATH   — path to a service-account JSON file (local dev)
+ *  1. FIREBASE_SERVICE_ACCOUNT_JSON  — the full service-account JSON as a string (preferred on Railway)
+ *  2. FIREBASE_SERVICE_ACCOUNT_PATH  — path to a service-account JSON file (local dev)
  *
- * If none is provided the app still boots; {@link #isInitialized()} stays false and
+ * If neither is provided the app still boots; {@link #isInitialized()} stays false and
  * {@link com.sublex.service.PushNotificationService} becomes a no-op (logs a warning).
  */
 @Slf4j
 @Component
 public class FirebaseConfig {
-
-    @Value("${FIREBASE_SERVICE_ACCOUNT_BASE64:}")
-    private String serviceAccountBase64;
 
     @Value("${FIREBASE_SERVICE_ACCOUNT_JSON:}")
     private String serviceAccountJson;
@@ -50,9 +44,8 @@ public class FirebaseConfig {
         try {
             InputStream credentialsStream = resolveCredentialsStream();
             if (credentialsStream == null) {
-                log.warn("Firebase credentials not configured (set FIREBASE_SERVICE_ACCOUNT_BASE64, "
-                        + "FIREBASE_SERVICE_ACCOUNT_JSON, or FIREBASE_SERVICE_ACCOUNT_PATH). "
-                        + "Push notifications are DISABLED.");
+                log.warn("Firebase credentials not configured (set FIREBASE_SERVICE_ACCOUNT_JSON or "
+                        + "FIREBASE_SERVICE_ACCOUNT_PATH). Push notifications are DISABLED.");
                 return;
             }
 
@@ -70,10 +63,6 @@ public class FirebaseConfig {
     }
 
     private InputStream resolveCredentialsStream() throws Exception {
-        if (serviceAccountBase64 != null && !serviceAccountBase64.isBlank()) {
-            byte[] decoded = Base64.getDecoder().decode(serviceAccountBase64.trim());
-            return new ByteArrayInputStream(decoded);
-        }
         if (serviceAccountJson != null && !serviceAccountJson.isBlank()) {
             return new ByteArrayInputStream(serviceAccountJson.getBytes(StandardCharsets.UTF_8));
         }
