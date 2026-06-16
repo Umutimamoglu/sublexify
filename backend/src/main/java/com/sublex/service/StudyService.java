@@ -196,31 +196,31 @@ public class StudyService {
             Word word = wordRepository.findById(result.getWordId())
                     .orElseThrow(() -> new RuntimeException("Word not found"));
 
-            boolean isKnown = userKnownWordRepository.existsByUserIdAndWordId(userId, word.getId());
-            boolean inCustomList = wordListRepository.existsByUserIdAndIsSystemFalseAndWordId(userId, word.getId());
+            // Get or initialize progress to ensure stats and SRS are tracked for all studied words
+            UserWordProgress progress = userWordProgressRepository.findByUserIdAndWordId(userId, word.getId())
+                    .orElseGet(() -> {
+                        UserWordProgress p = new UserWordProgress();
+                        p.setUser(user);
+                        p.setWord(word);
+                        p.setReviewCount(0);
+                        p.setSuccessCount(0);
+                        return p;
+                    });
 
-            if (isKnown && inCustomList) {
-                Optional<UserWordProgress> progressOpt = userWordProgressRepository.findByUserIdAndWordId(userId,
-                        word.getId());
-
-                if (progressOpt.isPresent()) {
-                    UserWordProgress progress = progressOpt.get();
-                    progress.setReviewCount(progress.getReviewCount() + 1);
-                    if (result.getIsCorrect()) {
-                        progress.setSuccessCount(progress.getSuccessCount() + 1);
-                    }
-
-                    int intervalDays = 1;
-                    if (result.getIsCorrect()) {
-                        intervalDays = progress.getSuccessCount() * 2;
-                    } else {
-                        intervalDays = 0; // Review tomorrow if wrong
-                    }
-                    progress.setNextReviewDate(LocalDateTime.now().plusDays(intervalDays));
-
-                    userWordProgressRepository.save(progress);
-                }
+            progress.setReviewCount(progress.getReviewCount() + 1);
+            if (result.getIsCorrect()) {
+                progress.setSuccessCount(progress.getSuccessCount() + 1);
             }
+
+            int intervalDays = 1;
+            if (result.getIsCorrect()) {
+                intervalDays = progress.getSuccessCount() * 2;
+            } else {
+                intervalDays = 0; // Review tomorrow if wrong
+            }
+            progress.setNextReviewDate(LocalDateTime.now().plusDays(intervalDays));
+
+            userWordProgressRepository.save(progress);
         }
     }
 }

@@ -143,8 +143,6 @@ public class StudyServiceTest {
                 .build();
         when(userWordProgressRepository.findByUserIdAndWordId(1L, 10L))
                 .thenReturn(Optional.of(existingProgress));
-        when(userKnownWordRepository.existsByUserIdAndWordId(1L, 10L)).thenReturn(true);
-        when(wordListRepository.existsByUserIdAndIsSystemFalseAndWordId(1L, 10L)).thenReturn(true);
 
         StudyResultDTO result = new StudyResultDTO(10L, true);
 
@@ -169,8 +167,6 @@ public class StudyServiceTest {
                 .build();
         when(userWordProgressRepository.findByUserIdAndWordId(1L, 10L))
                 .thenReturn(Optional.of(existingProgress));
-        when(userKnownWordRepository.existsByUserIdAndWordId(1L, 10L)).thenReturn(true);
-        when(wordListRepository.existsByUserIdAndIsSystemFalseAndWordId(1L, 10L)).thenReturn(true);
 
         StudyResultDTO result = new StudyResultDTO(10L, false);
 

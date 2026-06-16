@@ -286,7 +286,7 @@ export default function StudyScreen({
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const c: Palette = {
+  const c = useMemo<Palette>(() => ({
     BG: theme.colors.background,
     SURFACE: theme.colors.surface,
     SURFACE2: theme.colors.surfaceSubtle,
@@ -294,7 +294,7 @@ export default function StudyScreen({
     TEXT_S: theme.colors.textSecondary,
     BORDER: theme.colors.borderDefault,
     PURPLE: theme.colors.primary,
-  };
+  }), [theme]);
 
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
@@ -332,6 +332,17 @@ export default function StudyScreen({
   const [showSummary, setShowSummary] = useState(false);
   const [previewWord, setPreviewWord] = useState<ListWord | null>(null);
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
+  const [recapFilter, setRecapFilter] = useState<'ALL' | 'CORRECT' | 'WRONG' | 'SKIPPED'>('ALL');
+
+  const filteredRecapAnswers = useMemo(() => {
+    return sessionAnswers.filter((item) => {
+      if (recapFilter === 'ALL') return true;
+      if (recapFilter === 'CORRECT') return item.isCorrect && !item.skipped;
+      if (recapFilter === 'WRONG') return !item.isCorrect && !item.skipped;
+      if (recapFilter === 'SKIPPED') return item.skipped;
+      return true;
+    });
+  }, [sessionAnswers, recapFilter]);
 
   const handleNextRef = useRef<() => void>(null);
 
@@ -653,30 +664,82 @@ export default function StudyScreen({
               </Text>
               
               <View style={styles.statsRow}>
-                <View style={styles.statItem}>
+                <TouchableOpacity
+                  style={[
+                    styles.statItem,
+                    recapFilter === 'CORRECT' && {
+                      borderColor: '#22C55E',
+                      borderWidth: 1.5,
+                      backgroundColor: isDark ? '#22C55E15' : '#22C55E08',
+                    },
+                    recapFilter !== 'ALL' && recapFilter !== 'CORRECT' && { opacity: 0.4 }
+                  ]}
+                  onPress={() => setRecapFilter(prev => prev === 'CORRECT' ? 'ALL' : 'CORRECT')}
+                  activeOpacity={0.7}
+                >
                   <Text style={[styles.statNum, { color: '#22C55E' }]}>{correctCount}</Text>
                   <Text style={styles.statLabel}>{t('correct_count')}</Text>
-                </View>
-                <View style={styles.statItem}>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.statItem,
+                    recapFilter === 'WRONG' && {
+                      borderColor: '#EF4444',
+                      borderWidth: 1.5,
+                      backgroundColor: isDark ? '#EF444415' : '#EF444408',
+                    },
+                    recapFilter !== 'ALL' && recapFilter !== 'WRONG' && { opacity: 0.4 }
+                  ]}
+                  onPress={() => setRecapFilter(prev => prev === 'WRONG' ? 'ALL' : 'WRONG')}
+                  activeOpacity={0.7}
+                >
                   <Text style={[styles.statNum, { color: '#EF4444' }]}>
                     {total - correctCount - sessionAnswers.filter((sa) => sa.skipped).length}
                   </Text>
                   <Text style={styles.statLabel}>{t('wrong_count')}</Text>
-                </View>
-                <View style={styles.statItem}>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.statItem,
+                    recapFilter === 'SKIPPED' && {
+                      borderColor: '#EAB308',
+                      borderWidth: 1.5,
+                      backgroundColor: isDark ? '#EAB30815' : '#EAB30808',
+                    },
+                    recapFilter !== 'ALL' && recapFilter !== 'SKIPPED' && { opacity: 0.4 }
+                  ]}
+                  onPress={() => setRecapFilter(prev => prev === 'SKIPPED' ? 'ALL' : 'SKIPPED')}
+                  activeOpacity={0.7}
+                >
                   <Text style={[styles.statNum, { color: '#EAB308' }]}>
                     {sessionAnswers.filter((sa) => sa.skipped).length}
                   </Text>
                   <Text style={styles.statLabel}>{t('skipped_count')}</Text>
-                </View>
+                </TouchableOpacity>
               </View>
 
-              <Text style={[styles.summaryTitle, { marginTop: 16, fontSize: 18, textAlign: 'left', alignSelf: 'flex-start' }]}>
-                {t('recapTitle')}
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, width: '100%' }}>
+                <Text style={[styles.summaryTitle, { fontSize: 18, textAlign: 'left', alignSelf: 'flex-start' }]}>
+                  {t('recapTitle')}
+                  {recapFilter !== 'ALL' && (
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: c.TEXT_S }}>
+                      {` (${recapFilter === 'CORRECT' ? t('correct_count') : recapFilter === 'WRONG' ? t('wrong_count') : t('skipped_count')})`}
+                    </Text>
+                  )}
+                </Text>
+                {recapFilter !== 'ALL' && (
+                  <TouchableOpacity onPress={() => setRecapFilter('ALL')} activeOpacity={0.7}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: c.PURPLE }}>
+                      Tümünü Göster
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
               <ScrollView style={styles.recapScroll} showsVerticalScrollIndicator={false}>
-                {sessionAnswers.map((item, idx) => {
+                {filteredRecapAnswers.map((item, idx) => {
                   const isCorrect = item.isCorrect;
                   const isSkipped = item.skipped;
                   const statusStyle = isCorrect 
@@ -717,15 +780,15 @@ export default function StudyScreen({
                         {/* Answer Comparison details */}
                         {isCorrect ? (
                           <Text style={[styles.recapAnswers, { color: '#22C55E' }]}>
-                            {t('yourAnswer')} "{item.userAnswer}" ✓
+                            {t('yourAnswer')} &quot;{item.userAnswer}&quot; ✓
                           </Text>
                         ) : isSkipped ? (
                           <Text style={[styles.recapAnswers, { color: '#EAB308' }]}>
-                            {t('skipped')} | {t('correctAnswerLabel')} "{item.question.correctAnswer}"
+                            {t('skipped')} | {t('correctAnswerLabel')} &quot;{item.question.correctAnswer}&quot;
                           </Text>
                         ) : (
                           <Text style={[styles.recapAnswers, { color: '#EF4444' }]}>
-                            {t('yourAnswer')} "{item.userAnswer || '-'}" | {t('correctAnswerLabel')} "{item.question.correctAnswer}"
+                            {t('yourAnswer')} &quot;{item.userAnswer || '-'}&quot; | {t('correctAnswerLabel')} &quot;{item.question.correctAnswer}&quot;
                           </Text>
                         )}
                       </View>
