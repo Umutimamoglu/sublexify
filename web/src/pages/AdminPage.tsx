@@ -4,10 +4,11 @@ import MediaService from '@/services/MediaService';
 import FeedbackService from '@/services/FeedbackService';
 import type { MediaRequest, Feedback } from '@/services/FeedbackService';
 import type { TmdbMedia, TmdbSeasonDetails } from '@/services/MediaService';
-import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Download, ChevronDown, ChevronRight, Users, MessageSquare, Clock, Filter, Trash2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Download, ChevronDown, ChevronRight, Users, MessageSquare, Clock, Filter, Trash2, Bell, Send } from 'lucide-react';
 import JudgeReviewPanel from '@/components/JudgeReviewPanel';
 import PipelineControlPanel from '@/components/PipelineControlPanel';
 import AuditReviewPanel from '@/components/AuditReviewPanel';
+import NotificationService, { type AdminUser } from '@/services/NotificationService';
 
 
 // --- USER INFORMATION SECTION ---
@@ -114,6 +115,185 @@ function UserInfoSection({ requests, feedbacks, loading, onUpdateStatus }: {
                         ))
                     )}
                 </div>
+            </section>
+        </div>
+    );
+}
+
+// --- PUSH NOTIFICATIONS SECTION ---
+function PushNotificationSection() {
+    const [mode, setMode] = useState<'user' | 'all'>('user');
+    const [recipients, setRecipients] = useState<AdminUser[]>([]);
+    const [loadingRecipients, setLoadingRecipients] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+    const [search, setSearch] = useState('');
+    const [title, setTitle] = useState('');
+    const [body, setBody] = useState('');
+    const [url, setUrl] = useState('');
+    const [sending, setSending] = useState(false);
+    const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+    useEffect(() => {
+        (async () => {
+            setLoadingRecipients(true);
+            try {
+                setRecipients(await NotificationService.getRecipients());
+            } catch {
+                setStatus({ type: 'error', msg: 'Kullanıcı listesi yüklenemedi.' });
+            } finally {
+                setLoadingRecipients(false);
+            }
+        })();
+    }, []);
+
+    const filtered = recipients.filter(u =>
+        (u.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (u.email || '').toLowerCase().includes(search.toLowerCase())
+    );
+    const selectedUser = recipients.find(u => u.id === selectedUserId) || null;
+    const totalDevices = recipients.reduce((sum, u) => sum + u.deviceCount, 0);
+
+    const canSend = !!title.trim() && !!body.trim() && !sending &&
+        (mode === 'all' || selectedUserId !== null);
+
+    const handleSend = async () => {
+        if (!canSend) return;
+        setSending(true);
+        setStatus(null);
+        try {
+            if (mode === 'all') {
+                await NotificationService.broadcast(title.trim(), body.trim(), url.trim() || undefined);
+                setStatus({ type: 'success', msg: `Bildirim tüm cihazlara (${totalDevices}) gönderildi.` });
+            } else {
+                await NotificationService.sendToUser(selectedUserId!, title.trim(), body.trim(), url.trim() || undefined);
+                setStatus({ type: 'success', msg: `Bildirim "${selectedUser?.name || selectedUser?.email}" kullanıcısına gönderildi.` });
+            }
+            setTitle(''); setBody(''); setUrl('');
+        } catch {
+            setStatus({ type: 'error', msg: 'Gönderim başarısız oldu.' });
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const inputCls = 'w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#0f1118] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50';
+
+    return (
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+            <section className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-indigo-500" />
+                    Push Bildirimi Gönder
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    Belirli bir kullanıcıya ya da tüm cihazlara anlık bildirim gönder. Toplam kayıtlı cihaz: {totalDevices}
+                </p>
+
+                {/* Mode toggle */}
+                <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700 mb-6 w-fit">
+                    {(['user', 'all'] as const).map(m => (
+                        <button
+                            key={m}
+                            onClick={() => setMode(m)}
+                            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${mode === m
+                                ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        >
+                            {m === 'user' ? 'Belirli Kullanıcı' : 'Tüm Kullanıcılar'}
+                        </button>
+                    ))}
+                </div>
+
+                {/* User picker */}
+                {mode === 'user' && (
+                    <div className="mb-6">
+                        <div className="relative mb-3">
+                            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="İsim veya e-posta ara…"
+                                className={inputCls + ' pl-10'}
+                            />
+                        </div>
+                        <div className="max-h-64 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
+                            {loadingRecipients ? (
+                                <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>
+                            ) : filtered.length === 0 ? (
+                                <p className="text-gray-500 text-center py-6 text-sm">Kullanıcı bulunamadı.</p>
+                            ) : (
+                                filtered.map(u => (
+                                    <button
+                                        key={u.id}
+                                        onClick={() => setSelectedUserId(u.id)}
+                                        className={`w-full flex items-center justify-between px-4 py-3 text-left transition-colors ${selectedUserId === u.id
+                                            ? 'bg-indigo-50 dark:bg-indigo-900/20'
+                                            : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-gray-900 dark:text-white truncate">{u.name || '—'}</p>
+                                            <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                                        </div>
+                                        <span className={`shrink-0 ml-3 text-xs px-2 py-1 rounded-full ${u.deviceCount > 0
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                            : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500'}`}>
+                                            {u.deviceCount > 0 ? `${u.deviceCount} cihaz` : 'cihaz yok'}
+                                        </span>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                        {selectedUser && selectedUser.deviceCount === 0 && (
+                            <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                Bu kullanıcının kayıtlı cihazı yok — bildirim teslim edilmeyebilir.
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Message fields */}
+                <div className="space-y-4">
+                    <input
+                        value={title}
+                        onChange={e => setTitle(e.target.value)}
+                        placeholder="Başlık"
+                        maxLength={80}
+                        className={inputCls}
+                    />
+                    <textarea
+                        value={body}
+                        onChange={e => setBody(e.target.value)}
+                        placeholder="Mesaj"
+                        rows={3}
+                        maxLength={240}
+                        className={inputCls + ' resize-none'}
+                    />
+                    <input
+                        value={url}
+                        onChange={e => setUrl(e.target.value)}
+                        placeholder="Deep-link (opsiyonel) — örn: library"
+                        className={inputCls}
+                    />
+                </div>
+
+                {status && (
+                    <div className={`mt-4 px-4 py-3 rounded-xl text-sm flex items-center gap-2 ${status.type === 'success'
+                        ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                        : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'}`}>
+                        {status.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                        {status.msg}
+                    </div>
+                )}
+
+                <button
+                    onClick={handleSend}
+                    disabled={!canSend}
+                    className="mt-6 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                    {mode === 'all' ? 'Tüm Cihazlara Gönder' : 'Kullanıcıya Gönder'}
+                </button>
             </section>
         </div>
     );
@@ -365,7 +545,7 @@ const AdminPage = () => {
     const [error, setError] = useState<string | null>(null);
 
     // User Information Stats / State
-    const [activeTab, setActiveTab] = useState<'system' | 'user-info'>('system');
+    const [activeTab, setActiveTab] = useState<'system' | 'user-info' | 'push'>('system');
     const [requests, setRequests] = useState<MediaRequest[]>([]);
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [loadingInfo, setLoadingInfo] = useState(false);
@@ -776,16 +956,26 @@ const AdminPage = () => {
                     >
                         User Information
                     </button>
+                    <button
+                        onClick={() => setActiveTab('push')}
+                        className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'push'
+                            ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                    >
+                        Push
+                    </button>
                 </div>
             </div>
 
             {activeTab === 'user-info' ? (
-                <UserInfoSection 
-                    requests={requests} 
-                    feedbacks={feedbacks} 
-                    loading={loadingInfo} 
+                <UserInfoSection
+                    requests={requests}
+                    feedbacks={feedbacks}
+                    loading={loadingInfo}
                     onUpdateStatus={handleUpdateStatus}
                 />
+            ) : activeTab === 'push' ? (
+                <PushNotificationSection />
             ) : (
                 <React.Fragment>
 

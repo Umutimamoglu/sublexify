@@ -1,5 +1,6 @@
 import { ArrowLeft, Compass, PlayCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 const OnboardingPage = () => {
     const navigate = useNavigate();
