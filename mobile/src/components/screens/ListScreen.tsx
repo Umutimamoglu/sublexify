@@ -7,22 +7,7 @@ import React, {
 } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  View,
-  Text,
-  FlatList,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  StatusBar,
-  useWindowDimensions,
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Platform,
-  InteractionManager,
-} from 'react-native';
+import { View, FlatList, ScrollView, TouchableOpacity, TextInput, StyleSheet, StatusBar, useWindowDimensions, ActivityIndicator, Alert, Modal, Platform, InteractionManager } from 'react-native';
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -55,6 +40,8 @@ import { FlashCardBack } from '@/src/components/ui/FlashCard';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
 import type { ListWord, Difficulty } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 
 
@@ -1461,6 +1448,14 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
         onClose={() => setPreviewWord(null)}
         isDark={isDark}
         c={c}
+        onAddToList={(wordId, wordName) => {
+          setPreviewWord(null);
+          setAddModal({ wordId, wordName });
+        }}
+        onToggleKnown={(wordId) => {
+          handleToggle(wordId);
+        }}
+        knownIdsSet={knownIdsSet}
       />
     </View>
   );

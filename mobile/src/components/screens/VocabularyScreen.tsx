@@ -2,20 +2,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  TextInput,
-  Dimensions,
-  useWindowDimensions,
-  Modal,
-  Platform,
-} from 'react-native';
+import { View, FlatList, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, TextInput, Dimensions, useWindowDimensions, Modal, Platform } from 'react-native';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Reanimated, { 
@@ -46,6 +33,8 @@ import { useWordSearch, useFrequentWords } from '@/src/api/queries/words.queries
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
 import type { WordDTO } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 const stripTr = (text?: string) => text?.replace(/\s*\([^)]+\)\s*$/, '').trim();
 
@@ -146,7 +135,9 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     card: { width: Math.min(Dimensions.get('window').width - 64, 400), height: Math.min(Dimensions.get('window').height * 0.58, 480), borderRadius: 20, position: 'absolute', borderWidth: 1, borderColor: isDark ? '#ffffff18' : c.BORDER, overflow: 'hidden', backfaceVisibility: 'hidden' as const },
     cardFront: { backgroundColor: c.SURFACE, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 10 },
     cardBigWord: { color: c.TEXT_P, fontSize: 34, fontWeight: '900', textAlign: 'center' },
-    posBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, backgroundColor: c.PURPLE + '22' },
+    diffBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, borderWidth: 1, marginBottom: 12 },
+    diffBadgeText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+    posBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, backgroundColor: c.PURPLE + '22', marginBottom: 8 },
     posBadgeText: { color: c.PURPLE, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
     cardExample: { color: c.TEXT_S, fontSize: 13, fontStyle: 'italic', textAlign: 'center', lineHeight: 20 },
     flipHint: { color: c.TEXT_S, fontSize: 11, opacity: 0.5, marginTop: 6 },
@@ -234,49 +225,97 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
 type Styles = ReturnType<typeof makeStyles>;
 type ViewMode = 'list' | 'flashcard';
 
-// ─── Swipeable actions ────────────────────────────────────────
+const ACTION_BTN_SIZE = 46;
+const ACTION_BTN_GAP = 10;
+const ACTION_BTN_TOTAL_WIDTH = ACTION_BTN_SIZE + ACTION_BTN_GAP;
+
+const actionStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+    paddingRight: 16,
+    gap: ACTION_BTN_GAP,
+  },
+  btn: {
+    width: ACTION_BTN_SIZE,
+    height: ACTION_BTN_SIZE,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  btnInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
 function RightActions({ 
   word, 
+  progress,
   onAddToList,
+  onClose,
   styles,
+  c,
   isDark,
 }: { 
   word: WordDTO; 
+  progress: SharedValue<number>;
   onAddToList: () => void;
+  onClose: () => void;
   styles: Styles;
+  c: Palette;
   isDark: boolean;
 }) {
   const speak = () => Speech.speak(word.word, { language: 'en-US' });
+  const count = 2; // Add and TTS
+
+  const addStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [count * ACTION_BTN_TOTAL_WIDTH, 0], Extrapolation.CLAMP) }],
+  }));
+  const ttsStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [(count - 1) * ACTION_BTN_TOTAL_WIDTH, 0], Extrapolation.CLAMP) }],
+  }));
 
   return (
-    <View style={styles.swipeActions}>
-      {Platform.OS === 'ios' ? (
-        <BlurView tint="dark" intensity={60} style={styles.swipeAction}>
-          <TouchableOpacity style={styles.swipeActionInner} onPress={onAddToList} activeOpacity={0.8}>
-            <Ionicons name="list" size={20} color={word.definition ? '#a78bfa' : '#fff'} />
-          </TouchableOpacity>
-        </BlurView>
-      ) : (
-        <View style={[styles.swipeAction, { backgroundColor: isDark ? 'rgba(40,40,50,0.92)' : 'rgba(230,230,240,0.92)' }]}>
-          <TouchableOpacity style={styles.swipeActionInner} onPress={onAddToList} activeOpacity={0.8}>
-            <Ionicons name="list" size={20} color={word.definition ? '#a78bfa' : '#fff'} />
-          </TouchableOpacity>
-        </View>
-      )}
+    <View style={actionStyles.container}>
+      <Reanimated.View style={addStyle}>
+        {Platform.OS === 'ios' ? (
+          <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
+            <TouchableOpacity style={actionStyles.btnInner} onPress={() => { onClose(); onAddToList(); }} activeOpacity={0.7}>
+              <Ionicons name="bookmark" size={20} color={c.PURPLE} />
+            </TouchableOpacity>
+          </BlurView>
+        ) : (
+          <View style={[actionStyles.btn, { backgroundColor: isDark ? 'rgba(40,40,50,0.92)' : 'rgba(230,230,240,0.92)' }]}>
+            <TouchableOpacity style={actionStyles.btnInner} onPress={() => { onClose(); onAddToList(); }} activeOpacity={0.7}>
+              <Ionicons name="bookmark" size={20} color={c.PURPLE} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </Reanimated.View>
 
-      {Platform.OS === 'ios' ? (
-        <BlurView tint="dark" intensity={60} style={styles.swipeAction}>
-          <TouchableOpacity style={styles.swipeActionInner} onPress={speak} activeOpacity={0.8}>
-            <Ionicons name="volume-medium" size={20} color="#fff" />
-          </TouchableOpacity>
-        </BlurView>
-      ) : (
-        <View style={[styles.swipeAction, { backgroundColor: isDark ? 'rgba(50,50,60,0.92)' : 'rgba(220,220,230,0.92)' }]}>
-          <TouchableOpacity style={styles.swipeActionInner} onPress={speak} activeOpacity={0.8}>
-            <Ionicons name="volume-medium" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      )}
+      <Reanimated.View style={ttsStyle}>
+        {Platform.OS === 'ios' ? (
+          <BlurView tint="dark" intensity={60} style={actionStyles.btn}>
+            <TouchableOpacity style={actionStyles.btnInner} onPress={() => { onClose(); speak(); }} activeOpacity={0.7}>
+              <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
+            </TouchableOpacity>
+          </BlurView>
+        ) : (
+          <View style={[actionStyles.btn, { backgroundColor: isDark ? 'rgba(40,40,50,0.92)' : 'rgba(230,230,240,0.92)' }]}>
+            <TouchableOpacity style={actionStyles.btnInner} onPress={() => { onClose(); speak(); }} activeOpacity={0.7}>
+              <Ionicons name="volume-high" size={22} color={c.TEXT_P} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </Reanimated.View>
     </View>
   );
 }
@@ -309,6 +348,8 @@ function WordRow({
   const [isKnown, setIsKnown] = useState(isKnownProp);
   useEffect(() => { setIsKnown(isKnownProp); }, [isKnownProp]);
 
+  const swipeRef = useRef<any>(null);
+
   const handleTogglePress = () => {
     const next = !isKnown;
     setIsKnown(next); // instant
@@ -318,7 +359,9 @@ function WordRow({
 
   const tapGesture = Gesture.Tap()
     .maxDistance(8)
-    .onEnd(() => { runOnJS(handleTogglePress)(); });
+    .onEnd(() => { 
+      if (onLongPress) runOnJS(onLongPress)();
+    });
 
   const longPressGesture = Gesture.LongPress()
     .minDuration(400)
@@ -331,11 +374,12 @@ function WordRow({
 
   return (
     <ReanimatedSwipeable
+      ref={swipeRef}
       friction={2}
       enableTrackpadTwoFingerGesture
       rightThreshold={40}
-      renderRightActions={() => (
-        <RightActions word={word} onAddToList={onAddToList} styles={styles} isDark={isDark} />
+      renderRightActions={(progress) => (
+        <RightActions word={word} progress={progress} onClose={() => swipeRef.current?.close()} onAddToList={onAddToList} styles={styles} c={c} isDark={isDark} />
       )}
     >
       <GestureDetector gesture={rowGesture}>
@@ -722,7 +766,7 @@ export default function VocabularyScreen() {
               </View>
 
               {currentWord.difficulty && (
-                <View style={styles.posBadge}>
+                <View style={[styles.posBadge, { alignSelf: 'center' }]}>
                   <Text style={styles.posBadgeText}>{currentWord.difficulty}</Text>
                 </View>
               )}
@@ -919,6 +963,14 @@ export default function VocabularyScreen() {
         onClose={() => setPreviewWord(null)}
         isDark={isDark}
         c={c}
+        onAddToList={(wordId, wordName) => {
+          setPreviewWord(null);
+          setAddModal({ wordId, wordName });
+        }}
+        onToggleKnown={(wordId) => {
+          handleToggle(wordId);
+        }}
+        knownIdsSet={knownIdsSet}
       />
 
       <AddToListModal
