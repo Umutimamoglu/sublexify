@@ -1,12 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  useWindowDimensions, 
-  TouchableOpacity,
-  Pressable
-} from 'react-native';
+import { View, StyleSheet, useWindowDimensions, TouchableOpacity, Pressable } from 'react-native';
 import Reanimated, { 
   FadeIn,
   FadeOut,
@@ -20,6 +13,8 @@ import * as Speech from 'expo-speech';
 import { FlashCardBack } from './FlashCard';
 import type { ListWord } from '@/src/types/api';
 import { useTranslation } from '@/src/i18n/useTranslation';
+import { Text } from '@/src/components/ui/Text';
+
 
 const stripTr = (text?: string) => text?.replace(/\s*\([^)]+\)\s*$/, '').trim();
 
@@ -113,7 +108,9 @@ export function WordPreviewOverlay({
       backgroundColor: c.SURFACE, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12 
     },
     cardBigWord: { color: c.TEXT_P, fontSize: 38, fontWeight: '900', textAlign: 'center' },
-    posBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, backgroundColor: c.PURPLE + '22' },
+    diffBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, borderWidth: 1, marginBottom: 12 },
+    diffBadgeText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+    posBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, backgroundColor: c.PURPLE + '22', marginBottom: 8 },
     posBadgeText: { color: c.PURPLE, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
     cardExample: { color: c.TEXT_S, fontSize: 13, fontStyle: 'italic', textAlign: 'center', lineHeight: 20 },
     flipHint: { color: c.TEXT_S, fontSize: 11, opacity: 0.5, marginTop: 6 },
@@ -267,7 +264,7 @@ export function WordPreviewOverlay({
             {word.definition?.meanings?.[0] && (
               <>
                 {!!word.definition.meanings[0].pos && (
-                  <View style={previewStyles.posBadge}>
+                  <View style={[previewStyles.posBadge, { alignSelf: 'center' }]}>
                     <Text style={previewStyles.posBadgeText}>
                       {word.definition.meanings[0].pos}
                     </Text>

@@ -1,19 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  TextInput,
-  Alert,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import { View, FlatList, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, TextInput, Alert, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -27,6 +13,8 @@ import { useListPreferences } from '@/src/hooks/useListPreferences';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { WordListDTO } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 
 type Palette = {
@@ -50,9 +38,8 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
     // Header
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 14 },
-    headerTitle: { flex: 1, color: c.TEXT_P, fontSize: 22, fontWeight: '800' },
-    addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.PURPLE, alignItems: 'center', justifyContent: 'center' },
-    addBtnText: { color: '#fff', fontSize: 22, lineHeight: 26 },
+    headerTitle: { flex: 1, color: c.TEXT_P, fontSize: 24, fontWeight: '800' },
+    addBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: c.PURPLE, alignItems: 'center', justifyContent: 'center' },
 
     // Bilinen kelimeler card
     knownCard: { marginHorizontal: pad, marginBottom: 8, padding: 16, borderRadius: 14, backgroundColor: c.SURFACE, borderWidth: 1, borderColor: c.BORDER },
@@ -658,6 +645,14 @@ export default function ListsTabScreen() {
     saveOrder(newOrder);
   }, [saveOrder]);
 
+  const knownLevels = useMemo(() => {
+    const counts: Record<string, number> = {};
+    knownWords.forEach((w: any) => {
+      if (w.difficulty) counts[w.difficulty] = (counts[w.difficulty] || 0) + 1;
+    });
+    return counts;
+  }, [knownWords]);
+
   return (
     <View style={styles.root}>
       <StatusBar
@@ -674,12 +669,12 @@ export default function ListsTabScreen() {
           >
             <Ionicons
               name={showOnlyVisible ? 'eye-outline' : 'eye-off-outline'}
-              size={18}
+              size={24}
               color={showOnlyVisible ? c.PURPLE : c.TEXT_S}
             />
           </TouchableOpacity>
           <TouchableOpacity style={styles.addBtn} onPress={() => setShowCreate(true)}>
-            <Text style={styles.addBtnText}>+</Text>
+            <Ionicons name="add" size={26} color="#ffffff" />
           </TouchableOpacity>
         </View>
 
@@ -697,16 +692,27 @@ export default function ListsTabScreen() {
               <>
                 {/* Bilinen Kelimeler */}
                 <TouchableOpacity
-                  style={styles.knownCard}
+                  style={[styles.listCard, { overflow: 'hidden' }]}
                   onPress={() => router.push('/list/-1' as any)}
                   activeOpacity={0.75}
                 >
-                  <Text style={styles.knownCardTitle}>{t('knownWords')}</Text>
-                  <Text style={styles.knownCardSub}>{t('knownWordsSubtitle')}</Text>
-                  <View style={styles.knownCardBadge}>
-                    <Text style={styles.knownCardBadgeText}>
-                      {t('wordCount', { count: knownWords.length })}
-                    </Text>
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: c.PURPLE, opacity: 0.15 }]} />
+                  <View style={[styles.listCardStrip, { backgroundColor: c.PURPLE }]} />
+                  
+                  <View style={[styles.listIconCircle, { backgroundColor: c.PURPLE + '20' }]}>
+                    <Ionicons name="checkmark-done-circle-outline" size={24} color={c.PURPLE} />
+                  </View>
+
+                  <View style={styles.listCardBody}>
+                    <View style={styles.listCardRow}>
+                      <View style={styles.listCardInfo}>
+                        <Text style={styles.listCardName}>{t('knownWords')}</Text>
+                        <Text style={styles.listCardStats}>
+                          {t('wordCount', { count: knownWords.length })}
+                        </Text>
+                      </View>
+                    </View>
+                    <CefrMiniBar levelCounts={knownLevels} total={knownWords.length} styles={styles} />
                   </View>
                 </TouchableOpacity>
                 {/* Kişisel Listeler başlığı */}

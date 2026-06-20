@@ -1,14 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  Animated,
-} from 'react-native';
+import { View, FlatList, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,6 +8,8 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useSeriesEpisodes, useWatchedMediaIds, useToggleWatched } from '@/src/api/queries/media.queries';
 import type { MediaDTO } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;

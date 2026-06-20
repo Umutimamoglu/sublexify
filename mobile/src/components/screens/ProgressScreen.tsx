@@ -1,15 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, Modal, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +10,8 @@ import { useResponsive } from '@/src/hooks/useResponsive';
 import { useProgressStats } from '@/src/api/queries/progress.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useSettingsStore } from '@/src/store/settingsStore';
+import { Text } from '@/src/components/ui/Text';
+
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;

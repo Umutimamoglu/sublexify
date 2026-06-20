@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Modal } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,8 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { changeLanguage, type SupportedLanguage } from '@/src/i18n';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { AppPalettes, type PaletteKey } from '@/src/theme/palettes';
+import { Text } from '@/src/components/ui/Text';
+
 
 type Palette = {
   BG: string; SURFACE: string;
@@ -122,11 +124,12 @@ export default function SettingsScreen() {
 
   const CUSTOM_COLORS = [
     '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E', 
-    '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1', 
-    '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#1F2937', 
-    '#475569', '#3F6212', '#047857', '#0F766E', '#1D4ED8', '#4338CA', 
-    '#86198F', '#9F1239', '#57534E', '#1E3A8A', '#064E3B', '#14532D', 
-    '#7C2D12', '#450A0A', '#4A044E', '#881337', '#9D174D', '#1E1B4B'
+    '#10B981', '#00BBA7', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', 
+    '#6366F1', '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', 
+    '#1F2937', '#475569', '#3F6212', '#047857', '#0F766E', '#1D4ED8', 
+    '#4338CA', '#86198F', '#9F1239', '#57534E', '#1E3A8A', '#064E3B', 
+    '#14532D', '#7C2D12', '#450A0A', '#4A044E', '#881337', '#9D174D', 
+    '#1E1B4B'
   ];
 
   const c = useMemo<Palette>(() => ({

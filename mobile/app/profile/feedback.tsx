@@ -1,22 +1,13 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useFeedbackMutations } from '@/src/api/queries/feedback.queries';
+import { Text } from '@/src/components/ui/Text';
+
 
 export default function FeedbackScreen() {
   const { theme, colorScheme } = useTheme();

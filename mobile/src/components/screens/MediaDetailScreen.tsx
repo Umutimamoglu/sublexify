@@ -6,19 +6,7 @@ import React, {
 } from 'react';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
-import {
-  View,
-  Text,
-  FlatList,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  Image,
-  Alert,
-} from 'react-native';
+import { View, FlatList, ScrollView, TouchableOpacity, Modal, StyleSheet, StatusBar, ActivityIndicator, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -31,6 +19,8 @@ import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries
 import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import type { WordDTO, Difficulty } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;

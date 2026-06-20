@@ -1,15 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-} from 'react-native';
+import { View, TextInput, FlatList, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +8,8 @@ import { useResponsive } from '@/src/hooks/useResponsive';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useMedia } from '@/src/api/queries/media.queries';
 import type { MediaDTO } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 type MediaFilter = 'all' | 'MOVIE' | 'EPISODE';
 

@@ -1,10 +1,12 @@
 import React, { useRef, useState, useMemo } from 'react';
-import { View, Text, FlatList, Dimensions, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, FlatList, Dimensions, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/src/store/authStore';
 import { useTranslation } from '@/src/i18n/useTranslation';
+import { Text } from '@/src/components/ui/Text';
+
 
 const { width, height } = Dimensions.get('window');
 

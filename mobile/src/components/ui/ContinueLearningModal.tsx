@@ -1,16 +1,9 @@
-import {
-  View,
-  Text,
-  Modal,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Platform,
-} from 'react-native';
+import { View, Modal, FlatList, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/context/ThemeContext';
 import type { MediaDTO } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 function episodeLabel(media: MediaDTO): string {
   if (media.type === 'EPISODE' && media.seasonNumber && media.episodeNumber) {

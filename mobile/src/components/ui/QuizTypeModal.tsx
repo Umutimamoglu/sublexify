@@ -1,6 +1,8 @@
 import React from 'react';
-import { Modal, TouchableOpacity, View, Text, ScrollView, Switch, Platform } from 'react-native';
+import { Modal, TouchableOpacity, View, ScrollView, Switch, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Text } from '@/src/components/ui/Text';
+
 
 const DIFFICULTIES = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const;
 const DIFF_COLORS: Record<string, string> = {

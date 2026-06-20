@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import Reanimated from 'react-native-reanimated';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import type { ListWord } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 const DIFF_COLORS: Record<string, string> = {
   A1: '#22C55E', A2: '#84CC16',

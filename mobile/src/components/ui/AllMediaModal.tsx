@@ -1,22 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  FlatList,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  Image,
-  ActivityIndicator,
-  useWindowDimensions,
-  Platform,
-} from 'react-native';
+import { View, Modal, FlatList, TouchableOpacity, TextInput, StyleSheet, Image, ActivityIndicator, useWindowDimensions, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { OverallDifficultyBadge } from '@/src/components/ui/Badge';
 import type { MediaDTO } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 const CEFR_COLORS: Record<string, string> = {
   A1: '#34D399', A2: '#4ADE80',

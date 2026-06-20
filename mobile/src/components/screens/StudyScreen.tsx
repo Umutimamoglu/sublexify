@@ -1,17 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  ActivityIndicator,
-  StatusBar,
-  Modal,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, StatusBar, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
@@ -25,6 +13,8 @@ import { useMarkKnown } from '@/src/api/queries/words.queries';
 import type { StudyResultDTO, ListWord, StudyQuestionDTO } from '@/src/types/api';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import AddToListModal from '@/src/components/ui/AddToListModal';
+import { Text } from '@/src/components/ui/Text';
+
 
 
 type Palette = {

@@ -1,15 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  Platform,
-  Alert,
-} from 'react-native';
+import { View, TouchableOpacity, ScrollView, StyleSheet, StatusBar, ActivityIndicator, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +10,8 @@ import { useResponsive } from '@/src/hooks/useResponsive';
 import { useUserStats } from '@/src/api/queries/user.queries';
 import { useProgressStats } from '@/src/api/queries/progress.queries';
 import { Palette as TokenPalette } from '@/src/theme/tokens';
+import { Text } from '@/src/components/ui/Text';
+
 
 
 // ─── CEFR Helper ───────────────────────────────────────────────────────────────
@@ -316,7 +308,7 @@ export default function ProfileScreen() {
                         : cefr.level}
                     </Text>
                   </View>
-                  <Text style={styles.progressXP}>
+                  <Text style={styles.progressXP} tabularNums>
                     {t('wordsProgress', { known: known.toLocaleString(), total: total.toLocaleString() })}
                   </Text>
                 </View>

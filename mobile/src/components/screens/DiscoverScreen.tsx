@@ -1,22 +1,7 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useResponsive } from '@/src/hooks/useResponsive';
-import {
-  View,
-  Text,
-  ScrollView,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar,
-  useWindowDimensions,
-  ActivityIndicator,
-  Image,
-  Animated,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  Platform,
-} from 'react-native';
+import { View, ScrollView, FlatList, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions, ActivityIndicator, Image, Animated, NativeSyntheticEvent, NativeScrollEvent, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -34,6 +19,8 @@ import { ContinueLearningModal } from '@/src/components/ui/ContinueLearningModal
 import { useAuthStore } from '@/src/store/authStore';
 import { useStreakStore } from '@/src/store/streakStore';
 import type { MediaDTO, WordListDTO, UserStatistics } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 
 type HeroItem = MediaDTO & { _s01e01Id?: number; _seasonCount?: number; _episodeCount?: number };

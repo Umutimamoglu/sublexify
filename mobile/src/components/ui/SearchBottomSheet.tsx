@@ -1,20 +1,12 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  FlatList,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Modal, FlatList, TouchableOpacity, TextInput, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { DifficultyBadge } from '@/src/components/ui/Badge';
 import type { MediaDTO } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 function seriesTitle(media: MediaDTO): string {
   if (media.type !== 'MOVIE') {

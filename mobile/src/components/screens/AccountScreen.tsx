@@ -1,8 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-  View, Text, TouchableOpacity, StyleSheet, StatusBar,
-  ActivityIndicator, Modal, Platform,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +9,8 @@ import { useAuth } from '@/src/context/AuthContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useDeleteAccount } from '@/src/api/queries/user.queries';
+import { Text } from '@/src/components/ui/Text';
+
 
 const PRIVACY_POLICY_URL = 'https://www.freeprivacypolicy.com/live/479d8ae8-c4ce-45c2-9bbe-6291cb27b2d1';
 

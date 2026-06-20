@@ -1,8 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, ActivityIndicator,
-  KeyboardAvoidingView, Platform, ScrollView, Image, StyleSheet, Dimensions,
-} from 'react-native';
+import { View, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image, StyleSheet, Dimensions } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '@/src/api/client';
 import { ENDPOINTS } from '@/src/api/endpoints';
 import { useAuthStore } from '@/src/store/authStore';
+import { Text } from '@/src/components/ui/Text';
+
 
 const { width: SW, height: SH } = Dimensions.get('window');
 const CODE_LENGTH = 6;

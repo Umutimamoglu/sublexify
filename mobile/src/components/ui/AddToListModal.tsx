@@ -1,17 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useListPreferences } from '@/src/hooks/useListPreferences';
-import {
-  View,
-  Text,
-  Modal,
-  FlatList,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Modal, FlatList, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
@@ -23,6 +12,8 @@ import {
   useCreateList,
 } from '@/src/api/queries/lists.queries';
 import type { WordListDTO } from '@/src/types/api';
+import { Text } from '@/src/components/ui/Text';
+
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;

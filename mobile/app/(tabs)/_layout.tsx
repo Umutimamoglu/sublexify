@@ -54,8 +54,8 @@ export default function TabLayout() {
         },
         tabBarShowLabel: true,
         tabBarLabelStyle: {
+          fontFamily: 'PlusJakartaSans_600SemiBold',
           fontSize: 10,
-          fontWeight: '600',
           marginTop: Platform.OS === 'android' ? -4 : -2,
         },
         tabBarItemStyle: {
