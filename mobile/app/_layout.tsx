@@ -24,6 +24,14 @@ import type { SupportedLanguage } from '@/src/i18n';
 import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,6 +53,14 @@ export default function RootLayout() {
   const { hasHydrated, isAuthenticated } = useAuthStore();
   const router = useRouter();
   const segments = useSegments();
+
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
 
   // Auth gate: logout olunca login'e yönlendir
   useEffect(() => {
@@ -145,7 +161,7 @@ export default function RootLayout() {
     prepare();
   }, [hasHydrated, isAuthenticated]);
 
-  if (!ready || !hasHydrated) return null;
+  if (!ready || !hasHydrated || !fontsLoaded) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

@@ -9,7 +9,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Brand renkleri (tokens.ts'den)
+        // Brand renkleri
         brand: {
           50:  '#EFF8FF',
           100: '#DBEFFE',
