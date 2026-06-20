@@ -34,7 +34,7 @@ import Reanimated, {
   Easing,
   type SharedValue,
 } from 'react-native-reanimated';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { GestureDetector, Gesture, Switch } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
@@ -303,15 +303,15 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     mkConfirmText: { color: '#fff', fontWeight: '700' as const, fontSize: 15 },
 
     // Word stats + progress bar
-    statsWrap:  { paddingHorizontal: pad, paddingBottom: 12 },
+    statsWrap: { paddingHorizontal: pad, paddingBottom: 12 },
     statsLabel: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginBottom: 5 },
-    statsText:  { color: c.TEXT_S, fontSize: 12 },
-    statsPct:   { color: c.PURPLE, fontSize: 12, fontWeight: '700' as const },
-    statsBar:   { height: 6, borderRadius: 3, backgroundColor: c.SURFACE2 },
-    statsFill:  { height: 6, borderRadius: 3, backgroundColor: c.PURPLE },
+    statsText: { color: c.TEXT_S, fontSize: 12 },
+    statsPct: { color: c.PURPLE, fontSize: 12, fontWeight: '700' as const },
+    statsBar: { height: 6, borderRadius: 3, backgroundColor: c.SURFACE2 },
+    statsFill: { height: 6, borderRadius: 3, backgroundColor: c.PURPLE },
 
     // Unknown-only toggle
-    unknownToggleWrap:  { flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: pad, paddingBottom: 8, gap: 10 },
+    unknownToggleWrap: { flexDirection: 'row' as const, alignItems: 'center' as const, paddingHorizontal: pad, paddingBottom: 8, gap: 10 },
     unknownToggleLabel: { color: c.TEXT_S, fontSize: 13, flex: 1 },
     unknownToggleSwitch: { width: 44, height: 26, borderRadius: 13, justifyContent: 'center' as const, paddingHorizontal: 3 },
     unknownToggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' },
@@ -637,14 +637,14 @@ function SwipeableWordRow({
     if (hintDelay == null) return;
     let openTimer: ReturnType<typeof setTimeout>;
     let closeTimer: ReturnType<typeof setTimeout>;
-    
+
     // Gecikmeli işlemi UI kilitlenmelerini önlemek için etkileşimler (layout/render) bittikten sonraya saklıyoruz
     const task = InteractionManager.runAfterInteractions(() => {
       openTimer = setTimeout(() => { swipeRef.current?.openRight(); }, hintDelay);
       closeTimer = setTimeout(() => { swipeRef.current?.close(); }, hintDelay + 800);
     });
 
-    return () => { 
+    return () => {
       task.cancel();
       if (openTimer) clearTimeout(openTimer);
       if (closeTimer) clearTimeout(closeTimer);
@@ -757,14 +757,14 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   // ─── Data ─────────────────────────────────────────────────
   const isKnownList = listId === -1;
   const isCategoryMode = !!category;
-  
+
   const { data: allLists = [] } = useLists();
   const isSystemList = useMemo(() => allLists.some((l) => l.id === listId && l.isSystem), [allLists, listId]);
-  
+
   const { data: list, isLoading: listLoading } = useListDetail((listId || 0), { enabled: !!listId && !isKnownList && !isCategoryMode });
   const { data: categoryWords = [], isLoading: catLoading } = useCategoryWords(category || 'learnt', { enabled: isCategoryMode });
   const { data: knownWordsData = [], isLoading: knownLoading } = useKnownWords();
-  
+
   const { mutate: toggleKnown } = useMarkKnown();
   const { mutate: removeWord } = useRemoveWordFromList();
   const { mutate: generateSubList, isPending: generating } = useCreateSubListFromUnknown();
@@ -772,7 +772,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const { dailyReviewCount } = useSettingsStore();
 
   const getCategoryTitle = (cat: string) => {
-    switch(cat) {
+    switch (cat) {
       case 'learnt': return tCommon('progress.categories.learnt.title');
       case 'studied': return tCommon('progress.categories.learnt.title'); // Note: was matching legacy code
       case 'due': return tCommon('progress.categories.due.title');
@@ -787,9 +787,9 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
       if (category === 'due') {
         const seed = new Date().getDate(); // Changes every day of the month
         words = [...words].sort((a, b) => {
-           const hashA = ((a.id || 0) * 31 + seed * 17) % 101;
-           const hashB = ((b.id || 0) * 31 + seed * 17) % 101;
-           return hashA - hashB;
+          const hashA = ((a.id || 0) * 31 + seed * 17) % 101;
+          const hashB = ((b.id || 0) * 31 + seed * 17) % 101;
+          return hashA - hashB;
         }).slice(0, dailyReviewCount);
       }
       return {
@@ -1102,10 +1102,10 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             onPress={() => setViewMode(viewMode === 'list' ? 'flashcard' : 'list')}
             activeOpacity={0.75}
           >
-            <Ionicons 
-              name={viewMode === 'list' ? 'albums-outline' : 'list-outline'} 
-              size={18} 
-              color={c.TEXT_S} 
+            <Ionicons
+              name={viewMode === 'list' ? 'albums-outline' : 'list-outline'}
+              size={18}
+              color={c.TEXT_S}
             />
           </TouchableOpacity>
         </View>
@@ -1158,13 +1158,26 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
         {!isKnownList && (
           <View style={styles.unknownToggleWrap}>
             <Text style={styles.unknownToggleLabel}>{t('unknownOnlyToggle')}</Text>
-            <TouchableOpacity
-              style={[styles.unknownToggleSwitch, { backgroundColor: onlyUnknown ? c.PURPLE : c.SURFACE2 }]}
-              onPress={() => { setOnlyUnknown((v) => !v); setSelectedLevels(new Set()); }}
-              activeOpacity={0.8}
+
+            {/* 🌟 Liquid Glass Kapsayıcı 🌟 */}
+            <View
+              style={{
+                borderRadius: 20,
+                backgroundColor: c.SURFACE,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.18,
+                shadowRadius: 3,
+                elevation: 3,
+              }}
             >
-              <View style={[styles.unknownToggleThumb, { alignSelf: onlyUnknown ? 'flex-end' : 'flex-start' }]} />
-            </TouchableOpacity>
+              <Switch
+                value={onlyUnknown}
+                onValueChange={(val) => { setOnlyUnknown(val); setSelectedLevels(new Set()); }}
+                trackColor={{ false: c.BORDER, true: c.PURPLE }}
+                ios_backgroundColor={c.BORDER}
+              />
+            </View>
           </View>
         )}
 
@@ -1442,7 +1455,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
         c={c}
       />
 
-      <WordPreviewOverlay 
+      <WordPreviewOverlay
         word={previewWord}
         visible={!!previewWord}
         onClose={() => setPreviewWord(null)}

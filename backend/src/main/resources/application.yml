@@ -31,16 +31,15 @@ spring:
 
   mail:
     host: smtp.resend.com
-    port: 587
+    port: 465
     username: resend
     password: ${RESEND_API_KEY}
     properties:
       mail:
         smtp:
           auth: true
-          starttls:
+          ssl:
             enable: true
-            required: true
 
 springdoc:
   api-docs:

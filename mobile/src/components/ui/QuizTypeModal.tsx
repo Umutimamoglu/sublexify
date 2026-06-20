@@ -172,12 +172,27 @@ export function QuizTypeModal({
                   Öğrenilmiş kelimeler dahil edilmez
                 </Text>
               </View>
-              <Switch
-                value={onlyUnknown}
-                onValueChange={onToggleOnlyUnknown}
-                trackColor={{ false: c.BORDER, true: c.PURPLE + '80' }}
-                thumbColor={onlyUnknown ? c.PURPLE : (Platform.OS === 'android' ? c.SURFACE2 : '#fff')}
-              />
+
+              {/* 🌟 Liquid Glass Kapsayıcı 🌟 */}
+              <View
+                style={{
+                  borderRadius: 20,
+                  backgroundColor: c.SURFACE, // Gölgenin net çıkması için (temaya uyumlu arka plan)
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.18,
+                  shadowRadius: 3,
+                  elevation: 3,
+                }}
+              >
+                <Switch
+                  value={onlyUnknown}
+                  onValueChange={onToggleOnlyUnknown}
+                  trackColor={{ false: c.BORDER, true: c.PURPLE }} // Opacity (+ '80') kaldırıldı, daha canlı mor
+                  ios_backgroundColor={c.BORDER}
+                // thumbColor KASITLI OLARAK SİLİNDİ! iOS varsayılan camımsı yuvarlağı çizecek.
+                />
+              </View>
             </View>
 
             {/* ── Buttons ── */}
