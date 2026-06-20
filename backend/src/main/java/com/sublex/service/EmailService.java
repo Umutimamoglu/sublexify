@@ -1,39 +1,66 @@
 package com.sublex.service;
 
-import jakarta.mail.internet.MimeMessage;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final ObjectMapper objectMapper;
 
     @Value("${mail.from:noreply@sublexify.com}")
     private String fromAddress;
 
+    @Value("${RESEND_API_KEY}")
+    private String resendApiKey;
+
     @Async
     public void sendPasswordResetEmail(String toEmail, String code) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            Map<String, Object> payload = Map.of(
+                "from", fromAddress,
+                "to", List.of(toEmail),
+                "subject", "Sublexify — Şifre Sıfırlama Kodun",
+                "html", buildEmailHtml(code)
+            );
 
-            helper.setFrom(fromAddress);
-            helper.setTo(toEmail);
-            helper.setSubject("Sublexify — Şifre Sıfırlama Kodun");
-            helper.setText(buildEmailHtml(code), true);
+            String jsonPayload = objectMapper.writeValueAsString(payload);
 
-            mailSender.send(message);
-            log.info("Password reset email sent to {}", toEmail);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.resend.com/emails"))
+                    .header("Authorization", "Bearer " + resendApiKey)
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(10))
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))
+                    .build();
+
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("Password reset email sent to {} via Resend API", toEmail);
+            } else {
+                log.error("Failed to send email to {} via Resend API. Status: {}, Response: {}", toEmail, response.statusCode(), response.body());
+            }
         } catch (Exception e) {
-            log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
+            log.error("Exception sending password reset email to {}: {}", toEmail, e.getMessage());
         }
     }
 
