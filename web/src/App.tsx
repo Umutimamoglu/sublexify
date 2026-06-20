@@ -10,6 +10,8 @@ import StudyPage from '@/pages/StudyPage';
 import ProgressDashboard from '@/pages/ProgressDashboard';
 import ProgressCategoryPage from '@/pages/ProgressCategoryPage';
 import ProfilePage from '@/pages/ProfilePage';
+import MediaRequestPage from '@/pages/MediaRequestPage';
+import FeedbackPage from '@/pages/FeedbackPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
@@ -46,6 +48,8 @@ function App() {
             <Route path="vocabulary" element={<VocabularyPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="profile/settings" element={<SettingsPage />} />
+            <Route path="profile/media-request" element={<MediaRequestPage />} />
+            <Route path="profile/feedback" element={<FeedbackPage />} />
             <Route path="progress" element={<ProgressDashboard />} />
             <Route path="progress/:category" element={<ProgressCategoryPage />} />
             <Route path="admin" element={<AdminPage />} />

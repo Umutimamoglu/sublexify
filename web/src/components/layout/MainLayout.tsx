@@ -64,19 +64,21 @@ const MainLayout = () => {
             {/* Header */}
             <header className="bg-white/80 dark:bg-[#161822]/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800/60 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
+                    <div className="flex justify-between h-20 items-center">
                         {/* Logo */}
-                        <Link to="/" className="flex items-center space-x-2.5 group">
-                            <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow">
-                                <BookOpen className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
-                                Sublex
+                        <Link to="/" className="flex items-center space-x-4 group">
+                            <img 
+                                src="/icon.png" 
+                                alt="Sublexify Logo" 
+                                className="w-14 h-14 object-contain drop-shadow-md group-hover:scale-105 transition-transform"
+                            />
+                            <span className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
+                                Sub<span className="text-teal-500 dark:text-teal-400">lex</span>ify
                             </span>
                         </Link>
 
                         {/* Desktop Nav */}
-                        <nav className="hidden md:flex items-center space-x-1">
+                        <nav className="hidden md:flex items-center space-x-2">
                             {navItems.map((item) => {
                                 const isActive = location.pathname === item.path;
                                 return (
@@ -84,13 +86,13 @@ const MainLayout = () => {
                                         key={item.path}
                                         to={item.path}
                                         className={cn(
-                                            "flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                                            "flex items-center space-x-2.5 px-5 py-2.5 rounded-xl text-base font-medium transition-all",
                                             isActive
                                                 ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
                                                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200"
                                         )}
                                     >
-                                        <item.icon className="w-4 h-4" />
+                                        <item.icon className="w-5 h-5" />
                                         <span>{item.name}</span>
                                     </Link>
                                 );

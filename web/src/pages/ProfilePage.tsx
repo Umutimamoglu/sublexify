@@ -27,14 +27,14 @@ const ProfilePage = () => {
     const [total, setTotal] = useState(0);
 
     useEffect(() => {
-        // Fetch stats mockup
-        api.get('/users/1/stats').then(res => {
+        // Fetch actual user stats
+        api.get('/user/statistics').then(res => {
             if (res.data) {
-                setKnown(res.data.totalKnownWords || 450);
+                setKnown(res.data.totalKnownWords || 0);
                 setTotal(res.data.totalWords || 5000);
             }
         }).catch(() => {
-            // Mock data fallback for now
+            // Mock data fallback if stats fail
             setKnown(450);
             setTotal(5000);
         });
@@ -103,7 +103,7 @@ const ProfilePage = () => {
 
             {/* Progress Card */}
             <button
-                onClick={() => navigate('/progress')}
+                onClick={() => navigate('/lists?id=-1')}
                 className="w-full bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 p-6 rounded-3xl mb-8 hover:bg-gray-50 dark:hover:bg-[#1c1e2b] transition-colors text-left"
             >
                 <div className="flex justify-between items-end mb-3">
