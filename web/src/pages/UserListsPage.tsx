@@ -42,6 +42,9 @@ const UserListsPage = () => {
     const [editColor, setEditColor] = useState<string | undefined>(undefined);
     const [isSavingEdit, setIsSavingEdit] = useState(false);
 
+    // Delete Confirmation Modal State
+    const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'list' | 'word', id: number } | null>(null);
+
     const LIST_COLORS = [
         '#7c3aed', '#2563eb', '#0ea5e9', '#0891b2',
         '#14b8a6', '#10b981', '#059669', '#84cc16',
@@ -122,11 +125,22 @@ const UserListsPage = () => {
                 return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             });
             setLists(sortedData);
-            if (sortedData.length > 0 && !selectedList) {
-                const preSelected = urlListId 
-                    ? sortedData.find(l => l.id === parseInt(urlListId)) 
-                    : null;
-                setSelectedList(preSelected || sortedData[0]);
+            if (!selectedList) {
+                if (urlListId === '-1') {
+                    setSelectedList({
+                        id: -1,
+                        name: t('lists.knownWords', { defaultValue: 'Bilinen Kelimeler' }),
+                        createdAt: new Date().toISOString(),
+                        totalWords: 0,
+                        unknownWords: 0,
+                        levelCounts: {}
+                    });
+                } else if (sortedData.length > 0) {
+                    const preSelected = urlListId 
+                        ? sortedData.find(l => l.id === parseInt(urlListId)) 
+                        : null;
+                    setSelectedList(preSelected || sortedData[0]);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch lists", error);
@@ -138,8 +152,45 @@ const UserListsPage = () => {
     const fetchWords = async (id: number) => {
         try {
             setWordsLoading(true);
-            const data = await WordListService.getListWords(id, userId, filterUnknown);
-            setWordData(data);
+            if (id === -1) {
+                const response = await api.get('/user/known-words', { params: { userId } });
+                const knownWordsData = response.data || [];
+                
+                const levelCounts: Record<string, number> = {};
+                knownWordsData.forEach((w: any) => {
+                    if (w.difficulty) {
+                        levelCounts[w.difficulty] = (levelCounts[w.difficulty] || 0) + 1;
+                    }
+                });
+
+                const mockResponse: WordListWordsResponseDTO = {
+                    list: {
+                        id: -1,
+                        name: t('lists.knownWords', { defaultValue: 'Bilinen Kelimeler' }),
+                        createdAt: new Date().toISOString(),
+                        totalWords: knownWordsData.length,
+                        unknownWords: 0,
+                        levelCounts,
+                    },
+                    words: knownWordsData.map((w: any) => ({ ...w, isKnown: true })),
+                    totalWords: knownWordsData.length,
+                    unknownWords: 0,
+                    levelCounts
+                };
+                
+                setWordData(mockResponse);
+                
+                // Only update selected list if counts differ to prevent infinite loop
+                setSelectedList(prev => {
+                    if (prev?.id === -1 && prev.totalWords !== knownWordsData.length) {
+                        return { ...prev, totalWords: knownWordsData.length, levelCounts };
+                    }
+                    return prev;
+                });
+            } else {
+                const data = await WordListService.getListWords(id, userId, filterUnknown);
+                setWordData(data);
+            }
             setVisibleCount(50); // Reset pagination on list change
         } catch (error) {
             console.error("Failed to fetch words", error);
@@ -180,6 +231,12 @@ const UserListsPage = () => {
                 if (filterUnknown && !currentStatus) {
                     finalWords = updatedWords.filter(w => w.id !== wordId);
                 }
+                
+                // If we are in the "Known Words" list, remove it if it becomes unknown
+                if (selectedList?.id === -1 && currentStatus) {
+                    finalWords = updatedWords.filter(w => w.id !== wordId);
+                    setSelectedList(prev => prev ? { ...prev, totalWords: Math.max(0, prev.totalWords - 1) } : prev);
+                }
 
                 setWordData({ ...wordData, words: finalWords });
             }
@@ -194,7 +251,6 @@ const UserListsPage = () => {
     };
 
     const handleDeleteWord = async (listId: number, wordId: number) => {
-        if (!confirm(t('lists.confirm_remove_word'))) return;
         try {
             await WordListService.removeWordFromList(listId, wordId);
             if (wordData) {
@@ -211,7 +267,6 @@ const UserListsPage = () => {
     };
 
     const handleDeleteList = async (listId: number) => {
-        if (!confirm(t('lists.confirm_delete_list'))) return;
         try {
             await WordListService.deleteList(listId);
             const newList = lists.filter(l => l.id !== listId);
@@ -334,77 +389,126 @@ const UserListsPage = () => {
                                     <div className="p-8 text-center text-gray-400">{t('lists.no_lists')}</div>
                                 ) : (
                                     <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                                        {visibleLists.map(list => {
-                                            const isHidden = hiddenIds.includes(list.id);
-                                            return (
-                                            <div
-                                                key={list.id}
-                                                className={cn(
-                                                    "w-full flex items-center transition-colors",
-                                                    selectedList?.id === list.id
-                                                        ? "bg-indigo-50 dark:bg-indigo-500/10"
-                                                        : "hover:bg-gray-50 dark:hover:bg-gray-800",
-                                                    isHidden && !globalHide && "opacity-50"
-                                                )}
-                                            >
-                                                <button
-                                                    onClick={() => setSelectedList(list)}
-                                                    className={cn(
-                                                        "flex-1 text-left px-5 py-4 flex items-center justify-between min-w-0",
-                                                        selectedList?.id === list.id
-                                                            ? "text-indigo-700 dark:text-indigo-300"
-                                                            : "text-gray-700 dark:text-gray-300"
-                                                    )}
-                                                >
-                                                    <div className="min-w-0 flex items-center gap-3">
-                                                        {list.sourceMediaPosterUrl ? (
-                                                            <img 
-                                                                src={list.sourceMediaPosterUrl} 
-                                                                alt={list.name} 
-                                                                className="w-10 h-14 object-cover rounded-md shadow-sm shrink-0 border border-gray-200 dark:border-gray-800" 
-                                                            />
-                                                        ) : (
-                                                            <div
-                                                                className="w-2 h-2 rounded-full shrink-0"
-                                                                style={{ backgroundColor: list.color ?? '#818cf8' }}
+                                        {(() => {
+                                            const personalLists = visibleLists.filter(l => !l.isSystem);
+                                            const systemLists = visibleLists.filter(l => l.isSystem);
+
+                                            const renderList = (list: WordListDTO) => {
+                                                const isHidden = hiddenIds.includes(list.id);
+                                                return (
+                                                    <div
+                                                        key={list.id}
+                                                        className={cn(
+                                                            "group relative w-full flex items-center transition-colors overflow-hidden",
+                                                            selectedList?.id === list.id
+                                                                ? (list.color ? "" : "bg-indigo-50 dark:bg-indigo-500/10")
+                                                                : "hover:bg-gray-50 dark:hover:bg-gray-800",
+                                                            isHidden && !globalHide && "opacity-50"
+                                                        )}
+                                                    >
+                                                        {/* Background Tint Layer */}
+                                                        {list.color && (
+                                                            <div 
+                                                                className={cn(
+                                                                    "absolute inset-0 pointer-events-none transition-opacity",
+                                                                    selectedList?.id === list.id ? "opacity-20" : "opacity-5 group-hover:opacity-10"
+                                                                )}
+                                                                style={{ backgroundColor: list.color }}
                                                             />
                                                         )}
-                                                        <div className="min-w-0">
-                                                            <p className="font-semibold truncate flex items-center gap-2">
-                                                                {list.name}
-                                                                {list.isSystem && (
-                                                                    <span title="System List">
-                                                                        <Lock className="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-500 shrink-0" />
-                                                                    </span>
+                                                        
+                                                        <button
+                                                            onClick={() => setSelectedList(list)}
+                                                            className={cn(
+                                                                "relative z-10 flex-1 text-left px-5 py-4 flex items-center justify-between min-w-0",
+                                                                selectedList?.id === list.id
+                                                                    ? "text-indigo-700 dark:text-indigo-300"
+                                                                    : "text-gray-700 dark:text-gray-300"
+                                                            )}
+                                                        >
+                                                            <div className="min-w-0 flex items-center gap-3">
+                                                                {list.sourceMediaPosterUrl ? (
+                                                                    <div className="relative shrink-0">
+                                                                        <img 
+                                                                            src={list.sourceMediaPosterUrl} 
+                                                                            alt={list.name} 
+                                                                            className="w-10 h-14 object-cover rounded-md shadow-sm border border-gray-200 dark:border-gray-800" 
+                                                                        />
+                                                                        {list.color && (
+                                                                            <div 
+                                                                                className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#161822]"
+                                                                                style={{ backgroundColor: list.color }}
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div
+                                                                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-black/5 dark:border-white/5"
+                                                                        style={{ backgroundColor: (list.color ?? '#818cf8') + '20' }}
+                                                                    >
+                                                                        <BookOpen className="w-5 h-5" style={{ color: list.color ?? '#818cf8' }} />
+                                                                    </div>
                                                                 )}
-                                                            </p>
-                                                            <p className="text-xs text-gray-400 mt-1">
-                                                                {list.totalWords} {t('lists.words')} • {list.unknownWords} {t('lists.unknown')}
-                                                            </p>
-                                                        </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="font-semibold truncate flex items-center gap-2">
+                                                                        {list.name}
+                                                                        {list.isSystem && (
+                                                                            <span title="System List">
+                                                                                <Lock className="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-500 shrink-0" />
+                                                                            </span>
+                                                                        )}
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-400 mt-1">
+                                                                        {list.totalWords} {t('lists.words')} • {list.unknownWords} {t('lists.unknown')}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:text-gray-600 dark:group-hover:text-gray-400 transition-colors shrink-0" />
+                                                        </button>
+                                                        
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); toggleHide(list.id); }}
+                                                            className="relative z-10 p-2 text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 rounded-lg transition-colors shrink-0"
+                                                            title={isHidden ? "Göster" : "Gizle"}
+                                                        >
+                                                            {isHidden ? <EyeOff className="w-4 h-4 text-amber-500" /> : <Eye className="w-4 h-4" />}
+                                                        </button>
+                                                        
+                                                        {!list.isSystem && (
+                                                            <button
+                                                                onClick={(e) => handleOpenEdit(e, list)}
+                                                                className="relative z-10 p-2 mr-2 text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 rounded-lg transition-colors shrink-0"
+                                                                title="Edit list"
+                                                            >
+                                                                <Pencil className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                    <ChevronRight className="w-4 h-4" />
-                                                </button>
-                                                
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); toggleHide(list.id); }}
-                                                    className="p-2 text-gray-300 hover:text-indigo-500 dark:text-gray-600 dark:hover:text-indigo-400 rounded-lg transition-colors shrink-0"
-                                                    title={isHidden ? "Göster" : "Gizle"}
-                                                >
-                                                    {isHidden ? <EyeOff className="w-3.5 h-3.5 text-yellow-500" /> : <Eye className="w-3.5 h-3.5" />}
-                                                </button>
-                                                
-                                                {!list.isSystem && (
-                                                    <button
-                                                        onClick={(e) => handleOpenEdit(e, list)}
-                                                        className="p-2 mr-2 text-gray-300 hover:text-indigo-500 dark:text-gray-600 dark:hover:text-indigo-400 rounded-lg transition-colors shrink-0"
-                                                        title="Edit list"
-                                                    >
-                                                        <Pencil className="w-3.5 h-3.5" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )})}
+                                                );
+                                            };
+
+                                            return (
+                                                <>
+                                                    {personalLists.length > 0 && (
+                                                        <>
+                                                            <div className="bg-gray-50/80 dark:bg-gray-800/30 px-5 py-2.5 text-xs font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-800">
+                                                                {t('personalLists', 'Kişisel Listelerim')}
+                                                            </div>
+                                                            {personalLists.map(renderList)}
+                                                        </>
+                                                    )}
+                                                    
+                                                    {systemLists.length > 0 && (
+                                                        <>
+                                                            <div className="bg-gray-50/80 dark:bg-gray-800/30 px-5 py-2.5 text-xs font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-y border-gray-100 dark:border-gray-800 mt-2">
+                                                                {t('curatedLists', 'Önerilen Listeler')}
+                                                            </div>
+                                                            {systemLists.map(renderList)}
+                                                        </>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>
@@ -416,30 +520,30 @@ const UserListsPage = () => {
                                 <div className="space-y-6">
                                     {/* List Status Card (Unified Media Style) */}
                                     <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-3xl p-6 sm:p-8">
-                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                                            <div>
-                                                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                        <div className="flex flex-wrap items-start justify-between gap-6 mb-8">
+                                            <div className="flex-1 min-w-[280px]">
+                                                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
                                                     {selectedList.name}
                                                 </h2>
-                                                <div className="flex items-center gap-3 text-sm text-gray-400">
-                                                    <span className="flex items-center gap-1.5">
+                                                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
+                                                    <span className="flex items-center gap-1.5 whitespace-nowrap bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800">
                                                         <BookOpen className="w-4 h-4 text-indigo-500" />
                                                         {wordData.totalWords} {t('lists.words')}
                                                     </span>
-                                                    <span>•</span>
-                                                    <span className="flex items-center gap-1.5">
+                                                    <span className="flex items-center gap-1.5 whitespace-nowrap bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800">
                                                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                                                         {wordData.totalWords - wordData.unknownWords} {t('lists.known')}
                                                     </span>
-                                                    <span>•</span>
-                                                    <span className="font-bold text-indigo-600 dark:text-indigo-400">{progressPercent}% {t('lists.mastery')}</span>
+                                                    <span className="flex items-center gap-1.5 whitespace-nowrap bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-500/20 font-bold text-indigo-600 dark:text-indigo-400">
+                                                        {progressPercent}% {t('lists.mastery')}
+                                                    </span>
                                                 </div>
                                             </div>
                                             
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <button
                                                     onClick={() => setIsQuizModalOpen(true)}
-                                                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all hover:scale-105"
+                                                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 whitespace-nowrap"
                                                 >
                                                     <PlayCircle className="w-5 h-5 fill-white/20" />
                                                     {t('lists.study_list')}
@@ -447,13 +551,13 @@ const UserListsPage = () => {
                                                 <button
                                                     onClick={() => setFilterUnknown(!filterUnknown)}
                                                     className={cn(
-                                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                                                        "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap border",
                                                         filterUnknown
-                                                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
-                                                            : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                                            ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/25"
+                                                            : "bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
                                                     )}
                                                 >
-                                                    <Filter className="w-3.5 h-3.5" />
+                                                    <Filter className="w-4 h-4" />
                                                     {filterUnknown ? t('lists.filter_unknown') : t('lists.filter_all')}
                                                 </button>
 
@@ -461,7 +565,7 @@ const UserListsPage = () => {
                                                     onClick={handleGenerateSubList}
                                                     disabled={isGeneratingList || isGenerationSuccess || wordData.unknownWords === 0}
                                                     className={cn(
-                                                        "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border shadow-sm",
+                                                        "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border shadow-sm whitespace-nowrap",
                                                         isGenerationSuccess
                                                             ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
                                                             : "bg-indigo-50 text-indigo-600 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20"
@@ -473,14 +577,14 @@ const UserListsPage = () => {
                                                 
                                                 {!selectedList.isSystem ? (
                                                     <button
-                                                        onClick={() => handleDeleteList(selectedList.id)}
-                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors shrink-0"
+                                                        onClick={() => setDeleteConfirm({ type: 'list', id: selectedList.id })}
+                                                        className="p-2.5 text-gray-400 border border-gray-200 dark:border-gray-800 hover:border-red-200 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:border-red-900/50 rounded-xl transition-all shrink-0"
                                                         title="Delete List"
                                                     >
                                                         <Trash2 className="w-5 h-5" />
                                                     </button>
                                                 ) : (
-                                                    <div className="p-2 text-gray-300 dark:text-gray-600 cursor-not-allowed shrink-0" title="System lists cannot be deleted">
+                                                    <div className="p-2.5 text-gray-300 border border-gray-100 dark:border-gray-800/50 dark:text-gray-600 cursor-not-allowed shrink-0 rounded-xl bg-gray-50 dark:bg-gray-900/50" title="System lists cannot be deleted">
                                                         <Lock className="w-5 h-5" />
                                                     </div>
                                                 )}
@@ -736,6 +840,42 @@ const UserListsPage = () => {
                                 className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 {t('lists.start')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setDeleteConfirm(null)}>
+                    <div className="bg-white dark:bg-[#161822] rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-gray-100 dark:border-gray-800" onClick={(e) => e.stopPropagation()}>
+                        <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Trash2 className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-xl font-bold text-center text-gray-900 dark:text-white mb-2">
+                            {t('common.are_you_sure')}
+                        </h3>
+                        <p className="text-center text-gray-500 mb-8">
+                            {deleteConfirm.type === 'list' ? t('lists.confirm_delete_list') : t('lists.confirm_remove_word')}
+                        </p>
+                        
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl transition-colors"
+                            >
+                                {t('actions.cancel', 'İptal')}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (deleteConfirm.type === 'list') handleDeleteList(deleteConfirm.id);
+                                    else if (selectedList) handleDeleteWord(selectedList.id, deleteConfirm.id);
+                                    setDeleteConfirm(null);
+                                }}
+                                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 transition-all"
+                            >
+                                {t('actions.delete', 'Sil')}
                             </button>
                         </div>
                     </div>
