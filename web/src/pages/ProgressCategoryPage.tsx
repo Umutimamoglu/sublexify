@@ -37,7 +37,6 @@ const CATEGORY_CONFIG = {
     due: { title: 'Bugün Tekrar', emptyTitle: 'Tekrar yok', icon: Target, color: 'text-rose-500', fetch: ProgressService.getDueWords }
 };
 
-const MOCK_USER_ID = 1;
 
 function speakWord(word: string) {
     if ('speechSynthesis' in window) {
@@ -261,8 +260,8 @@ const ProgressCategoryPage = () => {
         if (!word) return;
         setWords(p => p.map(w => w.id === wordId ? { ...w, isKnown: !w.isKnown } : w));
         try {
-            if (word.isKnown) await api.delete(`/words/${wordId}/mark-known`, { params: { userId: MOCK_USER_ID } });
-            else await api.post(`/words/${wordId}/mark-known`, null, { params: { userId: MOCK_USER_ID } });
+            if (word.isKnown) await api.delete(`/words/${wordId}/mark-known`);
+            else await api.post(`/words/${wordId}/mark-known`);
         } catch { setWords(p => p.map(w => w.id === wordId ? { ...w, isKnown: word.isKnown } : w)); } // rollback
     }, [words]);
 

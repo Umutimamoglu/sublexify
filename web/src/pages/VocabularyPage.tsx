@@ -26,7 +26,6 @@ const QUIZ_TYPES = [
     { key: 'FILL_IN_THE_BLANKS', label: 'Boşluk Doldurma', icon: '✏️' },
     { key: 'LISTENING', label: 'Dinleme', icon: '🎧' },
 ];
-const MOCK_USER_ID = 1;
 
 function speakWord(word: string) {
     if ('speechSynthesis' in window) {
@@ -349,11 +348,11 @@ const VocabularyPage = () => {
             let data: VocabWord[] = [];
             if (q.length >= 2) {
                 if (reset) {
-                    data = await WordListService.searchWords(q, 'en', diffs, onlyUnknown, MOCK_USER_ID);
+                    data = await WordListService.searchWords(q, 'en', diffs, onlyUnknown);
                     setHasMore(false);
                 }
             } else {
-                data = await WordListService.getFrequentWordsPaginated(currentPage, 50, 'en', diffs, onlyUnknown, MOCK_USER_ID);
+                data = await WordListService.getFrequentWordsPaginated(currentPage, 50, 'en', diffs, onlyUnknown);
                 setHasMore(data.length === 50);
             }
             
@@ -395,8 +394,8 @@ const VocabularyPage = () => {
         const current = word.isKnown;
         setWords(prev => prev.map(w => w.id === wordId ? { ...w, isKnown: !current } : w));
         try {
-            if (current) await api.delete(`/words/${wordId}/mark-known`, { params: { userId: MOCK_USER_ID } });
-            else await api.post(`/words/${wordId}/mark-known`, null, { params: { userId: MOCK_USER_ID } });
+            if (current) await api.delete(`/words/${wordId}/mark-known`);
+            else await api.post(`/words/${wordId}/mark-known`);
         } catch { setWords(prev => prev.map(w => w.id === wordId ? { ...w, isKnown: current } : w)); }
     }, [words]);
 
@@ -613,7 +612,7 @@ const VocabularyPage = () => {
                             if (unknownIds.length === 0) return;
                             setWords(prev => prev.map(w => unknownIds.includes(w.id) ? { ...w, isKnown: true } : w));
                             for (const id of unknownIds) {
-                                try { await api.post(`/words/${id}/mark-known`, null, { params: { userId: MOCK_USER_ID } }); } catch { }
+                                try { await api.post(`/words/${id}/mark-known`); } catch { }
                             }
                         }}
                         className="flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl shadow-indigo-500/30 transition-all hover:scale-105 border border-indigo-400/40"

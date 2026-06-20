@@ -35,11 +35,13 @@ const LoginPage = () => {
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white mb-4 shadow-lg shadow-indigo-500/30">
-                        <BookOpen className="w-8 h-8" />
+                    <div className="inline-flex items-center justify-center mb-4">
+                        <img src="/icon.png" alt="Sublexify Logo" className="w-20 h-20 object-contain drop-shadow-xl" />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sublex</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">{t('login.tagline')}</p>
+                    <h1 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">
+                        Sub<span className="text-teal-500 dark:text-teal-400">lex</span>ify
+                    </h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">{t('login.tagline')}</p>
                 </div>
 
                 {/* Form Card */}
