@@ -131,8 +131,8 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
 
     // Flashcard
     flashOuter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    cardStack: { width: Math.min(Dimensions.get('window').width - 64, 400), height: Math.min(Dimensions.get('window').height * 0.58, 480) },
-    card: { width: Math.min(Dimensions.get('window').width - 64, 400), height: Math.min(Dimensions.get('window').height * 0.58, 480), borderRadius: 20, position: 'absolute', borderWidth: 1, borderColor: isDark ? '#ffffff18' : c.BORDER, overflow: 'hidden', backfaceVisibility: 'hidden' as const },
+    cardStack: { width: Math.min(sw - 64, 400), height: Math.min(sh * 0.48, 420) },
+    card: { width: Math.min(sw - 64, 400), height: Math.min(sh * 0.48, 420), borderRadius: 20, position: 'absolute', borderWidth: 1, borderColor: isDark ? '#ffffff18' : c.BORDER, overflow: 'hidden', backfaceVisibility: 'hidden' as const },
     cardFront: { backgroundColor: c.SURFACE, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 10 },
     cardBigWord: { color: c.TEXT_P, fontSize: 34, fontWeight: '900', textAlign: 'center' },
     diffBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, borderWidth: 1, marginBottom: 12 },
@@ -812,7 +812,7 @@ export default function VocabularyScreen() {
           </Reanimated.View>
         </GestureDetector>
 
-        <View style={{ marginTop: 30 }}>
+        <View style={{ marginTop: 20, marginBottom: 10 }}>
           <Text style={styles.progressText}>
             {cardIndex + 1} / {displayWords.length}
           </Text>
