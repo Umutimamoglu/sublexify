@@ -8,6 +8,9 @@ export interface StudyQuestion {
     difficulty: string;
     questionType: 'MULTIPLE_CHOICE' | 'FILL_IN_THE_BLANKS' | 'LISTENING';
     choices?: string[];
+    contextSentence?: string;
+    correctAnswer: string;
+    pos?: string;
 }
 
 export interface StudyResult {
@@ -27,6 +30,13 @@ const StudyService = {
         await api.post('/study/result', results, {
             params: { userId },
         });
+    },
+
+    getWord: async (userId: number, wordId: number): Promise<any> => {
+        const response = await api.get(`/words/${wordId}`, {
+            params: { userId }
+        });
+        return response.data;
     }
 };
 

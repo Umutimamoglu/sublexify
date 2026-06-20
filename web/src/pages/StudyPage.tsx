@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import StudyService, { StudyQuestion, StudyResult } from '@/services/StudyService';
-import { Loader2, X, Check, ArrowRight, Volume2 } from 'lucide-react';
+import { Word } from '@/services/WordListService';
+import { Loader2, X, Check, ArrowRight, Volume2, Info } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import WordCard from '@/components/features/WordCard';
 
 const StudyPage = () => {
     const { listId } = useParams<{ listId: string }>();
     const [searchParams] = useSearchParams();
     const typesParam = searchParams.get('types');
+    const sizeParam = searchParams.get('size') || '10';
     const navigate = useNavigate();
     const userId = 1; // sprint 4 auth mock
 
@@ -17,13 +20,40 @@ const StudyPage = () => {
     const [saving, setSaving] = useState(false);
     
     // answers tracking
-    const [results, setResults] = useState<StudyResult[]>([]);
+    const [results, setResults] = useState<(StudyResult & { skipped?: boolean })[]>([]);
     const [isCurrentAnswered, setIsCurrentAnswered] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
+    const [isRecap, setIsRecap] = useState(false);
+    
+    // For Word Card
+    const [fullWordInfo, setFullWordInfo] = useState<Word | null>(null);
+    const [loadingWordInfo, setLoadingWordInfo] = useState(false);
     
     // For specific question types
     const [fillInAnswer, setFillInAnswer] = useState('');
     
     const handleNextRef = useRef<() => void>(null);
+    
+    const handleToggleInfo = async () => {
+        if (showInfo) {
+            setShowInfo(false);
+            return;
+        }
+        
+        setShowInfo(true);
+        const currentQ = questions[currentIndex];
+        if (!fullWordInfo || fullWordInfo.id !== currentQ.wordId) {
+            setLoadingWordInfo(true);
+            try {
+                const data = await StudyService.getWord(userId, currentQ.wordId);
+                setFullWordInfo(data);
+            } catch (error) {
+                console.error("Failed to fetch full word info", error);
+            } finally {
+                setLoadingWordInfo(false);
+            }
+        }
+    };
     
     useEffect(() => {
         loadBatch();
@@ -37,11 +67,12 @@ const StudyPage = () => {
         if (!listId) return;
         setLoading(true);
         try {
-            const batch = await StudyService.getNextBatch(userId, Number(listId), 10, typesParam ? typesParam.split(',') : undefined);
+            const batch = await StudyService.getNextBatch(userId, Number(listId), Number(sizeParam), typesParam ? typesParam.split(',') : undefined);
             setQuestions(batch);
             setCurrentIndex(0);
             setResults([]);
             setIsCurrentAnswered(false);
+            setShowInfo(false);
             setFillInAnswer('');
         } catch (error) {
             console.error("Failed to load study batch", error);
@@ -60,42 +91,53 @@ const StudyPage = () => {
             wordId: currentQ.wordId,
             isCorrect
         }]);
-
-        if (isCorrect) {
-            setTimeout(() => {
-                if (handleNextRef.current) {
-                    handleNextRef.current();
-                }
-            }, 1000); // Wait 1 second before auto-advancing
-        }
     };
 
-    const handleNext = async () => {
+    const handleSkip = () => {
+        if (isCurrentAnswered) return;
+        
+        setIsCurrentAnswered(true);
+        const currentQ = questions[currentIndex];
+        
+        setResults(prev => [...prev, {
+            wordId: currentQ.wordId,
+            isCorrect: false,
+            skipped: true
+        }]);
+    };
+
+    const handleNext = () => {
         if (currentIndex < questions.length - 1) {
             setCurrentIndex(prev => prev + 1);
             setIsCurrentAnswered(false);
+            setShowInfo(false);
             setFillInAnswer('');
         } else {
-            // Finish batch
-            setSaving(true);
-            try {
-                await StudyService.processStudyResults(userId, results);
-                // After saving, load next batch or go back
-                const nextBatch = await StudyService.getNextBatch(userId, Number(listId), 10, typesParam ? typesParam.split(',') : undefined);
-                if (nextBatch.length > 0) {
-                    setQuestions(nextBatch);
-                    setCurrentIndex(0);
-                    setResults([]);
-                    setIsCurrentAnswered(false);
-                    setFillInAnswer('');
-                } else {
-                    navigate('/lists');
-                }
-            } catch (error) {
-                console.error("Failed to save results", error);
-            } finally {
-                setSaving(false);
+            // Show recap screen instead of auto-loading next
+            setIsRecap(true);
+        }
+    };
+
+    const finishBatch = async () => {
+        setSaving(true);
+        try {
+            await StudyService.processStudyResults(userId, results);
+            const nextBatch = await StudyService.getNextBatch(userId, Number(listId), Number(sizeParam), typesParam ? typesParam.split(',') : undefined);
+            if (nextBatch.length > 0) {
+                setQuestions(nextBatch);
+                setCurrentIndex(0);
+                setResults([]);
+                setIsCurrentAnswered(false);
+                setShowInfo(false);
+                setIsRecap(false);
+                setFillInAnswer('');
+            } else {
+                navigate('/lists');
             }
+        } catch (error) {
+            console.error("Failed to save results", error);
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -120,6 +162,79 @@ const StudyPage = () => {
 
     const currentQ = questions[currentIndex];
 
+    if (isRecap) {
+        const correctCount = results.filter(r => r.isCorrect).length;
+        const total = results.length;
+        const percentage = Math.round((correctCount / total) * 100) || 0;
+
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0f1117] flex flex-col items-center py-10 px-4">
+                <div className="w-full max-w-2xl bg-white dark:bg-[#161822] rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col items-center animate-in fade-in zoom-in-95">
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2">Quiz Complete!</h2>
+                    <p className="text-gray-500 mb-8">Here's how you did on this batch.</p>
+
+                    <div className="flex gap-6 w-full mb-8">
+                        <div className="flex-1 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl p-6 text-center border border-indigo-100 dark:border-indigo-500/20">
+                            <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400 mb-2">{percentage}%</div>
+                            <div className="text-sm font-bold text-indigo-400 dark:text-indigo-500 uppercase tracking-wider">Score</div>
+                        </div>
+                        <div className="flex-1 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl p-6 text-center border border-emerald-100 dark:border-emerald-500/20">
+                            <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-2">{correctCount}</div>
+                            <div className="text-sm font-bold text-emerald-400 dark:text-emerald-500 uppercase tracking-wider">Correct</div>
+                        </div>
+                    </div>
+
+                    <div className="w-full flex flex-col gap-3 mb-8 max-h-[40vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+                        {questions.map((q, idx) => {
+                            const result = results[idx];
+                            if (!result) return null;
+                            const isSkipped = result.skipped;
+                            const isCorrect = result.isCorrect;
+
+                            return (
+                                <div key={q.wordId} className={cn(
+                                    "flex items-center justify-between p-4 rounded-xl border",
+                                    isSkipped ? "bg-amber-50/50 border-amber-200 dark:bg-amber-500/5 dark:border-amber-500/20" :
+                                    isCorrect ? "bg-emerald-50/50 border-emerald-200 dark:bg-emerald-500/5 dark:border-emerald-500/20" :
+                                    "bg-rose-50/50 border-rose-200 dark:bg-rose-500/5 dark:border-rose-500/20"
+                                )}>
+                                    <div>
+                                        <div className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                                            {q.word}
+                                            <span className="text-[10px] bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded uppercase">{q.pos}</span>
+                                        </div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{q.definition}</div>
+                                    </div>
+                                    <div className="shrink-0 ml-4">
+                                        {isSkipped ? <ArrowRight className="w-6 h-6 text-amber-500" /> :
+                                         isCorrect ? <Check className="w-6 h-6 text-emerald-500" /> :
+                                         <X className="w-6 h-6 text-rose-500" />}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <button
+                        onClick={finishBatch}
+                        disabled={saving}
+                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25"
+                    >
+                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Continue Studying"}
+                        {!saving && <ArrowRight className="w-5 h-5" />}
+                    </button>
+                    
+                    <button
+                        onClick={() => navigate('/lists')}
+                        className="mt-4 w-full py-4 text-gray-500 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                    >
+                        Return to Lists
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0f1117] flex flex-col items-center py-10 px-4">
             {/* Header */}
@@ -137,112 +252,144 @@ const StudyPage = () => {
             </div>
 
             {/* Quiz Card */}
-            <div className="w-full max-w-2xl bg-white dark:bg-[#161822] rounded-3xl shadow-xl border border-gray-200/60 dark:border-gray-800/60 p-8 sm:p-12 min-h-[400px] flex flex-col">
+            <div className="w-full max-w-2xl bg-white dark:bg-[#161822] rounded-3xl shadow-xl border border-gray-200/60 dark:border-gray-800/60 p-6 sm:p-8 min-h-[300px] flex flex-col transition-all">
                 
-                {/* Context area based on question type */}
-                <div className="mb-10 text-center">
-                    <h3 className="text-sm font-bold text-indigo-500 uppercase tracking-wider mb-6">
-                        {currentQ.questionType === 'LISTENING' ? 'Listen & Type' : 'What is this word?'}
-                    </h3>
-                    
-                    {currentQ.questionType === 'LISTENING' ? (
-                        <div className="flex flex-col items-center gap-6">
-                            <button 
-                                onClick={() => playAudio(currentQ.word)}
-                                className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-200 transition-colors"
-                            >
-                                <Volume2 className="w-10 h-10" />
-                            </button>
-                            <p className="text-gray-500">Click to listen to the word</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <p className="text-xl sm:text-2xl font-medium text-gray-900 dark:text-white leading-relaxed">
-                                {currentQ.definition}
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Answer Area */}
-                <div className="mt-auto">
-                    {currentQ.questionType === 'MULTIPLE_CHOICE' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {currentQ.choices?.map((opt, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => handleAnswer(opt === currentQ.word)}
-                                    disabled={isCurrentAnswered}
-                                    className={cn(
-                                        "p-4 rounded-xl text-lg font-medium transition-all text-center border-2",
-                                        isCurrentAnswered
-                                            ? opt === currentQ.word
-                                                ? "bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-                                                : "bg-gray-50 border-gray-200 text-gray-400 dark:bg-gray-800/50 dark:border-gray-800"
-                                            : "bg-white border-gray-200 text-gray-700 hover:border-indigo-500 hover:bg-indigo-50 dark:bg-[#161822] dark:border-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-500/10"
-                                    )}
-                                >
-                                    {opt}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {(currentQ.questionType === 'FILL_IN_THE_BLANKS' || currentQ.questionType === 'LISTENING') && (
-                        <div className="flex flex-col gap-4">
-                            <input
-                                type="text"
-                                value={fillInAnswer}
-                                onChange={(e) => setFillInAnswer(e.target.value)}
-                                disabled={isCurrentAnswered}
-                                placeholder="Type the word..."
-                                className="w-full text-center text-3xl font-bold bg-transparent border-b-2 border-gray-300 dark:border-gray-700 focus:border-indigo-500 focus:outline-none p-4 disabled:opacity-50"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && fillInAnswer.trim() && !isCurrentAnswered) {
-                                        handleAnswer(fillInAnswer.toLowerCase().trim() === currentQ.word.toLowerCase());
-                                    }
-                                }}
-                            />
-                            {!isCurrentAnswered && (
-                                <button
-                                    onClick={() => handleAnswer(fillInAnswer.toLowerCase().trim() === currentQ.word.toLowerCase())}
-                                    disabled={!fillInAnswer.trim()}
-                                    className="w-full py-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                                >
-                                    Check
-                                </button>
+                {!showInfo && (
+                    <>
+                        {/* Context area based on question type */}
+                        <div className="mb-8 text-center">
+                            <h3 className="text-sm font-bold text-indigo-500 uppercase tracking-wider mb-4">
+                                {currentQ.questionType === 'LISTENING' ? 'Listen & Type' : 'What is this word?'}
+                            </h3>
+                            
+                            {currentQ.questionType === 'LISTENING' ? (
+                                <div className="flex flex-col items-center gap-4">
+                                    <button 
+                                        onClick={() => playAudio(currentQ.word)}
+                                        className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-200 transition-colors"
+                                    >
+                                        <Volume2 className="w-8 h-8" />
+                                    </button>
+                                    <p className="text-gray-500">Click to listen to the word</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <p className="text-xl sm:text-2xl font-medium text-gray-900 dark:text-white leading-relaxed">
+                                        {currentQ.definition}
+                                    </p>
+                                </div>
                             )}
                         </div>
-                    )}
-                </div>
+
+                        {/* Answer Area */}
+                        <div className="mt-auto">
+                            {currentQ.questionType === 'MULTIPLE_CHOICE' && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {currentQ.choices?.map((opt, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleAnswer(opt === currentQ.word)}
+                                            disabled={isCurrentAnswered}
+                                            className={cn(
+                                                "p-4 rounded-xl text-lg font-medium transition-all text-center border-2",
+                                                isCurrentAnswered
+                                                    ? opt === currentQ.word
+                                                        ? "bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                                                        : "bg-gray-50 border-gray-200 text-gray-400 dark:bg-gray-800/50 dark:border-gray-800"
+                                                    : "bg-white border-gray-200 text-gray-700 hover:border-indigo-500 hover:bg-indigo-50 dark:bg-[#161822] dark:border-gray-700 dark:text-gray-200 dark:hover:border-indigo-500 dark:hover:bg-indigo-500/10"
+                                            )}
+                                        >
+                                            {opt}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {(currentQ.questionType === 'FILL_IN_THE_BLANKS' || currentQ.questionType === 'LISTENING') && (
+                                <div className="flex flex-col gap-4">
+                                    <input
+                                        type="text"
+                                        value={fillInAnswer}
+                                        onChange={(e) => setFillInAnswer(e.target.value)}
+                                        disabled={isCurrentAnswered}
+                                        placeholder="Type the word..."
+                                        className="w-full text-center text-3xl font-bold bg-transparent border-b-2 border-gray-300 dark:border-gray-700 focus:border-indigo-500 focus:outline-none p-4 disabled:opacity-50"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && fillInAnswer.trim() && !isCurrentAnswered) {
+                                                handleAnswer(fillInAnswer.toLowerCase().trim() === currentQ.word.toLowerCase());
+                                            }
+                                        }}
+                                    />
+                                    {!isCurrentAnswered && (
+                                        <button
+                                            onClick={() => handleAnswer(fillInAnswer.toLowerCase().trim() === currentQ.word.toLowerCase())}
+                                            disabled={!fillInAnswer.trim()}
+                                            className="w-full py-4 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                                        >
+                                            Check
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {!isCurrentAnswered && (
+                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <button
+                            onClick={handleSkip}
+                            className="w-full py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                        >
+                            Pass
+                        </button>
+                    </div>
+                )}
 
                 {isCurrentAnswered && (
-                    <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between animate-in fade-in slide-in-from-bottom-4">
-                        <div className="flex items-center gap-3">
-                            {(() => {
-                                const isCorrect = results[results.length - 1]?.isCorrect;
-                                return isCorrect ? (
-                                    <>
-                                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                                            <Check className="w-6 h-6" />
-                                        </div>
-                                        <span className="text-xl font-bold text-emerald-600">Correct!</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
-                                            <X className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <span className="text-xl font-bold text-rose-600 block">Incorrect</span>
-                                            <span className="text-sm font-medium text-gray-500">The answer was: <span className="text-indigo-500 font-bold">{currentQ.word}</span></span>
-                                        </div>
-                                    </>
-                                );
-                            })()}
-                        </div>
-                        
-                        {(!results[results.length - 1]?.isCorrect || currentIndex === questions.length - 1) && (
+                    <div className="mt-8 pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                {(() => {
+                                    const lastResult = results[results.length - 1];
+                                    const isCorrect = lastResult?.isCorrect;
+                                    const isSkipped = lastResult?.skipped;
+                                    
+                                    if (isSkipped) {
+                                        return (
+                                            <>
+                                                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                                                    <ArrowRight className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <span className="text-xl font-bold text-amber-600 block">Passed</span>
+                                                    <span className="text-sm font-medium text-gray-500">The answer was: <span className="text-indigo-500 font-bold">{currentQ.word}</span></span>
+                                                </div>
+                                            </>
+                                        );
+                                    }
+                                    
+                                    return isCorrect ? (
+                                        <>
+                                            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                                                <Check className="w-6 h-6" />
+                                            </div>
+                                            <span className="text-xl font-bold text-emerald-600">Correct!</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+                                                <X className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <span className="text-xl font-bold text-rose-600 block">Incorrect</span>
+                                                <span className="text-sm font-medium text-gray-500">The answer was: <span className="text-indigo-500 font-bold">{currentQ.word}</span></span>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                            
                             <button
                                 onClick={handleNext}
                                 disabled={saving}
@@ -251,6 +398,52 @@ const StudyPage = () => {
                                 {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : (currentIndex === questions.length - 1 ? 'Finish' : 'Next')}
                                 {!saving && <ArrowRight className="w-5 h-5" />}
                             </button>
+                        </div>
+
+                        {/* Word Chip */}
+                        <div 
+                            onClick={handleToggleInfo}
+                            className="bg-white dark:bg-[#161822] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer rounded-2xl p-4 border border-gray-200 dark:border-gray-700/60 flex items-center justify-between shadow-sm"
+                        >
+                            <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                                <span className="text-lg font-bold text-gray-900 dark:text-white shrink-0">{currentQ.word}</span>
+                                {currentQ.definition && (
+                                    <span className="text-gray-500 dark:text-gray-400 truncate text-sm">
+                                        {currentQ.definition}
+                                    </span>
+                                )}
+                            </div>
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); handleToggleInfo(); }}
+                                className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 ml-4 transition-colors", showInfo ? "bg-indigo-500 text-white" : "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500")}
+                            >
+                                <Info className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Expandable Word Info Block */}
+                        {showInfo && (
+                            <div className="mt-4 animate-in slide-in-from-top-2 relative z-10 w-full max-w-[400px] mx-auto">
+                                {loadingWordInfo ? (
+                                    <div className="flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-200 dark:border-gray-700/60 h-80">
+                                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                                    </div>
+                                ) : fullWordInfo ? (
+                                    <WordCard
+                                        id={fullWordInfo.id}
+                                        word={fullWordInfo.word}
+                                        frequency={fullWordInfo.frequency || 0}
+                                        isKnown={fullWordInfo.isKnown || false}
+                                        definition={fullWordInfo.definition}
+                                        difficulty={fullWordInfo.difficulty}
+                                        onToggleKnown={(id, currentStatus) => setFullWordInfo({ ...fullWordInfo, isKnown: !currentStatus })}
+                                    />
+                                ) : (
+                                    <div className="flex items-center justify-center p-8 text-center text-gray-500 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-200 dark:border-gray-700/60 h-80">
+                                        Failed to load word details.
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
                 )}
