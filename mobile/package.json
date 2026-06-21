@@ -47,6 +47,7 @@
     "expo-updates": "~29.0.16",
     "expo-web-browser": "~15.0.10",
     "i18next": "^25.8.13",
+    "lottie-react-native": "~7.3.1",
     "lucide-react-native": "^0.577.0",
     "nativewind": "^4.2.2",
     "react": "19.1.0",

@@ -22,13 +22,21 @@ import type { MediaDTO, WordListDTO, UserStatistics } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 import Tooltip from 'react-native-walkthrough-tooltip';
 import { useTourStore } from '@/src/store/tourStore';
+import LottieView from 'lottie-react-native';
 
 const TourTooltipContent = ({ text, step, isLast }: { text: string; step: number; isLast: boolean }) => {
   const { closeStep } = useTourStore();
   const { theme } = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 4 }}>
-      <Text style={{ fontSize: 40 }}>🦛</Text>
+      <View style={{ width: 60, height: 66, overflow: 'hidden', borderRadius: 16, backgroundColor: theme.colors.background }}>
+          <LottieView
+            source={require('@/assets/sublexify_mascot.json')}
+            autoPlay
+            loop
+            style={{ width: '100%', height: '100%' }}
+          />
+      </View>
       <View style={{ flex: 1, paddingTop: 4 }}>
         <Text style={{ color: theme.colors.surface, fontWeight: '600', fontSize: 14, lineHeight: 20 }}>{text}</Text>
         <TouchableOpacity 
