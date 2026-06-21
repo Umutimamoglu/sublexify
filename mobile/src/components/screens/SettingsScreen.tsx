@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Modal } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Modal, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { changeLanguage, type SupportedLanguage } from '@/src/i18n';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { AppPalettes, type PaletteKey } from '@/src/theme/palettes';
 import { Text } from '@/src/components/ui/Text';
+import { usePushEnabled, useSetPushEnabled } from '@/src/api/queries/notifications.queries';
 
 
 type Palette = {
@@ -107,6 +108,40 @@ function SettingsTile({
   );
 }
 
+function NotificationsTile({
+  onPress, styles, isDark, c
+}: {
+  onPress: () => void;
+  styles: any; isDark: boolean; c: Palette;
+}) {
+  const { data: pushEnabled = true } = usePushEnabled();
+  const { mutate: setPushEnabled, isPending } = useSetPushEnabled();
+  const iconColor = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)';
+
+  return (
+    <View style={[styles.tile, { justifyContent: 'space-between' }]}>
+      <TouchableOpacity
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 }}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.tileIconBox}>
+          <Ionicons name="notifications-outline" size={20} color={iconColor} />
+        </View>
+        <Text style={styles.tileLabel}>Bildirimler</Text>
+      </TouchableOpacity>
+      <Switch
+        value={pushEnabled}
+        onValueChange={(val) => setPushEnabled(val)}
+        trackColor={{ false: isDark ? '#333' : '#ddd', true: c.PURPLE + 'aa' }}
+        thumbColor={pushEnabled ? c.PURPLE : '#f4f3f4'}
+        disabled={isPending}
+      />
+    </View>
+  );
+}
+
+
 export default function SettingsScreen() {
   const { theme, colorScheme, themePreference, setThemePreference } = useTheme();
   const isDark = colorScheme === 'dark';
@@ -184,14 +219,12 @@ export default function SettingsScreen() {
               isDark={isDark}
               c={c}
             />
-            <SettingsTile 
-              icon="notifications-outline" 
-              label={t('notifications')} 
-              onPress={() => router.push('/profile/notifications')}
+            {/* Notifications row with push toggle */}
+            <NotificationsTile
               styles={styles}
-              isLast={true}
               isDark={isDark}
               c={c}
+              onPress={() => router.push('/profile/notifications')}
             />
           </View>
 

@@ -15,9 +15,13 @@ export const ENDPOINTS = {
     markKnown: (id: number) => `/words/${id}/mark-known`,
   },
   user: {
-    stats:       '/user/statistics',
-    knownWords:  '/user/known-words',
-    deviceToken: '/user/device-token',
+    stats:           '/user/statistics',
+    knownWords:      '/user/known-words',
+    deviceToken:     '/user/device-token',
+    notifications:   '/user/notifications',
+    notifUnread:     '/user/notifications/unread-count',
+    notifMarkRead:   '/user/notifications/mark-read',
+    notifPushToggle: '/user/notifications/push-enabled',
   },
   lists: {
     list:               '/lists',
