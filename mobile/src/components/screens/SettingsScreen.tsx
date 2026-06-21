@@ -129,6 +129,7 @@ function NotificationsTile({
           <Ionicons name="notifications-outline" size={20} color={iconColor} />
         </View>
         <Text style={styles.tileLabel}>Bildirimler</Text>
+        <Ionicons name="chevron-forward" size={16} color={iconColor} style={{ marginRight: 8 }} />
       </TouchableOpacity>
       <Switch
         value={pushEnabled}
