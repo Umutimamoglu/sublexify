@@ -3,7 +3,10 @@ package com.sublex.service;
 import com.google.firebase.messaging.*;
 import com.sublex.config.FirebaseConfig;
 import com.sublex.model.DeviceToken;
+import com.sublex.model.User;
 import com.sublex.repository.DeviceTokenRepository;
+import com.sublex.repository.NotificationRepository;
+import com.sublex.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -16,6 +19,7 @@ import java.util.Map;
 /**
  * Sends FCM push notifications. All public methods are async and fail-soft:
  * if Firebase is not configured they simply log and return.
+ * Every sendToUser call is also persisted in the notifications table.
  */
 @Slf4j
 @Service
@@ -27,14 +31,25 @@ public class PushNotificationService {
 
     private final FirebaseConfig firebaseConfig;
     private final DeviceTokenRepository deviceTokenRepository;
+    private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
 
-    /** Send to every enabled device of a single user. */
+    /**
+     * Send to every enabled device of a single user, and record in notification history.
+     * If the user has disabled push (all tokens disabled), the notification is still saved to DB.
+     */
     @Async
     public void sendToUser(Long userId, String title, String body, Map<String, String> data, String imageUrl) {
+        // Always record in notification history regardless of push state
+        userRepository.findById(userId).ifPresent(user ->
+            saveNotification(user, title, body, data, imageUrl)
+        );
+
         if (!ensureEnabled()) return;
+
         List<DeviceToken> tokens = deviceTokenRepository.findByUserIdAndEnabledTrue(userId);
         if (tokens.isEmpty()) {
-            log.debug("No device tokens for user {}, skipping push.", userId);
+            log.debug("No enabled device tokens for user {}, skipping push.", userId);
             return;
         }
         send(tokens, title, body, data, imageUrl);
@@ -53,6 +68,26 @@ public class PushNotificationService {
         send(tokens, title, body, data, imageUrl);
     }
 
+    // ─── private helpers ──────────────────────────────────────────────────────
+
+    private void saveNotification(User user, String title, String body,
+                                   Map<String, String> data, String imageUrl) {
+        try {
+            com.sublex.model.Notification n = new com.sublex.model.Notification();
+            n.setUser(user);
+            n.setTitle(title);
+            n.setBody(body);
+            n.setImageUrl(imageUrl);
+            if (data != null) {
+                n.setType(data.get("type"));
+                n.setUrl(data.get("url"));
+            }
+            notificationRepository.save(n);
+        } catch (Exception e) {
+            log.warn("Failed to persist notification for user {}: {}", user.getId(), e.getMessage());
+        }
+    }
+
     private void send(List<DeviceToken> tokens, String title, String body,
                       Map<String, String> data, String imageUrl) {
         List<DeviceToken> invalid = new ArrayList<>();
@@ -63,7 +98,7 @@ public class PushNotificationService {
 
             MulticastMessage message = MulticastMessage.builder()
                     .addAllTokens(tokenStrings)
-                    .setNotification(buildNotification(title, body, imageUrl))
+                    .setNotification(buildFcmNotification(title, body, imageUrl))
                     .putAllData(data == null ? Map.of() : data)
                     .setAndroidConfig(androidConfig())
                     .setApnsConfig(apnsConfig())
@@ -96,7 +131,7 @@ public class PushNotificationService {
         }
     }
 
-    private Notification buildNotification(String title, String body, String imageUrl) {
+    private Notification buildFcmNotification(String title, String body, String imageUrl) {
         Notification.Builder builder = Notification.builder().setTitle(title).setBody(body);
         if (imageUrl != null && !imageUrl.isBlank()) {
             builder.setImage(imageUrl);
