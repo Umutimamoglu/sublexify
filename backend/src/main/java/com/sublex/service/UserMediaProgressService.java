@@ -87,8 +87,8 @@ public class UserMediaProgressService {
             
             if (m.getImdbId() != null) {
                 int count = imdbIdCounts.getOrDefault(m.getImdbId(), 0);
-                if (count >= 2) {
-                    continue; // max 2 items per Series/Movie
+                if (count >= 1) {
+                    continue; // max 1 item per Series/Movie
                 }
                 imdbIdCounts.put(m.getImdbId(), count + 1);
             }
