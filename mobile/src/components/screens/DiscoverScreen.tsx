@@ -20,6 +20,27 @@ import { useAuthStore } from '@/src/store/authStore';
 import { useStreakStore } from '@/src/store/streakStore';
 import type { MediaDTO, WordListDTO, UserStatistics } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
+import Tooltip from 'react-native-walkthrough-tooltip';
+import { useTourStore } from '@/src/store/tourStore';
+
+const TourTooltipContent = ({ text, step, isLast }: { text: string; step: number; isLast: boolean }) => {
+  const { closeStep } = useTourStore();
+  const { theme } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 4 }}>
+      <Text style={{ fontSize: 40 }}>🦛</Text>
+      <View style={{ flex: 1, paddingTop: 4 }}>
+        <Text style={{ color: theme.colors.surface, fontWeight: '600', fontSize: 14, lineHeight: 20 }}>{text}</Text>
+        <TouchableOpacity 
+          style={{ alignSelf: 'flex-end', marginTop: 12, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 }} 
+          onPress={() => closeStep(step)}
+        >
+          <Text style={{ color: theme.colors.surface, fontWeight: '700', fontSize: 13 }}>{isLast ? "Başlayalım!" : "Sonraki"}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
 
 
 
@@ -536,6 +557,12 @@ export default function DiscoverScreen() {
   const { width: sw, height: sh } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
+  const { initializeTour, tourSteps, closeStep } = useTourStore();
+
+  useEffect(() => {
+    initializeTour();
+  }, [initializeTour]);
+
   const c = useMemo<Palette>(() => ({
     BG: theme.colors.background,
     SURFACE: theme.colors.surface,
@@ -805,6 +832,16 @@ export default function DiscoverScreen() {
             <ActivityIndicator color={c.PURPLE} size="large" />
           </View>
         ) : hasHero ? (
+          <Tooltip
+            isVisible={tourSteps[0]?.show}
+            content={<TourTooltipContent step={0} text="Buradan popüler dizi ve filmleri keşfedebilir ve anında öğrenmeye başlayabilirsin." isLast={false} />}
+            placement="bottom"
+            onClose={() => closeStep(0)}
+            contentStyle={{ backgroundColor: c.PURPLE, borderRadius: 16 }}
+            disableShadow={true}
+            topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
+            displayInsets={{ top: 24, bottom: 24, left: 24, right: 24 }}
+          >
           <View style={styles.heroContainer}>
             {/* Floating header over hero */}
             <Animated.View style={[styles.headerOverlay, { opacity: headerOpacity }]}>
@@ -815,10 +852,21 @@ export default function DiscoverScreen() {
                 <Text style={styles.headerGreeting}>{greeting}, {firstName}</Text>
               </View>
               <View style={styles.headerRight}>
-                <TouchableOpacity onPress={() => setShowStreakModal(true)} style={styles.streakBadge} activeOpacity={0.7}>
-                  <Text style={styles.streakIcon}>🔥</Text>
-                  <Text style={styles.streakCount}>{currentStreak}</Text>
-                </TouchableOpacity>
+                <Tooltip
+                  isVisible={tourSteps[2]?.show}
+                  content={<TourTooltipContent step={2} text="Her gün çalışarak serini (Ateşini) koru! Bakalım ne kadar ileri gidebileceksin?" isLast={true} />}
+                  placement="bottom"
+                  onClose={() => closeStep(2)}
+                  contentStyle={{ backgroundColor: c.PURPLE, borderRadius: 16 }}
+                  disableShadow={true}
+                  topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
+                  displayInsets={{ top: 24, bottom: 24, left: 24, right: 24 }}
+                >
+                  <TouchableOpacity onPress={() => setShowStreakModal(true)} style={styles.streakBadge} activeOpacity={0.7}>
+                    <Text style={styles.streakIcon}>🔥</Text>
+                    <Text style={styles.streakCount}>{currentStreak}</Text>
+                  </TouchableOpacity>
+                </Tooltip>
               </View>
             </Animated.View>
 
@@ -844,6 +892,7 @@ export default function DiscoverScreen() {
               </View>
             )}
           </View>
+          </Tooltip>
         ) : continueLoading ? (
           <View style={styles.heroEmpty}>
             <View style={[styles.headerOverlay, { position: 'relative', paddingTop: insets.top + 8 }]}>
@@ -956,7 +1005,20 @@ export default function DiscoverScreen() {
             <ActivityIndicator color={c.PURPLE} style={styles.loader} />
           ) : (
             <View style={styles.listsContainer}>
-              <KnownWordsCard count={userStats?.totalKnownWords ?? 0} stats={userStats} loading={knownLoading} styles={styles} onPress={() => router.push('/list/-1' as any)} />
+              <Tooltip
+                isVisible={tourSteps[1]?.show}
+                content={<TourTooltipContent step={1} text="Dünya standartlarındaki (Oxford 3000) kelime listeleriyle dağarcığını geliştirebilirsin." isLast={false} />}
+                placement="top"
+                onClose={() => closeStep(1)}
+                contentStyle={{ backgroundColor: c.PURPLE, borderRadius: 16 }}
+                disableShadow={true}
+                topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
+                displayInsets={{ top: 24, bottom: 24, left: 24, right: 24 }}
+              >
+                <View>
+                  <KnownWordsCard count={userStats?.totalKnownWords ?? 0} stats={userStats} loading={knownLoading} styles={styles} onPress={() => router.push('/list/-1' as any)} />
+                </View>
+              </Tooltip>
               {systemLists.map((item, index) => (
                 <ListCard key={item.id} item={item} index={index + 1} styles={styles} onPress={() => router.push(`/list/${item.id}` as any)} />
               ))}
