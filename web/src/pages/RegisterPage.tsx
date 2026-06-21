@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, BookOpen } from 'lucide-react';
 import AuthService from '@/services/AuthService';
 import { useAuthStore } from '@/store/useAuthStore';
+import Mascot from '@/components/Mascot';
 
 const RegisterPage = () => {
     const [name, setName] = useState('');
@@ -35,7 +36,7 @@ const RegisterPage = () => {
                 {/* Logo */}
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center mb-4">
-                        <img src="/icon.png" alt="Sublexify Logo" className="w-20 h-20 object-contain drop-shadow-xl" />
+                        <Mascot width={100} height={100} />
                     </div>
                     <h1 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">
                         Sub<span className="text-teal-500 dark:text-teal-400">lex</span>ify
