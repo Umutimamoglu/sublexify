@@ -22,33 +22,7 @@ import type { MediaDTO, WordListDTO, UserStatistics } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 import Tooltip from 'react-native-walkthrough-tooltip';
 import { useTourStore } from '@/src/store/tourStore';
-import LottieView from 'lottie-react-native';
-
-const TourTooltipContent = ({ text, step, isLast }: { text: string; step: number; isLast: boolean }) => {
-  const { closeStep } = useTourStore();
-  const { theme } = useTheme();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 4 }}>
-      <View style={{ width: 60, height: 66, overflow: 'hidden', borderRadius: 16, backgroundColor: theme.colors.background }}>
-          <LottieView
-            source={require('@/assets/sublexify_mascot.json')}
-            autoPlay
-            loop
-            style={{ width: '100%', height: '100%' }}
-          />
-      </View>
-      <View style={{ flex: 1, paddingTop: 4 }}>
-        <Text style={{ color: theme.colors.surface, fontWeight: '600', fontSize: 14, lineHeight: 20 }}>{text}</Text>
-        <TouchableOpacity 
-          style={{ alignSelf: 'flex-end', marginTop: 12, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 }} 
-          onPress={() => closeStep(step)}
-        >
-          <Text style={{ color: theme.colors.surface, fontWeight: '700', fontSize: 13 }}>{isLast ? "Başlayalım!" : "Sonraki"}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
+import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
 
 
 
@@ -586,6 +560,7 @@ export default function DiscoverScreen() {
     [c, isDark, isTablet, sw, sh, insets.top],
   );
 
+
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>('series');
   const [allMediaModalVisible, setAllMediaModalVisible] = useState(false);
   const [continueModalVisible, setContinueModalVisible] = useState(false);
@@ -842,11 +817,17 @@ export default function DiscoverScreen() {
         ) : hasHero ? (
           <Tooltip
             isVisible={tourSteps[0]?.show}
-            content={<TourTooltipContent step={0} text="Buradan popüler dizi ve filmleri keşfedebilir ve anında öğrenmeye başlayabilirsin." isLast={false} />}
+            content={<TourTooltipContent onPress={() => closeStep(0)} title="Keşfet & devam et 🍿" text="Şu an burada önerilen diziler var. Uygulamayı kullandıkça başladığın ve devam ettiğin içerikler de burada görünecek." isLast={false} />}
             placement="bottom"
             onClose={() => closeStep(0)}
-            contentStyle={{ backgroundColor: c.PURPLE, borderRadius: 16 }}
-            disableShadow={true}
+            backgroundColor="transparent"
+            closeOnBackgroundInteraction={false}
+            closeOnContentInteraction={false}
+            closeOnChildInteraction={false}
+            contentStyle={TOUR_CARD_STYLE}
+            arrowSize={{ width: 18, height: 9 }}
+            arrowStyle={{ borderTopColor: TOUR_NEON }}
+            disableShadow={false}
             topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
             displayInsets={{ top: 24, bottom: 24, left: 24, right: 24 }}
           >
@@ -862,11 +843,17 @@ export default function DiscoverScreen() {
               <View style={styles.headerRight}>
                 <Tooltip
                   isVisible={tourSteps[2]?.show}
-                  content={<TourTooltipContent step={2} text="Her gün çalışarak serini (Ateşini) koru! Bakalım ne kadar ileri gidebileceksin?" isLast={true} />}
+                  content={<TourTooltipContent onPress={() => closeStep(2)} title="Serini başlat 🔥" text="Her gün çalışarak serini (ateşini) koru! Bakalım ne kadar ileri gidebileceksin?" isLast={true} />}
                   placement="bottom"
                   onClose={() => closeStep(2)}
-                  contentStyle={{ backgroundColor: c.PURPLE, borderRadius: 16 }}
-                  disableShadow={true}
+                  backgroundColor="transparent"
+                  closeOnBackgroundInteraction={false}
+                  closeOnContentInteraction={false}
+                  closeOnChildInteraction={false}
+                  contentStyle={TOUR_CARD_STYLE}
+                  arrowSize={{ width: 18, height: 9 }}
+                  arrowStyle={{ borderTopColor: TOUR_NEON }}
+                  disableShadow={false}
                   topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
                   displayInsets={{ top: 24, bottom: 24, left: 24, right: 24 }}
                 >
@@ -1015,11 +1002,18 @@ export default function DiscoverScreen() {
             <View style={styles.listsContainer}>
               <Tooltip
                 isVisible={tourSteps[1]?.show}
-                content={<TourTooltipContent step={1} text="Dünya standartlarındaki (Oxford 3000) kelime listeleriyle dağarcığını geliştirebilirsin." isLast={false} />}
+                content={<TourTooltipContent onPress={() => closeStep(1)} title="Sana özel listeler ⭐" text="Burada, İngilizce yolculuğundan geçmiş birinin öncelikli olarak bilmesi gereken kelimelerden hazırlanmış özel listeler bulunuyor." isLast={false} />}
                 placement="top"
                 onClose={() => closeStep(1)}
-                contentStyle={{ backgroundColor: c.PURPLE, borderRadius: 16 }}
-                disableShadow={true}
+                backgroundColor="transparent"
+                showChildInTooltip={false}
+                closeOnBackgroundInteraction={false}
+                closeOnContentInteraction={false}
+                closeOnChildInteraction={false}
+                contentStyle={TOUR_CARD_STYLE}
+                arrowSize={{ width: 18, height: 9 }}
+                arrowStyle={{ borderTopColor: TOUR_NEON }}
+                disableShadow={false}
                 topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
                 displayInsets={{ top: 24, bottom: 24, left: 24, right: 24 }}
               >
