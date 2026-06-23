@@ -50,29 +50,82 @@
   "sentenceTts": "Sentence",
   "loading": "Loading...",
   "noResults": "No results found.",
+  "auth": {
+    "heading": "Ready to remember\nevery word you learn?",
+    "headingAccent": "Ready to remember",
+    "subtitle": "Sign up to build your personalized word deck, save your progress, and more.",
+    "subtitleBold": "personalized word deck",
+    "continueGoogle": "Continue with Google",
+    "continueApple": "Continue with Apple",
+    "continueEmail": "Continue with email",
+    "notActiveYet": "Not available yet",
+    "signUpEmail": "Sign up with your email.",
+    "signInEmail": "Sign in with your email.",
+    "emailPlaceholder": "Your email",
+    "passwordPlaceholder": "Your password",
+    "signUp": "Sign up",
+    "signIn": "Sign in",
+    "alreadySignedUp": "Already signed up? ",
+    "signInLink": "Sign in",
+    "newHere": "New here? ",
+    "signUpLink": "Sign up",
+    "forgotPassword": "Forgot password",
+    "emailRequired": "Email and password are required",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "emailAlreadyExists": "This email address is already in use",
+    "wrongCredentials": "Incorrect email or password",
+    "termsPrefix": "By continuing, you agree to the ",
+    "termsLink": "Terms of Service",
+    "termsAnd": " and ",
+    "privacyLink": "Privacy Policy",
+    "termsSuffix": "."
+  },
   "onboarding": {
     "skip": "Skip",
-    "gotIt": "Got It",
-    "startNow": "Start Now",
     "continue": "Continue",
+    "next": "Continue",
+    "getStarted": "Get Started",
     "slides": {
       "1": {
-        "title": "Learn by Watching",
-        "description": "Discover sentences from your favorite movies and series. See how they are spoken naturally in context."
+        "title": "You keep pausing to look up words",
+        "accent": "look up words",
+        "body": "Watching with subtitles, you constantly pause, look it up, take notes. It kills the joy — and you forget it after one look anyway. There is no need to ruin it this much!"
       },
       "2": {
-        "title": "AI Dictionary",
-        "description": "Not just Turkish translations. Analyze metaphors, idioms, and usage patterns in sentences with AI."
+        "title": "Hi, I am Sublexify",
+        "accent": "Sublexify",
+        "body": "I will help you learn English from the shows and films you love. The best words are hidden in your favorite scenes."
       },
       "3": {
-        "title": "Smart Word Pool",
-        "description": "Filter thousands of words to fit your level (A1-C2). Focus only on what you don't know."
+        "title": "Always have the right words",
+        "accent": "right words",
+        "body": "Speak more confidently, sound eloquent, or ace that exam — you are in the right place."
       },
       "4": {
-        "title": "Permanent Memory",
-        "description": "Never forget words you learn with the Spaced Repetition method."
+        "title": "You learn words, then forget them",
+        "accent": "forget them",
+        "body": "It is not your fault. New words are hard to remember, especially if you only see them once."
+      },
+      "5": {
+        "title": "Sublexify uses memory science to make words stick",
+        "accent": "memory science",
+        "body": "We turn the words from your shows into flashcards and quizzes, and use spaced repetition until you master them."
+      },
+      "6": {
+        "title": "Watch, then capture the words",
+        "accent": "capture the words",
+        "body": "Open an episode, build a list from the words you do not know in one tap, and study from it."
+      },
+      "7": {
+        "title": "Your visual dictionary and vocabulary builder",
+        "accent": "Your visual dictionary",
+        "body": "Our mission: look up any word you need, learn it, and never forget it again."
       }
-    }
+    },
+    "tapToFlip": "tap card → flip",
+    "verbForms": "VERB FORMS",
+    "phrasalVerbs": "PHRASAL VERBS",
+    "captured": "captured"
   },
   "progress": {
     "categories": {

@@ -50,7 +50,7 @@ const persister = createAsyncStoragePersister({
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
-  const { hasHydrated, isAuthenticated } = useAuthStore();
+  const { hasHydrated, isAuthenticated, hasSeenOnboarding } = useAuthStore();
   const router = useRouter();
   const segments = useSegments();
 
@@ -63,14 +63,15 @@ export default function RootLayout() {
   });
 
   // Auth gate: logout olunca login'e yönlendir
+  // Yeni kullanıcı onboarding'i görmediyse login'e yönlendirme — index.tsx halleder
   useEffect(() => {
     if (!ready || !hasHydrated) return;
     const inAuthGroup = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding';
-    if (!isAuthenticated && !inAuthGroup && !inOnboarding) {
+    if (!isAuthenticated && !inAuthGroup && !inOnboarding && hasSeenOnboarding) {
       router.replace('/(auth)/login');
     }
-  }, [isAuthenticated, ready, hasHydrated, segments]);
+  }, [isAuthenticated, ready, hasHydrated, segments, hasSeenOnboarding]);
 
   // Android Navigation Bar (Immersive Mode) settings
   useEffect(() => {
