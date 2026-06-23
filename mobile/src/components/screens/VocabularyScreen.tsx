@@ -5,11 +5,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { View, FlatList, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, TextInput, Dimensions, useWindowDimensions, Modal, Platform } from 'react-native';
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Reanimated, { 
-  runOnJS, 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withTiming, 
+import Reanimated, {
+  runOnJS,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
   withSpring,
   interpolate,
   Extrapolation,
@@ -34,6 +34,11 @@ import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
 import type { WordDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
+import { useVocabTourStore } from '@/src/store/vocabTourStore';
+import { TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
+
+// Tur sırasında otomatik aratılacak örnek kelimeler — "ne yazsan var" hissi.
+const TOUR_DEMO_WORDS = ['contagious', 'eloquent', 'resilience', 'wanderlust', 'gratitude'];
 
 
 const stripTr = (text?: string) => text?.replace(/\s*\([^)]+\)\s*$/, '').trim();
@@ -56,11 +61,11 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
   const cardW = Math.min(sw - 32, 500);
   const cardH = Math.min(sh * 0.72, 600);
   return StyleSheet.create({
-    root:     { flex: 1, backgroundColor: c.BG },
+    root: { flex: 1, backgroundColor: c.BG },
     safeArea: { flex: 1, backgroundColor: c.BG },
 
     // Header
-    header:      { paddingHorizontal: pad, paddingTop: 14, paddingBottom: 10 },
+    header: { paddingHorizontal: pad, paddingTop: 14, paddingBottom: 10 },
     headerTitle: { color: c.TEXT_P, fontSize: 22, fontWeight: '800', marginBottom: 12 },
 
     // Search bar
@@ -69,10 +74,10 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
       borderRadius: 12, borderWidth: 1, borderColor: c.BORDER,
       paddingHorizontal: 12, height: 44,
     },
-    searchIcon:  { fontSize: 16, marginRight: 8, color: c.TEXT_S },
+    searchIcon: { fontSize: 16, marginRight: 8, color: c.TEXT_S },
     searchInput: { flex: 1, color: c.TEXT_P, fontSize: 15 },
-    clearBtn:    { padding: 4 },
-    clearText:   { color: c.TEXT_S, fontSize: 16 },
+    clearBtn: { padding: 4 },
+    clearText: { color: c.TEXT_S, fontSize: 16 },
 
     // Section label
     sectionLabel: {
@@ -81,24 +86,24 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     },
 
     // Word row
-    row:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 12 },
-    rowInfo:    { flex: 1 },
-    rowWord:    { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
+    row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 12 },
+    rowInfo: { flex: 1 },
+    rowWord: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
     rowMeaning: { color: c.TEXT_S, fontSize: 12, marginTop: 3, lineHeight: 17 },
-    rowMeta:    { flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' },
-    diffBadge:  { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
-    diffText:   { fontSize: 10, fontWeight: '800' },
-    freqDot:    { width: 5, height: 5, borderRadius: 3, backgroundColor: c.SURFACE2 },
+    rowMeta: { flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' },
+    diffBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+    diffText: { fontSize: 10, fontWeight: '800' },
+    freqDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: c.SURFACE2 },
 
     // Check button
-    checkBtn:  { width: 34, height: 34, borderRadius: 17, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
+    checkBtn: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
     checkText: { fontSize: 13, fontWeight: '900' },
 
     // Separator
     separator: { height: 1, backgroundColor: c.BORDER, marginHorizontal: 16 },
 
     // Empty / center
-    center:    { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
     emptyIcon: { fontSize: 40 },
     emptyText: { color: c.TEXT_S, fontSize: 14, textAlign: 'center' },
 
@@ -106,12 +111,12 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     statsStrip: {
       flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, gap: 12,
     },
-    statCard:   {
+    statCard: {
       flex: 1, backgroundColor: c.SURFACE, borderRadius: 12, padding: 12,
       borderWidth: 1, borderColor: c.BORDER, alignItems: 'center', gap: 4,
     },
-    statNum:    { color: c.TEXT_P, fontSize: 20, fontWeight: '800' },
-    statLabel:  { color: c.TEXT_S, fontSize: 11 },
+    statNum: { color: c.TEXT_P, fontSize: 20, fontWeight: '800' },
+    statLabel: { color: c.TEXT_S, fontSize: 11 },
 
     // Chips
     chip: { overflow: 'visible' as const, width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
@@ -191,7 +196,7 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
       position: 'absolute' as const,
       bottom: 24, left: 16, right: 16,
       borderRadius: 20, overflow: 'hidden' as const,
-      borderWidth: 1, 
+      borderWidth: 1,
       borderColor: isDark ? 'rgba(200,170,255,0.35)' : 'rgba(139,92,246,0.40)',
       backgroundColor: isDark ? 'rgba(100,60,220,0.22)' : 'rgba(139,92,246,0.14)',
       shadowColor: c.PURPLE, shadowOffset: { width: 0, height: 6 },
@@ -254,16 +259,16 @@ const actionStyles = StyleSheet.create({
   },
 });
 
-function RightActions({ 
-  word, 
+function RightActions({
+  word,
   progress,
   onAddToList,
   onClose,
   styles,
   c,
   isDark,
-}: { 
-  word: WordDTO; 
+}: {
+  word: WordDTO;
   progress: SharedValue<number>;
   onAddToList: () => void;
   onClose: () => void;
@@ -357,7 +362,7 @@ function WordRow({
 
   const tapGesture = Gesture.Tap()
     .maxDistance(8)
-    .onEnd(() => { 
+    .onEnd(() => {
       if (onLongPress) runOnJS(onLongPress)();
     });
 
@@ -444,6 +449,48 @@ export default function VocabularyScreen() {
 
   const [query, setQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+  // ─── Onboarding tour (sözlük tanıtımı + otomatik arama demosu) ──
+  const { show: showTour, initializeTour, finishTour } = useVocabTourStore();
+
+  useEffect(() => {
+    initializeTour();
+  }, [initializeTour]);
+
+  // Tur açıkken örnek kelimeleri tek tek yazıp aratır, siler, sonrakine geçer;
+  // kullanıcı "Anladım"a basana (showTour=false) kadar döngüde kalır.
+  useEffect(() => {
+    if (!showTour) return;
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => timers.push(setTimeout(resolve, ms)));
+
+    const run = async () => {
+      let idx = 0;
+      while (!cancelled) {
+        const word = TOUR_DEMO_WORDS[idx % TOUR_DEMO_WORDS.length];
+        // harf harf yaz
+        for (let i = 1; i <= word.length && !cancelled; i++) {
+          setQuery(word.slice(0, i));
+          await wait(130);
+        }
+        if (cancelled) break;
+        await wait(1700); // sonuçları göster
+        if (cancelled) break;
+        setQuery(''); // temizle
+        await wait(500);
+        idx++;
+      }
+    };
+    run();
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+      setQuery('');
+    };
+  }, [showTour]);
   const [cardIndex, setCardIndex] = useState(0);
   const [isFlippedState, setIsFlippedState] = useState(false);
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
@@ -490,19 +537,19 @@ export default function VocabularyScreen() {
     router.push(`/study/havuz?types=${typesStr}&difficulties=${diffsStr}&onlyUnknown=${poolOnlyUnknown}&size=${quizSize}` as any);
   }, [selectedQuizTypes, quizDifficulties, poolOnlyUnknown, quizSize, router]);
 
-  const { 
-    data: frequentWordsData, 
+  const {
+    data: frequentWordsData,
     isLoading: freqLoading,
     isFetching: freqFetching,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
-  } = useFrequentWords(difficultyList, onlyUnknown, 50); 
-  
-  const { 
-    data: searchResultsData = [], 
-    isLoading: searchingLoading, 
-    isFetching: searchingFetching 
+  } = useFrequentWords(difficultyList, onlyUnknown, 50);
+
+  const {
+    data: searchResultsData = [],
+    isLoading: searchingLoading,
+    isFetching: searchingFetching
   } = useWordSearch(query, difficultyList, onlyUnknown);
   const { mutate: toggleKnown } = useMarkKnown();
   const qc = useQueryClient();
@@ -675,16 +722,16 @@ export default function VocabularyScreen() {
   const knownCount = knownWordsData.length;
 
   const renderList = () => (
-      <FlatList
-        data={displayWords}
-        keyExtractor={(item) => String(item.id)}
-        ListHeaderComponent={() => (
-          <Text style={styles.sectionLabel}>
-            {isSearching
-              ? t('searchResultsFor', { query })
-              : t('frequentWords')}
-          </Text>
-        )}
+    <FlatList
+      data={displayWords}
+      keyExtractor={(item) => String(item.id)}
+      ListHeaderComponent={() => (
+        <Text style={styles.sectionLabel}>
+          {isSearching
+            ? t('searchResultsFor', { query })
+            : t('frequentWords')}
+        </Text>
+      )}
       renderItem={({ item }) => (
         <WordRow
           word={item}
@@ -738,7 +785,7 @@ export default function VocabularyScreen() {
           <Reanimated.View style={[styles.cardStack, cardContainerStyle]}>
             <Reanimated.View style={[styles.card, styles.cardFront, frontAnimStyle]} pointerEvents={isFlippedState ? 'none' : 'auto'}>
               <Text style={styles.cardBigWord}>{currentWord.word}</Text>
-              
+
               <View style={styles.ttsRow}>
                 <TouchableOpacity
                   style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
@@ -791,7 +838,7 @@ export default function VocabularyScreen() {
               >
                 <Text style={[styles.checkText, { color: knownIdsSet.has(currentWord.id) ? c.PURPLE : c.TEXT_S }]}>✓</Text>
               </TouchableOpacity>
-              
+
               <Text style={styles.flipHint}>Çevirmek için tıkla</Text>
             </Reanimated.View>
 
@@ -830,205 +877,232 @@ export default function VocabularyScreen() {
           {/* Header */}
           <View style={[styles.header, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
             <Text style={[styles.headerTitle, { marginBottom: 0 }]}>{t('title')}</Text>
-            
+
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
               <TouchableOpacity
                 style={styles.toggleBtn}
                 onPress={() => setViewMode(viewMode === 'list' ? 'flashcard' : 'list')}
                 activeOpacity={0.75}
               >
-                <Ionicons 
-                  name={viewMode === 'list' ? 'albums-outline' : 'list-outline'} 
-                  size={18} 
-                  color={c.TEXT_S} 
+                <Ionicons
+                  name={viewMode === 'list' ? 'albums-outline' : 'list-outline'}
+                  size={18}
+                  color={c.TEXT_S}
                 />
               </TouchableOpacity>
             </View>
           </View>
 
-        {/* Search bar */}
-        <View style={[styles.header, { paddingTop: 0 }]}>
-          <View style={styles.searchWrap}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t('searchPlaceholder')}
-              placeholderTextColor={c.TEXT_S}
-              value={query}
-              onChangeText={setQuery}
-              autoCorrect={false}
-              autoCapitalize="none"
-              returnKeyType="search"
-            />
-            {!!query && (
-              <TouchableOpacity style={styles.clearBtn} onPress={() => setQuery('')}>
-                <Text style={styles.clearText}>✕</Text>
-              </TouchableOpacity>
-            )}
+          {/* Search bar */}
+          <View style={[styles.header, { paddingTop: 0 }]}>
+            <View style={styles.searchWrap}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder={t('searchPlaceholder')}
+                placeholderTextColor={c.TEXT_S}
+                value={query}
+                onChangeText={setQuery}
+                editable={!showTour}
+                autoCorrect={false}
+                autoCapitalize="none"
+                returnKeyType="search"
+              />
+              {!!query && (
+                <TouchableOpacity style={styles.clearBtn} onPress={() => setQuery('')}>
+                  <Text style={styles.clearText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        </View>
 
-        {/* Filters — sadece arama yokken */}
-        {!isSearching && (
-          <View>
-            <FlatList
-              horizontal
-              data={['unknown', ...FILTERS]}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: isTablet ? 32 : 16, paddingTop: 8, paddingBottom: 12, gap: 8 }}
-              renderItem={({ item: lv }) => {
-                if (lv === 'unknown') {
-                  return (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <TouchableOpacity
-                        onPress={() => setOnlyUnknown(!onlyUnknown)}
-                        activeOpacity={0.7}
-                        style={[
-                          styles.chip,
-                          {
-                            backgroundColor: onlyUnknown ? c.PURPLE : 'transparent',
-                            borderColor: onlyUnknown ? c.PURPLE : c.BORDER,
-                            width: 'auto',
-                            paddingHorizontal: 12
-                          }
-                        ]}
-                      >
-                        <Text style={[styles.chipText, { color: onlyUnknown ? '#fff' : c.TEXT_S }]}>
-                          {t('filterUnknown')}
-                        </Text>
-                      </TouchableOpacity>
-                      <View style={{ width: 1, height: 20, backgroundColor: c.BORDER, alignSelf: 'center', marginHorizontal: 4 }} />
-                    </View>
-                  );
-                }
-                const active = lv === 'all' ? selectedLevels.size === 0 : selectedLevels.has(lv as string);
-                const color = DIFF_COLORS[lv as string] || c.TEXT_S;
-                return (
-                  <TouchableOpacity
-                    onPress={() => toggleLevel(lv as string)}
-                    activeOpacity={0.7}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: active ? color : 'transparent',
-                        borderColor: active ? color : c.BORDER,
-                      }
-                    ]}
-                  >
-                    <Text style={[styles.chipText, { color: active ? '#fff' : c.TEXT_S }]}>
-                      {lv === 'all' ? tCommon('actions.all') : lv}
-                    </Text>
-                    {lv !== 'all' && active && !!levelCounts[lv as string] && (
-                      <View style={[styles.chipBadge, { backgroundColor: '#fff' }]}>
-                        <Text style={[styles.chipBadgeText, { color }]}>{levelCounts[lv as string]}</Text>
+          {/* Filters — sadece arama yokken */}
+          {!isSearching && (
+            <View>
+              <FlatList
+                horizontal
+                data={['unknown', ...FILTERS]}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: isTablet ? 32 : 16, paddingTop: 8, paddingBottom: 12, gap: 8 }}
+                renderItem={({ item: lv }) => {
+                  if (lv === 'unknown') {
+                    return (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <TouchableOpacity
+                          onPress={() => setOnlyUnknown(!onlyUnknown)}
+                          activeOpacity={0.7}
+                          style={[
+                            styles.chip,
+                            {
+                              backgroundColor: onlyUnknown ? c.PURPLE : 'transparent',
+                              borderColor: onlyUnknown ? c.PURPLE : c.BORDER,
+                              width: 'auto',
+                              paddingHorizontal: 12
+                            }
+                          ]}
+                        >
+                          <Text style={[styles.chipText, { color: onlyUnknown ? '#fff' : c.TEXT_S }]}>
+                            {t('filterUnknown')}
+                          </Text>
+                        </TouchableOpacity>
+                        <View style={{ width: 1, height: 20, backgroundColor: c.BORDER, alignSelf: 'center', marginHorizontal: 4 }} />
                       </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              }}
-              keyExtractor={(item) => item}
-            />
-          </View>
-        )}
-
-        {/* Stats strip — sadece arama yokken */}
-        {!isSearching && (
-          <View style={styles.statsStrip}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNum}>{knownCount.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>{t('statsKnown')}</Text>
+                    );
+                  }
+                  const active = lv === 'all' ? selectedLevels.size === 0 : selectedLevels.has(lv as string);
+                  const color = DIFF_COLORS[lv as string] || c.TEXT_S;
+                  return (
+                    <TouchableOpacity
+                      onPress={() => toggleLevel(lv as string)}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor: active ? color : 'transparent',
+                          borderColor: active ? color : c.BORDER,
+                        }
+                      ]}
+                    >
+                      <Text style={[styles.chipText, { color: active ? '#fff' : c.TEXT_S }]}>
+                        {lv === 'all' ? tCommon('actions.all') : lv}
+                      </Text>
+                      {lv !== 'all' && active && !!levelCounts[lv as string] && (
+                        <View style={[styles.chipBadge, { backgroundColor: '#fff' }]}>
+                          <Text style={[styles.chipBadgeText, { color }]}>{levelCounts[lv as string]}</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+                keyExtractor={(item) => item}
+              />
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNum}>{displayWords.length}</Text>
-              <Text style={styles.statLabel}>{t('statsDisplayed')}</Text>
+          )}
+
+          {/* Stats strip — sadece arama yokken */}
+          {!isSearching && (
+            <View style={styles.statsStrip}>
+              <View style={styles.statCard}>
+                <Text style={styles.statNum}>{knownCount.toLocaleString()}</Text>
+                <Text style={styles.statLabel}>{t('statsKnown')}</Text>
+              </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statNum}>{displayWords.length}</Text>
+                <Text style={styles.statLabel}>{t('statsDisplayed')}</Text>
+              </View>
             </View>
-          </View>
-        )}
-        {/* Main Content */}
-        {isQueryFetching && !isFetchingNextPage ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={c.PURPLE} size="large" />
-          </View>
-        ) : (
-          (viewMode === 'list' || isSearching) ? renderList() : renderFlashcards()
-        )}
+          )}
+          {/* Main Content */}
+          {isQueryFetching && !isFetchingNextPage ? (
+            <View style={styles.center}>
+              <ActivityIndicator color={c.PURPLE} size="large" />
+            </View>
+          ) : (
+            (viewMode === 'list' || isSearching) ? renderList() : renderFlashcards()
+          )}
 
-      </SafeAreaView>
+        </SafeAreaView>
 
-      <WordPreviewOverlay 
-        word={previewWord as any}
-        visible={!!previewWord}
-        onClose={() => setPreviewWord(null)}
-        isDark={isDark}
-        c={c}
-        onAddToList={(wordId, wordName) => {
-          setPreviewWord(null);
-          setAddModal({ wordId, wordName });
-        }}
-        onToggleKnown={(wordId) => {
-          handleToggle(wordId);
-        }}
-        knownIdsSet={knownIdsSet}
-      />
+        <WordPreviewOverlay
+          word={previewWord as any}
+          visible={!!previewWord}
+          onClose={() => setPreviewWord(null)}
+          isDark={isDark}
+          c={c}
+          onAddToList={(wordId, wordName) => {
+            setPreviewWord(null);
+            setAddModal({ wordId, wordName });
+          }}
+          onToggleKnown={(wordId) => {
+            handleToggle(wordId);
+          }}
+          knownIdsSet={knownIdsSet}
+        />
 
-      <AddToListModal
-        visible={!!addModal}
-        wordId={addModal?.wordId || 0}
-        wordName={addModal?.wordName || ''}
-        onClose={() => setAddModal(null)}
-      />
+        <AddToListModal
+          visible={!!addModal}
+          wordId={addModal?.wordId || 0}
+          wordName={addModal?.wordName || ''}
+          onClose={() => setAddModal(null)}
+        />
 
-      <TouchableOpacity
-        onPress={() => setShowQuizModal(true)}
-        activeOpacity={0.85}
-        style={{
-          position: 'absolute',
-          // Tab bar bottom offset (24 iOS / android varies) + tab bar height (64/68) + 12px gap
-          bottom: Platform.OS === 'android'
-            ? Math.max(insets.bottom + 12, 24) + 68 + 12
-            : 24 + 64 + 12,
-          right: 20,
-          zIndex: 100,
-          shadowColor: c.PURPLE,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.4,
-          shadowRadius: 16,
-          elevation: 12,
-        }}
-      >
-        <LinearGradient
-          colors={[c.PURPLE, '#6366f1']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        <TouchableOpacity
+          onPress={() => setShowQuizModal(true)}
+          activeOpacity={0.85}
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: '#ffffff20',
+            position: 'absolute',
+            // Tab bar bottom offset (24 iOS / android varies) + tab bar height (64/68) + 12px gap
+            bottom: Platform.OS === 'android'
+              ? Math.max(insets.bottom + 12, 24) + 68 + 12
+              : 24 + 64 + 12,
+            right: 20,
+            zIndex: 100,
+            shadowColor: c.PURPLE,
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.4,
+            shadowRadius: 16,
+            elevation: 12,
           }}
         >
-          <Ionicons name="school" size={24} color="#fff" />
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={[c.PURPLE, '#6366f1']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: '#ffffff20',
+            }}
+          >
+            <Ionicons name="school" size={24} color="#fff" />
+          </LinearGradient>
+        </TouchableOpacity>
 
-      <QuizTypeModal
-        visible={showQuizModal}
-        selectedTypes={selectedQuizTypes}
-        onToggleType={handleToggleQuizType}
-        selectedDifficulties={quizDifficulties}
-        onToggleDifficulty={handleToggleQuizDifficulty}
-        onlyUnknown={poolOnlyUnknown}
-        onToggleOnlyUnknown={setPoolOnlyUnknown}
-        quizSize={quizSize}
-        onSizeChange={setQuizSize}
-        onClose={() => setShowQuizModal(false)}
-        onConfirm={handleStartStudy}
-        styles={styles}
-        c={c}
-      />
+        {/* Onboarding turu — ekranın altında serbest açıklama kartı (oksuz).
+          Üstte arama + otomatik yazılan kelimeler net görünsün diye aşağıda. */}
+        {showTour && (
+          <View
+            pointerEvents="box-none"
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: insets.bottom + 96,
+              alignItems: 'center',
+              paddingHorizontal: 16,
+              zIndex: 300,
+            }}
+          >
+            <View style={TOUR_CARD_STYLE}>
+              <TourTooltipContent
+                title="Kelime havuzu 📚"
+                text="Bu ekrandan sistemimizdeki tüm kelimelere ulaşabilirsin — burayı bir sözlük gibi de düşünebilirsin. Aramaya ne yazarsan yaz, karşına çıkar. 😊"
+                isLast={false}
+                onPress={finishTour}
+              />
+            </View>
+          </View>
+        )}
+
+        <QuizTypeModal
+          visible={showQuizModal}
+          selectedTypes={selectedQuizTypes}
+          onToggleType={handleToggleQuizType}
+          selectedDifficulties={quizDifficulties}
+          onToggleDifficulty={handleToggleQuizDifficulty}
+          onlyUnknown={poolOnlyUnknown}
+          onToggleOnlyUnknown={setPoolOnlyUnknown}
+          quizSize={quizSize}
+          onSizeChange={setQuizSize}
+          onClose={() => setShowQuizModal(false)}
+          onConfirm={handleStartStudy}
+          styles={styles}
+          c={c}
+        />
       </View>
     </GestureHandlerRootView>
   );

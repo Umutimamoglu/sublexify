@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useEffect,
 } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, FlatList, ScrollView, TouchableOpacity, TextInput, StyleSheet, StatusBar, useWindowDimensions, ActivityIndicator, Alert, Modal, Platform, InteractionManager } from 'react-native';
 import Reanimated, {
@@ -24,7 +24,6 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 import { BlurView } from 'expo-blur';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
@@ -723,7 +722,6 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const router = useRouter();
   const { t } = useTranslation('lists');
   const { t: tCommon } = useTranslation('common');
-  const { t: tStudy } = useTranslation('study');
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const { isTablet } = useResponsive();
@@ -758,15 +756,15 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const { mutate: markKnownBatch, isPending: marking } = useMarkKnownBatch();
   const { dailyReviewCount } = useSettingsStore();
 
-  const getCategoryTitle = (cat: string) => {
+  const getCategoryTitle = useCallback((cat: string) => {
     switch (cat) {
       case 'learnt': return tCommon('progress.categories.learnt.title');
-      case 'studied': return tCommon('progress.categories.learnt.title'); // Note: was matching legacy code
+      case 'studied': return tCommon('progress.categories.learnt.title');
       case 'due': return tCommon('progress.categories.due.title');
       case 'difficult': return tCommon('progress.categories.difficult.title');
       default: return 'Category';
     }
-  };
+  }, [tCommon]);
 
   const effectiveList = useMemo(() => {
     if (isCategoryMode && category) {
@@ -795,7 +793,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
       };
     }
     return list;
-  }, [isCategoryMode, category, categoryWords, isKnownList, knownWordsData, list, t, tCommon, dailyReviewCount]);
+  }, [isCategoryMode, category, categoryWords, isKnownList, knownWordsData, list, t, dailyReviewCount, getCategoryTitle]);
 
   const isLoading = isCategoryMode ? catLoading : (isKnownList ? knownLoading : listLoading);
 
@@ -948,15 +946,15 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const indexSV = useSharedValue(cardIndex);
   const buttonActiveRef = useRef(false);
 
-  useEffect(() => { totalSV.value = filteredWords.length; }, [filteredWords.length]);
-  useEffect(() => { indexSV.value = cardIndex; }, [cardIndex]);
+  useEffect(() => { totalSV.value = filteredWords.length; }, [filteredWords.length, totalSV]);
+  useEffect(() => { indexSV.value = cardIndex; }, [cardIndex, indexSV]);
 
   // Reset flip when card changes
   useEffect(() => {
     flipProgress.value = 0;
     isFlipped.value = false;
     setIsFlippedState(false);
-  }, [cardIndex]);
+  }, [cardIndex, flipProgress, isFlipped]);
 
   const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
   const triggerMedium = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), []);

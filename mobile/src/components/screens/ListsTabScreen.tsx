@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, FlatList, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, TextInput, Alert, Modal, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { View, FlatList, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, TextInput, Alert, Modal, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
@@ -14,6 +14,57 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import type { WordListDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
+import { useListsTourStore } from '@/src/store/listsTourStore';
+import { TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
+
+// İlk defa giren kullanıcının henüz kişisel listesi olmadığı için, listeler
+// ekranını ve görünürlük özelliğini tanıtmak üzere gösterilen örnek (dummy)
+// listeler. Negatif id → gerçek listelerle çakışmaz, tıklanınca navigasyon yok.
+const TOUR_DUMMY_LISTS: WordListDTO[] = [
+  {
+    id: -9001,
+    name: 'Friends — Öğrenilmiş Kelimeler',
+    totalWords: 140,
+    unknownWords: 56, // %60 biliniyor
+    levelCounts: { A1: 30, A2: 35, B1: 30, B2: 25, C1: 15, C2: 5 },
+    createdAt: new Date().toISOString(),
+    isSystem: false,
+    color: '#9C27B0',
+  },
+  {
+    id: -9002,
+    name: 'Friends — 4. Sezon 5. Bölüm',
+    totalWords: 60,
+    unknownWords: 53, // %12 biliniyor
+    levelCounts: { A1: 12, A2: 15, B1: 14, B2: 10, C1: 6, C2: 3 },
+    createdAt: new Date().toISOString(),
+    isSystem: false,
+    color: '#3F51B5',
+  },
+  {
+    id: -9003,
+    name: 'Friends — 4. Sezon 6. Bölüm',
+    totalWords: 90,
+    unknownWords: 90, // %0 biliniyor
+    levelCounts: { A1: 20, A2: 22, B1: 20, B2: 15, C1: 9, C2: 4 },
+    createdAt: new Date().toISOString(),
+    isSystem: false,
+    color: '#00BCD4',
+  },
+  {
+    id: -9004,
+    name: 'Euphoria — Kitty Likes to Dance (S3E4)',
+    totalWords: 19,
+    unknownWords: 19, // %0 biliniyor
+    levelCounts: { A1: 4, A2: 5, B1: 4, B2: 3, C1: 2, C2: 1 },
+    createdAt: new Date().toISOString(),
+    isSystem: false,
+    color: '#E91E63',
+  },
+];
+
+// Demoda gizlenecek bölüm listeleri (Friends bölümleri).
+const TOUR_HIDE_IDS = [-9002, -9003];
 
 
 
@@ -568,11 +619,61 @@ export default function ListsTabScreen() {
   }), [theme]);
   const styles = useMemo(() => makeStyles(c, isDark, isTablet), [c, isDark, isTablet]);
 
+  const insets = useSafeAreaInsets();
   const [showCreate, setShowCreate] = useState(false);
   const [editingList, setEditingList] = useState<WordListDTO | null>(null);
   const [showOnlyVisible, setShowOnlyVisible] = useState(false);
 
   const { prefs, saveOrder, toggleHidden } = useListPreferences();
+
+  // ─── Onboarding tour (örnek listeler + görünürlük demosu) ──────
+  const { show: showTour, initializeTour, finishTour } = useListsTourStore();
+  // Dummy listelerin gizleme durumu — gerçek prefs'i kirletmemek için lokal.
+  const [demoHiddenIds, setDemoHiddenIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    initializeTour();
+  }, [initializeTour]);
+
+  // Tur açıkken: ön ce 4 örnek liste görünür → Friends bölüm listelerini tek
+  // tek gizle (kart kararır) → sağ üstteki toggle ile gizlileri kaldır.
+  // "Anladım"a basana kadar döngüde tekrarlar.
+  useEffect(() => {
+    if (!showTour) return;
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => timers.push(setTimeout(resolve, ms)));
+
+    const run = async () => {
+      while (!cancelled) {
+        // 1) Sıfırla — hepsi görünür
+        setShowOnlyVisible(false);
+        setDemoHiddenIds([]);
+        await wait(2600); // kullanıcı yazıyı okusun
+        if (cancelled) break;
+        // 2) Bölüm listelerini tek tek gizle (kart kararır)
+        setDemoHiddenIds([TOUR_HIDE_IDS[0]]);
+        await wait(800);
+        if (cancelled) break;
+        setDemoHiddenIds([TOUR_HIDE_IDS[0], TOUR_HIDE_IDS[1]]);
+        await wait(1500);
+        if (cancelled) break;
+        // 3) Sağ üstten "sadece görünenler" → gizliler kaybolur
+        setShowOnlyVisible(true);
+        await wait(2400);
+        if (cancelled) break;
+      }
+    };
+    run();
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+      setShowOnlyVisible(false);
+      setDemoHiddenIds([]);
+    };
+  }, [showTour]);
 
   const { data: rawLists = [], isLoading } = useLists();
   const systemLists = useMemo(
@@ -582,6 +683,14 @@ export default function ListsTabScreen() {
 
   // Apply saved order, then filter hidden if showOnlyVisible is on
   const personalLists = useMemo<WordListDTO[]>(() => {
+    // Tur açıkken gerçek listeler yerine örnek (dummy) listeleri göster ve
+    // gizleme demosunu lokal demoHiddenIds üzerinden uygula.
+    if (showTour) {
+      if (showOnlyVisible) {
+        return TOUR_DUMMY_LISTS.filter((item) => !demoHiddenIds.includes(item.id));
+      }
+      return TOUR_DUMMY_LISTS;
+    }
     const unsorted = rawLists.filter((l) => !l.isSystem);
     const sorted: WordListDTO[] = [];
     const unsortedSet = new Set(unsorted.map((l) => l.id));
@@ -609,7 +718,7 @@ export default function ListsTabScreen() {
       return sorted.filter(item => !prefs.hiddenIds.includes(item.id));
     }
     return sorted;
-  }, [rawLists, prefs.order, prefs.hiddenIds, showOnlyVisible]);
+  }, [rawLists, prefs.order, prefs.hiddenIds, showOnlyVisible, showTour, demoHiddenIds]);
   const { data: knownWords = [] } = useKnownWords();
   const { mutate: createList, isPending: creating } = useCreateList();
   const { mutate: deleteList } = useDeleteList();
@@ -719,21 +828,32 @@ export default function ListsTabScreen() {
                 <Text style={styles.sectionLabel}>{t('personalLists')}</Text>
               </>
             )}
-            renderItem={({ item, getIndex, drag, isActive }: RenderItemParams<WordListDTO>) => (
-              <ListCard
-                item={item}
-                index={getIndex() ?? 0}
-                drag={drag}
-                isActive={isActive}
-                isHidden={prefs.hiddenIds.includes(item.id)}
-                onPress={() => router.push(`/list/${item.id}` as any)}
-                onDelete={() => handleDelete(item)}
-                onEdit={() => setEditingList(item)}
-                onToggleHidden={() => toggleHidden(item.id)}
-                styles={styles}
-                c={c}
-              />
-            )}
+            renderItem={({ item, getIndex, drag, isActive }: RenderItemParams<WordListDTO>) => {
+              const isDummy = item.id < 0; // tur örnek listesi
+              return (
+                <ListCard
+                  item={item}
+                  index={getIndex() ?? 0}
+                  drag={isDummy ? undefined : drag}
+                  isActive={isActive}
+                  isHidden={isDummy ? demoHiddenIds.includes(item.id) : prefs.hiddenIds.includes(item.id)}
+                  onPress={() => { if (!isDummy) router.push(`/list/${item.id}` as any); }}
+                  onDelete={() => handleDelete(item)}
+                  onEdit={() => setEditingList(item)}
+                  onToggleHidden={() => {
+                    if (isDummy) {
+                      setDemoHiddenIds((prev) =>
+                        prev.includes(item.id) ? prev.filter((i) => i !== item.id) : [...prev, item.id],
+                      );
+                    } else {
+                      toggleHidden(item.id);
+                    }
+                  }}
+                  styles={styles}
+                  c={c}
+                />
+              );
+            }}
             ListEmptyComponent={() => (
               <View style={[styles.center, { paddingVertical: 32 }]}>
                 <Text style={styles.emptyIcon}>📋</Text>
@@ -786,6 +906,32 @@ export default function ListsTabScreen() {
         styles={styles}
         c={c}
       />
+
+      {/* Onboarding turu — altta serbest açıklama kartı (oksuz). Üstte örnek
+          listeler + gizleme demosu net görünsün diye aşağıda. */}
+      {showTour && (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: insets.bottom + 96,
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            zIndex: 300,
+          }}
+        >
+          <View style={TOUR_CARD_STYLE}>
+            <TourTooltipContent
+              title="Listelerin 📋"
+              text="Bu ekranda kendi kelime listelerin durur — izlediğin dizi/filmlerden çıkardığın kelimeleri buradan çalışırsın. İstemediğin listeleri 👁 ile gizleyebilir, sağ üstteki düğmeyle görünümü sadeleştirebilirsin."
+              isLast={false}
+              onPress={finishTour}
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 }

@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { View, TextInput, FlatList, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -9,9 +9,22 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useMedia } from '@/src/api/queries/media.queries';
 import type { MediaDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
+import { useExploreTourStore } from '@/src/store/exploreTourStore';
+import { TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
 
 
 type MediaFilter = 'all' | 'MOVIE' | 'EPISODE';
+
+// Tur demosu: sırayla bir dizi, bir film, bir dizi, bir film... şeklinde
+// "Anladım"a basılana kadar döngüde aratır.
+const EXPLORE_TOUR_DEMO: { filter: Exclude<MediaFilter, 'all'>; word: string }[] = [
+  { filter: 'MOVIE',   word: 'Avengers' },
+  { filter: 'EPISODE', word: 'Dexter' },
+  { filter: 'MOVIE',   word: 'Guardians of the Galaxy' },
+  { filter: 'EPISODE', word: 'Sherlock' },
+  { filter: 'MOVIE',   word: 'Ice Age' },
+  { filter: 'EPISODE', word: 'Ben 10' },
+];
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;
@@ -165,6 +178,52 @@ export default function ExploreScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<MediaFilter>('all');
   const inputRef = useRef<TextInput>(null);
+  const insets = useSafeAreaInsets();
+
+  // ─── Onboarding tour (arama tanıtımı + otomatik film/dizi arama demosu) ──
+  const { show: showTour, initializeTour, finishTour } = useExploreTourStore();
+
+  useEffect(() => {
+    initializeTour();
+  }, [initializeTour]);
+
+  // Tur açıkken: Film sekmesini seçip "Avengers", sonra Dizi sekmesini seçip
+  // "Dexter" yazıp aratır; kullanıcı "Anladım"a basana kadar döngüde kalır.
+  useEffect(() => {
+    if (!showTour) return;
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const wait = (ms: number) =>
+      new Promise<void>((resolve) => timers.push(setTimeout(resolve, ms)));
+
+    const run = async () => {
+      let idx = 0;
+      while (!cancelled) {
+        const step = EXPLORE_TOUR_DEMO[idx % EXPLORE_TOUR_DEMO.length];
+        setFilter(step.filter);       // sekmeyi seç (Film / Dizi)
+        await wait(700);              // sekme seçimi görünsün
+        if (cancelled) break;
+        for (let i = 1; i <= step.word.length && !cancelled; i++) {
+          setQuery(step.word.slice(0, i));  // harf harf yaz
+          await wait(150);
+        }
+        if (cancelled) break;
+        await wait(1800);            // sonuçları göster
+        if (cancelled) break;
+        setQuery('');                // temizle
+        await wait(450);
+        idx++;
+      }
+    };
+    run();
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+      setQuery('');
+      setFilter('all');
+    };
+  }, [showTour]);
 
   const { data: allMedia = [], isLoading } = useMedia();
 
@@ -253,6 +312,7 @@ export default function ExploreScreen() {
               placeholderTextColor={c.TEXT_S}
               value={query}
               onChangeText={setQuery}
+              editable={!showTour}
               returnKeyType="search"
               autoCorrect={false}
             />
@@ -327,6 +387,32 @@ export default function ExploreScreen() {
           />
         )}
       </SafeAreaView>
+
+      {/* Onboarding turu — ekranın altında serbest açıklama kartı (oksuz).
+          Üstte sekme seçimi + otomatik arama net görünsün diye aşağıda. */}
+      {showTour && (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: insets.bottom + 96,
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            zIndex: 300,
+          }}
+        >
+          <View style={TOUR_CARD_STYLE}>
+            <TourTooltipContent
+              title="Dizi & film arama 🔎"
+              text="Buradan tüm dizi ve filmleri arayabilirsin. Üstteki sekmelerden film mi dizi mi istediğini seç, sonra adını yazıp ara. İzlediğin içeriğin kelimelerini çalışmaya başla!"
+              isLast={false}
+              onPress={finishTour}
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 }
