@@ -60,9 +60,10 @@ type Props = {
   allMedia: MediaDTO[];
   loading?: boolean;
   onNavigate: (item: MediaDTO) => void;
+  initialFilter?: MediaFilter;
 };
 
-export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate }: Props) {
+export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate, initialFilter }: Props) {
   const { theme, colorScheme } = useTheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation('discover');
@@ -75,10 +76,10 @@ export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate 
   // Reset state when modal opens; no auto-focus so keyboard doesn't block the close button
   useEffect(() => {
     if (visible) {
-      setFilter('all');
+      setFilter(initialFilter ?? 'all');
       setSearchQuery('');
     }
-  }, [visible]);
+  }, [visible, initialFilter]);
 
   const NUM_COLS = 3;
   const CARD_GAP = 10;
@@ -187,7 +188,7 @@ export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate 
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder={t('searchPlaceholder')}
+              placeholder={initialFilter === 'series' ? 'Favori dizini seç...' : t('searchPlaceholder')}
               placeholderTextColor={c.TEXT_S}
               returnKeyType="search"
               autoCorrect={false}

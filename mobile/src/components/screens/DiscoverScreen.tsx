@@ -1,18 +1,17 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useResponsive } from '@/src/hooks/useResponsive';
-import { View, ScrollView, FlatList, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions, ActivityIndicator, Image, Animated, NativeSyntheticEvent, NativeScrollEvent, Platform } from 'react-native';
+import { View, ScrollView, FlatList, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions, ActivityIndicator, Image, Animated, Easing, NativeSyntheticEvent, NativeScrollEvent, Platform, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { useRouter } from 'expo-router';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useTheme } from '@/src/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { OverallDifficultyBadge } from '@/src/components/ui';
 import { useMedia, useContinueLearning } from '@/src/api/queries/media.queries';
+import { useGuidedFlowStore } from '@/src/store/guidedFlowStore';
 import { useLists, useListsBySeries } from '@/src/api/queries/lists.queries';
-import { Modal } from 'react-native';
 import { useUserStats } from '@/src/api/queries/user.queries';
 import { AllMediaModal } from '@/src/components/ui/AllMediaModal';
 import { ContinueLearningModal } from '@/src/components/ui/ContinueLearningModal';
@@ -117,7 +116,7 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, 
     scrollContent: { paddingBottom: 100 },
 
     // ─── Hero Carousel ────────────────────────────────────────
-    heroContainer: { width: sw, height: heroHeight },
+    heroContainer: { width: sw, height: heroHeight, overflow: 'hidden' },
     heroSlide: { width: sw, height: heroHeight },
     heroImage: { ...StyleSheet.absoluteFillObject, width: sw, height: heroHeight },
     heroGradient: { ...StyleSheet.absoluteFillObject },
@@ -130,30 +129,30 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, 
     heroSubtitle: { color: '#ffffffaa', fontSize: 13, marginTop: 6 },
     heroBtnRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
     heroBtnOuter: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        elevation: 6,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.15,
+      shadowRadius: 10,
+      elevation: 6,
     },
     heroBtnInner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        borderRadius: 20,
-        borderTopWidth: 1.5,
-        borderBottomWidth: 1.5,
-        borderColor: "rgba(255,255,255,0.6)",
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 20,
+      borderTopWidth: 1.5,
+      borderBottomWidth: 1.5,
+      borderColor: "rgba(255,255,255,0.6)",
     },
     heroBtnPrimaryText: {
-        color: "#FEE76C",
-        fontWeight: "900",
-        fontSize: 15,
-        textShadowColor: 'rgba(0,0,0,0.5)',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 2,
+      color: "#FEE76C",
+      fontWeight: "900",
+      fontSize: 15,
+      textShadowColor: 'rgba(0,0,0,0.5)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
     },
     heroBtnSecondary: {
       flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -227,46 +226,46 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, 
     hScrollContent: { paddingLeft: pad, paddingRight: 6 },
 
     // ─── Media Card (Premium Landscape) ───────────────────────
-    mediaCard: { 
-        width: mediaCardW, 
-        height: 140,
-        marginRight: 16, 
-        borderRadius: 18,
-        overflow: 'hidden',
-        flexDirection: 'row',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+    mediaCard: {
+      width: mediaCardW,
+      height: 140,
+      marginRight: 16,
+      borderRadius: 18,
+      overflow: 'hidden',
+      flexDirection: 'row',
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      elevation: 6,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.1)',
     },
     badgeWrapperWide: { position: 'absolute', top: 10, right: 10, zIndex: 10 },
-    
+
     posterLeft: {
-        width: 100,
-        height: '100%',
-        backgroundColor: '#000',
+      width: 100,
+      height: '100%',
+      backgroundColor: '#000',
     },
     poster: { width: '100%', height: '100%' },
     posterPlaceholder: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
     posterLetter: { fontSize: 44, fontWeight: '900', opacity: 0.5 },
-    
+
     rightContent: {
-        flex: 1,
-        paddingTop: 14,
-        paddingHorizontal: 14,
-        paddingBottom: 12,
-        justifyContent: 'space-between',
+      flex: 1,
+      paddingTop: 14,
+      paddingHorizontal: 14,
+      paddingBottom: 12,
+      justifyContent: 'space-between',
     },
     mediaTitle: { color: c.TEXT_P, fontSize: 15, fontWeight: '800', textAlign: 'left', marginBottom: 4, paddingRight: 24 },
     mediaStatsWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8 },
     mediaStats: { color: c.TEXT_S, fontSize: 12, fontWeight: '600' },
     mediaKnownStats: { color: '#FEE76C', fontSize: 12, fontWeight: '700' },
-    
-    cefrBarRow: { 
-        flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', width: '85%', opacity: 0.85,
+
+    cefrBarRow: {
+      flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', width: '85%', opacity: 0.85,
     },
 
     // Filter chips
@@ -287,8 +286,8 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, 
       shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 10,
     },
     listRowAccent: {
-       position: 'absolute', left: 0, top: 22, bottom: 22, width: 4,
-       borderTopRightRadius: 4, borderBottomRightRadius: 4,
+      position: 'absolute', left: 0, top: 22, bottom: 22, width: 4,
+      borderTopRightRadius: 4, borderBottomRightRadius: 4,
     },
     listIconCircle: {
       width: 52, height: 52, borderRadius: 20,
@@ -394,7 +393,7 @@ function MediaBrowseCard({
         intensity={Platform.OS === 'android' ? 100 : (isDark ? 50 : 80)}
         tint={isDark ? "dark" : "light"}
         style={[
-          StyleSheet.absoluteFillObject, 
+          StyleSheet.absoluteFillObject,
           { backgroundColor: accent + (Platform.OS === 'android' ? (isDark ? 'c0' : 'd0') : '40') }
         ]}
       />
@@ -404,7 +403,7 @@ function MediaBrowseCard({
           <OverallDifficultyBadge level={overallDiff} label={tCommon(`media.difficulty_labels.${overallDiff}`)} size="sm" />
         </View>
       )}
-      
+
       <View style={styles.posterLeft}>
         {item.posterUrl ? (
           <Image source={{ uri: item.posterUrl }} style={styles.poster} resizeMode="cover" />
@@ -418,23 +417,23 @@ function MediaBrowseCard({
       <View style={[styles.rightContent, { justifyContent: 'space-evenly' }]}>
         <Text style={styles.mediaTitle} numberOfLines={2}>{title}</Text>
         <View style={styles.mediaStatsWrap}>
-            <Ionicons name="documents" size={12} color="#aaaacc" />
-            <Text style={styles.mediaStats}>
-                {item.totalWords} {t('words')} · <Text style={styles.mediaKnownStats}>{tCommon('media.known_count', { count: knownCount })}</Text>
-            </Text>
+          <Ionicons name="documents" size={12} color="#aaaacc" />
+          <Text style={styles.mediaStats}>
+            {item.totalWords} {t('words')} · <Text style={styles.mediaKnownStats}>{tCommon('media.known_count', { count: knownCount })}</Text>
+          </Text>
         </View>
-        
+
         {/* CEFR dağılım çubuğu */}
         {cefrTotal > 0 && (
-        <View style={styles.cefrBarRow}>
+          <View style={styles.cefrBarRow}>
             {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const).map((lv) => {
-            const count = item.levelCounts?.[lv] ?? 0;
-            if (count === 0) return null;
-            return (
+              const count = item.levelCounts?.[lv] ?? 0;
+              if (count === 0) return null;
+              return (
                 <View key={lv} style={{ flex: count / cefrTotal, height: '100%', backgroundColor: CEFR_COLORS[lv] }} />
-            );
+              );
             })}
-        </View>
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -454,13 +453,13 @@ function KnownWordsCard({ count, stats, loading, styles, onPress }: { count: num
   const { t } = useTranslation('discover');
   const iconColor = '#FF1A5E';
   const learnedToday = stats?.wordsLearnedToday ?? 0;
-  
+
   return (
     <TouchableOpacity style={styles.listRow} activeOpacity={0.85} onPress={onPress}>
       <View style={[styles.listRowAccent, { backgroundColor: iconColor }]} />
-      <View style={[styles.listIconCircle, { 
+      <View style={[styles.listIconCircle, {
         backgroundColor: iconColor,
-        shadowColor: iconColor, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 
+        shadowColor: iconColor, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8
       }]}>
         <Ionicons name="book" size={26} color="#fff" />
       </View>
@@ -481,7 +480,7 @@ function ListCard({ item, index, styles, onPress }: { item: WordListDTO; index: 
   const { t: tDiscover } = useTranslation('discover');
   const isOxford = item.name.toLowerCase().includes('oxford');
   const iconColor = isOxford ? '#FFCA28' : getListIconColor(item.name, index);
-  
+
   const knownWords = item.totalWords - (item.unknownWords || 0);
   const percentage = item.totalWords > 0 ? Math.round((knownWords / item.totalWords) * 100) : 0;
 
@@ -501,7 +500,7 @@ function ListCard({ item, index, styles, onPress }: { item: WordListDTO; index: 
   return (
     <TouchableOpacity style={styles.listRow} activeOpacity={0.85} onPress={onPress}>
       <View style={[styles.listRowAccent, { backgroundColor: iconColor }]} />
-      <View style={[styles.listIconCircle, { 
+      <View style={[styles.listIconCircle, {
         backgroundColor: iconColor,
         shadowColor: iconColor, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 14, elevation: 8
       }]}>
@@ -527,6 +526,7 @@ function ListCard({ item, index, styles, onPress }: { item: WordListDTO; index: 
 
 // ─── Auto-scroll interval ─────────────────────────────────────
 const AUTO_SCROLL_INTERVAL = 5000;
+
 
 // ─── Main Screen ──────────────────────────────────────────────
 export default function DiscoverScreen() {
@@ -571,7 +571,15 @@ export default function DiscoverScreen() {
   const [pendingSeriesItem, setPendingSeriesItem] = useState<MediaDTO | null>(null);
   const [showStreakModal, setShowStreakModal] = useState(false);
 
+  // ─── Guided flow ─────────────────────────────────────────────
+  const { start: startGuidedFlow } = useGuidedFlowStore();
+
   // ─── Study (FAB) state ───────────────────────────────────────
+  const scrollRef = useRef<ScrollView>(null);
+  const listsY = useRef(0);
+
+  // Scroll is triggered directly from card onPress (not here) so card appears after scroll settles.
+  // No scroll side-effects needed in this effect.
 
 
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
@@ -611,29 +619,36 @@ export default function DiscoverScreen() {
 
   const { data: seriesListsData = [], isFetching: checkingSeriesLists } = useListsBySeries(selectedSeriesImdbId);
 
+  const { active: guidedActive, step: guidedStep } = useGuidedFlowStore();
+
   const handleNavigate = async (item: MediaDTO) => {
     if (item.type === 'MOVIE') {
       router.push(`/media/${item.id}` as any);
       return;
     }
     const imdbId = item.imdbId;
-    if (imdbId) {
-      setSelectedSeriesImdbId(imdbId);
-      setPendingSeriesItem(item);
-      setSeriesListsModalVisible(true);
-    } else {
+    if (!imdbId) {
       router.push(`/show/${item.imdbId}` as any);
+      return;
     }
+    // Guided flow: skip existing-lists modal, go directly to episode picker
+    if (guidedActive && guidedStep === 'discover') {
+      router.push(`/show/${imdbId}` as any);
+      return;
+    }
+    setSelectedSeriesImdbId(imdbId);
+    setPendingSeriesItem(item);
+    setSeriesListsModalVisible(true);
   };
 
   const hasContinue = continueMedia.length > 0;
-  
+
   // ─── Hero carousel state ────────────────────────────────────
   const heroItems = useMemo(() => {
     if (continueLoading) return []; // Wait for loading to finish before falling back
     if (hasContinue) return continueMedia.slice(0, 8) as HeroItem[];
     if (!allMedia || allMedia.length === 0) return [];
-    
+
     // Fallback to recommended popular media for new users — deduplicated series with S01E01 navigation
     const seriesMap = new Map<string, { rep: MediaDTO; episodes: MediaDTO[] }>();
     const movies: MediaDTO[] = [];
@@ -667,10 +682,59 @@ export default function DiscoverScreen() {
       .sort((a, b) => (b.voteAverage ?? 0) - (a.voteAverage ?? 0))
       .slice(0, 5);
   }, [continueMedia, allMedia, hasContinue, continueLoading]);
-  
+
   const [heroIndex, setHeroIndex] = useState(0);
   const heroRef = useRef<FlatList>(null);
   const autoScrollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Smooth slow scroll — animates scrollY value and drives ScrollView manually
+  const smoothScrollTo = useCallback((targetY: number, duration = 900) => {
+    if (!scrollRef.current) return;
+    const scrollAnim = new Animated.Value(0);
+    scrollAnim.addListener(({ value }) => {
+      scrollRef.current?.scrollTo({ y: value, animated: false });
+    });
+    Animated.timing(scrollAnim, {
+      toValue: targetY,
+      duration,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: false,
+    }).start(() => scrollAnim.removeAllListeners());
+  }, []);
+
+  // -- Screen fade-in: whole screen hidden until hero content is ready --
+  const screenOpacity = useRef(new Animated.Value(0)).current;
+  const blurReveal = useRef(new Animated.Value(0)).current;
+  const heroAnimStarted = useRef(false);
+
+  const hasHero = heroItems.length > 0 && !continueLoading;
+
+  useEffect(() => {
+    if (!hasHero || heroAnimStarted.current) return;
+    heroAnimStarted.current = true;
+    // Fade in the whole screen first (300ms), then start blur reveal
+    Animated.sequence([
+      Animated.timing(screenOpacity, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(blurReveal, {
+        toValue: 1,
+        duration: 10000,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [hasHero, screenOpacity, blurReveal]);
+
+  const blurTranslateY = blurReveal.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -(sh * 0.46)],
+  });
+
+  const card2Show = tourSteps[1]?.show ?? false;
 
   // -- Parallax fade effect for header --
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -761,28 +825,28 @@ export default function DiscoverScreen() {
                 : `${item.totalWords} ${t('words')}`}
           </Text>
           <View style={styles.heroBtnRow}>
-            <TouchableOpacity 
-              style={styles.heroBtnOuter} 
-              activeOpacity={0.8} 
+            <TouchableOpacity
+              style={styles.heroBtnOuter}
+              activeOpacity={0.8}
               onPress={handleHeroPress}
             >
-                <LinearGradient
-                    colors={[
-                        "rgba(255,255,255,0.1)",
-                        "rgba(255,255,255,0.4)",
-                        "rgba(255,255,255,0.4)",
-                        "rgba(255,255,255,0.1)",
-                    ]}
-                    locations={[0, 0.15, 0.85, 1]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.heroBtnInner}
-                >
-                    <Ionicons name="play" size={18} color="#FEE76C" style={{ marginRight: 8 }} />
-                    <Text style={styles.heroBtnPrimaryText} numberOfLines={1}>
-                      {hasContinue ? t('continueLearning') : 'Hemen Başla'}
-                    </Text>
-                </LinearGradient>
+              <LinearGradient
+                colors={[
+                  "rgba(255,255,255,0.1)",
+                  "rgba(255,255,255,0.4)",
+                  "rgba(255,255,255,0.4)",
+                  "rgba(255,255,255,0.1)",
+                ]}
+                locations={[0, 0.15, 0.85, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.heroBtnInner}
+              >
+                <Ionicons name="play" size={18} color="#FEE76C" style={{ marginRight: 8 }} />
+                <Text style={styles.heroBtnPrimaryText} numberOfLines={1}>
+                  {hasContinue ? t('continueLearning') : 'Hemen Başla'}
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
@@ -790,10 +854,8 @@ export default function DiscoverScreen() {
     );
   }, [styles, router, t, hasContinue]);
 
-  const hasHero = heroItems.length > 0 && !continueLoading;
-
   return (
-    <View style={styles.root}>
+    <Animated.View style={[styles.root, { opacity: screenOpacity }]}>
       <StatusBar
         barStyle="light-content"
         translucent
@@ -801,6 +863,7 @@ export default function DiscoverScreen() {
       />
 
       <Animated.ScrollView
+        ref={scrollRef as any}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         onScroll={Animated.event(
@@ -817,7 +880,10 @@ export default function DiscoverScreen() {
         ) : hasHero ? (
           <Tooltip
             isVisible={tourSteps[0]?.show}
-            content={<TourTooltipContent onPress={() => closeStep(0)} title="Keşfet & devam et 🍿" text="Şu an burada önerilen diziler var. Uygulamayı kullandıkça başladığın ve devam ettiğin içerikler de burada görünecek." isLast={false} />}
+            content={<TourTooltipContent onPress={() => {
+              smoothScrollTo(Math.max(0, listsY.current - 260) * 0.8, 900);
+              setTimeout(() => closeStep(0), 750);
+            }} icon="play-circle-outline" title="Keşfet & devam et" text="Şu an burada önerilen diziler var. Uygulamayı kullandıkça başladığın ve devam ettiğin içerikler de burada görünecek." isLast={false} />}
             placement="bottom"
             onClose={() => closeStep(0)}
             backgroundColor="transparent"
@@ -829,64 +895,78 @@ export default function DiscoverScreen() {
             arrowStyle={{ borderTopColor: TOUR_NEON }}
             disableShadow={false}
             topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
-            displayInsets={{ top: 24, bottom: 24, left: 24, right: 24 }}
+            displayInsets={{ top: 24, bottom: 24, left: 6, right: 6 }}
           >
-          <View style={styles.heroContainer}>
-            {/* Floating header over hero */}
-            <Animated.View style={[styles.headerOverlay, { opacity: headerOpacity }]}>
-              <View style={styles.headerLeft}>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/profile' as any)} activeOpacity={0.7} style={styles.avatar}>
-                  <Text style={styles.avatarText}>{avatarInitial}</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerGreeting}>{greeting}, {firstName}</Text>
-              </View>
-              <View style={styles.headerRight}>
-                <Tooltip
-                  isVisible={tourSteps[2]?.show}
-                  content={<TourTooltipContent onPress={() => closeStep(2)} title="Serini başlat 🔥" text="Her gün çalışarak serini (ateşini) koru! Bakalım ne kadar ileri gidebileceksin?" isLast={true} />}
-                  placement="bottom"
-                  onClose={() => closeStep(2)}
-                  backgroundColor="transparent"
-                  closeOnBackgroundInteraction={false}
-                  closeOnContentInteraction={false}
-                  closeOnChildInteraction={false}
-                  contentStyle={TOUR_CARD_STYLE}
-                  arrowSize={{ width: 18, height: 9 }}
-                  arrowStyle={{ borderTopColor: TOUR_NEON }}
-                  disableShadow={false}
-                  topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
-                  displayInsets={{ top: 24, bottom: 24, left: 24, right: 24 }}
-                >
-                  <TouchableOpacity onPress={() => setShowStreakModal(true)} style={styles.streakBadge} activeOpacity={0.7}>
-                    <Text style={styles.streakIcon}>🔥</Text>
-                    <Text style={styles.streakCount}>{currentStreak}</Text>
+            <View style={styles.heroContainer}>
+              {/* Floating header over hero */}
+              <Animated.View style={[styles.headerOverlay, { opacity: tourSteps[2]?.show ? 1 : headerOpacity }]}>
+                <View style={styles.headerLeft}>
+                  <TouchableOpacity onPress={() => router.push('/(tabs)/profile' as any)} activeOpacity={0.7} style={styles.avatar}>
+                    <Text style={styles.avatarText}>{avatarInitial}</Text>
                   </TouchableOpacity>
-                </Tooltip>
-              </View>
-            </Animated.View>
+                  <Text style={styles.headerGreeting}>{greeting}, {firstName}</Text>
+                </View>
+                <View style={styles.headerRight}>
+                  <Tooltip
+                    isVisible={tourSteps[2]?.show}
+                    content={<TourTooltipContent onPress={() => { closeStep(2); setTimeout(() => { startGuidedFlow(); setMediaFilter('series'); setAllMediaModalVisible(true); }, 500); }} title="Serini başlat 🔥" text="Her gün çalışarak serini (ateşini) koru! Bakalım ne kadar ileri gidebileceksin?" isLast={true} />}
+                    placement="bottom"
+                    onClose={() => closeStep(2)}
+                    backgroundColor="transparent"
+                    closeOnBackgroundInteraction={false}
+                    closeOnContentInteraction={false}
+                    closeOnChildInteraction={false}
+                    contentStyle={TOUR_CARD_STYLE}
+                    arrowSize={{ width: 18, height: 9 }}
+                    arrowStyle={{ borderTopColor: TOUR_NEON }}
+                    disableShadow={false}
+                    topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
+                    displayInsets={{ top: 24, bottom: 24, left: 6, right: 6 }}
+                  >
+                    <TouchableOpacity onPress={() => setShowStreakModal(true)} style={styles.streakBadge} activeOpacity={0.7}>
+                      <Text style={styles.streakIcon}>🔥</Text>
+                      <Text style={styles.streakCount}>{currentStreak}</Text>
+                    </TouchableOpacity>
+                  </Tooltip>
+                </View>
+              </Animated.View>
 
-            <FlatList
-              ref={heroRef}
-              data={heroItems}
-              keyExtractor={(item) => `hero-${item.id}`}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={onHeroScroll}
-              onScrollBeginDrag={resetAutoScroll}
-              renderItem={renderHeroSlide}
-              getItemLayout={(_, index) => ({ length: sw, offset: sw * index, index })}
-            />
+              <FlatList
+                ref={heroRef}
+                data={heroItems}
+                keyExtractor={(item) => `hero-${item.id}`}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={onHeroScroll}
+                onScrollBeginDrag={resetAutoScroll}
+                renderItem={renderHeroSlide}
+                getItemLayout={(_, index) => ({ length: sw, offset: sw * index, index })}
+              />
 
-            {/* Pagination dots */}
-            {heroItems.length > 1 && (
-              <View style={styles.dotsContainer}>
-                {heroItems.map((_, i) => (
-                  <View key={i} style={[styles.dot, i === heroIndex && styles.dotActive]} />
-                ))}
-              </View>
-            )}
-          </View>
+              {/* Pagination dots */}
+              {heroItems.length > 1 && (
+                <View style={styles.dotsContainer}>
+                  {heroItems.map((_, i) => (
+                    <View key={i} style={[styles.dot, i === heroIndex && styles.dotActive]} />
+                  ))}
+                </View>
+              )}
+
+              {/* Blur reveal: slides upward over 10s, revealing image from bottom */}
+              <Animated.View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: 0, right: 0,
+                  top: 0,
+                  height: sh * 0.46,
+                  transform: [{ translateY: blurTranslateY }],
+                }}
+              >
+                <BlurView intensity={55} tint="dark" style={{ flex: 1 }} />
+              </Animated.View>
+            </View>
           </Tooltip>
         ) : continueLoading ? (
           <View style={styles.heroEmpty}>
@@ -928,11 +1008,9 @@ export default function DiscoverScreen() {
         )}
 
 
-        {/* Spacing after hero — devam eden içerik varsa tümünü gör'ün bıraktığı margin */}
-        {hasContinue && <View style={{ marginBottom: 12 }} />}
-
         {/* Browse Media */}
-        <View style={styles.section}>
+        <View style={[styles.section, { marginTop: 24 }]}>
+          <Text style={[styles.sectionTitle, styles.sectionPad]}>{t('browseMedia')}</Text>
 
           {/* Filter chips */}
           <View style={styles.filterRow}>
@@ -994,15 +1072,15 @@ export default function DiscoverScreen() {
         </View>
 
         {/* Curated Lists */}
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={(e) => { listsY.current = e.nativeEvent.layout.y; }}>
           <Text style={[styles.sectionTitle, styles.sectionPad]}>{t('curatedLists')}</Text>
           {listsLoading ? (
             <ActivityIndicator color={c.PURPLE} style={styles.loader} />
           ) : (
             <View style={styles.listsContainer}>
               <Tooltip
-                isVisible={tourSteps[1]?.show}
-                content={<TourTooltipContent onPress={() => closeStep(1)} title="Sana özel listeler ⭐" text="Burada, İngilizce yolculuğundan geçmiş birinin öncelikli olarak bilmesi gereken kelimelerden hazırlanmış özel listeler bulunuyor." isLast={false} />}
+                isVisible={card2Show}
+                content={<TourTooltipContent onPress={() => { closeStep(1); setTimeout(() => { startGuidedFlow(); setMediaFilter('series'); setAllMediaModalVisible(true); }, 400); }} icon="list-outline" title="Sana özel listeler" text="Burada, İngilizce yolculuğuna çıkmış birinin öncelikli olarak bilmesi gereken kelimelerden hazırlanmış özel listeler bulunuyor." isLast={true} />}
                 placement="top"
                 onClose={() => closeStep(1)}
                 backgroundColor="transparent"
@@ -1015,7 +1093,7 @@ export default function DiscoverScreen() {
                 arrowStyle={{ borderTopColor: TOUR_NEON }}
                 disableShadow={false}
                 topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
-                displayInsets={{ top: 24, bottom: 24, left: 24, right: 24 }}
+                displayInsets={{ top: 44, bottom: 24, left: 6, right: 6 }}
               >
                 <View>
                   <KnownWordsCard count={userStats?.totalKnownWords ?? 0} stats={userStats} loading={knownLoading} styles={styles} onPress={() => router.push('/list/-1' as any)} />
@@ -1044,6 +1122,7 @@ export default function DiscoverScreen() {
         allMedia={allMedia}
         loading={mediaLoading}
         onNavigate={handleNavigate}
+        initialFilter={guidedActive && guidedStep === 'discover' ? 'series' : undefined}
       />
 
       {/* Series Lists Intercept Modal */}
@@ -1078,7 +1157,7 @@ export default function DiscoverScreen() {
               <View style={{ paddingVertical: 28, alignItems: 'center', gap: 12 }}>
                 <Text style={{ fontSize: 36 }}>📭</Text>
                 <Text style={{ color: c.TEXT_P, fontSize: 16, fontWeight: '700' }}>Bu dizi için listeniz yok</Text>
-                <Text style={{ color: c.TEXT_S, fontSize: 13, textAlign: 'center' }}>Bir bölüme girerek "Bilinmeyen Kelimeler Listesi" oluşturabilirsiniz.</Text>
+                <Text style={{ color: c.TEXT_S, fontSize: 13, textAlign: 'center' }}>{'Bir bölüme girerek "Bilinmeyen Kelimeler Listesi" oluşturabilirsiniz.'}</Text>
                 <TouchableOpacity
                   onPress={() => {
                     setSeriesListsModalVisible(false);
@@ -1128,6 +1207,7 @@ export default function DiscoverScreen() {
         </View>
       </Modal>
 
+
       {/* Streak Info Modal */}
       <Modal visible={showStreakModal} transparent animationType="fade" onRequestClose={() => setShowStreakModal(false)}>
         <TouchableOpacity style={styles.streakModalOverlay} activeOpacity={1} onPress={() => setShowStreakModal(false)}>
@@ -1143,6 +1223,8 @@ export default function DiscoverScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-    </View>
+
+
+    </Animated.View>
   );
 }
