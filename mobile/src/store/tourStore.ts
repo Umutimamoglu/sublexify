@@ -9,7 +9,7 @@ interface TourState {
   skipTour: () => Promise<void>;
 }
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 2;
 
 export const useTourStore = create<TourState>((set, get) => ({
   isTourCompleted: true, // Default to true until we check storage
@@ -19,7 +19,7 @@ export const useTourStore = create<TourState>((set, get) => ({
     try {
       // DEV ONLY: reset the tour on every screen load so it re-runs on each
       // refresh while we iterate on it. In production the "completed" flag persists.
-      if (false) { // DEV auto-reset disabled
+      if (true) { // DEV auto-reset enabled
         await AsyncStorage.removeItem('@discover_tour_completed');
       }
       const completed = await AsyncStorage.getItem('@discover_tour_completed');
@@ -50,7 +50,7 @@ export const useTourStore = create<TourState>((set, get) => ({
         const nextSteps = [...get().tourSteps];
         nextSteps[index + 1] = { show: true };
         set({ tourSteps: nextSteps });
-      }, 350);
+      }, 150);
     } else {
       // Tour is fully completed
       get().skipTour();
