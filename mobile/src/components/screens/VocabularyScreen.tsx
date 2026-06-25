@@ -385,8 +385,8 @@ function WordRow({
         <RightActions word={word} progress={progress} onClose={() => swipeRef.current?.close()} onAddToList={onAddToList} styles={styles} c={c} isDark={isDark} />
       )}
     >
-      <GestureDetector gesture={rowGesture}>
-        <View style={styles.row}>
+      <View style={styles.row}>
+        <GestureDetector gesture={rowGesture}>
           <View style={styles.rowInfo}>
             <Text style={styles.rowWord}>{word.word}</Text>
             {!!meaning && (
@@ -405,21 +405,21 @@ function WordRow({
               </View>
             )}
           </View>
-          <TouchableOpacity
-            style={[
-              styles.checkBtn,
-              {
-                borderColor: isKnown ? c.PURPLE : c.BORDER,
-                backgroundColor: isKnown ? c.PURPLE : 'transparent',
-              },
-            ]}
-            onPress={handleTogglePress}
-            activeOpacity={0.6}
-          >
-            <Text style={[styles.checkText, { color: isKnown ? '#fff' : c.TEXT_S }]}>✓</Text>
-          </TouchableOpacity>
-        </View>
-      </GestureDetector>
+        </GestureDetector>
+        <TouchableOpacity
+          style={[
+            styles.checkBtn,
+            {
+              borderColor: isKnown ? c.PURPLE : c.BORDER,
+              backgroundColor: isKnown ? c.PURPLE : 'transparent',
+            },
+          ]}
+          onPress={handleTogglePress}
+          activeOpacity={0.6}
+        >
+          <Text style={[styles.checkText, { color: isKnown ? '#fff' : c.TEXT_S }]}>✓</Text>
+        </TouchableOpacity>
+      </View>
     </ReanimatedSwipeable>
   );
 }

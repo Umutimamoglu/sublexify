@@ -120,7 +120,7 @@ export function FlashCardBack({
         onPressOut={onButtonPressOut}
         activeOpacity={0.7}
       >
-        <Text style={[styles.checkText, { color: isKnown ? c.PURPLE : c.TEXT_S }]}>✓</Text>
+        <Text style={[styles.checkText, { color: isKnown ? '#34C759' : c.TEXT_S }]}>✓</Text>
       </TouchableOpacity>
     </Reanimated.View>
   );

@@ -208,7 +208,7 @@ export function QuizTypeModal({
                 disabled={selectedTypes.size === 0}
                 activeOpacity={0.85}
               >
-                <Text style={styles.mkConfirmText}>Başla 🚀</Text>
+                <Text style={styles.mkConfirmText}>Başla</Text>
               </TouchableOpacity>
             </View>
 
