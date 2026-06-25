@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo, useEffect } from 'react';
+import React, { useRef, useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -32,16 +32,16 @@ const ACCENT = '#2BFF88'; // başlık vurgusu — tur neon yeşili ile tutarlı
 const TEXT_P = '#FFFFFF';
 const TEXT_S = '#9BA1AE';
 
-type SlideType = 'lottie' | 'scene' | 'faded' | 'flip' | 'image' | 'appicon';
+type SlideType = 'lottie' | 'scene' | 'faded' | 'flip' | 'image' | 'appicon' | 'quiz' | 'stats' | 'finale';
 
 const SLIDES: { key: string; type: SlideType; image?: any; lottie?: any; aspect?: number }[] = [
-  { key: '1', type: 'scene', image: require('@/assets/sublexify_mascot_talking.webp'), aspect: 1 },
-  { key: '2', type: 'lottie', lottie: require('@/assets/sublexify_scene1.json'), aspect: 480 / 300 },
+  { key: '2', type: 'scene', image: require('@/assets/sublexify_mascot_talking.webp'), aspect: 1 },
+  { key: '1', type: 'lottie', lottie: require('@/assets/sublexify_scene1.json'), aspect: 480 / 300 },
   { key: '3', type: 'scene', image: require('@/assets/sublexify_scene2.webp'), aspect: 1080 / 640 },
-  { key: '4', type: 'faded' },
+  { key: '4', type: 'quiz' },
   { key: '5', type: 'flip' },
-  { key: '6', type: 'image', image: require('@/assets/oboardingimages/IMG_2699.png') },
-  { key: '7', type: 'image', image: require('@/assets/oboardingimages/IMG_2696.png') },
+  { key: '6', type: 'stats' },
+  { key: '7', type: 'finale' },
 ];
 
 // ─── Başlık (yeşil vurgu kelimeli) ────────────────────────────
@@ -59,6 +59,40 @@ function AccentTitle({ title, accent }: { title: string; accent?: string }) {
       <Text style={{ color: ACCENT }}>{accent}</Text>
       {after}
     </Text>
+  );
+}
+
+// ─── Animasyonlu Açıklama Metni (Quiz Slaytı için) ────────────
+function AnimatedBodyText({ text, active, shouldFade }: { text: string; active: boolean; shouldFade: boolean }) {
+  const heightAnim = useRef(new Animated.Value(200)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!shouldFade) return;
+
+    if (active) {
+      // 3.5 saniye sonra metni gizleyip yer aç
+      const t = setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(heightAnim, { toValue: 0, duration: 800, useNativeDriver: false }),
+          Animated.timing(opacityAnim, { toValue: 0, duration: 800, useNativeDriver: false })
+        ]).start();
+      }, 3500);
+      return () => clearTimeout(t);
+    } else {
+      heightAnim.setValue(200);
+      opacityAnim.setValue(1);
+    }
+  }, [active, shouldFade]);
+
+  if (!shouldFade) {
+    return <Text style={{ color: TEXT_S, fontSize: 16, lineHeight: 24, marginTop: 14 }}>{text}</Text>;
+  }
+
+  return (
+    <Animated.View style={{ maxHeight: heightAnim, opacity: opacityAnim, overflow: 'hidden', marginTop: 14 }}>
+      <Text style={{ color: TEXT_S, fontSize: 16, lineHeight: 24 }}>{text}</Text>
+    </Animated.View>
   );
 }
 
@@ -395,6 +429,501 @@ function SublexFlashcard({ active }: { active: boolean }) {
   );
 }
 
+// ─── Quiz Demo (slide 4) ───────────────────────────────────────
+function SublexQuizDemo({ active }: { active: boolean }) {
+  const { t } = useTranslation('common');
+  const tQ = useCallback((key: string) => t(`onboarding.demoQuiz.${key}`), [t]);
+
+  const [step, setStep] = useState<'list' | 'q1' | 'q1_ans' | 'q2' | 'q2_ans' | 'q3' | 'q3_ans' | 'summary'>('list');
+  const [typedText, setTypedText] = useState('');
+  
+  const listScale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  
+  useEffect(() => {
+    if (!active) {
+      setStep('list');
+      opacity.setValue(1);
+      setTypedText('');
+      return;
+    }
+    
+    let cancelled = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const wait = (ms: number) => new Promise<void>(r => timers.push(setTimeout(r, ms)));
+
+    const run = async () => {
+      while (!cancelled) {
+        setStep('list');
+        opacity.setValue(1);
+        listScale.setValue(1);
+        setTypedText('');
+        await wait(1000);
+        if (cancelled) break;
+
+        // Click list
+        Animated.sequence([
+          Animated.timing(listScale, { toValue: 0.92, duration: 150, useNativeDriver: true }),
+          Animated.timing(listScale, { toValue: 1, duration: 150, useNativeDriver: true })
+        ]).start();
+        await wait(250);
+        if (cancelled) break;
+
+        // Fade out
+        Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start();
+        await wait(250);
+        if (cancelled) break;
+
+        // Q1 (Def -> Word)
+        setStep('q1');
+        Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+        await wait(1400);
+        if (cancelled) break;
+
+        setStep('q1_ans');
+        await wait(1200);
+        if (cancelled) break;
+
+        Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start();
+        await wait(250);
+        if (cancelled) break;
+
+        // Q2 (Word -> Def)
+        setStep('q2');
+        Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+        await wait(1400);
+        if (cancelled) break;
+
+        setStep('q2_ans');
+        await wait(1200);
+        if (cancelled) break;
+        
+        Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start();
+        await wait(250);
+        if (cancelled) break;
+
+        // Q3 (Fill in blanks)
+        setStep('q3');
+        Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+        await wait(600);
+        if (cancelled) break;
+
+        const ans = tQ('q3_ans'); // e.g. "break"
+        for (let i = 1; i <= ans.length; i++) {
+          setTypedText(ans.substring(0, i));
+          await wait(120);
+          if (cancelled) break;
+        }
+        await wait(400);
+        if (cancelled) break;
+
+        setStep('q3_ans');
+        await wait(1200);
+        if (cancelled) break;
+
+        Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start();
+        await wait(250);
+        if (cancelled) break;
+
+        // Summary
+        setStep('summary');
+        Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+        await wait(2500);
+        if (cancelled) break;
+
+        // Fade out Summary and loop
+        Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start();
+        await wait(250);
+        if (cancelled) break;
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      timers.forEach(clearTimeout);
+    };
+  }, [active, listScale, opacity, tQ]);
+
+  const w = Math.min(width * 0.85, 340);
+  const h = Math.min(height * 0.48, 490);
+
+  const renderContent = () => {
+    if (step === 'list') {
+      return (
+        <Animated.View style={{ transform: [{ scale: listScale }], width: '100%' }}>
+          <View style={{ backgroundColor: '#1a1a1c', borderRadius: 20, paddingVertical: 14, paddingLeft: 16, paddingRight: 20, borderWidth: 1, borderColor: '#ffffff14', flexDirection: 'row', alignItems: 'center', overflow: 'hidden' }}>
+            <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 8, backgroundColor: '#10B981' }} />
+            <Image source={require('@/assets/friends.jpeg')} style={{ width: 44, height: 44, borderRadius: 16, marginRight: 12, backgroundColor: '#1a1a1c', borderWidth: 1, borderColor: '#10B98133' }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: TEXT_P, fontSize: 15, fontWeight: '800' }}>{tQ('listName')}</Text>
+              <Text style={{ color: TEXT_S, fontSize: 12, fontWeight: '500', marginTop: 2 }}>{tQ('wordCount')}</Text>
+            </View>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#10B98122', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="play" size={12} color="#10B981" />
+            </View>
+          </View>
+        </Animated.View>
+      );
+    }
+
+    if (step === 'summary') {
+      return (
+        <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: SURFACE, borderRadius: 20, borderWidth: 1, borderColor: '#ffffff14' }}>
+          <Ionicons name="trophy" size={56} color="#F59E0B" />
+          <Text style={{ color: TEXT_P, fontSize: 22, fontWeight: '900', marginTop: 16 }}>{tQ('sessionComplete')}</Text>
+          <Text style={{ color: '#8b5cf6', fontSize: 36, fontWeight: '900', marginTop: 4 }}>3 / 3</Text>
+          
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 16, width: '100%' }}>
+             <View style={{ flex: 1, backgroundColor: '#22C55E15', borderRadius: 14, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: '#22C55E' }}>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: '#22C55E' }}>3</Text>
+                <Text style={{ color: TEXT_S, fontSize: 11, fontWeight: '600' }}>{tQ('correct')}</Text>
+             </View>
+             <View style={{ flex: 1, backgroundColor: '#EF444408', borderRadius: 14, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: '#EF444440' }}>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: '#EF4444' }}>0</Text>
+                <Text style={{ color: TEXT_S, fontSize: 11, fontWeight: '600' }}>{tQ('wrong')}</Text>
+             </View>
+          </View>
+        </View>
+      );
+    }
+
+    // Questions
+    const qIdx = step.startsWith('q1') ? 0 : step.startsWith('q2') ? 1 : 2;
+    const isAns = step.endsWith('_ans');
+
+    let topCardContent = null;
+    let bottomContent = null;
+
+    if (qIdx === 0) {
+      topCardContent = (
+        <>
+           <View style={{ position: 'absolute', top: 12, left: 16, backgroundColor: '#8b5cf612', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: '#8b5cf6' }}>
+              <Text style={{ color: '#8b5cf6', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 }}>{tQ('noun')}</Text>
+           </View>
+           <Text style={{ color: TEXT_P, fontSize: 18, fontWeight: '600', textAlign: 'center', marginTop: 12, lineHeight: 26 }}>{tQ('q1_text')}</Text>
+        </>
+      );
+      const choices = [tQ('q1_c1'), tQ('q1_c2'), tQ('q1_c3'), tQ('q1_c4')];
+      bottomContent = (
+        <View style={{ gap: 8 }}>
+          {choices.map((c, i) => {
+            let bg = SURFACE;
+            let border = '#ffffff14';
+            if (isAns && i === 1) { // q1_c2 is correct
+              bg = '#22C55E22';
+              border = '#22C55E';
+            }
+            return (
+              <View key={i} style={{ backgroundColor: bg, borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: border, alignItems: 'center' }}>
+                <Text style={{ color: TEXT_P, fontSize: 15, fontWeight: '600' }}>{c}</Text>
+              </View>
+            );
+          })}
+        </View>
+      );
+    } else if (qIdx === 1) {
+      topCardContent = (
+        <>
+           <View style={{ position: 'absolute', top: 12, left: 16, backgroundColor: '#8b5cf612', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: '#8b5cf6' }}>
+              <Text style={{ color: '#8b5cf6', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 }}>{tQ('verb')}</Text>
+           </View>
+           <Text style={{ color: TEXT_P, fontSize: 24, fontWeight: '700', textAlign: 'center', marginTop: 12, lineHeight: 28 }}>{tQ('q2_text')}</Text>
+        </>
+      );
+      const choices = [tQ('q2_c1'), tQ('q2_c2'), tQ('q2_c3'), tQ('q2_c4')];
+      bottomContent = (
+        <View style={{ gap: 8 }}>
+          {choices.map((c, i) => {
+            let bg = SURFACE;
+            let border = '#ffffff14';
+            if (isAns && i === 0) { // q2_c1 is correct
+              bg = '#22C55E22';
+              border = '#22C55E';
+            }
+            return (
+              <View key={i} style={{ backgroundColor: bg, borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: border, alignItems: 'center' }}>
+                <Text style={{ color: TEXT_P, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>{c}</Text>
+              </View>
+            );
+          })}
+        </View>
+      );
+    } else if (qIdx === 2) {
+      topCardContent = (
+        <>
+           <Text style={{ color: TEXT_P, fontSize: 18, fontWeight: '600', textAlign: 'center', lineHeight: 28 }}>{tQ('q3_text')}</Text>
+        </>
+      );
+      bottomContent = (
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <View style={{ flex: 1, backgroundColor: SURFACE, borderRadius: 14, borderWidth: 1.5, borderColor: isAns ? '#22C55E' : '#ffffff14', padding: 14, justifyContent: 'center' }}>
+            <Text style={{ color: typedText ? TEXT_P : TEXT_S, fontSize: 16, fontWeight: '600' }}>{typedText || tQ('typeAnswer')}</Text>
+          </View>
+          <View style={{ backgroundColor: isAns ? '#22C55E' : '#8b5cf6', borderRadius: 14, padding: 14, alignItems: 'center', justifyContent: 'center', opacity: isAns || typedText === tQ('q3_ans') ? 1 : 0.4 }}>
+            <Ionicons name="checkmark" size={22} color="#fff" />
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={{ width: '100%' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 16, marginHorizontal: 20 }}>
+          <View style={{ height: 3, flex: 1, backgroundColor: '#8b5cf6', borderRadius: 2 }} />
+          <View style={{ height: 3, flex: 1, backgroundColor: qIdx >= 1 ? '#8b5cf6' : '#ffffff18', borderRadius: 2 }} />
+          <View style={{ height: 3, flex: 1, backgroundColor: qIdx >= 2 ? '#8b5cf6' : '#ffffff18', borderRadius: 2 }} />
+        </View>
+        
+        <View style={{ borderRadius: 20, paddingHorizontal: 20, paddingVertical: 24, alignItems: 'center', minHeight: 130, justifyContent: 'center', borderWidth: 1, borderColor: '#ffffff18', marginBottom: 16, overflow: 'hidden', backgroundColor: 'transparent' }}>
+           <Image 
+             source={require('@/assets/images/sublexify_transparent.png')} 
+             style={{ position: 'absolute', width: 140, height: 140, opacity: 0.06 }}
+             resizeMode="contain" 
+           />
+           {topCardContent}
+        </View>
+
+        {bottomContent}
+      </View>
+    );
+  };
+
+  return (
+    <View style={{ width: w, height: h, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View style={{ opacity, width: '100%' }}>
+        {renderContent()}
+      </Animated.View>
+    </View>
+  );
+}
+
+// ─── Stats Demo (slide 6) ──────────────────────────────────────
+const STATS_DATA = [
+  { id: 'today', title: 'Bugün Tekrar', desc: '10 / 443 kelime', value: 10, color: '#EF4444', icon: 'time-outline' as const },
+  { id: 'learned', title: 'Öğrenilen', desc: 'Portföyünüzdeki toplam kelime sayısı', value: 443, color: '#3B82F6', icon: 'checkmark-circle-outline' as const },
+  { id: 'studied', title: 'Çalışılan', desc: 'En az bir kez antrenman yapılan kelimeler', value: 52, color: '#A855F7', icon: 'pencil-outline' as const },
+  { id: 'struggled', title: 'Zorlandığımız', desc: 'Çok sık karşılaştığın (5+ kez) ama...', value: 4, color: '#F59E0B', icon: 'flash-outline' as const }
+];
+
+function AnimatedStatCard({ stat, index, active }: { stat: typeof STATS_DATA[0], index: number, active: boolean }) {
+  const scale = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const numAnim = useRef(new Animated.Value(0)).current;
+
+  const [displayNum, setDisplayNum] = useState(0);
+
+  useEffect(() => {
+    numAnim.addListener(({ value }) => {
+      setDisplayNum(Math.floor(value));
+    });
+    return () => numAnim.removeAllListeners();
+  }, [numAnim]);
+
+  useEffect(() => {
+    if (active) {
+      const delay = index * 200;
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.spring(scale, { toValue: 1, friction: 6, tension: 50, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 1, duration: 400, useNativeDriver: true })
+        ]),
+      ]).start();
+
+      Animated.sequence([
+        Animated.delay(delay + 300),
+        Animated.timing(numAnim, { toValue: stat.value, duration: 1500, easing: Easing.out(Easing.cubic), useNativeDriver: false })
+      ]).start();
+    } else {
+      scale.setValue(0);
+      opacity.setValue(0);
+      numAnim.setValue(0);
+      setDisplayNum(0);
+    }
+  }, [active, index, scale, opacity, numAnim, stat.value]);
+
+  return (
+    <Animated.View style={{ 
+      flex: 1, 
+      backgroundColor: SURFACE, 
+      borderRadius: 20, 
+      padding: 16, 
+      margin: 6, 
+      borderWidth: 1, 
+      borderColor: '#ffffff14',
+      transform: [{ scale }],
+      opacity,
+      minHeight: 160
+    }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: stat.color + '22', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={stat.icon} size={22} color={stat.color} />
+        </View>
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: stat.color + '0A', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="chevron-forward" size={16} color={TEXT_S} />
+        </View>
+      </View>
+      <View style={{ marginTop: 14 }}>
+        <Text style={{ fontSize: 32, fontWeight: '800', color: stat.color }}>{displayNum}</Text>
+        <Text style={{ color: TEXT_P, fontSize: 14, fontWeight: '700', marginTop: 4 }}>{stat.title}</Text>
+        <Text style={{ color: TEXT_S, fontSize: 11, marginTop: 4, lineHeight: 16 }}>{stat.desc}</Text>
+      </View>
+    </Animated.View>
+  );
+}
+
+function SublexStatsDemo({ active }: { active: boolean }) {
+  const w = Math.min(width * 0.9, 360);
+  
+  return (
+    <View style={{ width: w, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flexDirection: 'row', width: '100%' }}>
+        <AnimatedStatCard stat={STATS_DATA[0]} index={0} active={active} />
+        <AnimatedStatCard stat={STATS_DATA[1]} index={1} active={active} />
+      </View>
+      <View style={{ flexDirection: 'row', width: '100%' }}>
+        <AnimatedStatCard stat={STATS_DATA[2]} index={2} active={active} />
+        <AnimatedStatCard stat={STATS_DATA[3]} index={3} active={active} />
+      </View>
+    </View>
+  );
+}
+
+// ─── Finale Demo (slide 7) ──────────────────────────────────────
+const FINALE_POSTERS = [
+  'https://image.tmdb.org/t/p/w500/ggFHVb15yqAcB4ZtD7ZqE0g99bJ.jpg', // Breaking Bad
+  'https://image.tmdb.org/t/p/w500/gKkl37BQuKTanygYQG1pyYgLVgf.jpg', // Interstellar
+  'https://image.tmdb.org/t/p/w500/f496cm9enuEsZkSPzCwnTESEK5s.jpg', // Friends
+  'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg', // The Dark Knight
+  'https://image.tmdb.org/t/p/w500/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg', // Game of Thrones
+  'https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8TC2PZwAl.jpg', // Stranger Things
+  'https://image.tmdb.org/t/p/w500/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg', // Inception
+  'https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg', // The Matrix
+  'https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPbOYKQcbJ5.jpg', // Pulp Fiction
+  'https://image.tmdb.org/t/p/w500/qWnJzyZwidYxBE130fMacnZ6ZCA.jpg', // The Office
+];
+const FINALE_WORDS = ['Serendipity', 'Resilience', 'Wanderlust', 'Eloquent'];
+
+function FloatingPoster({ uri, active, duration, startY, endY, left, right, scale, rotate, opacity, delay = 0 }: any) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!active) {
+      anim.setValue(0);
+      return;
+    }
+    const t = setTimeout(() => {
+      Animated.loop(
+        Animated.timing(anim, { toValue: 1, duration, easing: Easing.linear, useNativeDriver: true })
+      ).start();
+    }, delay);
+    return () => { clearTimeout(t); anim.stopAnimation(); };
+  }, [active, anim, duration, delay]);
+
+  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [startY, endY] });
+
+  const style: any = { 
+    position: 'absolute', width: 100 * scale, height: 150 * scale, 
+    borderRadius: 12, transform: [{ translateY }, { rotate: `${rotate}deg` }], opacity 
+  };
+  if (left !== undefined) style.left = left;
+  if (right !== undefined) style.right = right;
+
+  return <Animated.Image source={{ uri }} style={style} />;
+}
+
+function SublexFinaleDemo({ active }: { active: boolean }) {
+  const { t } = useTranslation('common');
+  const w = Math.min(width * 0.9, 360);
+  const h = Math.min(height * 0.48, 490);
+
+  const progressW1 = useRef(new Animated.Value(0)).current;
+  const progressW2 = useRef(new Animated.Value(0)).current;
+  
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!active) {
+      progressW1.setValue(0);
+      progressW2.setValue(0);
+      scaleAnim.setValue(0);
+      return;
+    }
+
+    Animated.spring(scaleAnim, { toValue: 1, friction: 5, tension: 40, useNativeDriver: true }).start();
+
+    const loopAnim = (anim: Animated.Value, duration: number) => {
+      Animated.loop(
+        Animated.timing(anim, { toValue: 1, duration, easing: Easing.linear, useNativeDriver: true })
+      ).start();
+    };
+
+    loopAnim(progressW1, 14000);
+    loopAnim(progressW2, 11000);
+  }, [active, progressW1, progressW2, scaleAnim]);
+
+  const word1Y = progressW1.interpolate({ inputRange: [0, 1], outputRange: [h + 50, -100] });
+  const word2Y = progressW2.interpolate({ inputRange: [0, 1], outputRange: [-50, h + 100] });
+
+  return (
+    <View style={{ width: w, height: h, alignItems: 'center', justifyContent: 'center', borderRadius: 24, overflow: 'hidden', backgroundColor: '#1a1a1c', borderWidth: 1, borderColor: '#ffffff14' }}>
+      
+      {/* Background Elements */}
+      <View style={{ position: 'absolute', width: 250, height: 250, borderRadius: 125, backgroundColor: '#8b5cf6', opacity: 0.15, top: -50, left: -50 }} />
+      <View style={{ position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: '#2BFF88', opacity: 0.12, bottom: -40, right: -40 }} />
+
+      {/* 10 Floating Posters */}
+      <FloatingPoster active={active} uri={FINALE_POSTERS[0]} left={10} scale={1} rotate={-12} opacity={0.6} duration={16000} startY={h + 100} endY={-200} />
+      <FloatingPoster active={active} uri={FINALE_POSTERS[1]} right={10} scale={1.1} rotate={8} opacity={0.6} duration={18000} startY={h + 150} endY={-250} delay={2000} />
+      <FloatingPoster active={active} uri={FINALE_POSTERS[2]} left={'30%'} scale={1.2} rotate={5} opacity={0.4} duration={14000} startY={-200} endY={h + 200} delay={1000} />
+      <FloatingPoster active={active} uri={FINALE_POSTERS[3]} right={'25%'} scale={0.9} rotate={-15} opacity={0.5} duration={15000} startY={h + 100} endY={-200} delay={4000} />
+      
+      <FloatingPoster active={active} uri={FINALE_POSTERS[4]} left={-20} scale={0.8} rotate={10} opacity={0.3} duration={19000} startY={h + 50} endY={-300} delay={3000} />
+      <FloatingPoster active={active} uri={FINALE_POSTERS[5]} right={-10} scale={0.75} rotate={-5} opacity={0.4} duration={21000} startY={-150} endY={h + 150} delay={5000} />
+      <FloatingPoster active={active} uri={FINALE_POSTERS[6]} left={'40%'} scale={0.85} rotate={-8} opacity={0.3} duration={17000} startY={h + 200} endY={-150} delay={6000} />
+      <FloatingPoster active={active} uri={FINALE_POSTERS[7]} right={'45%'} scale={1.05} rotate={12} opacity={0.5} duration={22000} startY={-250} endY={h + 250} delay={1500} />
+      <FloatingPoster active={active} uri={FINALE_POSTERS[8]} left={20} scale={0.95} rotate={-18} opacity={0.45} duration={20000} startY={-200} endY={h + 200} delay={7000} />
+      <FloatingPoster active={active} uri={FINALE_POSTERS[9]} right={30} scale={1.15} rotate={15} opacity={0.35} duration={16000} startY={h + 250} endY={-200} delay={8000} />
+
+      {/* Floating Words */}
+      <Animated.View style={{ position: 'absolute', left: 20, backgroundColor: '#2BFF8822', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: '#2BFF8866', transform: [{ translateY: word1Y }, { rotate: '4deg' }] }}>
+         <Text style={{ color: '#2BFF88', fontWeight: '800', fontSize: 16 }}>{FINALE_WORDS[0]}</Text>
+      </Animated.View>
+      <Animated.View style={{ position: 'absolute', right: 20, backgroundColor: '#8b5cf622', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: '#8b5cf666', transform: [{ translateY: word2Y }, { rotate: '-6deg' }] }}>
+         <Text style={{ color: '#8b5cf6', fontWeight: '800', fontSize: 16 }}>{FINALE_WORDS[1]}</Text>
+      </Animated.View>
+      <Animated.View style={{ position: 'absolute', top: 50, left: '35%', backgroundColor: '#3B82F622', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: '#3B82F666', transform: [{ translateY: word1Y }, { rotate: '-10deg' }] }}>
+         <Text style={{ color: '#3B82F6', fontWeight: '800', fontSize: 16 }}>{FINALE_WORDS[2]}</Text>
+      </Animated.View>
+      <Animated.View style={{ position: 'absolute', bottom: 50, right: '35%', backgroundColor: '#F59E0B22', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: '#F59E0B66', transform: [{ translateY: word2Y }, { rotate: '12deg' }] }}>
+         <Text style={{ color: '#F59E0B', fontWeight: '800', fontSize: 16 }}>{FINALE_WORDS[3]}</Text>
+      </Animated.View>
+
+      {/* Fade Gradients for top and bottom so items don't cut off sharply */}
+      <LinearGradient colors={['#1a1a1c', 'transparent']} style={{ position: 'absolute', top: 0, width: '100%', height: 80 }} />
+      <LinearGradient colors={['transparent', '#1a1a1c']} style={{ position: 'absolute', bottom: 0, width: '100%', height: 80 }} />
+
+      {/* Center Sublexify Badge */}
+      <Animated.View style={{ backgroundColor: '#13151B', paddingVertical: 24, paddingHorizontal: 32, borderRadius: 28, borderWidth: 1, borderColor: '#ffffff22', alignItems: 'center', transform: [{ scale: scaleAnim }], elevation: 10, shadowColor: '#2BFF88', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
+         
+         {/* Highly visible stats badge at the top of the card */}
+         <View style={{ position: 'absolute', top: -14, backgroundColor: '#2BFF88', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 12, shadowColor: '#2BFF88', shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } }}>
+           <Text style={{ color: '#000', fontSize: 13, fontWeight: '900', letterSpacing: 0.5 }}>{t('onboarding.contentStats')}</Text>
+         </View>
+
+         <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#2BFF8822', alignItems: 'center', justifyContent: 'center', marginBottom: 12, marginTop: 4 }}>
+            <Image source={require('@/assets/images/sublexify_transparent.png')} style={{ width: 44, height: 44, borderRadius: 22 }} resizeMode="cover" />
+         </View>
+         <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: 1 }}>SUBLEXIFY</Text>
+         <Text style={{ color: TEXT_S, fontSize: 12, fontWeight: '600', marginTop: 4 }}>{t('onboarding.masterVocabulary')}</Text>
+      </Animated.View>
+
+    </View>
+  );
+}
+
 export default function OnboardingScreen() {
   const { t } = useTranslation('common');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -466,6 +995,12 @@ export default function OnboardingScreen() {
       }
       case 'faded':
         return <SceneForget active={currentIndex === index} />;
+      case 'quiz':
+        return <SublexQuizDemo active={currentIndex === index} />;
+      case 'stats':
+        return <SublexStatsDemo active={currentIndex === index} />;
+      case 'finale':
+        return <SublexFinaleDemo active={currentIndex === index} />;
       case 'flip':
         return <SublexFlashcard active={currentIndex === index} />;
       case 'image':
@@ -477,9 +1012,11 @@ export default function OnboardingScreen() {
     <View style={{ width, flex: 1 }}>
       <View style={{ paddingHorizontal: 28, paddingTop: 10 }}>
         <AccentTitle title={t(`onboarding.slides.${item.key}.title`)} accent={t(`onboarding.slides.${item.key}.accent`)} />
-        <Text style={{ color: TEXT_S, fontSize: 16, lineHeight: 24, marginTop: 14 }}>
-          {t(`onboarding.slides.${item.key}.body`)}
-        </Text>
+        <AnimatedBodyText 
+          text={t(`onboarding.slides.${item.key}.body`)} 
+          active={currentIndex === index} 
+          shouldFade={item.type === 'quiz'} 
+        />
       </View>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 16 }}>
         {renderVisual(item, index)}

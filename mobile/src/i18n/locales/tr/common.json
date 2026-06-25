@@ -97,14 +97,14 @@
         "body": "İzlediğin dizi ve filmlerden İngilizce öğrenmene yardım edeceğim. Çünkü en iyi kelimeler en sevdiğin sahnelerde saklı."
       },
       "3": {
-        "title": "Her zaman doğru kelime",
-        "accent": "doğru kelime",
-        "body": "İster daha akıcı konuş, ister o sınavı geç — kendinden emin İngilizce için doğru yerdesin."
+        "title": "Tanışıklık, öğrenmenin ta kendisidir.",
+        "accent": "Tanışıklık",
+        "body": "Önceden çalıştığın kelimeleri, o çok sevdiğin dizinin en heyecanlı sahnelerinde görüp hatırlayınca aslında öğrenmenin zor olmadığını fark edeceksin!"
       },
       "4": {
         "title": "Öğreniyorsun, sonra unutuyorsun",
         "accent": "unutuyorsun",
-        "body": "Senin suçun değil. Yeni kelimeler, özellikle bir kez görürsen, akılda kalmaz."
+        "body": "Senin suçun değil. Yeni kelimeler, özellikle bir kez görürsen, akılda kalmaz. Bu tarz alıştırmalar ile bu kelimeleri istediğin zaman pekiştirebilirsin. Ayrıca uygulama içinde geliştirdiğimiz algoritma sayesinde geçmişte öğrendiğin kelimeleri bile düzenli olarak sana hatırlatmaya devam edeceğiz :)"
       },
       "5": {
         "title": "Sublexify hafıza bilimiyle kelimeleri kalıcı kılar",
@@ -112,20 +112,48 @@
         "body": "İzlediğin içerikteki kelimeleri kartlara ve quizlere dönüştürür; aralıklı tekrarla sen ustalaşana kadar karşına çıkarır."
       },
       "6": {
-        "title": "İzle, kelimeleri yakala",
-        "accent": "kelimeleri yakala",
-        "body": "Bir bölümü aç, bilmediğin kelimelerden tek dokunuşla liste oluştur ve oradan çalış."
+        "title": "Gelişimini adım adım takip et",
+        "accent": "adım adım",
+        "body": "Öğrendiğin, çalıştığın ve zorlandığın kelimeleri detaylı istatistiklerle izle. Motivasyonunu yüksek tut ve hedeflerine ulaş!"
       },
       "7": {
-        "title": "Görsel sözlüğün ve kelime defterin",
-        "accent": "Görsel sözlüğün",
-        "body": "Görevimiz: ihtiyacın olan her kelimeyi bul, öğren ve bir daha asla unutma."
-      }
+        "title": "Kendi macerana başla",
+        "accent": "başla",
+        "body": "Bu özellikler ve sayamayacağımız daha sayısız özellik ile keyifli bir şekilde İngilizce öğrenmek için hadi şimdi başla!"
+      },
+      "masterVocabulary": "Kelime Dağarcığının Ustası Ol",
+      "contentStats": "445 Film • 95 Dizi"
     },
     "tapToFlip": "çevirmek için dokun",
     "verbForms": "FİİL FORMLARI",
     "phrasalVerbs": "PHRASAL VERBS",
-    "captured": "yakalandı"
+    "captured": "yakalandı",
+    "demoQuiz": {
+      "listName": "Friends",
+      "wordCount": "15 kelime · %0 biliniyor",
+      "sessionComplete": "Oturum Tamamlandı",
+      "correct": "DOĞRU",
+      "wrong": "YANLIŞ",
+      "noun": "İSİM",
+      "verb": "FİİL",
+      "adj": "SIFAT",
+      "typeAnswer": "Cevabı yazın...",
+      "q1_text": "Tam ve eksiksiz farkındalık hali.",
+      "q1_c1": "açlık",
+      "q1_c2": "unagi",
+      "q1_c3": "uyku",
+      "q1_c4": "panik",
+      "q1_word": "unagi",
+      "q2_text": "pivot",
+      "q2_c1": "Merkez etrafında dönmek",
+      "q2_c2": "Hareketsiz kalmak",
+      "q2_c3": "Yere düşmek",
+      "q2_c4": "Kaçıp gitmek",
+      "q3_text": "We were on a ______!",
+      "q3_ans": "break"
+    },
+    "contentStats": "536 Dizi & Film",
+    "masterVocabulary": "Sevdiğin içeriklerden kelime öğren"
   },
   "progress": {
     "categories": {

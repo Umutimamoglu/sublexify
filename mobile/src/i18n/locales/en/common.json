@@ -97,14 +97,14 @@
         "body": "I will help you learn English from the shows and films you love. The best words are hidden in your favorite scenes."
       },
       "3": {
-        "title": "Always have the right words",
-        "accent": "right words",
-        "body": "Speak more confidently, sound eloquent, or ace that exam — you are in the right place."
+        "title": "Familiarity is learning itself.",
+        "accent": "Familiarity",
+        "body": "When you spot a word you once studied in the most thrilling scene of your favorite show — and you remember it — you will realize learning was never that hard!"
       },
       "4": {
         "title": "You learn words, then forget them",
         "accent": "forget them",
-        "body": "It is not your fault. New words are hard to remember, especially if you only see them once."
+        "body": "It is not your fault. New words are hard to remember, especially if you only see them once. With exercises like these, you can reinforce these words whenever you want. Also, thanks to the algorithm we developed within the app, we will continue to remind you of even the words you learned in the past on a regular basis :)"
       },
       "5": {
         "title": "Sublexify uses memory science to make words stick",
@@ -112,20 +112,48 @@
         "body": "We turn the words from your shows into flashcards and quizzes, and use spaced repetition until you master them."
       },
       "6": {
-        "title": "Watch, then capture the words",
-        "accent": "capture the words",
-        "body": "Open an episode, build a list from the words you do not know in one tap, and study from it."
+        "title": "Track your progress step by step",
+        "accent": "step by step",
+        "body": "Monitor the words you've learned, practiced, and struggled with through detailed statistics. Keep your motivation high and reach your goals!"
       },
       "7": {
-        "title": "Your visual dictionary and vocabulary builder",
-        "accent": "Your visual dictionary",
-        "body": "Our mission: look up any word you need, learn it, and never forget it again."
-      }
+        "title": "Start your adventure",
+        "accent": "Start",
+        "body": "Start now to learn English enjoyably with these features and countless more we couldn't fit here!"
+      },
+      "masterVocabulary": "Master Your Vocabulary",
+      "contentStats": "445 Movies • 95 Series"
     },
     "tapToFlip": "tap card → flip",
     "verbForms": "VERB FORMS",
     "phrasalVerbs": "PHRASAL VERBS",
-    "captured": "captured"
+    "captured": "captured",
+    "demoQuiz": {
+      "listName": "Friends",
+      "wordCount": "15 words · 0% known",
+      "sessionComplete": "Session Complete",
+      "correct": "CORRECT",
+      "wrong": "WRONG",
+      "noun": "NOUN",
+      "verb": "VERB",
+      "adj": "ADJ",
+      "typeAnswer": "Type answer...",
+      "q1_text": "A state of total awareness.",
+      "q1_c1": "hunger",
+      "q1_c2": "unagi",
+      "q1_c3": "sleep",
+      "q1_c4": "panic",
+      "q1_word": "unagi",
+      "q2_text": "pivot",
+      "q2_c1": "To turn or rotate",
+      "q2_c2": "To stop moving",
+      "q2_c3": "To fall down",
+      "q2_c4": "To run away",
+      "q3_text": "We were on a ______!",
+      "q3_ans": "break"
+    },
+    "contentStats": "536 Series & Films",
+    "masterVocabulary": "Master vocabulary from the content you love"
   },
   "progress": {
     "categories": {
