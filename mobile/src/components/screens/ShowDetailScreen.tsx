@@ -7,6 +7,7 @@ import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useSeriesEpisodes, useWatchedMediaIds, useToggleWatched } from '@/src/api/queries/media.queries';
+import { useGuidedFlowStore } from '@/src/store/guidedFlowStore';
 import type { MediaDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 
@@ -143,6 +144,7 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
   }), [theme]);
   const styles = useMemo(() => makeStyles(c, isTablet), [c, isTablet]);
   const router = useRouter();
+  const { active: guidedActive, step: guidedStep, advanceToMedia } = useGuidedFlowStore();
 
   const { data: episodes = [], isLoading, isError } = useSeriesEpisodes(imdbId);
   const { data: watchedIds = [] } = useWatchedMediaIds();
@@ -205,6 +207,41 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
           <Text style={styles.headerTitle} numberOfLines={1}>{showTitle}</Text>
         </View>
 
+        {/* Guided banner */}
+        {guidedActive && guidedStep === 'discover' && (
+          <View style={{
+            marginHorizontal: 16, marginBottom: 12, marginTop: 6,
+            paddingHorizontal: 20, paddingVertical: 14,
+            backgroundColor: '#2BFF8812',
+            borderRadius: 18,
+            borderWidth: 1.5, borderColor: '#2BFF8855',
+            flexDirection: 'row', alignItems: 'center', gap: 14,
+            shadowColor: '#2BFF88',
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.25,
+            shadowRadius: 12,
+            elevation: 6,
+          }}>
+            <View style={{
+              width: 40, height: 40, borderRadius: 20,
+              backgroundColor: '#2BFF8822',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Ionicons name="film-outline" size={20} color="#2BFF88" />
+            </View>
+            <Text style={{ color: '#2BFF88', fontSize: 15, fontWeight: '800', letterSpacing: -0.2, flex: 1 }}>
+              Bir bölüm seç
+            </Text>
+            <View style={{
+              width: 28, height: 28, borderRadius: 14,
+              backgroundColor: '#2BFF8825',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Text style={{ color: '#2BFF88', fontSize: 16, fontWeight: '900' }}>›</Text>
+            </View>
+          </View>
+        )}
+
         {/* Content */}
         {isLoading ? (
           <ActivityIndicator color={c.PURPLE} style={styles.loader} />
@@ -242,7 +279,10 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
                 <TouchableOpacity
                   style={styles.episodeRow}
                   activeOpacity={0.75}
-                  onPress={() => router.push(`/media/${ep.id}` as any)}
+                  onPress={() => {
+                    if (guidedActive && guidedStep === 'discover') advanceToMedia();
+                    router.push(`/media/${ep.id}` as any);
+                  }}
                 >
                   <WatchButton
                     isWatched={isWatched}
