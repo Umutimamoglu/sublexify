@@ -2,11 +2,12 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useEffect,
   useRef,
 } from 'react';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
-import { View, FlatList, ScrollView, TouchableOpacity, Modal, StyleSheet, StatusBar, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, FlatList, ScrollView, TouchableOpacity, Modal, StyleSheet, StatusBar, ActivityIndicator, Image, Alert, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -15,6 +16,7 @@ import { useResponsive } from '@/src/hooks/useResponsive';
 import { useMediaDetail, useMediaWords, useGenerateListFromMedia, useSeriesEpisodes } from '@/src/api/queries/media.queries';
 import { useLocalSearchParams } from 'expo-router';
 import { useKnownWords } from '@/src/api/queries/user.queries';
+import { useGuidedFlowStore } from '@/src/store/guidedFlowStore';
 import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries';
 import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
@@ -89,7 +91,7 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
     toggleThumb:  { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' },
 
     // Chips
-    chipScroll:   { paddingHorizontal: 16, paddingBottom: 12, flexGrow: 0 },
+    chipScroll:   { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, flexGrow: 0 },
     chip:         { width: 52, height: 34, borderRadius: 20, marginRight: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
     chipText:     { fontSize: 12, fontWeight: '700' },
     chipBadge:    { position: 'absolute', top: -5, right: -5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
@@ -113,11 +115,11 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 
     // Bottom CTA
     ctaBar:         { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: isDark ? '#ffffff0f' : '#e0e0ea', flexDirection: 'row' as const, gap: 10 },
-    ctaBtn:         { flex: 1, backgroundColor: c.PURPLE, borderRadius: 12, paddingVertical: 14, alignItems: 'center' as const, justifyContent: 'center' as const, flexDirection: 'row' as const, gap: 6 },
+    ctaBtn:         { flex: 1, backgroundColor: c.PURPLE, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center' as const, justifyContent: 'center' as const, flexDirection: 'row' as const, gap: 4 },
     ctaBtnOutline:  { backgroundColor: c.PURPLE + '15', borderWidth: 1.5, borderColor: c.PURPLE },
     ctaBtnDis:      { opacity: 0.4 },
-    ctaText:        { color: '#fff', fontSize: 13, fontWeight: '700' as const },
-    ctaTextOutline: { color: c.PURPLE, fontSize: 13, fontWeight: '700' as const },
+    ctaText:        { color: '#fff', fontSize: 12, fontWeight: '700' as const, textAlign: 'center' as const },
+    ctaTextOutline: { color: c.PURPLE, fontSize: 12, fontWeight: '700' as const, textAlign: 'center' as const },
 
     // Mark Known Modal
     mkOverlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' as const },
@@ -143,11 +145,11 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean) {
 type Styles = ReturnType<typeof makeStyles>;
 
 function MarkKnownModal({
-  visible, levels, wordCount, onClose, onConfirm, loading, styles, c,
+  visible, levels, wordCount, onClose, onConfirm, loading, styles,
 }: {
   visible: boolean; levels: string[]; wordCount: number;
   onClose: () => void; onConfirm: () => void; loading: boolean;
-  styles: Styles; c: Palette;
+  styles: Styles;
 }) {
   const { t: tCommon } = useTranslation('common');
   return (
@@ -338,7 +340,17 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
     return idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null;
   }, [fromContinue, media, seriesEpisodes]);
 
+  // ─── Guided flow ─────────────────────────────────────────────
+  const { active: guidedActive, step: guidedStep, finish: finishGuided } = useGuidedFlowStore();
+  const isGuidedMedia = guidedActive && guidedStep === 'media';
 
+  // Auto-select A1 when guided mode activates
+  useEffect(() => {
+    if (isGuidedMedia) setSelectedLevels(new Set(['A1']));
+  }, [isGuidedMedia]);
+
+  // Bouncing arrow ref — effect runs after guidedReady is declared below
+  const arrowAnim = useRef(new Animated.Value(0)).current;
 
   // ─── Filtered words ───────────────────────────────────────
   const filteredWords = useMemo<WordDTO[]>(() => {
@@ -377,6 +389,15 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
 
   // ─── Generate list ────────────────────────────────────────
   const handleGenerate = useCallback(() => {
+    if (isGuidedMedia) {
+      generateList(mediaId, {
+        onSuccess: () => {
+          finishGuided();
+          router.replace('/(tabs)/lists' as any);
+        },
+      });
+      return;
+    }
     Alert.alert(
       t('generateListTitle'),
       t('generateListMessage'),
@@ -396,7 +417,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         },
       ],
     );
-  }, [generateList, mediaId, router, t, tCommon]);
+  }, [generateList, mediaId, router, t, tCommon, isGuidedMedia, finishGuided]);
 
   // ─── Computed values ──────────────────────────────────────
   const knownPct    = media?.knownWordPercentage ?? 0;
@@ -409,6 +430,47 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
     }
     return wordData?.unknownWords ?? 0;
   }, [media, wordData?.unknownWords]);
+
+  // Guided: count A1 words the user has marked as KNOWN (tapped ✓).
+  // Counts from ALL words (not the active filter) so it stays stable after we
+  // deselect the A1 chip once the user hits 10.
+  const guidedKnownCount = useMemo(() => {
+    if (!isGuidedMedia) return 0;
+    return (wordData?.words ?? []).filter(w => w.difficulty === 'A1' && knownIdsSet.has(w.id)).length;
+  }, [isGuidedMedia, wordData?.words, knownIdsSet]);
+
+  // Latch "ready" once the user reaches 10, then drop the A1 filter so the
+  // full unknown list shows and the Create-List button becomes the focus.
+  const [guidedReady, setGuidedReady] = useState(false);
+  useEffect(() => {
+    if (isGuidedMedia && !guidedReady && guidedKnownCount >= 10) {
+      setGuidedReady(true);
+      setSelectedLevels(new Set());
+    }
+  }, [isGuidedMedia, guidedReady, guidedKnownCount]);
+
+  // Progress 0→1 as user marks words 0→10
+  const guidedProgress = guidedReady ? 1 : Math.min(guidedKnownCount / 10, 1);
+  // Button color interpolates: #333 (dark gray) → #2BFF88 (neon green)
+  const guidedBtnColor = guidedReady ? '#2BFF88' : (() => {
+    const r = Math.round(0x33 + (0x2B - 0x33) * guidedProgress);
+    const g = Math.round(0x33 + (0xFF - 0x33) * guidedProgress);
+    const b = Math.round(0x33 + (0x88 - 0x33) * guidedProgress);
+    return `rgb(${r},${g},${b})`;
+  })();
+  const guidedBtnOpacity = guidedReady ? 1 : 0.4 + 0.6 * guidedProgress;
+
+  useEffect(() => {
+    if (!guidedReady) { arrowAnim.setValue(0); return; }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(arrowAnim, { toValue: 8, duration: 420, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(arrowAnim, { toValue: 0, duration: 420, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [guidedReady, arrowAnim]);
 
   const isLoading = mediaLoading || wordsLoading;
 
@@ -555,11 +617,40 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
           </Text>
         </View>
 
+        {/* Guided instruction banner */}
+        {isGuidedMedia && !isLoading && !guidedReady && (
+          <View style={{
+            marginHorizontal: 16, marginTop: 12, marginBottom: 8,
+            paddingHorizontal: 18, paddingVertical: 14,
+            backgroundColor: '#2BFF8812',
+            borderRadius: 18,
+            borderWidth: 1.5, borderColor: '#2BFF8850',
+            flexDirection: 'row', alignItems: 'center', gap: 14,
+            shadowColor: '#2BFF88',
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.2,
+            shadowRadius: 10,
+            elevation: 5,
+          }}>
+            <View style={{
+              width: 40, height: 40, borderRadius: 20,
+              backgroundColor: '#2BFF8820',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Ionicons name="pencil-outline" size={20} color="#2BFF88" />
+            </View>
+            <Text style={{ color: '#2BFF88', fontSize: 13, fontWeight: '700', flex: 1, lineHeight: 19 }}>
+              Bildiğin kelimelere dokunarak işaretle
+            </Text>
+          </View>
+        )}
+
         {isLoading ? (
           <View style={styles.center}>
             <ActivityIndicator color={c.PURPLE} size="large" />
           </View>
         ) : (
+          <>
           <FlatList
             data={filteredWords}
             keyExtractor={(item) => String(item.id)}
@@ -584,34 +675,111 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
             extraData={knownIdsSet}
             contentContainerStyle={{ paddingBottom: 16 }}
           />
+          </>
+        )}
+
+        {/* Guided: progress bar + counter / bounce arrow */}
+        {isGuidedMedia && !isLoading && unknownCount > 0 && (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 6 }}>
+            {guidedReady ? (
+              <View style={{ alignItems: 'center', paddingVertical: 2 }}>
+                <Animated.Text style={{ fontSize: 22, transform: [{ translateY: arrowAnim }] }}>
+                  👇
+                </Animated.Text>
+              </View>
+            ) : (
+              <>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Text style={{ color: c.TEXT_S, fontSize: 12, fontWeight: '600' }}>
+                    Bildiğin kelimeleri işaretle
+                  </Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: guidedBtnColor }}>
+                    {guidedKnownCount} / 10
+                  </Text>
+                </View>
+                {/* Progress bar */}
+                <View style={{ height: 5, borderRadius: 3, backgroundColor: c.SURFACE2, overflow: 'hidden' }}>
+                  <View style={{
+                    height: '100%',
+                    borderRadius: 3,
+                    width: `${guidedProgress * 100}%`,
+                    backgroundColor: guidedBtnColor,
+                    shadowColor: guidedBtnColor,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: guidedProgress > 0.5 ? 0.8 : 0,
+                    shadowRadius: 6,
+                  }} />
+                </View>
+              </>
+            )}
+          </View>
         )}
 
         {/* Bottom CTA */}
         {!isLoading && (selectedLevels.size > 0 || unknownCount > 0) && (
           <View style={styles.ctaBar}>
-            {selectedLevels.size > 0 && (
+            {selectedLevels.size > 0 && !isGuidedMedia && (
               <TouchableOpacity
-                style={[styles.ctaBtn, styles.ctaBtnOutline]}
+                style={[
+                  styles.ctaBtn,
+                  styles.ctaBtnOutline,
+                  isGuidedMedia && !guidedReady && {
+                    opacity: guidedBtnOpacity,
+                    borderColor: c.BORDER,
+                    borderStyle: 'dashed' as const,
+                  },
+                ]}
                 onPress={() => setShowMarkModal(true)}
+                disabled={isGuidedMedia && !guidedReady}
                 activeOpacity={0.85}
               >
-                <Ionicons name="checkmark-circle-outline" size={15} color={c.PURPLE} />
-                <Text style={styles.ctaTextOutline} numberOfLines={1}>
+                {isGuidedMedia && !guidedReady
+                  ? <Ionicons name="lock-closed" size={14} color={c.TEXT_S} />
+                  : <Ionicons name="checkmark-circle-outline" size={15} color={c.PURPLE} />
+                }
+                <Text style={[styles.ctaTextOutline, isGuidedMedia && !guidedReady && { color: c.TEXT_S }]} numberOfLines={1}>
                   {[...selectedLevels].sort().join(' · ')} → {tCommon('media.known_count', { count: 0 }).replace('0', '').trim()}
                 </Text>
               </TouchableOpacity>
             )}
             {unknownCount > 0 && (
               <TouchableOpacity
-                style={[styles.ctaBtn, generating && styles.ctaBtnDis]}
+                style={[
+                  styles.ctaBtn,
+                  generating && styles.ctaBtnDis,
+                  isGuidedMedia && !guidedReady && {
+                    opacity: guidedBtnOpacity,
+                    backgroundColor: guidedBtnColor,
+                    shadowColor: guidedBtnColor,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: guidedProgress * 0.6,
+                    shadowRadius: guidedProgress * 12,
+                    elevation: Math.round(guidedProgress * 8),
+                  },
+                  guidedReady && {
+                    backgroundColor: '#2BFF88',
+                    shadowColor: '#2BFF88',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.7,
+                    shadowRadius: 18,
+                    elevation: 12,
+                  },
+                ]}
                 onPress={handleGenerate}
-                disabled={generating}
+                disabled={generating || (isGuidedMedia && !guidedReady)}
                 activeOpacity={0.85}
               >
                 {generating ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={guidedReady ? '#0B0D12' : '#fff'} size="small" />
+                ) : isGuidedMedia && !guidedReady ? (
+                  <>
+                    <Ionicons name="lock-closed" size={13} color={c.TEXT_S} />
+                    <Text style={[styles.ctaText, { color: c.TEXT_S }]} numberOfLines={2}>
+                      {t('createSubListCtaMedia', { count: unknownCount })}
+                    </Text>
+                  </>
                 ) : (
-                  <Text style={styles.ctaText}>
+                  <Text style={[styles.ctaText, guidedReady && { color: '#0B0D12', fontWeight: '900' }]} numberOfLines={2}>
                     {t('createSubListCtaMedia', { count: unknownCount })}
                   </Text>
                 )}
@@ -677,7 +845,6 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         onConfirm={handleMarkKnown}
         loading={marking}
         styles={styles}
-        c={c}
       />
 
       <AddToListModal
