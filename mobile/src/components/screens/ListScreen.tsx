@@ -23,6 +23,7 @@ import { GestureDetector, Gesture, Switch } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
+import { speakText, stopTts } from '@/src/utils/tts';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -38,6 +39,9 @@ import AddToListModal from '@/src/components/ui/AddToListModal';
 import { FlashCardBack } from '@/src/components/ui/FlashCard';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Tooltip from 'react-native-walkthrough-tooltip';
+import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
 import type { ListWord, Difficulty } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 
@@ -46,6 +50,7 @@ import { Text } from '@/src/components/ui/Text';
 
 // Strips trailing parenthetical TR translation: "example. (örnek.)" → "example."
 const stripTr = (text?: string) => text?.replace(/\s*\([^)]+\)\s*$/, '').trim();
+const getTurkishExample = (text?: string) => text?.match(/\(([^)]+)\)\s*$/)?.[1] || '';
 
 type Palette = {
   BG: string; SURFACE: string; SURFACE2: string;
@@ -681,7 +686,7 @@ function SwipeableWordRow({
     <RightActions
       progress={progress}
       onAddToList={onAddToList}
-      onTts={() => Speech.speak(word.word, { language: 'en-US' })}
+      onTts={() => speakText(word.word, 'en-US')}
       onRemove={onRemove ? handleDelete : undefined}
       onClose={() => swipeRef.current?.close()}
       styles={styles}
@@ -799,6 +804,8 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
   // ─── State ────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  // One-time hint pointing at the view-mode toggle (list ↔ flashcard)
+  const [showViewHint, setShowViewHint] = useState(false);
   const [onlyUnknown, setOnlyUnknown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchActive, setSearchActive] = useState(false);
@@ -813,6 +820,14 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
   const [previewWord, setPreviewWord] = useState<ListWord | null>(null);
   const hintShown = useRef(false);
+  
+  // Auto Play State
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [activeAutoPlayWordId, setActiveAutoPlayWordId] = useState<number | null>(null);
+  const autoPlayIndexRef = useRef(0);
+  const isAutoPlayingRef = useRef(false);
+  const autoPlayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Derive from query cache — onMutate updates it instantly (same pattern as VocabularyScreen)
   const knownIdsSet = useMemo(() => new Set(knownWordsData.map((w) => w.id)), [knownWordsData]);
 
@@ -823,6 +838,108 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   }, []);
 
 
+
+  // One-time hint for the view-toggle button — shown once ever, after a list loads
+  const viewHintChecked = useRef(false);
+  useEffect(() => {
+    if (viewHintChecked.current || isLoading) return;
+    viewHintChecked.current = true;
+    AsyncStorage.getItem('@list_view_toggle_hint_shown').then((seen) => {
+      if (seen !== 'true') {
+        setTimeout(() => setShowViewHint(true), 600);
+      }
+    });
+  }, [isLoading]);
+
+  const dismissViewHint = useCallback(() => {
+    setShowViewHint(false);
+    AsyncStorage.setItem('@list_view_toggle_hint_shown', 'true');
+  }, []);
+
+  // ─── Auto Play TTS Logic ──────────────────────────────────
+  const stopAutoPlay = useCallback(() => {
+    isAutoPlayingRef.current = false;
+    setIsAutoPlaying(false);
+    setActiveAutoPlayWordId(null);
+    stopTts();
+    if (autoPlayTimeoutRef.current) {
+      clearTimeout(autoPlayTimeoutRef.current);
+      autoPlayTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => stopAutoPlay(); // Cleanup on unmount
+  }, [stopAutoPlay]);
+
+  const toggleAutoPlay = useCallback(() => {
+    if (isAutoPlayingRef.current) {
+      stopAutoPlay();
+      return;
+    }
+    
+    if (filteredWords.length === 0) return;
+
+    isAutoPlayingRef.current = true;
+    setIsAutoPlaying(true);
+    autoPlayIndexRef.current = 0;
+
+    const playNextWord = () => {
+      if (!isAutoPlayingRef.current) return;
+      
+      if (autoPlayIndexRef.current >= filteredWords.length) {
+        stopAutoPlay();
+        return;
+      }
+      
+      const currentWord = filteredWords[autoPlayIndexRef.current];
+      setActiveAutoPlayWordId(currentWord.id);
+      
+      const enWord = currentWord.word;
+      const trMeaning = currentWord.definition?.meanings?.[0]?.definition;
+      const exampleText = currentWord.definition?.meanings?.[0]?.example;
+      const enExample = stripTr(exampleText);
+      const trExample = getTurkishExample(exampleText);
+      
+      const sequence: { text: string; lang: string }[] = [];
+      if (enWord) sequence.push({ text: enWord, lang: 'en-US' });
+      if (trMeaning) sequence.push({ text: trMeaning, lang: 'tr-TR' });
+      if (enExample) sequence.push({ text: enExample, lang: 'en-US' });
+      if (trExample) sequence.push({ text: trExample, lang: 'tr-TR' });
+      
+      let step = 0;
+      
+      const playNextStep = () => {
+        if (!isAutoPlayingRef.current) return;
+        
+        if (step >= sequence.length) {
+          autoPlayIndexRef.current++;
+          autoPlayTimeoutRef.current = setTimeout(playNextWord, 1000);
+          return;
+        }
+        
+        const item = sequence[step];
+        step++;
+        
+        speakText(item.text, item.lang as any, {
+          language: item.lang,
+          rate: 0.9,
+          onDone: () => {
+            if (!isAutoPlayingRef.current) return;
+            autoPlayTimeoutRef.current = setTimeout(playNextStep, 500);
+          },
+          onError: () => {
+            if (!isAutoPlayingRef.current) return;
+            autoPlayTimeoutRef.current = setTimeout(playNextStep, 500);
+          }
+        });
+      };
+      
+      playNextStep();
+    };
+    
+    playNextWord();
+  }, [filteredWords, stopAutoPlay]);
 
   // ─── Filtered words ───────────────────────────────────────
   const filteredWords = useMemo<ListWord[]>(() => {
@@ -1083,16 +1200,47 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             <Ionicons name="search-outline" size={16} color={searchActive ? '#fff' : c.TEXT_S} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.toggleBtn}
-            onPress={() => setViewMode(viewMode === 'list' ? 'flashcard' : 'list')}
+            style={[styles.toggleBtn, isAutoPlaying && styles.toggleActive]}
+            onPress={toggleAutoPlay}
             activeOpacity={0.75}
           >
-            <Ionicons
-              name={viewMode === 'list' ? 'albums-outline' : 'list-outline'}
-              size={18}
-              color={c.TEXT_S}
-            />
+            <Ionicons name={isAutoPlaying ? "stop-circle-outline" : "play-circle-outline"} size={20} color={isAutoPlaying ? '#fff' : c.TEXT_S} />
           </TouchableOpacity>
+          <Tooltip
+            isVisible={showViewHint}
+            content={<TourTooltipContent
+              onPress={dismissViewHint}
+              icon="albums-outline"
+              title="Çalışma modunu değiştir"
+              text="Buradan kelimeleri kart kart çevirerek (flashcard) çalışabilir ya da liste görünümüne geri dönebilirsin. Hadi dene!"
+              isLast={true}
+            />}
+            placement="bottom"
+            onClose={dismissViewHint}
+            backgroundColor="transparent"
+            showChildInTooltip={false}
+            closeOnBackgroundInteraction
+            closeOnContentInteraction={false}
+            closeOnChildInteraction={false}
+            contentStyle={TOUR_CARD_STYLE}
+            arrowSize={{ width: 18, height: 9 }}
+            arrowStyle={{ borderBottomColor: TOUR_NEON }}
+            disableShadow={false}
+            topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
+            displayInsets={{ top: 24, bottom: 24, left: 12, right: 12 }}
+          >
+            <TouchableOpacity
+              style={styles.toggleBtn}
+              onPress={() => setViewMode(viewMode === 'list' ? 'flashcard' : 'list')}
+              activeOpacity={0.75}
+            >
+              <Ionicons
+                name={viewMode === 'list' ? 'albums-outline' : 'list-outline'}
+                size={18}
+                color={c.TEXT_S}
+              />
+            </TouchableOpacity>
+          </Tooltip>
         </View>
 
         {/* Search bar */}
@@ -1248,7 +1396,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
                     <View style={styles.ttsRow}>
                       <TouchableOpacity
                         style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
-                        onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
+                        onPress={() => speakText(currentWord.word, 'en-US')}
                         onPressIn={() => { buttonActiveRef.current = true; }}
                         onPressOut={() => { buttonActiveRef.current = false; }}
                         activeOpacity={0.7}
@@ -1258,7 +1406,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
                       {!!stripTr(currentWord.definition?.meanings?.[0]?.example) && (
                         <TouchableOpacity
                           style={[styles.cardSentenceTtsBtn, { borderColor: c.BORDER }]}
-                          onPress={() => Speech.speak(stripTr(currentWord.definition!.meanings[0].example)!, { language: 'en-US' })}
+                          onPress={() => speakText(stripTr(currentWord.definition!.meanings[0].example)!, 'en-US')}
                           onPressIn={() => { buttonActiveRef.current = true; }}
                           onPressOut={() => { buttonActiveRef.current = false; }}
                           activeOpacity={0.7}

@@ -150,7 +150,8 @@ export default function SettingsScreen() {
     language, setLanguage, 
     dailyReviewCount, setDailyReviewCount,
     activeBrandPalette, setActiveBrandPalette,
-    setCustomBrandHex, customBrandHex
+    setCustomBrandHex, customBrandHex,
+    preferredVoiceGender, setVoiceGender
   } = useSettingsStore();
   const { t } = useTranslation('profile');
   const { isTablet } = useResponsive();
@@ -188,6 +189,12 @@ export default function SettingsScreen() {
   const langOptions: { label: string; value: SupportedLanguage }[] = [
     { label: t('languageEn'), value: 'en' },
     { label: t('languageTr'), value: 'tr' },
+  ];
+
+  const voiceGenderOptions: { label: string; value: 'system' | 'female' | 'male' }[] = [
+    { label: 'Sistem', value: 'system' },
+    { label: 'Kadın', value: 'female' },
+    { label: 'Erkek', value: 'male' },
   ];
 
   const handleLanguageChange = async (lang: SupportedLanguage) => {
@@ -310,6 +317,39 @@ export default function SettingsScreen() {
                     </Text>
                   </TouchableOpacity>
                 ))}
+              </View>
+            </View>
+          </View>
+
+          {/* ── Voice & Speech Settings ── */}
+          <Text style={styles.sectionLabel}>Seslendirme (TTS)</Text>
+          <View style={styles.card}>
+            <View style={styles.settingsRow}>
+              <Text style={styles.rowLabel}>Ses Tercihi</Text>
+              <View style={styles.chipRow}>
+                {voiceGenderOptions.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.chip, preferredVoiceGender === opt.value && styles.chipActive]}
+                    onPress={() => setVoiceGender(opt.value)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={preferredVoiceGender === opt.value ? styles.chipTextActive : styles.chipText}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={[styles.tileDivider, { marginHorizontal: 0 }]} />
+
+            <View style={{ padding: 16, backgroundColor: isDark ? '#3B82F620' : '#E0F2FE', borderRadius: 12, marginVertical: 4 }}>
+              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+                <Ionicons name="information-circle" size={22} color={isDark ? '#60A5FA' : '#0284C7'} style={{ marginTop: 2 }} />
+                <Text style={{ flex: 1, fontSize: 13, lineHeight: 20, color: isDark ? '#93C5FD' : '#0369A1' }}>
+                  Daha doğal bir deneyim için cihaz ayarlarından (Erişilebilirlik {'>'} Metin Okuma veya Seslendirilen İçerik) yüksek kaliteli 'Siri' veya 'Premium' dil paketlerini indirebilirsiniz.
+                </Text>
               </View>
             </View>
           </View>

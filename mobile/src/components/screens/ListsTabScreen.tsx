@@ -15,7 +15,10 @@ import { Image } from 'expo-image';
 import type { WordListDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 import { useListsTourStore } from '@/src/store/listsTourStore';
-import { TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
+import { TourOverlay } from '@/src/components/ui/TourOverlay';
+import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
+import Tooltip from 'react-native-walkthrough-tooltip';
+import { ShimmerOverlay } from '@/src/components/ui/ShimmerOverlay';
 
 // İlk defa giren kullanıcının henüz kişisel listesi olmadığı için, listeler
 // ekranını ve görünürlük özelliğini tanıtmak üzere gösterilen örnek (dummy)
@@ -229,6 +232,7 @@ function ListCard({
   isHidden,
   drag,
   isActive,
+  shimmer,
   styles,
   c,
 }: {
@@ -241,6 +245,7 @@ function ListCard({
   isHidden: boolean;
   drag?: () => void;
   isActive?: boolean;
+  shimmer?: boolean;
   styles: Styles;
   c: Palette;
 }) {
@@ -333,10 +338,12 @@ function ListCard({
           </View>
           {!item.isSystem && (
             <View style={styles.listCardActions}>
-              <TouchableOpacity style={styles.hideBtn} onPress={onToggleHidden} activeOpacity={0.7}>
+              <TouchableOpacity style={[styles.hideBtn, { overflow: 'hidden' }]} onPress={onToggleHidden} activeOpacity={0.7}>
+                {shimmer && <ShimmerOverlay active bandColor="rgba(43,255,136,0.45)" />}
                 <Ionicons name={isHidden ? 'eye-off-outline' : 'eye-outline'} size={13} color={isHidden ? '#F59E0B' : c.TEXT_S} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.editBtn} onPress={onEdit} activeOpacity={0.7}>
+              <TouchableOpacity style={[styles.editBtn, { overflow: 'hidden' }]} onPress={onEdit} activeOpacity={0.7}>
+                {shimmer && <ShimmerOverlay active bandColor="rgba(43,255,136,0.45)" />}
                 <Ionicons name="pencil-outline" size={13} color={c.TEXT_S} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.deleteBtn} onPress={onDelete} activeOpacity={0.7}>
@@ -849,6 +856,7 @@ export default function ListsTabScreen() {
                       toggleHidden(item.id);
                     }
                   }}
+                  shimmer={showTour}
                   styles={styles}
                   c={c}
                 />
@@ -922,14 +930,26 @@ export default function ListsTabScreen() {
             zIndex: 300,
           }}
         >
-          <View style={TOUR_CARD_STYLE}>
-            <TourTooltipContent
-              title="Listelerin 📋"
-              text="Bu ekranda kendi kelime listelerin durur — izlediğin dizi/filmlerden çıkardığın kelimeleri buradan çalışırsın. İstemediğin listeleri 👁 ile gizleyebilir, sağ üstteki düğmeyle görünümü sadeleştirebilirsin."
-              isLast={false}
-              onPress={finishTour}
-            />
-          </View>
+          <Tooltip
+            isVisible={showTour}
+            content={
+              <TourTooltipContent
+                title="Listelerin 📋"
+                text="Bu ekranda kendi kelime listelerin durur — izlediğin dizi/filmlerden çıkardığın kelimeleri buradan çalışırsın. İstemediğin listeleri 👁 ile gizleyebilir, sağ üstteki düğmeyle görünümü sadeleştirebilirsin."
+                isLast={false}
+                onPress={finishTour}
+              />
+            }
+            placement="top"
+            onClose={finishTour}
+            backgroundColor="rgba(0,0,0,0.65)"
+            closeOnBackgroundInteraction={false}
+            contentStyle={TOUR_CARD_STYLE}
+            arrowStyle={{ borderBottomColor: TOUR_NEON }}
+            disableShadow={false}
+          >
+            <View style={{ width: 1, height: 1 }} />
+          </Tooltip>
         </View>
       )}
     </View>
