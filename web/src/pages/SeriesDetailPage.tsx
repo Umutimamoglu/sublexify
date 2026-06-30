@@ -1,25 +1,51 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MediaService, { type Media } from '@/services/MediaService';
-import { Loader2, ArrowLeft, Play, Clock, Star } from 'lucide-react';
+import api from '@/services/api';
+import { Loader2, ArrowLeft, Play, Clock, Star, CheckCircle2, Circle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/utils/cn';
 
 const SeriesDetailPage = () => {
     const { tmdbId } = useParams<{ tmdbId: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
     const [mediaList, setMediaList] = useState<Media[]>([]);
+    const [watchedIds, setWatchedIds] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedSeason, setSelectedSeason] = useState<number>(1);
 
     useEffect(() => {
-        const fetchMedia = async () => {
-            const data = await MediaService.getAllMedia(1);
-            setMediaList(data);
-            setLoading(false);
+        const fetchData = async () => {
+            try {
+                const [mediaData, watchedRes] = await Promise.all([
+                    MediaService.getAllMedia(1),
+                    api.get('/media/watched-ids').catch(() => ({ data: [] }))
+                ]);
+                setMediaList(mediaData);
+                setWatchedIds(watchedRes.data);
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
         };
-        fetchMedia();
+        fetchData();
     }, []);
+
+    const toggleWatched = async (e: React.MouseEvent, episodeId: number) => {
+        e.stopPropagation();
+        const isWatched = watchedIds.includes(episodeId);
+        // Optimistic
+        setWatchedIds(prev => isWatched ? prev.filter(id => id !== episodeId) : [...prev, episodeId]);
+        try {
+            await api.post(`/media/${episodeId}/toggle-watched`);
+        } catch (e) {
+            console.error(e);
+            // Revert
+            setWatchedIds(prev => !isWatched ? prev.filter(id => id !== episodeId) : [...prev, episodeId]);
+        }
+    };
 
     // Get all episodes for this series
     const seriesEpisodes = useMemo(() => {
@@ -125,6 +151,22 @@ const SeriesDetailPage = () => {
                                     <Play className="w-8 h-8 opacity-50" />
                                 </div>
                             )}
+                            
+                            <button 
+                                onClick={(e) => toggleWatched(e, episode.id)}
+                                className={cn(
+                                    "absolute bottom-1 right-1 p-1 rounded-full shadow-md transition-all hover:scale-110",
+                                    watchedIds.includes(episode.id) 
+                                        ? "bg-emerald-500 text-white" 
+                                        : "bg-black/40 backdrop-blur-sm text-white/70 hover:bg-black/60"
+                                )}
+                            >
+                                {watchedIds.includes(episode.id) ? (
+                                    <CheckCircle2 className="w-4 h-4" />
+                                ) : (
+                                    <Circle className="w-4 h-4" />
+                                )}
+                            </button>
                         </div>
 
                         <div className="flex flex-col justify-center">
