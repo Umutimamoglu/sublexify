@@ -1,12 +1,14 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import WordListService, { type WordListDTO, type WordListWordsResponseDTO } from '@/services/WordListService';
 import WordCard from '@/components/features/WordCard';
-import { Loader2, Plus, Trash2, ChevronRight, Book, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock, PlayCircle, Pencil, X, Eye, EyeOff } from 'lucide-react';
+import { FlashCard } from '@/components/features/FlashCardComponents';
+import { Loader2, Plus, Trash2, ChevronRight, Book, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock, PlayCircle, Pencil, X, Eye, EyeOff, List, Grid3X3, Volume2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import api from '@/services/api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useListPreferencesStore } from '@/store/useListPreferencesStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
 
 const UserListsPage = () => {
     const [lists, setLists] = useState<WordListDTO[]>([]);
@@ -24,6 +26,15 @@ const UserListsPage = () => {
     const [visibleCount, setVisibleCount] = useState(50);
     const { t } = useTranslation();
     const { globalHide, hiddenIds, toggleGlobalHide, toggleHide } = useListPreferencesStore();
+    
+    // View Modes
+    const [viewMode, setViewMode] = useState<'list' | 'flashcard'>('list');
+    const [currentCardIndex, setCurrentCardIndex] = useState(0);
+    
+    // Auto Play State
+    const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+    const autoPlayRef = useRef(false);
+    const { preferredVoiceGender } = useSettingsStore();
     
     // Actions
     const [isGeneratingList, setIsGeneratingList] = useState(false);
@@ -192,6 +203,8 @@ const UserListsPage = () => {
                 setWordData(data);
             }
             setVisibleCount(50); // Reset pagination on list change
+            setCurrentCardIndex(0); // Reset flashcard index on list change
+            stopAutoPlay();
         } catch (error) {
             console.error("Failed to fetch words", error);
         } finally {
@@ -249,6 +262,86 @@ const UserListsPage = () => {
             console.error('Failed to update word status', err);
         }
     };
+
+    // Auto Play Logic
+    const startAutoPlay = async () => {
+        setIsAutoPlaying(true);
+        autoPlayRef.current = true;
+        setViewMode('flashcard');
+        
+        const voices = window.speechSynthesis.getVoices();
+        let targetVoice: SpeechSynthesisVoice | null = null;
+        if (preferredVoiceGender !== 'system') {
+             targetVoice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes(preferredVoiceGender === 'female' ? 'siri' : 'premium')) || voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes(preferredVoiceGender)) || null;
+        }
+
+        const speakText = (text: string, lang = 'en-US'): Promise<void> => {
+            return new Promise((resolve) => {
+                if (!autoPlayRef.current) return resolve();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = lang;
+                u.rate = 1.0;
+                u.pitch = 1.0;
+                if (targetVoice && lang.startsWith('en')) u.voice = targetVoice;
+                
+                // Keep global reference to prevent Safari/Chrome GC bug mid-speech
+                (window as any)._autoPlayUtterance = u;
+                
+                u.onend = () => resolve();
+                u.onerror = () => resolve();
+                window.speechSynthesis.speak(u);
+            });
+        };
+
+        const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+        for (let i = currentCardIndex; i < filteredWords.length; i++) {
+            if (!autoPlayRef.current) break;
+            setCurrentCardIndex(i);
+            const w = filteredWords[i];
+            
+            // 1. English word
+            await speakText(w.word, 'en-US');
+            await sleep(500);
+            if (!autoPlayRef.current) break;
+
+            // 2. Turkish meaning
+            const meaning = w.definition?.meanings?.[0]?.definition;
+            if (meaning) {
+                await speakText(meaning, 'tr-TR');
+                await sleep(500);
+            }
+            if (!autoPlayRef.current) break;
+
+            // 3. English example
+            const example = w.definition?.meanings?.[0]?.example;
+            if (example) {
+                await speakText(example, 'en-US');
+                await sleep(800);
+            }
+            if (!autoPlayRef.current) break;
+            
+            // 4. Turkish example
+            const exampleTr = (w.definition?.meanings?.[0] as any)?.exampleTr;
+            if (exampleTr) {
+                await speakText(exampleTr, 'tr-TR');
+                await sleep(1000);
+            }
+        }
+        
+        setIsAutoPlaying(false);
+        autoPlayRef.current = false;
+    };
+
+    const stopAutoPlay = () => {
+        setIsAutoPlaying(false);
+        autoPlayRef.current = false;
+        window.speechSynthesis.cancel();
+    };
+
+    useEffect(() => {
+        return () => stopAutoPlay();
+    }, []);
 
     const handleDeleteWord = async (listId: number, wordId: number) => {
         try {
@@ -541,6 +634,22 @@ const UserListsPage = () => {
                                             </div>
                                             
                                             <div className="flex flex-wrap items-center gap-2">
+                                                {isAutoPlaying ? (
+                                                    <button
+                                                        onClick={stopAutoPlay}
+                                                        className="flex items-center gap-2 px-6 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold rounded-xl transition-all whitespace-nowrap border border-rose-200"
+                                                    >
+                                                        Duraklat
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={startAutoPlay}
+                                                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-xl transition-all whitespace-nowrap border border-indigo-100"
+                                                    >
+                                                        <Volume2 className="w-5 h-5" />
+                                                        Otomatik Çal
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => setIsQuizModalOpen(true)}
                                                     className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 whitespace-nowrap"
@@ -560,6 +669,11 @@ const UserListsPage = () => {
                                                     <Filter className="w-4 h-4" />
                                                     {filterUnknown ? t('lists.filter_unknown') : t('lists.filter_all')}
                                                 </button>
+                                                
+                                                <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 shrink-0">
+                                                    <button onClick={() => setViewMode('list')} className={cn("p-1.5 rounded-lg transition-colors", viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-500' : 'text-gray-400 hover:text-gray-900 dark:hover:text-white')}><List className="w-4 h-4" /></button>
+                                                    <button onClick={() => setViewMode('flashcard')} className={cn("p-1.5 rounded-lg transition-colors", viewMode === 'flashcard' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-500' : 'text-gray-400 hover:text-gray-900 dark:hover:text-white')}><Grid3X3 className="w-4 h-4" /></button>
+                                                </div>
 
                                                 <button
                                                     onClick={handleGenerateSubList}
@@ -628,30 +742,51 @@ const UserListsPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Word Grid */}
+                                    {/* Words Rendering */}
                                     {wordsLoading ? (
-                                        <div className="flex justify-center py-20">
+                                        <div className="flex justify-center items-center h-40">
                                             <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                                        </div>
-                                    ) : filteredWords.length === 0 ? (
-                                        <div className="text-center py-20 text-gray-400 bg-white dark:bg-[#161822] rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
-                                            <Book className="w-10 h-10 opacity-20 mx-auto mb-4" />
-                                            <p>{t('lists.no_words')}</p>
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                                                {filteredWords.slice(0, visibleCount).map((word: any) => (
-                                                    <WordCard
-                                                        key={word.id}
-                                                        {...word}
-                                                        onToggleKnown={handleToggleKnown}
-                                                        onRemove={() => handleDeleteWord(selectedList.id, word.id)}
-                                                        isSystemProtected={selectedList.isSystem}
-                                                    />
-                                                ))}
-                                            </div>
-                                            {visibleCount < filteredWords.length && (
+                                            {filteredWords.length === 0 ? (
+                                                <div className="text-center py-12 text-gray-400 bg-white dark:bg-[#161822] rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
+                                                    <Book className="w-10 h-10 opacity-20 mx-auto mb-4" />
+                                                    <p>{t('lists.no_words', { defaultValue: 'Bu listede kelime bulunamadı.' })}</p>
+                                                </div>
+                                            ) : viewMode === 'flashcard' ? (
+                                                <div className="flex justify-center py-8 relative w-full">
+                                                    {filteredWords.length > 0 && currentCardIndex < filteredWords.length ? (
+                                                        <FlashCard
+                                                            word={filteredWords[currentCardIndex]}
+                                                            index={currentCardIndex}
+                                                            total={filteredWords.length}
+                                                            isKnown={filteredWords[currentCardIndex].isKnown}
+                                                            onToggleKnown={() => handleToggleKnown(filteredWords[currentCardIndex].id, filteredWords[currentCardIndex].isKnown)}
+                                                            onPrev={() => setCurrentCardIndex(p => Math.max(0, p - 1))}
+                                                            onNext={() => setCurrentCardIndex(p => Math.min(filteredWords.length - 1, p + 1))}
+                                                            onAddToList={selectedList.id !== -1 ? undefined : () => {}} 
+                                                        />
+                                                    ) : (
+                                                        <div className="text-center py-12 text-gray-400">
+                                                            Tebrikler! Filtrelediğiniz kelimelerin sonuna geldiniz.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                                                    {filteredWords.slice(0, visibleCount).map((word: any) => (
+                                                        <WordCard
+                                                            key={word.id}
+                                                            {...word}
+                                                            onToggleKnown={handleToggleKnown}
+                                                            onRemove={() => handleDeleteWord(selectedList.id, word.id)}
+                                                            isSystemProtected={selectedList.isSystem}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {viewMode === 'list' && visibleCount < filteredWords.length && (
                                                 <div className="mt-8 flex justify-center">
                                                     <button
                                                         onClick={() => setVisibleCount(prev => prev + 100)}
