@@ -10,6 +10,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
+import { speakText } from '@/src/utils/tts';
 import { FlashCardBack } from './FlashCard';
 import type { ListWord } from '@/src/types/api';
 import { useTranslation } from '@/src/i18n/useTranslation';
@@ -241,7 +242,7 @@ export function WordPreviewOverlay({
             <View style={previewStyles.ttsRow}>
               <TouchableOpacity
                 style={[previewStyles.cardTtsBtn, { borderColor: c.BORDER }]}
-                onPress={() => Speech.speak(word.word, { language: 'en-US' })}
+                onPress={() => speakText(word.word, 'en-US')}
                 onPressIn={() => { buttonActiveRef.current = true; }}
                 onPressOut={() => { buttonActiveRef.current = false; }}
                 activeOpacity={0.7}
@@ -251,7 +252,7 @@ export function WordPreviewOverlay({
               {!!stripTr(word.definition?.meanings?.[0]?.example) && (
                 <TouchableOpacity
                   style={[previewStyles.cardSentenceTtsBtn, { borderColor: c.BORDER }]}
-                  onPress={() => Speech.speak(stripTr(word.definition!.meanings[0].example)!, { language: 'en-US' })}
+                  onPress={() => speakText(stripTr(word.definition!.meanings[0].example)!, 'en-US')}
                   onPressIn={() => { buttonActiveRef.current = true; }}
                   onPressOut={() => { buttonActiveRef.current = false; }}
                   activeOpacity={0.7}

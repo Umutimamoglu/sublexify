@@ -98,7 +98,7 @@ export function TourTooltipContent({
   onPress: () => void;
 }) {
   const scheme = useColorScheme();
-  const isDark = scheme !== 'light';
+  const isDark = true; // Tour tooltips look better dark to support the neon glow
   const lottieRef = useRef<LottieView>(null);
 
   const titleDelay = 120;

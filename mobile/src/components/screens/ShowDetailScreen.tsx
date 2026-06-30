@@ -212,32 +212,32 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
           <View style={{
             marginHorizontal: 16, marginBottom: 12, marginTop: 6,
             paddingHorizontal: 20, paddingVertical: 14,
-            backgroundColor: '#2BFF8812',
+            backgroundColor: isDark ? '#2BFF8812' : '#2BFF8825',
             borderRadius: 18,
-            borderWidth: 1.5, borderColor: '#2BFF8855',
+            borderWidth: 1.5, borderColor: isDark ? '#2BFF8855' : '#05966966',
             flexDirection: 'row', alignItems: 'center', gap: 14,
-            shadowColor: '#2BFF88',
+            shadowColor: isDark ? '#2BFF88' : '#059669',
             shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.25,
+            shadowOpacity: isDark ? 0.25 : 0.15,
             shadowRadius: 12,
             elevation: 6,
           }}>
             <View style={{
               width: 40, height: 40, borderRadius: 20,
-              backgroundColor: '#2BFF8822',
+              backgroundColor: isDark ? '#2BFF8822' : '#2BFF8833',
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <Ionicons name="film-outline" size={20} color="#2BFF88" />
+              <Ionicons name="film-outline" size={20} color={isDark ? "#2BFF88" : "#059669"} />
             </View>
-            <Text style={{ color: '#2BFF88', fontSize: 15, fontWeight: '800', letterSpacing: -0.2, flex: 1 }}>
+            <Text style={{ color: isDark ? '#2BFF88' : '#059669', fontSize: 15, fontWeight: '800', letterSpacing: -0.2, flex: 1 }}>
               Bir bölüm seç
             </Text>
             <View style={{
               width: 28, height: 28, borderRadius: 14,
-              backgroundColor: '#2BFF8825',
+              backgroundColor: isDark ? '#2BFF8825' : '#2BFF8844',
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <Text style={{ color: '#2BFF88', fontSize: 16, fontWeight: '900' }}>›</Text>
+              <Text style={{ color: isDark ? '#2BFF88' : '#059669', fontSize: 16, fontWeight: '900' }}>›</Text>
             </View>
           </View>
         )}

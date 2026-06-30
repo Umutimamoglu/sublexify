@@ -17,11 +17,7 @@ export const useTourStore = create<TourState>((set, get) => ({
 
   initializeTour: async () => {
     try {
-      // DEV ONLY: reset the tour on every screen load so it re-runs on each
-      // refresh while we iterate on it. In production the "completed" flag persists.
-      if (true) { // DEV auto-reset enabled
-        await AsyncStorage.removeItem('@discover_tour_completed');
-      }
+      // if (__DEV__) { await AsyncStorage.removeItem('@discover_tour_completed'); }
       const completed = await AsyncStorage.getItem('@discover_tour_completed');
       if (completed !== 'true') {
         // Not completed, start the tour by showing the first step

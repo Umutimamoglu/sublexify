@@ -3,6 +3,7 @@ import { View, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, Statu
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
+import { speakText } from '@/src/utils/tts';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
@@ -393,7 +394,7 @@ export default function StudyScreen({
 
   const handleListen = useCallback(() => {
     if (question?.word) {
-      Speech.speak(question.word, { language: 'en-US' });
+      speakText(question.word, 'en-US');
     }
   }, [question]);
 

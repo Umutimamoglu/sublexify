@@ -704,35 +704,24 @@ export default function DiscoverScreen() {
 
   // -- Screen fade-in: whole screen hidden until hero content is ready --
   const screenOpacity = useRef(new Animated.Value(0)).current;
-  const blurReveal = useRef(new Animated.Value(0)).current;
   const heroAnimStarted = useRef(false);
 
   const hasHero = heroItems.length > 0 && !continueLoading;
 
   useEffect(() => {
-    if (!hasHero || heroAnimStarted.current) return;
+    if (!hasHero) return;
+    if (heroAnimStarted.current) {
+      screenOpacity.setValue(1);
+      return;
+    }
     heroAnimStarted.current = true;
-    // Fade in the whole screen first (300ms), then start blur reveal
-    Animated.sequence([
-      Animated.timing(screenOpacity, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(blurReveal, {
-        toValue: 1,
-        duration: 10000,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [hasHero, screenOpacity, blurReveal]);
-
-  const blurTranslateY = blurReveal.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -(sh * 0.46)],
-  });
+    Animated.timing(screenOpacity, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [hasHero, screenOpacity]);
 
   const card2Show = tourSteps[1]?.show ?? false;
 
@@ -953,19 +942,6 @@ export default function DiscoverScreen() {
                 </View>
               )}
 
-              {/* Blur reveal: slides upward over 10s, revealing image from bottom */}
-              <Animated.View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  left: 0, right: 0,
-                  top: 0,
-                  height: sh * 0.46,
-                  transform: [{ translateY: blurTranslateY }],
-                }}
-              >
-                <BlurView intensity={55} tint="dark" style={{ flex: 1 }} />
-              </Animated.View>
             </View>
           </Tooltip>
         ) : continueLoading ? (

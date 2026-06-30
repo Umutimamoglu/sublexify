@@ -6,6 +6,7 @@ import React, {
   useRef,
 } from 'react';
 import * as Speech from 'expo-speech';
+import { speakText } from '@/src/utils/tts';
 import * as Haptics from 'expo-haptics';
 import { View, FlatList, ScrollView, TouchableOpacity, Modal, StyleSheet, StatusBar, ActivityIndicator, Image, Alert, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,8 @@ import { useGuidedFlowStore } from '@/src/store/guidedFlowStore';
 import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries';
 import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
+import { ShimmerOverlay } from '@/src/components/ui/ShimmerOverlay';
+import { BlurView } from 'expo-blur';
 import type { WordDTO, Difficulty } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 
@@ -264,7 +267,7 @@ function WordRow({
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.ttsBtn, { borderColor: c.BORDER }]}
-        onPress={() => Speech.speak(word.word, { language: 'en-US' })}
+        onPress={() => speakText(word.word, 'en-US')}
         activeOpacity={0.7}
       >
         <Text style={styles.ttsBtnText}>🔊</Text>
@@ -344,9 +347,25 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const { active: guidedActive, step: guidedStep, finish: finishGuided } = useGuidedFlowStore();
   const isGuidedMedia = guidedActive && guidedStep === 'media';
 
+  // Intro tooltip shown when guided media mode begins.
+  // NOTE: gated by a `useRef` (not AsyncStorage), so it RE-SHOWS on every remount
+  // (Fast Refresh / re-entering the screen). This is intentional for now —
+  // practical while iterating in dev. In production it naturally appears only once
+  // because the guided flow itself runs a single time (gated by guidedFlowStore /
+  // finishGuided). If we ever decouple the intro from the guided flow, switch this
+  // ref to an AsyncStorage flag like '@guided_intro_shown'.
+  const [showGuidedIntro, setShowGuidedIntro] = useState(false);
+  const guidedIntroShown = useRef(false);
+
   // Auto-select A1 when guided mode activates
   useEffect(() => {
-    if (isGuidedMedia) setSelectedLevels(new Set(['A1']));
+    if (isGuidedMedia) {
+      setSelectedLevels(new Set(['A1']));
+      if (!guidedIntroShown.current) {
+        guidedIntroShown.current = true;
+        setShowGuidedIntro(true);
+      }
+    }
   }, [isGuidedMedia]);
 
   // Bouncing arrow ref — effect runs after guidedReady is declared below
@@ -746,6 +765,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
               <TouchableOpacity
                 style={[
                   styles.ctaBtn,
+                  { overflow: 'hidden' },
                   generating && styles.ctaBtnDis,
                   isGuidedMedia && !guidedReady && {
                     opacity: guidedBtnOpacity,
@@ -769,6 +789,8 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
                 disabled={generating || (isGuidedMedia && !guidedReady)}
                 activeOpacity={0.85}
               >
+                {/* Shimmer draws attention to the locked CTA while user marks words */}
+                {isGuidedMedia && !guidedReady && <ShimmerOverlay active />}
                 {generating ? (
                   <ActivityIndicator color={guidedReady ? '#0B0D12' : '#fff'} size="small" />
                 ) : isGuidedMedia && !guidedReady ? (
@@ -853,6 +875,44 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
         wordName={addModal?.wordName ?? ''}
         onClose={() => setAddModal(null)}
       />
+
+      {/* Guided intro tooltip — one-time explainer when entering guided mode */}
+      <Modal visible={showGuidedIntro} transparent animationType="fade" onRequestClose={() => setShowGuidedIntro(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <View style={{
+            width: '100%', maxWidth: 340, borderRadius: 24, overflow: 'hidden',
+            borderWidth: 1.5, borderColor: 'rgba(43,255,136,0.85)',
+            shadowColor: '#2BFF88', shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.6, shadowRadius: 32, elevation: 20,
+          }}>
+            <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFillObject} />
+            <View style={{ padding: 24 }}>
+              <View style={{
+                width: 52, height: 52, borderRadius: 26, marginBottom: 16,
+                backgroundColor: '#2BFF8822', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Ionicons name="checkmark-done-outline" size={28} color="#2BFF88" />
+              </View>
+              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 10, letterSpacing: -0.3 }}>
+                Bildiğin kelimeleri işaretle
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.82)', fontSize: 15, lineHeight: 22, marginBottom: 6 }}>
+                Bu listedeki kelimelerden <Text style={{ color: '#2BFF88', fontWeight: '800' }}>zaten bildiklerinin</Text> yanındaki ✓ işaretine dokun.
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.82)', fontSize: 15, lineHeight: 22 }}>
+                En az <Text style={{ color: '#2BFF88', fontWeight: '800' }}>10 kelime</Text> işaretleyince, geri kalan bilmediğin kelimelerden çalışma listen otomatik hazırlanacak.
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowGuidedIntro(false)}
+                activeOpacity={0.85}
+                style={{ marginTop: 22, backgroundColor: '#2BFF88', borderRadius: 14, paddingVertical: 15, alignItems: 'center' }}
+              >
+                <Text style={{ color: '#0B0D12', fontSize: 15, fontWeight: '800' }}>Anladım, başlayalım!</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

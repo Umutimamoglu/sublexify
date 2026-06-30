@@ -17,6 +17,7 @@ import Reanimated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import * as Speech from 'expo-speech';
+import { speakText } from '@/src/utils/tts';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
@@ -35,10 +36,13 @@ import { useMarkKnown } from '@/src/api/queries/words.queries';
 import type { WordDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 import { useVocabTourStore } from '@/src/store/vocabTourStore';
-import { TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
+import { TourOverlay } from '@/src/components/ui/TourOverlay';
+import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
+import Tooltip from 'react-native-walkthrough-tooltip';
 
 // Tur sırasında otomatik aratılacak örnek kelimeler — "ne yazsan var" hissi.
-const TOUR_DEMO_WORDS = ['contagious', 'eloquent', 'resilience', 'wanderlust', 'gratitude'];
+// Basit, yaygın B1/B2 kelimeler — yavaş internette bile hızlı sonuç döner
+const TOUR_DEMO_WORDS = ['improve', 'achieve', 'suggest', 'manage', 'celebrate'];
 
 
 const stripTr = (text?: string) => text?.replace(/\s*\([^)]+\)\s*$/, '').trim();
@@ -91,7 +95,11 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     rowWord: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
     rowMeaning: { color: c.TEXT_S, fontSize: 12, marginTop: 3, lineHeight: 17 },
     rowMeta: { flexDirection: 'row', gap: 8, marginTop: 4, alignItems: 'center' },
-    diffBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+    // Inline badge for list rows
+    rowDiffBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5 },
+    // Flashcard badge (consumed by FlashCardBack) — must match ListScreen
+    diffBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, borderWidth: 1, marginBottom: 12 },
+    diffBadgeText: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
     diffText: { fontSize: 10, fontWeight: '800' },
     freqDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: c.SURFACE2 },
 
@@ -276,7 +284,7 @@ function RightActions({
   c: Palette;
   isDark: boolean;
 }) {
-  const speak = () => Speech.speak(word.word, { language: 'en-US' });
+  const speak = () => speakText(word.word, 'en-US');
   const count = 2; // Add and TTS
 
   const addStyle = useAnimatedStyle(() => ({
@@ -395,7 +403,7 @@ function WordRow({
             {(!!word.difficulty || !!word.frequency) && (
               <View style={styles.rowMeta}>
                 {!!diffColor && (
-                  <View style={[styles.diffBadge, { backgroundColor: diffColor + '22' }]}>
+                  <View style={[styles.rowDiffBadge, { backgroundColor: diffColor + '22' }]}>
                     <Text style={[styles.diffText, { color: diffColor }]}>{word.difficulty}</Text>
                   </View>
                 )}
@@ -466,6 +474,18 @@ export default function VocabularyScreen() {
     const wait = (ms: number) =>
       new Promise<void>((resolve) => timers.push(setTimeout(resolve, ms)));
 
+    // Servisten bu kelimenin sonucu gelene kadar bekle (yavaş internette bile
+    // sonuç belirmeden geçmesin). En fazla 7sn fallback ile takılı kalmaz.
+    const waitForResults = async (word: string) => {
+      const q = word.trim().toLowerCase();
+      const deadline = Date.now() + 7000;
+      while (!cancelled && Date.now() < deadline) {
+        const s = searchStateRef.current;
+        if (!s.fetching && s.query === q && s.count > 0) return;
+        await wait(120);
+      }
+    };
+
     const run = async () => {
       let idx = 0;
       while (!cancelled) {
@@ -476,7 +496,9 @@ export default function VocabularyScreen() {
           await wait(130);
         }
         if (cancelled) break;
-        await wait(1700); // sonuçları göster
+        await waitForResults(word);   // sonuç servisten gelene kadar bekle
+        if (cancelled) break;
+        await wait(1500);             // kullanıcı okusun
         if (cancelled) break;
         setQuery(''); // temizle
         await wait(500);
@@ -576,6 +598,16 @@ export default function VocabularyScreen() {
 
   const isSearching = query.trim().length >= 2;
   const displayWords: WordDTO[] = isSearching ? searchResults : frequentWords;
+
+  // Tur döngüsünün senkron okuyabilmesi için arama durumunu ref'te tutuyoruz.
+  const searchStateRef = useRef({ fetching: false, count: 0, query: '' });
+  useEffect(() => {
+    searchStateRef.current = {
+      fetching: searchingFetching,
+      count: searchResults.length,
+      query: query.trim().toLowerCase(),
+    };
+  }, [searchingFetching, searchResults.length, query]);
 
   const levelCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -789,7 +821,7 @@ export default function VocabularyScreen() {
               <View style={styles.ttsRow}>
                 <TouchableOpacity
                   style={[styles.cardTtsBtn, { borderColor: c.BORDER }]}
-                  onPress={() => Speech.speak(currentWord.word, { language: 'en-US' })}
+                  onPress={() => speakText(currentWord.word, 'en-US')}
                   onPressIn={() => { buttonActiveRef.current = true; }}
                   onPressOut={() => { buttonActiveRef.current = false; }}
                   activeOpacity={0.7}
@@ -799,7 +831,7 @@ export default function VocabularyScreen() {
                 {!!stripTr(currentWord.definition?.meanings?.[0]?.example) && (
                   <TouchableOpacity
                     style={[styles.cardSentenceTtsBtn, { borderColor: c.BORDER }]}
-                    onPress={() => Speech.speak(stripTr(currentWord.definition!.meanings[0].example)!, { language: 'en-US' })}
+                    onPress={() => speakText(stripTr(currentWord.definition!.meanings[0].example)!, 'en-US')}
                     onPressIn={() => { buttonActiveRef.current = true; }}
                     onPressOut={() => { buttonActiveRef.current = false; }}
                     activeOpacity={0.7}
@@ -1077,14 +1109,26 @@ export default function VocabularyScreen() {
               zIndex: 300,
             }}
           >
-            <View style={TOUR_CARD_STYLE}>
+          <Tooltip
+            isVisible={showTour}
+            content={
               <TourTooltipContent
                 title="Kelime havuzu 📚"
                 text="Bu ekrandan sistemimizdeki tüm kelimelere ulaşabilirsin — burayı bir sözlük gibi de düşünebilirsin. Aramaya ne yazarsan yaz, karşına çıkar. 😊"
                 isLast={false}
                 onPress={finishTour}
               />
-            </View>
+            }
+            placement="top"
+            onClose={finishTour}
+            backgroundColor="rgba(0,0,0,0.65)"
+            closeOnBackgroundInteraction={false}
+            contentStyle={TOUR_CARD_STYLE}
+            arrowStyle={{ borderBottomColor: TOUR_NEON }}
+            disableShadow={false}
+          >
+            <View style={{ width: 1, height: 1 }} />
+          </Tooltip>
           </View>
         )}
 

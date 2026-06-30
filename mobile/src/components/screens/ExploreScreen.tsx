@@ -10,7 +10,10 @@ import { useMedia } from '@/src/api/queries/media.queries';
 import type { MediaDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 import { useExploreTourStore } from '@/src/store/exploreTourStore';
-import { TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
+import { useAuth } from '@/src/context/AuthContext';
+import { TourOverlay } from '@/src/components/ui/TourOverlay';
+import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
+import Tooltip from 'react-native-walkthrough-tooltip';
 
 
 type MediaFilter = 'all' | 'MOVIE' | 'EPISODE';
@@ -403,14 +406,26 @@ export default function ExploreScreen() {
             zIndex: 300,
           }}
         >
-          <View style={TOUR_CARD_STYLE}>
-            <TourTooltipContent
-              title="Dizi & film arama 🔎"
-              text="Buradan tüm dizi ve filmleri arayabilirsin. Üstteki sekmelerden film mi dizi mi istediğini seç, sonra adını yazıp ara. İzlediğin içeriğin kelimelerini çalışmaya başla!"
-              isLast={false}
-              onPress={finishTour}
-            />
-          </View>
+          <Tooltip
+            isVisible={showTour}
+            content={
+              <TourTooltipContent
+                title="Dizi & film arama 🔎"
+                text="Buradan tüm dizi ve filmleri arayabilirsin. Üstteki sekmelerden film mi dizi mi istediğini seç, sonra adını yazıp ara. İzlediğin içeriğin kelimelerini çalışmaya başla!"
+                isLast={false}
+                onPress={finishTour}
+              />
+            }
+            placement="top"
+            onClose={finishTour}
+            backgroundColor="rgba(0,0,0,0.65)"
+            closeOnBackgroundInteraction={false}
+            contentStyle={TOUR_CARD_STYLE}
+            arrowStyle={{ borderBottomColor: TOUR_NEON }}
+            disableShadow={false}
+          >
+            <View style={{ width: 1, height: 1 }} />
+          </Tooltip>
         </View>
       )}
     </View>
