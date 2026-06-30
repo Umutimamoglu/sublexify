@@ -263,6 +263,13 @@ const UserListsPage = () => {
         }
     };
 
+    const filteredWords = useMemo(() => {
+        if (!wordData) return [];
+        return wordData.words.filter(w => 
+            selectedLevels.length === 0 || (w.difficulty && selectedLevels.includes(w.difficulty))
+        );
+    }, [wordData, selectedLevels]);
+
     // Auto Play Logic
     const startAutoPlay = async () => {
         setIsAutoPlaying(true);
@@ -295,7 +302,13 @@ const UserListsPage = () => {
 
         const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-        for (let i = currentCardIndex; i < filteredWords.length; i++) {
+        let startIndex = currentCardIndex;
+        if (startIndex >= filteredWords.length - 1 && !isAutoPlaying) {
+            startIndex = 0;
+            setCurrentCardIndex(0);
+        }
+
+        for (let i = startIndex; i < filteredWords.length; i++) {
             if (!autoPlayRef.current) break;
             setCurrentCardIndex(i);
             const w = filteredWords[i];
@@ -404,12 +417,7 @@ const UserListsPage = () => {
         return sortedLists.filter(list => !(globalHide && hiddenIds.includes(list.id)));
     }, [sortedLists, globalHide, hiddenIds]);
 
-    const filteredWords = useMemo(() => {
-        if (!wordData) return [];
-        return wordData.words.filter(w => 
-            selectedLevels.length === 0 || (w.difficulty && selectedLevels.includes(w.difficulty))
-        );
-    }, [wordData, selectedLevels]);
+
 
     if (loading && lists.length === 0) {
         return (
@@ -647,7 +655,7 @@ const UserListsPage = () => {
                                                         className="flex items-center gap-2 px-6 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-xl transition-all whitespace-nowrap border border-indigo-100"
                                                     >
                                                         <Volume2 className="w-5 h-5" />
-                                                        Otomatik Çal
+                                                        {currentCardIndex > 0 && currentCardIndex < filteredWords.length - 1 ? `Sürdür (${filteredWords.length - currentCardIndex})` : `Otomatik Çal (${filteredWords.length})`}
                                                     </button>
                                                 )}
                                                 <button
@@ -713,7 +721,10 @@ const UserListsPage = () => {
                                                 return (
                                                     <button
                                                         key={level}
-                                                        onClick={() => isSelected ? setSelectedLevels(selectedLevels.filter(l => l !== level)) : setSelectedLevels([...selectedLevels, level])}
+                                                        onClick={() => {
+                                                            isSelected ? setSelectedLevels(selectedLevels.filter(l => l !== level)) : setSelectedLevels([...selectedLevels, level]);
+                                                            setCurrentCardIndex(0);
+                                                        }}
                                                         className={cn(
                                                             "px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-2 border",
                                                             isSelected
@@ -729,7 +740,7 @@ const UserListsPage = () => {
                                                 );
                                             })}
                                             {selectedLevels.length > 0 && (
-                                                <button onClick={() => setSelectedLevels([])} className="text-xs text-gray-400 hover:text-indigo-500 ml-2">{t('lists.clear_levels')}</button>
+                                                <button onClick={() => { setSelectedLevels([]); setCurrentCardIndex(0); }} className="text-xs text-gray-400 hover:text-indigo-500 ml-2">{t('lists.clear_levels')}</button>
                                             )}
                                         </div>
 

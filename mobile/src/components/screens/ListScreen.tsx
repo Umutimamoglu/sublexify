@@ -826,10 +826,30 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const [activeAutoPlayWordId, setActiveAutoPlayWordId] = useState<number | null>(null);
   const autoPlayIndexRef = useRef(0);
   const isAutoPlayingRef = useRef(false);
-  const autoPlayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoPlayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Derive from query cache — onMutate updates it instantly (same pattern as VocabularyScreen)
   const knownIdsSet = useMemo(() => new Set(knownWordsData.map((w) => w.id)), [knownWordsData]);
+
+  // ─── Filtered words ───────────────────────────────────────
+  const filteredWords = useMemo<ListWord[]>(() => {
+    if (!effectiveList?.words) return [];
+    let words = effectiveList.words;
+    if (onlyUnknown) {
+      words = words.filter((w) => !knownIdsSet.has(w.id));
+    }
+    if (selectedLevels.size > 0) {
+      words = words.filter((w) => w.difficulty && selectedLevels.has(w.difficulty));
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      words = words.filter((w) =>
+        w.word.toLowerCase().includes(q) ||
+        w.definition?.meanings?.[0]?.definition?.toLowerCase().includes(q),
+      );
+    }
+    return words;
+  }, [effectiveList?.words, onlyUnknown, knownIdsSet, selectedLevels, searchQuery]);
 
   // Mark hint as shown after enough time for all 3 rows to complete
   useEffect(() => {
@@ -882,7 +902,10 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
     isAutoPlayingRef.current = true;
     setIsAutoPlaying(true);
-    autoPlayIndexRef.current = 0;
+    
+    if (autoPlayIndexRef.current >= filteredWords.length) {
+        autoPlayIndexRef.current = 0;
+    }
 
     const playNextWord = () => {
       if (!isAutoPlayingRef.current) return;
@@ -941,25 +964,6 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     playNextWord();
   }, [filteredWords, stopAutoPlay]);
 
-  // ─── Filtered words ───────────────────────────────────────
-  const filteredWords = useMemo<ListWord[]>(() => {
-    if (!effectiveList?.words) return [];
-    let words = effectiveList.words;
-    if (onlyUnknown) {
-      words = words.filter((w) => !knownIdsSet.has(w.id));
-    }
-    if (selectedLevels.size > 0) {
-      words = words.filter((w) => w.difficulty && selectedLevels.has(w.difficulty));
-    }
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      words = words.filter((w) =>
-        w.word.toLowerCase().includes(q) ||
-        w.definition?.meanings?.[0]?.definition?.toLowerCase().includes(q),
-      );
-    }
-    return words;
-  }, [effectiveList?.words, onlyUnknown, knownIdsSet, selectedLevels, searchQuery]);
 
   // Reset card index on filter change
   useEffect(() => { setCardIndex(0); }, [selectedLevels]);
@@ -1200,11 +1204,18 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             <Ionicons name="search-outline" size={16} color={searchActive ? '#fff' : c.TEXT_S} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toggleBtn, isAutoPlaying && styles.toggleActive]}
+            style={[
+              styles.toggleBtn, 
+              isAutoPlaying && styles.toggleActive, 
+              { flexDirection: 'row', gap: 4, width: 'auto', paddingHorizontal: 8 }
+            ]}
             onPress={toggleAutoPlay}
             activeOpacity={0.75}
           >
-            <Ionicons name={isAutoPlaying ? "stop-circle-outline" : "play-circle-outline"} size={20} color={isAutoPlaying ? '#fff' : c.TEXT_S} />
+            <Ionicons name={isAutoPlaying ? "pause-circle-outline" : "play-circle-outline"} size={18} color={isAutoPlaying ? '#fff' : c.TEXT_S} />
+            <Text style={{ fontSize: 13, fontWeight: 'bold', color: isAutoPlaying ? '#fff' : c.TEXT_S }}>
+               {isAutoPlaying ? 'Duraklat' : (autoPlayIndexRef.current > 0 && autoPlayIndexRef.current < filteredWords.length ? `Sürdür (${filteredWords.length - autoPlayIndexRef.current})` : `Çal (${filteredWords.length})`)}
+            </Text>
           </TouchableOpacity>
           <Tooltip
             isVisible={showViewHint}
