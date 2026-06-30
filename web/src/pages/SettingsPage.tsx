@@ -1,11 +1,23 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Moon, Globe, Settings2, Bell, Shield, BellRing, User } from 'lucide-react';
+import { ArrowLeft, Moon, Globe, Settings2, BellRing, Shield, User, Volume2, Check } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useTranslation } from 'react-i18next';
+import { useSettingsStore, ThemePreference, SupportedLanguage, VoiceGenderPreference } from '@/store/useSettingsStore';
 
 const SettingsPage = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const { 
+        themePreference, setThemePreference, 
+        language, setLanguage, 
+        dailyReviewCount, setDailyReviewCount,
+        preferredVoiceGender, setVoiceGender 
+    } = useSettingsStore();
+
+    const handleLanguageChange = (lang: SupportedLanguage) => {
+        setLanguage(lang);
+        i18n.changeLanguage(lang);
+    };
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-2xl relative pb-20">
@@ -20,42 +32,149 @@ const SettingsPage = () => {
             </div>
 
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {/* Account Section */}
+                {/* Visual & Language Settings */}
                 <div>
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">{t('settings.sections.account')}</h3>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">{t('settings.sections.preferences', 'Tercihler')}</h3>
                     <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-3xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                        <SettingsItem icon={User} title={t('settings.items.account_info.title')} subtitle={t('settings.items.account_info.subtitle')} />
-                        <SettingsItem icon={BellRing} title={t('settings.items.notifications.title')} subtitle={t('settings.items.notifications.subtitle')} />
-                        <SettingsItem icon={Shield} title={t('settings.items.privacy.title')} subtitle={t('settings.items.privacy.subtitle')} />
+                        
+                        {/* Theme */}
+                        <div className="p-5">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800/80 flex items-center justify-center shrink-0">
+                                    <Moon className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <div>
+                                    <span className="block font-bold text-gray-900 dark:text-white">{t('settings.items.appearance.title', 'Tema')}</span>
+                                    <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Uygulama görünümünü seçin</span>
+                                </div>
+                            </div>
+                            <div className="flex bg-gray-50 dark:bg-gray-800/50 p-1 rounded-xl">
+                                {(["light", "dark", "system"] as ThemePreference[]).map(mode => (
+                                    <button
+                                        key={mode}
+                                        onClick={() => setThemePreference(mode)}
+                                        className={cn(
+                                            "flex-1 py-2 text-sm font-bold rounded-lg transition-all capitalize",
+                                            themePreference === mode 
+                                                ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400" 
+                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                                        )}
+                                    >
+                                        {mode}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Language */}
+                        <div className="p-5">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800/80 flex items-center justify-center shrink-0">
+                                    <Globe className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <div>
+                                    <span className="block font-bold text-gray-900 dark:text-white">{t('settings.items.language.title', 'Dil')}</span>
+                                    <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Uygulama arayüz dili</span>
+                                </div>
+                            </div>
+                            <div className="flex bg-gray-50 dark:bg-gray-800/50 p-1 rounded-xl">
+                                {(["en", "tr"] as SupportedLanguage[]).map(lang => (
+                                    <button
+                                        key={lang}
+                                        onClick={() => handleLanguageChange(lang)}
+                                        className={cn(
+                                            "flex-1 py-2 text-sm font-bold rounded-lg transition-all uppercase",
+                                            language === lang 
+                                                ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400" 
+                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                                        )}
+                                    >
+                                        {lang === 'en' ? 'English' : 'Türkçe'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Preferences Section */}
+                {/* Voice Settings */}
                 <div>
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">{t('settings.sections.preferences')}</h3>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">Seslendirme (TTS)</h3>
                     <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-3xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                        <SettingsItem icon={Moon} title={t('settings.items.appearance.title')} subtitle={t('settings.items.appearance.subtitle')} />
-                        <SettingsItem icon={Globe} title={t('settings.items.language.title')} subtitle={t('settings.items.language.subtitle')} />
-                        <SettingsItem icon={Settings2} title={t('settings.items.study_settings.title')} subtitle={t('settings.items.study_settings.subtitle')} />
+                        <div className="p-5">
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800/80 flex items-center justify-center shrink-0">
+                                    <Volume2 className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <div>
+                                    <span className="block font-bold text-gray-900 dark:text-white">Ses Tercihi</span>
+                                    <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Otomatik okuma sesini seçin</span>
+                                </div>
+                            </div>
+                            <div className="flex bg-gray-50 dark:bg-gray-800/50 p-1 rounded-xl">
+                                {[
+                                    { value: 'system', label: 'Sistem' },
+                                    { value: 'female', label: 'Kadın' },
+                                    { value: 'male', label: 'Erkek' }
+                                ].map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => setVoiceGender(opt.value as VoiceGenderPreference)}
+                                        className={cn(
+                                            "flex-1 py-2 text-sm font-bold rounded-lg transition-all",
+                                            preferredVoiceGender === opt.value 
+                                                ? "bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400" 
+                                                : "text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                                        )}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-500/10 rounded-xl">
+                                <p className="text-sm text-blue-700 dark:text-blue-400">
+                                    Daha doğal bir deneyim için işletim sisteminizin ayarlarından yüksek kaliteli "Premium" ses paketlerini indirebilirsiniz.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Study Settings */}
+                <div>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">Çalışma Ayarları</h3>
+                    <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-3xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
+                        <div className="p-5 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800/80 flex items-center justify-center shrink-0">
+                                    <Settings2 className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <div>
+                                    <span className="block font-bold text-gray-900 dark:text-white">Günlük Tekrar Hedefi</span>
+                                    <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Her gün tekrar edilecek kelime sayısı</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={() => setDailyReviewCount(Math.max(5, dailyReviewCount - 5))}
+                                    className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700"
+                                >
+                                    -
+                                </button>
+                                <span className="font-black text-lg w-6 text-center">{dailyReviewCount}</span>
+                                <button 
+                                    onClick={() => setDailyReviewCount(Math.min(50, dailyReviewCount + 5))}
+                                    className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-200 dark:hover:bg-indigo-500/30"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
 };
-
-function SettingsItem({ icon: Icon, title, subtitle }: { icon: any, title: string, subtitle: string }) {
-    return (
-        <button className="w-full flex items-center gap-4 p-5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-left group">
-            <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800/80 flex items-center justify-center shrink-0 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-500/20 transition-colors">
-                <Icon className="w-5 h-5 text-gray-400 group-hover:text-indigo-500 transition-colors" />
-            </div>
-            <div className="flex-1">
-                <span className="block font-bold text-gray-900 dark:text-white">{title}</span>
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</span>
-            </div>
-        </button>
-    );
-}
 
 export default SettingsPage;

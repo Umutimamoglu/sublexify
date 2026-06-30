@@ -21,8 +21,27 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 
 import SettingsPage from '@/pages/SettingsPage';
 import OnboardingPage from '@/pages/OnboardingPage';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useEffect } from 'react';
 
 function App() {
+  const { themePreference } = useSettingsStore();
+
+  useEffect(() => {
+    const isDark = themePreference === 'dark' || (themePreference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', isDark);
+    
+    // Listen for system theme changes if set to system
+    if (themePreference === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        document.documentElement.classList.toggle('dark', e.matches);
+      };
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [themePreference]);
+
   return (
     <BrowserRouter>
       <Routes>
