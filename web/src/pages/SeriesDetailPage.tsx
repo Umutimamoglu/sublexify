@@ -40,7 +40,7 @@ const SeriesDetailPage = () => {
         // Optimistic
         setWatchedIds(prev => isWatched ? prev.filter(id => id !== episodeId) : [...prev, episodeId]);
         try {
-            await api.post(`/media/${episodeId}/toggle-watched`);
+            await api.post(`/media/${episodeId}/watch`);
         } catch (e) {
             console.error(e);
             // Revert
@@ -79,6 +79,16 @@ const SeriesDetailPage = () => {
             .sort((a, b) => (a.episodeNumber || 0) - (b.episodeNumber || 0));
     }, [seriesEpisodes, selectedSeason]);
 
+    // Hook'lar koşullu return'lerden ÖNCE gelmeli (Rules of Hooks) — aksi halde
+    // loading bittiğinde hook sayısı değişir ve React tüm sayfayı çökertir (siyah ekran)
+    const nextEpisode = useMemo(() => {
+        const sortedAll = [...seriesEpisodes].sort((a, b) => {
+            if (a.seasonNumber !== b.seasonNumber) return (a.seasonNumber || 0) - (b.seasonNumber || 0);
+            return (a.episodeNumber || 0) - (b.episodeNumber || 0);
+        });
+        return sortedAll.find(ep => !watchedIds.includes(ep.id));
+    }, [seriesEpisodes, watchedIds]);
+
     if (loading) return (
         <div className="space-y-6 animate-pulse">
             <div className="w-full h-[400px] bg-gray-200 dark:bg-gray-800 rounded-3xl" />
@@ -94,14 +104,6 @@ const SeriesDetailPage = () => {
         </div>
     );
     if (!seriesMeta) return <div className="p-10 text-center">{t('series_detail.not_found')}</div>;
-
-    const nextEpisode = useMemo(() => {
-        const sortedAll = [...seriesEpisodes].sort((a, b) => {
-            if (a.seasonNumber !== b.seasonNumber) return (a.seasonNumber || 0) - (b.seasonNumber || 0);
-            return (a.episodeNumber || 0) - (b.episodeNumber || 0);
-        });
-        return sortedAll.find(ep => !watchedIds.includes(ep.id));
-    }, [seriesEpisodes, watchedIds]);
 
     return (
         <div className="relative pb-24">
