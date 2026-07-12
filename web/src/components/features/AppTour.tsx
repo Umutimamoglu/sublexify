@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { X, ArrowRight, Check, Map } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/utils/cn';
@@ -34,10 +35,13 @@ const TOUR_STEPS = [
 
 const AppTour = () => {
     const { hasSeenTour, setHasSeenTour } = useSettingsStore();
+    const { isAuthenticated } = useAuthStore();
     const [currentStep, setCurrentStep] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+
+    if (!isAuthenticated) return null;
 
     useEffect(() => {
         if (!hasSeenTour) {
