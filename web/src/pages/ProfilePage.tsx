@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
-import { User, Film, MessageCircle, BarChart3, Compass, Settings, LogOut, ChevronRight } from 'lucide-react';
+import { User, Film, MessageCircle, BarChart3, Compass, Settings, LogOut, ChevronRight, Loader2 } from 'lucide-react';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
 
@@ -25,9 +25,11 @@ const ProfilePage = () => {
     // In a real scenario, use actual API hooks here.
     const [known, setKnown] = useState(0);
     const [total, setTotal] = useState(0);
+    const [statsLoading, setStatsLoading] = useState(true);
 
     useEffect(() => {
         // Fetch actual user stats
+        setStatsLoading(true);
         api.get('/user/statistics').then(res => {
             if (res.data) {
                 setKnown(res.data.totalKnownWords || 0);
@@ -37,6 +39,8 @@ const ProfilePage = () => {
             // Mock data fallback if stats fail
             setKnown(450);
             setTotal(5000);
+        }).finally(() => {
+            setStatsLoading(false);
         });
     }, []);
 
@@ -102,6 +106,20 @@ const ProfilePage = () => {
             </div>
 
             {/* Progress Card */}
+            {statsLoading ? (
+                <div className="w-full bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 p-6 rounded-3xl mb-8">
+                    <div className="flex justify-between items-end mb-3">
+                        <div className="space-y-2">
+                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+                            <div className="h-3 w-32 bg-gray-100 dark:bg-gray-800/60 rounded-lg animate-pulse" />
+                        </div>
+                        <div className="h-3 w-20 bg-gray-200 dark:bg-gray-800 rounded-lg animate-pulse" />
+                    </div>
+                    <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-full w-0 bg-teal-500/30 rounded-full animate-pulse" />
+                    </div>
+                </div>
+            ) : (
             <button
                 onClick={() => navigate('/lists?id=-1')}
                 className="w-full bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 p-6 rounded-3xl mb-8 hover:bg-gray-50 dark:hover:bg-[#1c1e2b] transition-colors text-left"
@@ -124,6 +142,7 @@ const ProfilePage = () => {
                     />
                 </div>
             </button>
+            )}
 
             {/* Settings Links */}
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1">{t('profile.settings')}</h4>

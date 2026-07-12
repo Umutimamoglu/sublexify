@@ -131,9 +131,23 @@ const MediaDetailPage = () => {
 
     if (loading && !media) {
         return (
-            <div className="flex flex-col justify-center items-center h-64 gap-3">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                <span className="text-sm text-gray-500 dark:text-gray-400">{t('common.loading')}</span>
+            <div className="space-y-6 animate-pulse">
+                <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 rounded-xl" />
+                <div className="flex gap-6 items-start">
+                    <div className="w-48 h-72 bg-gray-200 dark:bg-gray-800 rounded-2xl shrink-0" />
+                    <div className="flex-1 space-y-3 pt-2">
+                        <div className="h-7 w-3/4 bg-gray-200 dark:bg-gray-800 rounded-xl" />
+                        <div className="h-4 w-1/2 bg-gray-100 dark:bg-gray-800/60 rounded-lg" />
+                        <div className="h-4 w-full bg-gray-100 dark:bg-gray-800/60 rounded-lg" />
+                        <div className="h-4 w-5/6 bg-gray-100 dark:bg-gray-800/60 rounded-lg" />
+                    </div>
+                </div>
+                <div className="h-24 bg-gray-200 dark:bg-gray-800 rounded-2xl" />
+                <div className="space-y-3">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="h-16 bg-gray-200 dark:bg-gray-800 rounded-2xl" />
+                    ))}
+                </div>
             </div>
         );
     }

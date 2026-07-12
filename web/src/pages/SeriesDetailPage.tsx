@@ -80,7 +80,20 @@ const SeriesDetailPage = () => {
             .sort((a, b) => (a.episodeNumber || 0) - (b.episodeNumber || 0));
     }, [seriesEpisodes, selectedSeason]);
 
-    if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin" /></div>;
+    if (loading) return (
+        <div className="space-y-6 animate-pulse">
+            <div className="w-full h-[400px] bg-gray-200 dark:bg-gray-800 rounded-3xl" />
+            <div className="flex gap-4">
+                <div className="h-6 w-48 bg-gray-200 dark:bg-gray-800 rounded-xl" />
+                <div className="h-6 w-24 bg-gray-100 dark:bg-gray-800/60 rounded-xl" />
+            </div>
+            <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-20 bg-gray-200 dark:bg-gray-800 rounded-2xl" />
+                ))}
+            </div>
+        </div>
+    );
     if (!seriesMeta) return <div className="p-10 text-center">{t('series_detail.not_found')}</div>;
 
     const nextEpisode = useMemo(() => {

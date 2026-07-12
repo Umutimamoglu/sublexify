@@ -309,31 +309,29 @@ expo build:android
 
 ### Production Build (EAS Build)
 
+**ÖNEMLİ:** Projede `.env.local` kullanıldığı için, direkt `eas build` komutu yerine `package.json` içindeki custom `eas` betiğini (`npm run eas --`) kullanmalısın. Bu sayede çevre değişkenleri otomatik olarak build işlemine dahil edilir.
+
 ```bash
-# iOS
-eas build --platform ios
+# iOS (App Store / TestFlight için build ve otomatik gönderim)
+npm run eas -- build --platform ios --profile production --auto-submit
 
-# Android
-eas build --platform android
+# Android (Play Store için build ve otomatik gönderim)
+npm run eas -- build --platform android --profile production --auto-submit
 
-# Her ikisi
-eas build --platform all
+# Sadece Build Almak İçin (Gönderim Yapmadan)
+npm run eas -- build --platform all --profile production
 ```
 
 ## Deployment
 
-### App Store (iOS)
+### App Store (iOS) & Google Play Store (Android)
+
+Yukarıdaki `--auto-submit` flag'i ile build ve deploy işlemini tek adımda halledebilirsin. Eğer manuel yapmak istersen:
 
 ```bash
-eas build --platform ios
-eas submit --platform ios
-```
-
-### Google Play Store (Android)
-
-```bash
-eas build --platform android
-eas submit --platform android
+# Sadece Submit İşlemi
+npm run eas -- submit --platform ios
+npm run eas -- submit --platform android
 ```
 
 ## Native Modüller
