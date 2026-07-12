@@ -25,6 +25,7 @@ export function useMedia() {
 export function useMediaDetail(id: number) {
   return useQuery<MediaDTO>({
     queryKey: mediaKeys.detail(id),
+    staleTime: 1000 * 60 * 30, // film/dizi detayı neredeyse hiç değişmez
     queryFn:  async () => {
       const res = await apiClient.get<MediaDTO>(ENDPOINTS.media.detail(id));
       return res.data;
@@ -36,7 +37,9 @@ export function useMediaDetail(id: number) {
 export function useContinueLearning(limit = 5) {
   return useQuery<MediaDTO[]>({
     queryKey: mediaKeys.continueLearning,
-    staleTime: 0,
+    // 2 dk: tab geçişlerinde gereksiz istek atma; mutation'lar cache'i
+    // refetchType 'none' ile stale işaretler, focus'ta stale ise yenilenir
+    staleTime: 1000 * 60 * 2,
     queryFn:  async () => {
       const res = await apiClient.get<MediaDTO[]>(
         `${ENDPOINTS.media.continueLearning}?limit=${limit}`,
@@ -49,6 +52,7 @@ export function useContinueLearning(limit = 5) {
 export function useMediaWords(mediaId: number, onlyUnknown = false) {
   return useQuery<MediaWordsResponseDTO>({
     queryKey: mediaKeys.words(mediaId, onlyUnknown),
+    staleTime: 1000 * 60 * 15, // kelimeler nadiren değişir; yavaş ağda anında açılsın
     queryFn:  async () => {
       const res = await apiClient.get<MediaWordsResponseDTO>(
         `${ENDPOINTS.media.words(mediaId)}?onlyUnknown=${onlyUnknown}`,
@@ -62,6 +66,7 @@ export function useMediaWords(mediaId: number, onlyUnknown = false) {
 export function useSeriesEpisodes(imdbId: string) {
   return useQuery<MediaDTO[]>({
     queryKey: ['media', 'series', imdbId],
+    staleTime: 1000 * 60 * 60 * 24, // bölüm listesi değişmez
     queryFn:  async () => {
       const res = await apiClient.get<MediaDTO[]>(ENDPOINTS.media.seriesEpisodes(imdbId));
       return res.data;
@@ -95,7 +100,7 @@ export function useWatchedMediaIds() {
       const res = await apiClient.get<number[]>(ENDPOINTS.media.watchedIds);
       return res.data;
     },
-    staleTime: 0,
+    staleTime: 1000 * 60 * 10, // toggle zaten optimistic; sunucudan sık çekmeye gerek yok
   });
 }
 

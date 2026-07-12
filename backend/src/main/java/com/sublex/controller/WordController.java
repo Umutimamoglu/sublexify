@@ -99,6 +99,20 @@ public class WordController {
     }
 
     /**
+     * POST /api/words/mark-known/batch
+     * Body: [1, 2, 3] — mark multiple words as known in ONE request
+     * (mobile toplu seçim; N paralel istek yerine tek istek)
+     */
+    @PostMapping("/mark-known/batch")
+    public ResponseEntity<Void> markAsKnownBatchByIds(
+            @RequestBody List<Long> wordIds,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        userKnownWordService.markWordsAsKnownByIds(userId, wordIds);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * DELETE /api/words/{id}/mark-known?userId=1
      * Unmark word as known
      */

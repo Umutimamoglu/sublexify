@@ -11,6 +11,7 @@ export const userKeys = {
 export function useUserStats() {
   return useQuery<UserStatistics>({
     queryKey: userKeys.stats,
+    staleTime: 1000 * 60 * 5, // mark-known zaten optimistic + invalidate ediyor
     queryFn:  async () => {
       const res = await apiClient.get<UserStatistics>(ENDPOINTS.user.stats);
       return res.data;

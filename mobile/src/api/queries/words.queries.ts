@@ -102,14 +102,21 @@ export function useMarkKnown() {
       }
     },
     onSuccess: ({ mediaId, isKnown }) => {
-      qc.invalidateQueries({ queryKey: userKeys.knownWords });
+      // refetchType 'none': cache'i stale işaretle ama HEMEN ağa çıkma.
+      // UI zaten optimistic güncel; ekranlar focus/mount olduğunda stale
+      // veriyi tek istekle tazeler. Her işaretlemede 500+ kelimelik listeleri
+      // yeniden çekmek yavaş ağda ciddi yük oluşturuyordu.
+      qc.invalidateQueries({ queryKey: userKeys.knownWords, refetchType: 'none' });
       qc.invalidateQueries({ queryKey: userKeys.stats });
       qc.invalidateQueries({ queryKey: ['progress', 'stats'] });
-      qc.invalidateQueries({ queryKey: wordKeys.frequent }); // Refresh frequent words
-      // DO NOT invalidate mediaKeys.words here. It causes instant refetches 
+      qc.invalidateQueries({ queryKey: wordKeys.frequent, refetchType: 'none' });
+      // Liste yüzdeleri ve continue-learning bir sonraki focus'ta tazelensin
+      qc.invalidateQueries({ queryKey: listKeys.all, refetchType: 'none' });
+      qc.invalidateQueries({ queryKey: mediaKeys.continueLearning, refetchType: 'none' });
+      // DO NOT invalidate mediaKeys.words here. It causes instant refetches
       // with onlyUnknown=true, making words disappear instantly from lists.
       // Optimistic updates are enough for UI checkmarks.
-      
+
       // Record streak when marking as known (not when unmarking)
       if (!isKnown) {
         useStreakStore.getState().recordActivity();
@@ -122,17 +129,34 @@ export function useMarkKnownBatch() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (wordIds: number[]) => {
-      await Promise.all(
-        wordIds.map((id) => apiClient.post(ENDPOINTS.words.markKnown(id))),
-      );
+      try {
+        // Tek istek: 20 kelime = 20 paralel HTTP yerine 1 batch çağrısı
+        await apiClient.post(ENDPOINTS.words.markKnownBatch, wordIds);
+      } catch (err: any) {
+        // Eski backend deploy'unda batch endpoint yoksa (404/405) tek tek işaretle
+        const status = err?.response?.status;
+        if (status !== 404 && status !== 405) throw err;
+        await Promise.all(
+          wordIds.map((id) => apiClient.post(ENDPOINTS.words.markKnown(id))),
+        );
+      }
       return wordIds;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: userKeys.knownWords });
+    onSuccess: (wordIds) => {
+      // knownWords cache'ini elle güncelle (optimistic tarzı) — büyük listeyi
+      // hemen yeniden çekme; diğer cache'ler stale işaretlenir, focus'ta tazelenir
+      qc.setQueryData<WordDTO[]>(userKeys.knownWords, (old) => {
+        if (!old) return old;
+        const existing = new Set(old.map((w) => w.id));
+        const added = wordIds.filter((id) => !existing.has(id)).map((id) => ({ id }) as WordDTO);
+        return added.length ? [...old, ...added] : old;
+      });
+      qc.invalidateQueries({ queryKey: userKeys.knownWords, refetchType: 'none' });
       qc.invalidateQueries({ queryKey: userKeys.stats });
       qc.invalidateQueries({ queryKey: ['progress', 'stats'] });
-      qc.invalidateQueries({ queryKey: wordKeys.frequent }); // Refresh frequent words
-      qc.invalidateQueries({ queryKey: listKeys.all });
+      qc.invalidateQueries({ queryKey: wordKeys.frequent, refetchType: 'none' });
+      qc.invalidateQueries({ queryKey: listKeys.all, refetchType: 'none' });
+      qc.invalidateQueries({ queryKey: mediaKeys.continueLearning, refetchType: 'none' });
       // Record streak for batch mark-known
       useStreakStore.getState().recordActivity();
     },

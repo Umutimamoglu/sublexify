@@ -12,6 +12,9 @@ export const listKeys = {
 export function useLists() {
   return useQuery<WordListDTO[]>({
     queryKey: listKeys.all,
+    // 15 dk: listeler nadiren değişir; mutation'lar (liste CRUD, kelime işaretleme)
+    // cache'i zaten invalidate/stale ettiği için güncellik korunur
+    staleTime: 1000 * 60 * 15,
     queryFn:  async () => {
       const res = await apiClient.get<WordListDTO[]>(ENDPOINTS.lists.list);
       return res.data;
@@ -50,6 +53,7 @@ type WordListWordsResponse = {
 export function useListDetail(id: number, options?: { enabled?: boolean }) {
   return useQuery<ListDetailDTO>({
     queryKey: listKeys.detail(id),
+    staleTime: 1000 * 60 * 10, // 200+ kelimelik listeler her girişte çekilmesin
     queryFn:  async () => {
       const res = await apiClient.get<WordListWordsResponse>(ENDPOINTS.lists.words(id));
       return {

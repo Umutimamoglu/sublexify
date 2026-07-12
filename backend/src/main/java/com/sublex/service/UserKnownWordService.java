@@ -90,6 +90,43 @@ public class UserKnownWordService {
         }
     }
 
+    /**
+     * Mark multiple words as known by explicit IDs in a single transaction.
+     * Mobile batch selection sends one request instead of N parallel calls.
+     */
+    @Transactional
+    public void markWordsAsKnownByIds(Long userId, List<Long> wordIds) {
+        if (wordIds == null || wordIds.isEmpty()) {
+            return;
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        java.util.Set<Long> existingWordIds = userKnownWordRepository.findByUserId(userId)
+                .stream()
+                .map(ukw -> ukw.getWord().getId())
+                .collect(Collectors.toSet());
+
+        List<UserKnownWord> newKnownWords = wordRepository.findAllById(wordIds)
+                .stream()
+                .filter(w -> !existingWordIds.contains(w.getId()))
+                .map(w -> {
+                    UserKnownWord ukw = new UserKnownWord();
+                    ukw.setUser(user);
+                    ukw.setWord(w);
+                    ukw.setMarkedAt(LocalDateTime.now());
+                    return ukw;
+                })
+                .collect(Collectors.toList());
+
+        if (!newKnownWords.isEmpty()) {
+            userKnownWordRepository.saveAll(newKnownWords);
+            for (UserKnownWord ukw : newKnownWords) {
+                initProgressIfEligible(user, ukw.getWord());
+            }
+        }
+    }
+
     private void initProgressIfEligible(User user, Word word) {
         boolean inCustomList = wordListRepository.existsByUserIdAndIsSystemFalseAndWordId(user.getId(), word.getId());
         if (inCustomList) {
