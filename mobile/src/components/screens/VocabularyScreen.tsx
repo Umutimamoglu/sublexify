@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { FlashList } from '@shopify/flash-list';
+import { AnimatedPressable } from '@/src/components/ui/AnimatedPressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, FlatList, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, TextInput, Dimensions, useWindowDimensions, Modal, Platform } from 'react-native';
@@ -24,7 +26,7 @@ import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
@@ -36,7 +38,6 @@ import { useMarkKnown } from '@/src/api/queries/words.queries';
 import type { WordDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 import { useVocabTourStore } from '@/src/store/vocabTourStore';
-import { TourOverlay } from '@/src/components/ui/TourOverlay';
 import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
 import Tooltip from 'react-native-walkthrough-tooltip';
 
@@ -414,7 +415,7 @@ function WordRow({
             )}
           </View>
         </GestureDetector>
-        <TouchableOpacity
+        <AnimatedPressable
           style={[
             styles.checkBtn,
             {
@@ -423,10 +424,11 @@ function WordRow({
             },
           ]}
           onPress={handleTogglePress}
-          activeOpacity={0.6}
+          haptic
+          pressScale={0.85}
         >
           <Text style={[styles.checkText, { color: isKnown ? '#fff' : c.TEXT_S }]}>✓</Text>
-        </TouchableOpacity>
+        </AnimatedPressable>
       </View>
     </ReanimatedSwipeable>
   );
@@ -565,8 +567,16 @@ export default function VocabularyScreen() {
     isFetching: freqFetching,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
+    refetch: refetchFrequent,
+    isStale: frequentStale,
   } = useFrequentWords(difficultyList, onlyUnknown, 50);
+
+  // Tab hep mount kaldığı için focus'ta stale-kontrolü: mark-known mutation'ları
+  // frequent cache'ini stale eder (refetchType 'none'), buraya dönünce tazelenir
+  useFocusEffect(useCallback(() => {
+    if (frequentStale) refetchFrequent();
+  }, [frequentStale, refetchFrequent]));
 
   const {
     data: searchResultsData = [],
@@ -754,7 +764,7 @@ export default function VocabularyScreen() {
   const knownCount = knownWordsData.length;
 
   const renderList = () => (
-    <FlatList
+    <FlashList
       data={displayWords}
       keyExtractor={(item) => String(item.id)}
       ListHeaderComponent={() => (

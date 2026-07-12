@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { View, TextInput, FlatList, TouchableOpacity, Image, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
+import { View, TextInput, FlatList, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +12,6 @@ import type { MediaDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 import { useExploreTourStore } from '@/src/store/exploreTourStore';
 import { useAuth } from '@/src/context/AuthContext';
-import { TourOverlay } from '@/src/components/ui/TourOverlay';
 import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
 import Tooltip from 'react-native-walkthrough-tooltip';
 
@@ -114,7 +114,7 @@ function StoryItem({ item, onPress, styles }: { item: MediaDTO; onPress: () => v
     <TouchableOpacity style={styles.storyItem} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.storyRing}>
         {item.posterUrl ? (
-          <Image source={{ uri: item.posterUrl }} style={styles.storyImg} resizeMode="cover" />
+          <Image source={{ uri: item.posterUrl }} style={styles.storyImg} contentFit="cover" cachePolicy="memory-disk" recyclingKey={String(item.id)} transition={150} />
         ) : (
           <View style={styles.storyImgPlaceholder}>
             <Ionicons name={item.type === 'MOVIE' ? 'film-outline' : 'tv-outline'} size={22} color="#888" />
@@ -137,7 +137,7 @@ function GridCard({ item, onPress, styles, movieLabel, showLabel }: {
   return (
     <TouchableOpacity style={styles.gridCard} onPress={onPress} activeOpacity={0.85}>
       {item.posterUrl ? (
-        <Image source={{ uri: item.posterUrl }} style={styles.gridImg} resizeMode="cover" />
+        <Image source={{ uri: item.posterUrl }} style={styles.gridImg} contentFit="cover" cachePolicy="memory-disk" recyclingKey={String(item.id)} transition={150} />
       ) : (
         <View style={styles.gridImgPlaceholder}>
           <Ionicons name={item.type === 'MOVIE' ? 'film-outline' : 'tv-outline'} size={28} color="#888" />

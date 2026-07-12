@@ -8,7 +8,9 @@ import React, {
 import * as Speech from 'expo-speech';
 import { speakText } from '@/src/utils/tts';
 import * as Haptics from 'expo-haptics';
-import { View, FlatList, ScrollView, TouchableOpacity, Modal, StyleSheet, StatusBar, ActivityIndicator, Image, Alert, Animated, Easing } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Modal, StyleSheet, StatusBar, ActivityIndicator, Image, Alert, Animated, Easing } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { AnimatedPressable } from '@/src/components/ui/AnimatedPressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -272,7 +274,7 @@ function WordRow({
       >
         <Text style={styles.ttsBtnText}>🔊</Text>
       </TouchableOpacity>
-      <TouchableOpacity
+      <AnimatedPressable
         style={[
           styles.checkBtn,
           {
@@ -281,10 +283,11 @@ function WordRow({
           },
         ]}
         onPress={handlePress}
-        activeOpacity={0.6}
+        haptic
+        pressScale={0.85}
       >
         <Text style={[styles.checkText, { color: isKnown ? '#fff' : c.TEXT_S }]}>✓</Text>
-      </TouchableOpacity>
+      </AnimatedPressable>
     </View>
   );
 }
@@ -669,7 +672,7 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
           </View>
         ) : (
           <>
-          <FlatList
+          <FlashList
             data={filteredWords}
             keyExtractor={(item) => String(item.id)}
             ListHeaderComponent={ListHeader}

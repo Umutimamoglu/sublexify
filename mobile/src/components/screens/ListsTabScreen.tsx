@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { View, FlatList, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator, TextInput, Alert, Modal, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
@@ -15,7 +15,6 @@ import { Image } from 'expo-image';
 import type { WordListDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 import { useListsTourStore } from '@/src/store/listsTourStore';
-import { TourOverlay } from '@/src/components/ui/TourOverlay';
 import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
 import Tooltip from 'react-native-walkthrough-tooltip';
 import { ShimmerOverlay } from '@/src/components/ui/ShimmerOverlay';
@@ -682,7 +681,14 @@ export default function ListsTabScreen() {
     };
   }, [showTour]);
 
-  const { data: rawLists = [], isLoading } = useLists();
+  const { data: rawLists = [], isLoading, refetch: refetchLists, isStale: listsStale } = useLists();
+
+  // Tab hep mount kaldığı için focus'ta stale-kontrolü: kelime işaretleme
+  // mutation'ları cache'i stale eder, yüzdeler buraya dönünce tek istekle tazelenir
+  useFocusEffect(useCallback(() => {
+    if (listsStale) refetchLists();
+  }, [listsStale, refetchLists]));
+
   const systemLists = useMemo(
     () => rawLists.filter((l) => l.isSystem),
     [rawLists],

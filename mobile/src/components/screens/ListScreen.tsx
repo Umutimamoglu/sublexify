@@ -7,7 +7,10 @@ import React, {
 } from 'react';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, FlatList, ScrollView, TouchableOpacity, TextInput, StyleSheet, StatusBar, useWindowDimensions, ActivityIndicator, Alert, Modal, Platform, InteractionManager } from 'react-native';
+import { ShimmerOverlay } from '@/src/components/ui/ShimmerOverlay';
+import { AnimatedPressable } from '@/src/components/ui/AnimatedPressable';
+import { View, ScrollView, TouchableOpacity, TextInput, StyleSheet, StatusBar, useWindowDimensions, ActivityIndicator, Alert, Modal, Platform, InteractionManager } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,6 +27,7 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 import { speakText, stopTts } from '@/src/utils/tts';
+import { startTtsPlaybackService, stopTtsPlaybackService } from '@/src/notifications/ttsPlaybackService';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -432,7 +436,7 @@ function WordRow({
           <Text style={styles.rowMeaning} numberOfLines={2}>{meaning}</Text>
         )}
       </View>
-      <TouchableOpacity
+      <AnimatedPressable
         style={[
           styles.checkBtn,
           {
@@ -441,10 +445,11 @@ function WordRow({
           },
         ]}
         onPress={handlePress}
-        activeOpacity={0.6}
+        haptic
+        pressScale={0.85}
       >
         <Text style={[styles.checkText, { color: isKnown ? '#fff' : c.TEXT_S }]}>✓</Text>
-      </TouchableOpacity>
+      </AnimatedPressable>
     </View>
   );
 }
@@ -622,6 +627,15 @@ function SwipeableWordRow({
 }) {
   const swipeRef = useRef<any>(null);
   const removeAnim = useSharedValue(1);
+
+  // FlashList hücre geri dönüşümü: aynı komponent instance'ı yeni bir kelimeyle
+  // yeniden kullanılır. Önceki satırın açık swipe'ı ve silme animasyonunun
+  // opacity=0 değeri sızmasın diye kelime değişince state'i sıfırla.
+  useEffect(() => {
+    swipeRef.current?.close();
+    removeAnim.value = 1;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [word.id]);
 
   // Swipe hint: actually open the swipeable to reveal buttons, then close
   useEffect(() => {
@@ -934,6 +948,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     setIsAutoPlaying(false);
     setActiveAutoPlayWordId(null);
     stopTts();
+    stopTtsPlaybackService(); // Android foreground service'i kapat
     if (autoPlayTimeoutRef.current) {
       clearTimeout(autoPlayTimeoutRef.current);
       autoPlayTimeoutRef.current = null;
@@ -954,6 +969,11 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
     isAutoPlayingRef.current = true;
     setIsAutoPlaying(true);
+    // Android: ekran kapansa da devam etsin diye foreground service başlat
+    startTtsPlaybackService(
+      effectiveList?.name ?? t('autoPlayNotification.title'),
+      t('autoPlayNotification.body'),
+    );
 
     if (autoPlayIndexRef.current >= filteredWords.length) {
       autoPlayIndexRef.current = 0;
@@ -1014,7 +1034,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     };
 
     playNextWord();
-  }, [filteredWords, stopAutoPlay]);
+  }, [filteredWords, stopAutoPlay, effectiveList?.name, t]);
 
 
   // Reset card index on filter change
@@ -1456,7 +1476,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
           </View>
         ) : viewMode === 'list' ? (
           /* ── LIST VIEW ──────────────────────────────────── */
-          <FlatList
+          <FlashList
             data={filteredWords}
             keyExtractor={(item) => String(item.id)}
             renderItem={({ item, index }) => (
@@ -1648,9 +1668,10 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             disableShadow={false}
             displayInsets={{ top: 24, bottom: 24, left: 12, right: 12 }}
           >
-            <TouchableOpacity
+            <AnimatedPressable
               onPress={() => setShowQuizModal(true)}
-              activeOpacity={0.85}
+              haptic="medium"
+              pressScale={0.9}
             >
               <LinearGradient
                 colors={[c.PURPLE, '#6366f1']}
@@ -1664,11 +1685,13 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
                   justifyContent: 'center',
                   borderWidth: 1,
                   borderColor: '#ffffff20',
+                  overflow: 'hidden',
                 }}
               >
+                <ShimmerOverlay active bandColor="rgba(255,255,255,0.4)" />
                 <Ionicons name="school" size={24} color="#fff" />
               </LinearGradient>
-            </TouchableOpacity>
+            </AnimatedPressable>
           </Tooltip>
         </View>
       )}

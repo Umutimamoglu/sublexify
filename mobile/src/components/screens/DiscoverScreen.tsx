@@ -1,7 +1,8 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useResponsive } from '@/src/hooks/useResponsive';
-import { View, ScrollView, FlatList, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions, ActivityIndicator, Image, Animated, Easing, NativeSyntheticEvent, NativeScrollEvent, Platform, Modal } from 'react-native';
+import { View, ScrollView, FlatList, TouchableOpacity, StyleSheet, StatusBar, useWindowDimensions, ActivityIndicator, Animated, Easing, NativeSyntheticEvent, NativeScrollEvent, Platform, Modal } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -387,7 +388,7 @@ function MediaBrowseCard({
     >
       {/* Background Poster for Frosted Glass Effect */}
       {item.posterUrl && (
-        <Image source={{ uri: item.posterUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+        <Image source={{ uri: item.posterUrl }} style={StyleSheet.absoluteFillObject} contentFit="cover" cachePolicy="memory-disk" recyclingKey={String(item.id)} />
       )}
       <BlurView
         intensity={Platform.OS === 'android' ? 100 : (isDark ? 50 : 80)}
@@ -406,7 +407,7 @@ function MediaBrowseCard({
 
       <View style={styles.posterLeft}>
         {item.posterUrl ? (
-          <Image source={{ uri: item.posterUrl }} style={styles.poster} resizeMode="cover" />
+          <Image source={{ uri: item.posterUrl }} style={styles.poster} contentFit="cover" cachePolicy="memory-disk" recyclingKey={String(item.id)} transition={150} />
         ) : (
           <View style={[styles.posterPlaceholder, { backgroundColor: accent + '22' }]}>
             <Text style={[styles.posterLetter, { color: accent }]}>{title.charAt(0)}</Text>
@@ -583,22 +584,23 @@ export default function DiscoverScreen() {
 
 
   const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
-  const { data: allLists = [], isLoading: listsLoading, refetch: refetchLists } = useLists();
+  const { data: allLists = [], isLoading: listsLoading, refetch: refetchLists, isStale: listsStale } = useLists();
 
-  // Refresh lists when screen comes into focus so Oxford % stays up-to-date
+  // Focus'ta SADECE stale ise yenile: hızlı tab geçişlerinde istek atılmaz,
+  // kelime işaretleme sonrası (mutation cache'i stale eder) tek istekle tazelenir
   useFocusEffect(useCallback(() => {
-    refetchLists();
-  }, [refetchLists]));
+    if (listsStale) refetchLists();
+  }, [listsStale, refetchLists]));
 
   const systemLists = useMemo(() => allLists.filter((l) => l.isSystem), [allLists]);
   const { data: userStats, isLoading: knownLoading } = useUserStats();
 
 
-  const { data: continueMedia = [], isLoading: continueLoading, refetch: refetchContinue } = useContinueLearning(50);
+  const { data: continueMedia = [], isLoading: continueLoading, refetch: refetchContinue, isStale: continueStale } = useContinueLearning(50);
 
   useFocusEffect(useCallback(() => {
-    refetchContinue();
-  }, [refetchContinue]));
+    if (continueStale) refetchContinue();
+  }, [continueStale, refetchContinue]));
 
   // ─── User name & greeting ───────────────────────────────────
   const user = useAuthStore((s) => s.user);
@@ -791,7 +793,9 @@ export default function DiscoverScreen() {
           <Image
             source={{ uri: item.backdropUrl || item.posterUrl! }}
             style={styles.heroImage}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
           />
         ) : (
           <View style={[styles.heroImage, { backgroundColor: cardAccent(item.id).darkBg }]} />
