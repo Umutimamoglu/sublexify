@@ -41,7 +41,7 @@ export function WordPreviewModal({ word, onClose, onToggleKnown, isKnown }: {
     return (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-full max-w-lg bg-white dark:bg-[#161822] rounded-3xl shadow-2xl overflow-hidden max-h-[75vh] flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95">
+            <div className="relative w-full max-w-lg mx-4 sm:mx-0 bg-white dark:bg-[#161822] rounded-3xl shadow-2xl overflow-hidden max-h-[75vh] flex flex-col animate-in slide-in-from-bottom-4 sm:zoom-in-95">
                 {/* Header */}
                 <div className="flex items-start justify-between p-6 pb-4 border-b border-gray-100 dark:border-gray-800">
                     <div>

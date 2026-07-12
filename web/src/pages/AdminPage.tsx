@@ -417,7 +417,7 @@ function EnrichedWordsTable({ filterFlagged = false, filterVerified = false, fil
 
     return (
         <div>
-            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+            <div className="overflow-x-auto w-full rounded-xl border border-gray-200 dark:border-gray-800">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 font-medium">
                         <tr>

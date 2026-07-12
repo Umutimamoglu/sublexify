@@ -130,7 +130,7 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
 
                         <div className="flex-1 flex flex-col items-center justify-center gap-4">
                             <h3 className={cn(
-                                "text-3xl font-bold tracking-tight mb-2 w-full px-16 break-words text-center",
+                                "text-3xl font-bold tracking-tight mb-2 w-full px-6 sm:px-14 break-words text-center",
                                 isKnown ? "text-emerald-700 dark:text-emerald-400" : "text-gray-900 dark:text-white"
                             )}>
                                 {word}

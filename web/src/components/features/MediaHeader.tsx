@@ -28,20 +28,20 @@ const MediaHeader = ({ media }: MediaHeaderProps) => {
             <div className="absolute inset-0 bg-gradient-to-t from-[#0f1117] via-[#0f1117]/80 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-r from-[#0f1117]/90 via-[#0f1117]/40 to-transparent" />
 
-            <div className="relative z-10 p-6 sm:p-10 flex flex-col sm:flex-row gap-8 items-start">
+            <div className="relative z-10 p-6 sm:p-10 flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:items-start text-center sm:text-left">
                 {/* Poster */}
                 {media.posterUrl && (
                     <img
                         src={media.posterUrl?.replace('/original/', '/w500/')}
                         alt={media.title}
                         loading="lazy"
-                        className="w-32 sm:w-48 rounded-xl shadow-2xl border border-white/10 hidden sm:block object-cover aspect-[2/3]"
+                        className="w-32 sm:w-48 rounded-xl shadow-2xl border border-white/10 object-cover aspect-[2/3]"
                     />
                 )}
 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex flex-col items-center sm:items-start">
                     {/* Badges */}
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mb-4">
                         <span className="px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 backdrop-blur-md">
                             {media.type}
                         </span>
