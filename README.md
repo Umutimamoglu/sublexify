@@ -79,7 +79,11 @@ Kullanıcının hangi medyada ne kadar ilerlediğini ve hangi kelimeleri öğren
 3. **Listelerle Çalışma**:
    - **Unknown Words List**: O medyada bilmediğin tüm kelimeler.
    - **My Lists**: Kendi oluşturduğun özel listeler.
-4. **Etkileşim**: Kelimelere tıklayarak detaylı AI tanımlarını görür, telaffuz dinler veya "Biliyorum" olarak işaretler.
+4. **Çalışma ve Test (Quiz) Modları**:
+   - Kelimeleri Liste veya **Flashcard (Kart)** görünümünde çalışma.
+   - Otomatik seslendirme (TTS) ile tam liste dinleme seansları.
+   - Dinleme, boşluk doldurma ve çoktan seçmeli sorularla desteklenmiş test (Study) modülü ve SRS (Spaced Repetition System) ilerleme takibi.
+5. **Etkileşim**: Kelimelere tıklayarak detaylı AI tanımlarını görür, telaffuz dinler veya "Biliyorum" olarak işaretler.
 
 **Formül:**
 
@@ -101,6 +105,13 @@ Backend API sunucusu, veri yönetimi ve iş mantığını sağlar.
 - Spring Boot
 - YAML (konfigürasyon dosyaları)
 
+**Özellikler:**
+
+- 🧠 AI Zenginleştirme Süreci (Sheriff, Specialist, Judge pipeline)
+- 🔔 Firebase Cloud Messaging (FCM) entegrasyonu ve Admin Paneli bildirim gönderimi
+- 📧 Güvenli e-posta doğrulama ve hesap kurtarma servisleri
+- 📊 TMDB ile içerik eşleştirme ve otomatik OpenSubtitles entegrasyonu
+
 **Detaylı bilgi için:** [backend/README.md](./backend/README.md)
 
 ### Web
@@ -116,8 +127,13 @@ React ile geliştirilmiş web arayüzü, tarayıcı üzerinden erişim sağlar.
 
 **Özellikler:**
 
-- 🌓 Dark/Light mode desteği
+- 🌓 Gelişmiş Ayarlar Menüsü (Dark/Light Mode ve Tema özelleştirmeleri)
 - 🌍 Çoklu dil desteği (i18n)
+- 🎧 Tercih edilebilir otomatik telaffuz (TTS) ayarları
+- 🗂️ Kullanıcı listelerinde **Flashcard Modu**
+- 🎬 Medya ve bölümler için "İzlendi" olarak işaretleme sistemi
+- 💬 Geri Bildirim ve İçerik Talep sayfaları
+- 🎭 Auth (Giriş) ekranlarında hareketli Mascot (Lottie) animasyonları
 
 **Detaylı bilgi için:** [web/README.md](./web/README.md)
 
@@ -134,8 +150,13 @@ React Native ile geliştirilmiş mobil uygulama, iOS ve Android platformlarında
 
 **Özellikler:**
 
-- 🌓 Dark/Light mode desteği
-- 🌍 Çoklu dil desteği (i18n)
+- 🌓 Gelişmiş UI/UX ve Dark/Light mode desteği
+- 🌍 Çoklu dil desteği (i18n) ve Plus Jakarta Sans özel font mimarisi
+- 🚀 Animasyonlu (Lottie) Mascot eşliğinde interaktif **Onboarding Tour (Kullanıcı Rehberi)**
+- 🔔 Bildirim Kutusu ve ayarlanabilir Anlık Bildirim (Push Notification) tercihleri
+- 📸 **Optik Okuyucu** (Kamera/Görsel üzerinden kelime analiz edebilme)
+- 🎧 Listelerde duraklatılabilir **Auto-Play TTS** (Otomatik Kelime Seslendirme)
+- 🎓 Gelişmiş Study (Test) akışı, SRS takibi ve yüksek çözünürlüklü Recap (Özet) ekranı
 
 **Detaylı bilgi için:** [mobile/README.md](./mobile/README.md)
 
