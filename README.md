@@ -202,3 +202,16 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 - ✅ Test edilebilir her özellik mutlaka test edilmelidir
 - ✅ Testler ilgili uygulamanın test klasöründe yer almalıdır
 - ✅ Commit öncesi testler çalıştırılmalıdır
+
+---
+
+## 📝 Yapılacak İşler / İyileştirmeler (To-Do)
+
+Bu bölümde, projenin mimarisini ve kullanıcı deneyimini geliştirmek için planlanan veya üzerinde çalışılması gereken maddeler yer almaktadır:
+
+### 1. Splash Screen ve App Initialization (İlk Veri Çekme Optimizasyonu)
+**Konu:** Uygulama ilk açıldığında temel verilerin ne zaman ve nasıl çekildiği.
+- **Mevcut Durum:** 
+  Şu anda filmler, diziler ve kelime listeleri (`useMedia`, `useLists`); kullanıcı uygulamayı açıp anasayfa (Discover) veya Listeler sekmesine girdiğinde sayfa bazlı (React Query ile) çekilmektedir. Filmlerin ve dizilerin *içindeki kelimelerin listesi* ise sadece o yapıma tıklanıp detayına (`ListScreen`) girildiğinde yüklenmektedir.
+- **Yapılması Gereken (To-Do):** 
+  Uygulamanın başlangıcında (henüz Splash Screen ekrandayken veya bir açılış/yükleme ekranındayken) tüm kritik öncelikli verileri (kullanıcının devam eden dizileri, temel listeleri ve app ayarları) tek bir servisten (örn: `/api/app-init`) çekecek bir mekanizma kurulması. Bu sayede kullanıcı ana ekrana düştüğünde hiçbir "Loading" animasyonu görmeyecek ve ekranlar anında dolu olarak açılacaktır.
