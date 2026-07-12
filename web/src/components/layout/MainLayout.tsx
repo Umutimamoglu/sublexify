@@ -10,6 +10,7 @@ const MainLayout = () => {
 
     const { isAuthenticated, user, clearAuth } = useAuthStore();
     const navigate = useNavigate();
+    const location = useLocation();
     const { t, i18n } = useTranslation();
     const [unreadCount, setUnreadCount] = useState(0);
 
@@ -42,7 +43,6 @@ const MainLayout = () => {
         return false;
     });
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const location = useLocation();
 
     useEffect(() => {
         if (isDark) {

@@ -2,8 +2,21 @@ import { useEffect, useState } from 'react';
 import NotificationService, { type AppNotification } from '@/services/NotificationService';
 import { Bell, Loader2, CheckCircle2, Info, BellDot } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatDistanceToNow } from 'date-fns';
-import { tr } from 'date-fns/locale';
+
+function timeAgo(dateInput: string): string {
+    const date = new Date(dateInput);
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    if (seconds < 60) return 'az önce';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} dakika önce`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} saat önce`;
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `${days} gün önce`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} ay önce`;
+    return `${Math.floor(months / 12)} yıl önce`;
+}
 
 export default function NotificationsPage() {
     const { t } = useTranslation();
@@ -91,7 +104,7 @@ export default function NotificationsPage() {
                                         {notif.title}
                                     </h3>
                                     <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0 whitespace-nowrap">
-                                        {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: tr })}
+                                        {timeAgo(notif.createdAt)}
                                     </span>
                                 </div>
                                 <p className={`text-sm ${notif.isRead ? 'text-gray-500 dark:text-gray-400' : 'text-indigo-700/80 dark:text-indigo-200/80'}`}>
