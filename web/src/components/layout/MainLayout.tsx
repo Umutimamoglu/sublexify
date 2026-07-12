@@ -1,15 +1,25 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, LayoutGrid, Settings, Sun, Moon, BookOpen, Menu, X, Shield, TrendingUp, LogOut, LogIn, User, FlaskConical, Tv, Film } from 'lucide-react';
+import { Home, LayoutGrid, Settings, Sun, Moon, BookOpen, Menu, X, Shield, TrendingUp, LogOut, LogIn, User, FlaskConical, Tv, Film, Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/store/useAuthStore';
+import NotificationService from '@/services/NotificationService';
 
 const MainLayout = () => {
 
     const { isAuthenticated, user, clearAuth } = useAuthStore();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            NotificationService.getUnreadCount()
+                .then(setUnreadCount)
+                .catch(console.error);
+        }
+    }, [isAuthenticated, location.pathname]); // Refresh count on navigation
 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'tr' ? 'en' : 'tr';
@@ -118,7 +128,17 @@ const MainLayout = () => {
 
                             {isAuthenticated ? (
                                 <div className="hidden md:flex items-center gap-2">
-                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                                    <Link 
+                                        to="/notifications"
+                                        className="relative p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-all"
+                                        title={t('nav.notifications', 'Bildirimler')}
+                                    >
+                                        <Bell className="w-5 h-5" />
+                                        {unreadCount > 0 && (
+                                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-[#161822]"></span>
+                                        )}
+                                    </Link>
+                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-xl ml-2">
                                         <User className="w-4 h-4 text-indigo-500" />
                                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user?.name}</span>
                                     </div>

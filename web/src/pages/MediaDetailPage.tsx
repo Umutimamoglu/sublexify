@@ -48,12 +48,16 @@ const MediaDetailPage = () => {
         fetchData();
     }, [id, filterUnknown, sortBy]);
 
+    const sessionKnownIdsRef = useRef<Set<number>>(new Set());
+
     const handleToggleKnown = async (wordId: number, currentStatus: boolean) => {
         try {
             if (currentStatus) {
                 await api.delete(`/words/${wordId}/mark-known`, { params: { userId } });
+                sessionKnownIdsRef.current.delete(wordId);
             } else {
                 await api.post(`/words/${wordId}/mark-known`, null, { params: { userId } });
+                sessionKnownIdsRef.current.add(wordId);
             }
 
             if (wordData) {
@@ -298,6 +302,7 @@ const MediaDetailPage = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {wordData.words
                     .filter(w => selectedLevels.length === 0 || (w.difficulty && selectedLevels.includes(w.difficulty)))
+                    .filter(w => !filterUnknown || !w.isKnown || sessionKnownIdsRef.current.has(w.id))
                     .slice(0, visibleCount)
                     .map((word) => (
                         <WordCard

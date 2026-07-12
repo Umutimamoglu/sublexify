@@ -19,6 +19,7 @@ import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import VocabularyPage from '@/pages/VocabularyPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
+import NotificationsPage from '@/pages/NotificationsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import OnboardingPage from '@/pages/OnboardingPage';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -65,6 +66,7 @@ function App() {
             <Route path="lists" element={<UserListsPage />} />
             <Route path="study/:listId" element={<StudyPage />} />
             <Route path="vocabulary" element={<VocabularyPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="profile/settings" element={<SettingsPage />} />
             <Route path="profile/media-request" element={<MediaRequestPage />} />

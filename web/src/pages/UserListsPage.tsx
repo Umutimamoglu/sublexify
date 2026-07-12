@@ -239,19 +239,13 @@ const UserListsPage = () => {
                     w.id === wordId ? { ...w, isKnown: !currentStatus } : w
                 );
 
-                // If filtering unknown only, remove from view if marked as known
-                let finalWords = updatedWords;
-                if (filterUnknown && !currentStatus) {
-                    finalWords = updatedWords.filter(w => w.id !== wordId);
-                }
-                
-                // If we are in the "Known Words" list, remove it if it becomes unknown
-                if (selectedList?.id === -1 && currentStatus) {
-                    finalWords = updatedWords.filter(w => w.id !== wordId);
-                    setSelectedList(prev => prev ? { ...prev, totalWords: Math.max(0, prev.totalWords - 1) } : prev);
-                }
-
-                setWordData({ ...wordData, words: finalWords });
+                // UX FIX: Do not filter out the word immediately when its known status changes.
+                // This prevents the list from jumping around and causing misclicks.
+                // The word will naturally be filtered out on the next page reload or filter toggle.
+                setWordData({
+                    ...wordData,
+                    words: updatedWords
+                });
             }
             
             // Refresh lists to update counts in sidebar
