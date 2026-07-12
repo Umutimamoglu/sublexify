@@ -1602,61 +1602,62 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
       />
 
       {!isKnownList && (
-        <Tooltip
-          isVisible={showQuizHint}
-          content={<TourTooltipContent
-            onPress={dismissQuizHint}
-            icon="school-outline"
-            title="Kelimeleri Test Et 🎓"
-            text="Kelime dağarcığını güçlendirmek için teste başla! Dinleme, boşluk doldurma ve çoktan seçmeli sorularla kendini sına."
-            isLast={true}
-          />}
-          placement="top"
-          onClose={dismissQuizHint}
-          backgroundColor="transparent"
-          showChildInTooltip={true}
-          closeOnBackgroundInteraction
-          closeOnContentInteraction={false}
-          closeOnChildInteraction={false}
-          contentStyle={TOUR_CARD_STYLE}
-          arrowSize={{ width: 18, height: 9 }}
-          arrowStyle={{ borderTopColor: TOUR_NEON }}
-          disableShadow={false}
-          displayInsets={{ top: 24, bottom: 24, left: 12, right: 12 }}
-        >
-          <TouchableOpacity
-            onPress={() => setShowQuizModal(true)}
-            activeOpacity={0.85}
-            style={{
-              position: 'absolute',
-              bottom: insets.bottom + 64,
-              right: 20,
-              zIndex: 100,
-              shadowColor: c.PURPLE,
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.4,
-              shadowRadius: 16,
-              elevation: 12,
-            }}
+        <View style={{
+          position: 'absolute',
+          bottom: insets.bottom + 64,
+          right: 20,
+          zIndex: 100,
+          shadowColor: c.PURPLE,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.4,
+          shadowRadius: 16,
+          elevation: 12,
+        }}>
+          <Tooltip
+            isVisible={showQuizHint}
+            content={<TourTooltipContent
+              onPress={dismissQuizHint}
+              icon="school-outline"
+              title="Kelimeleri Test Et 🎓"
+              text="Kelime dağarcığını güçlendirmek için teste başla! Dinleme, boşluk doldurma ve çoktan seçmeli sorularla kendini sına."
+              isLast={true}
+            />}
+            placement="top"
+            onClose={dismissQuizHint}
+            backgroundColor="transparent"
+            showChildInTooltip={true}
+            closeOnBackgroundInteraction
+            closeOnContentInteraction={false}
+            closeOnChildInteraction={false}
+            contentStyle={TOUR_CARD_STYLE}
+            arrowSize={{ width: 18, height: 9 }}
+            arrowStyle={{ borderTopColor: TOUR_NEON }}
+            disableShadow={false}
+            displayInsets={{ top: 24, bottom: 24, left: 12, right: 12 }}
           >
-            <LinearGradient
-              colors={[c.PURPLE, '#6366f1']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 1,
-                borderColor: '#ffffff20',
-              }}
+            <TouchableOpacity
+              onPress={() => setShowQuizModal(true)}
+              activeOpacity={0.85}
             >
-              <Ionicons name="school" size={24} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
-        </Tooltip>
+              <LinearGradient
+                colors={[c.PURPLE, '#6366f1']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: '#ffffff20',
+                }}
+              >
+                <Ionicons name="school" size={24} color="#fff" />
+              </LinearGradient>
+            </TouchableOpacity>
+          </Tooltip>
+        </View>
       )}
 
       <MarkKnownModal
