@@ -32,9 +32,15 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
        List<MediaWord> findUnknownWordsByMediaAndUser(@Param("mediaId") Long mediaId,
                      @Param("userId") Long userId);
 
+       /**
+        * Bulk delete directly in the database. Without @Query, Spring Data would
+        * SELECT all rows (with their Word entities) into the JVM and delete them
+        * one by one — on a 15k-word episode that spiked the heap to ~2.3 GB.
+        */
        @Modifying
        @Transactional
-       void deleteByMediaId(Long mediaId);
+       @Query("DELETE FROM MediaWord mw WHERE mw.media.id = :mediaId")
+       void deleteByMediaId(@Param("mediaId") Long mediaId);
 
        @Query("SELECT mw.media.id, COUNT(mw) FROM MediaWord mw WHERE mw.word.isProperNoun IS NULL OR mw.word.isProperNoun = false GROUP BY mw.media.id")
        List<Object[]> countAllByMediaId();

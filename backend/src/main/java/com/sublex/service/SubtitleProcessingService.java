@@ -77,8 +77,10 @@ public class SubtitleProcessingService {
         media.setSubtitleContent(subtitleContent);
         mediaRepository.save(media);
 
-        // 3. Clear existing words for this media
-        mediaWordRepository.deleteAllInBatch(mediaWordRepository.findByMediaId(mediaId));
+        // 3. Clear existing words for this media — bulk delete in the DB.
+        // Loading 15k MediaWord rows (+ eager Word entities) just to delete
+        // them spiked the heap from ~500 MB to ~2.3 GB and caused GC pauses.
+        mediaWordRepository.deleteByMediaId(mediaId);
         log.info("Cleared existing words for mediaId: {}", mediaId);
 
         // 3. DICTIONARY UPDATE (SYNCHRONIZED & TRANSACTIONAL)
