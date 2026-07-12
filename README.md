@@ -226,23 +226,12 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 
 ## 📝 Yapılacak İşler / İyileştirmeler (To-Do)
 
-### 1. Veritabanı Bakımı — Bloat Temizliği (tek seferlik)
-**Konu:** `media_word` (663 MB / 16k satır) ve `media` (169 MB index / 3.8 MB veri) tabloları, altyazı işlemedeki "hepsini sil → hepsini yeniden yaz" deseni yüzünden ölü satır şişkinliği (bloat) biriktirmiş durumda. Kod tarafındaki kök neden (bulk delete) düzeltildi; diskteki birikmiş şişkinlik ise ancak elle bakımla iner.
-- **Yapılacak:** İçerik eklenmeyen sakin bir saatte Railway PostgreSQL üzerinde:
-  ```sql
-  VACUUM FULL media, media_word;
-  REINDEX TABLE media;
-  REINDEX TABLE media_word;
-  ```
-- **Dikkat:** `VACUUM FULL` çalışırken tabloları kilitler (tahmini 1-2 dk) — kullanıcı trafiğinin olmadığı anda yapılmalı.
-- **Beklenen kazanç:** Disk ~950 MB → ~300-400 MB; cache hit %93 → %98+; genel sorgu hızında kalıcı iyileşme.
-
-### 2. Altyazı İşlemede Fark-Bazlı Güncelleme (opsiyonel, düşük öncelik)
-**Konu:** `SubtitleProcessingService` bir medya yeniden işlendiğinde tüm `media_word` kayıtlarını silip yeniden yazıyor. Bu, bloat'ın kök sebebi.
+### 1. Altyazı İşlemede Fark-Bazlı Güncelleme (opsiyonel, düşük öncelik)
+**Konu:** `SubtitleProcessingService` bir medya yeniden işlendiğinde o medyanın tüm `media_word` kayıtlarını silip yeniden yazıyor. Bulk-delete düzeltmesiyle RAM sorunu çözüldü; bu madde kalan tek iyileştirme: gereksiz index yazma yükünü ve küçük çaplı şişmeyi azaltmak.
 - **Yapılacak:** Silip yeniden yazmak yerine mevcut kayıtlarla farkı hesaplayıp sadece değişenleri INSERT/UPDATE/DELETE etmek (upsert/diff yaklaşımı).
-- **Not:** İçerik ekleme seyrek olduğu sürece acil değil; bakım (madde 1) sonrası şişme yavaş ilerler.
+- **Not:** İçerik ekleme seyrek olduğu sürece acil değil.
 
-### 3. Küçük Kalanlar (kademeli)
+### 2. Küçük Kalanlar (kademeli)
 - [ ] **Cihaz testi:** Arka plan TTS (ekran kilitliyken auto-play) yeni dev build ile gerçek cihazda doğrulanmalı (`eas build --profile development` — native config değişti).
 - [ ] **Web paritesi:** Web açılışta da `/api/app-init` endpoint'ini kullanabilir (şu an mobile-only).
 - [ ] **Kilit ekranı kontrolleri:** Auto-play için oynat/duraklat — `react-native-track-player` + TTS buffer gerektirir, ayrı iş.
@@ -253,6 +242,7 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 ---
 
 ### ✅ Tamamlananlar (2026-07 — özet)
+- **DB bakımı (2026-07-13):** `VACUUM FULL media, media_word` çalıştırıldı (44 sn, veri kaybı yok). DB 1042 → 954 MB (~90 MB, index sıkıştırması). **Önemli düzeltme:** "bloat" teşhisi büyük ölçüde yanlış çıktı — `media_word` 16 bin değil **5.26 milyon gerçek satır** içeriyor (16k rakamı, PostgreSQL restart sonrası sıfırlanan istatistiklerden okunmuştu). `media` tablosunun 175 MB'ı da gerçek altyazı metinleri (159 MB `subtitle_content`). Yani ~950 MB'lık DB boyutu meşru veri; disk endişesi yersiz.
 - **App-init & splash:** `GET /api/app-init` (tek istekte tüm açılış verisi), splash artık ağı beklemiyor, onboarding sırasında anonim prefetch.
 - **Cache stratejisi:** Tüm kritik hook'lara `staleTime`; mutation'larda `refetchType: 'none'` + focus'ta stale-kontrollü tazeleme; `POST /api/words/mark-known/batch` (N istek → 1).
 - **Arka plan TTS:** iOS `UIBackgroundModes: audio` + Android notifee foreground service (mediaPlayback) + config plugin.
