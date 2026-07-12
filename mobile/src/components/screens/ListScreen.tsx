@@ -1255,7 +1255,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             content={<TourTooltipContent
               onPress={dismissPlayHint}
               icon="play-circle-outline"
-              title="Kelimeleri sesli dinle 🔊"
+              title="Kelimeleri sesli dinle"
               text="Bu butona basarak listedeki tüm kelimeleri sırayla seslendir! Kelime, Türkçe anlamı ve örnek cümleyle tam bir çalışma seansı başlatır."
               isLast={false}
             />}
@@ -1618,7 +1618,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             content={<TourTooltipContent
               onPress={dismissQuizHint}
               icon="school-outline"
-              title="Kelimeleri Test Et 🎓"
+              title="Kelimeleri Test Et"
               text="Kelime dağarcığını güçlendirmek için teste başla! Dinleme, boşluk doldurma ve çoktan seçmeli sorularla kendini sına."
               isLast={true}
             />}
