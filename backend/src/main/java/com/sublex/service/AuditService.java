@@ -74,7 +74,7 @@ public class AuditService {
         int totalToAudit = wordsToAudit.size();
 
         try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
-            // Max 5 parallel Gemini calls to avoid rate limiting
+            // Max 5 parallel AI audit calls to avoid rate limiting (currently OpenAI; Gemini branch below is unused since useGPT5=true always)
             java.util.concurrent.Semaphore auditSemaphore = new java.util.concurrent.Semaphore(5);
 
             for (List<Word> batch : batches) {
@@ -146,7 +146,7 @@ public class AuditService {
                 return;
             }
 
-            // 2. Gemini Çağrısı
+            // 2. Sheriff AI Çağrısı (useGPT5=true -> OpenAI gpt-5-mini; false -> Gemini, currently unused path)
             String inputJson = objectMapper.writeValueAsString(auditInput);
             String systemPrompt = """
                     You are the Sheriff. A ruthless, zero-tolerance Dictionary Auditor for an English-to-Turkish dictionary.
