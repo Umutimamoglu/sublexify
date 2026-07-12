@@ -418,7 +418,26 @@ const LandingPage = () => {
                 </section>
 
                 {/* Curated Lists */}
-                {systemLists.length > 0 && (
+                {loading ? (
+                    <section>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+                            <BookOpen className="w-5 h-5 text-indigo-500 opacity-50" />
+                            <div className="h-6 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                        </h2>
+                        <div className="space-y-3">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="w-full flex items-center gap-4 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800 rounded-2xl p-5">
+                                    <div className="w-[52px] h-[52px] rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse shrink-0" />
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-5 w-48 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                                        <div className="h-4 w-24 bg-gray-100 dark:bg-gray-800/60 rounded animate-pulse" />
+                                    </div>
+                                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse shrink-0" />
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                ) : systemLists.length > 0 ? (
                     <section>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
                             <BookOpen className="w-5 h-5 text-indigo-500" />
@@ -474,7 +493,7 @@ const LandingPage = () => {
                             })}
                         </div>
                     </section>
-                )}
+                ) : null}
             </div>
 
             {/* Series Lists Modal */}
