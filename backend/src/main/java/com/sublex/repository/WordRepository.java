@@ -203,4 +203,30 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
                    "GROUP BY w.difficulty",
            nativeQuery = true)
     List<Object[]> countShorteningCandidatesByDifficulty(@Param("language") String language, @Param("maxLen") int maxLen);
+
+    // ── Bulk Delete for Audit Purge ──────────────────────────────────────
+
+    @Modifying
+    @Query(value = "DELETE FROM media_word WHERE word_id IN :ids", nativeQuery = true)
+    int bulkDeleteMediaWordsByWordIds(@Param("ids") List<Long> ids);
+
+    @Modifying
+    @Query(value = "DELETE FROM user_known_word WHERE word_id IN :ids", nativeQuery = true)
+    int bulkDeleteUserKnownWordsByWordIds(@Param("ids") List<Long> ids);
+
+    @Modifying
+    @Query(value = "DELETE FROM word_list_words WHERE word_id IN :ids", nativeQuery = true)
+    int bulkDeleteWordListWordsByWordIds(@Param("ids") List<Long> ids);
+
+    @Modifying
+    @Query(value = "DELETE FROM user_word_progress WHERE word_id IN :ids", nativeQuery = true)
+    int bulkDeleteUserWordProgressByWordIds(@Param("ids") List<Long> ids);
+
+    @Modifying
+    @Query(value = "UPDATE word SET root_word_id = NULL WHERE root_word_id IN :ids", nativeQuery = true)
+    int bulkClearRootWordIdByWordIds(@Param("ids") List<Long> ids);
+
+    @Modifying
+    @Query(value = "DELETE FROM word WHERE id IN :ids", nativeQuery = true)
+    int bulkDeleteWordsByIds(@Param("ids") List<Long> ids);
 }

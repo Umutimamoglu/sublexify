@@ -700,6 +700,43 @@ public class AdminController {
         return ResponseEntity.ok("Successfully resolved audit flags for " + words.size() + " words.");
     }
 
+    @DeleteMapping("/words/audit-purge")
+    @Operation(summary = "Permanently deletes all problem_found words and their FK dependencies")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> purgeAuditProblems() {
+        // Collect IDs first
+        List<Long> problemIds = wordRepository.findAll().stream()
+                .filter(w -> Boolean.TRUE.equals(w.getProblemFound()))
+                .map(Word::getId)
+                .toList();
+
+        if (problemIds.isEmpty()) {
+            return ResponseEntity.ok(Map.of("deleted", 0, "message", "No problem words to purge."));
+        }
+
+        // Delete from all dependent tables first (FK order), then from word
+        int mwDeleted = wordRepository.bulkDeleteMediaWordsByWordIds(problemIds);
+        int ukDeleted = wordRepository.bulkDeleteUserKnownWordsByWordIds(problemIds);
+        int wlwDeleted = wordRepository.bulkDeleteWordListWordsByWordIds(problemIds);
+        int uwpDeleted = wordRepository.bulkDeleteUserWordProgressByWordIds(problemIds);
+        // Clear root_word_id self-references
+        wordRepository.bulkClearRootWordIdByWordIds(problemIds);
+        // Finally delete the words themselves
+        int wordsDeleted = wordRepository.bulkDeleteWordsByIds(problemIds);
+
+        log.info("AUDIT PURGE: Deleted {} words, {} media_words, {} user_known, {} list_words, {} progress",
+                wordsDeleted, mwDeleted, ukDeleted, wlwDeleted, uwpDeleted);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("wordsDeleted", wordsDeleted);
+        result.put("mediaWordsDeleted", mwDeleted);
+        result.put("userKnownDeleted", ukDeleted);
+        result.put("listWordsDeleted", wlwDeleted);
+        result.put("progressDeleted", uwpDeleted);
+        result.put("message", wordsDeleted + " sorunlu kelime ve tüm bağımlılıkları kalıcı olarak silindi.");
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping("/words/audit-stats")
     @Operation(summary = "Returns audit statistics: enriched, audited, problems, pending")
     public ResponseEntity<Map<String, Long>> getAuditStats() {

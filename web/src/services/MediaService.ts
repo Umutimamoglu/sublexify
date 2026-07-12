@@ -360,6 +360,11 @@ const PipelineAPI = {
         const response = await api.post('/admin/words/audit-resolve', wordIds);
         return response.data;
     },
+
+    purgeAuditProblems: async (): Promise<{ wordsDeleted: number; message: string }> => {
+        const response = await api.delete('/admin/words/audit-purge');
+        return response.data;
+    },
     
     downloadAuditProblems: async (): Promise<void> => {
         const response = await api.get<Blob>('/admin/words/audit-problems/download', {
