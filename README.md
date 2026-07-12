@@ -14,6 +14,11 @@ sublex/
 └── README.md        # Bu dosya (ana proje dokümantasyonu)
 ```
 
+## Geliştirme Kuralları (Development Guidelines)
+
+**Kritik Kural - UI Eşitliği (Parity):** 
+Mobil uygulamada (mobile) yapılan herhangi bir kullanıcı arayüzü (UI) veya özellik güncellemesi, **mutlaka** web platformuna (web) da birebir yansıtılmalıdır. İki platform arasında görsel ve işlevsel farklılık/eksiklik olmamalıdır.
+
 ## Proje Hakkında
 
 ### 🎯 Temel Amaç
