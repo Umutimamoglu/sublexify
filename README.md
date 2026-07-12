@@ -292,3 +292,24 @@ Bu bölümde, projenin mimarisini ve kullanıcı deneyimini geliştirmek için p
 | **P1 - Yüksek** | Bilinen kelimeler delta sync | Büyük veri transferi azalır |
 | **P2 - Orta** | `useMarkKnownBatch` tek endpoint | Ağ yükü 20x azalır |
 | **P2 - Orta** | Diğer hook'lara staleTime ekle | Genel performans iyileşir |
+
+### 3. TTS (Otomatik Seslendirme) Arka Plan ve Sessiz Mod Sorunları
+
+**Konu:** Kelime listelerinde "Çal" butonuna basıldığında başlayan otomatik seslendirme (Auto-Play TTS) özelliğinin iki kritik sorunu var.
+
+#### Sorun 1: Arka Plana Atılınca veya Ekran Kapanınca TTS Duruyor
+- **Mevcut Durum:** Kullanıcı seslendirmeyi başlatıp telefonun ekranını kapatırsa veya uygulamayı arka plana atarsa (örn. başka bir uygulamaya geçerse), seslendirme tamamen duruyor ve kaldığı yerden devam etmiyor.
+- **Beklenen Davranış:** Tıpkı bir podcast veya müzik uygulaması gibi, ekran kapalıyken veya uygulama arka plandayken seslendirme devam etmeli. Kilit ekranında oynatma kontrolleri (duraklat/devam) görünmeli.
+- **Teknik Çözüm Önerisi:**
+  * `expo-av` yerine veya yanında `react-native-track-player` gibi bir arka plan ses kütüphanesi entegre edilmeli.
+  * iOS için `Info.plist`'te `UIBackgroundModes: ["audio"]` ayarı aktif edilmeli.
+  * Android için Foreground Service ile ses çalma desteği sağlanmalı.
+  * Alternatif: TTS motorundan gelen sesleri birer ses dosyasına (buffer) dönüştürüp `TrackPlayer` kuyruğuna eklemek.
+
+#### Sorun 2: Telefon Sessiz Moddayken (Mute Switch) Ses Çalmıyor
+- **Mevcut Durum:** iPhone'un yan tarafındaki fiziksel sessiz (mute) anahtarı açıkken, uygulama içindeki tüm TTS sesleri ve telaffuz sesleri tamamen susturuluyor. Kullanıcı sesli çalışma yapamıyor.
+- **Beklenen Davranış:** Sessiz mod açık olsa bile, kullanıcı uygulama içinde bilinçli olarak "Çal" butonuna bastıysa sesin çalması gerekir (Spotify, YouTube gibi medya uygulamalarının davranışı).
+- **Teknik Çözüm Önerisi:**
+  * iOS'ta `AVAudioSession` kategori ayarının `ambient` yerine `playback` olarak değiştirilmesi gerekiyor. Bu, sessiz anahtarını bypass eder.
+  * Expo'da bu ayar `expo-av`'nin `Audio.setAudioModeAsync({ playsInSilentModeIOS: true })` fonksiyonu ile yapılabilir.
+  * Android'de zaten medya ses kanalı (STREAM_MUSIC) kullanıldığı için bu sorun genellikle oluşmaz.
