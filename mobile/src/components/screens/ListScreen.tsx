@@ -1268,7 +1268,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             closeOnChildInteraction={false}
             contentStyle={TOUR_CARD_STYLE}
             arrowSize={{ width: 18, height: 9 }}
-            arrowStyle={{ borderBottomColor: TOUR_NEON }}
+            arrowStyle={{ borderTopColor: TOUR_NEON }}
             disableShadow={false}
             topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
             displayInsets={{ top: 24, bottom: 24, left: 12, right: 12 }}
@@ -1306,7 +1306,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             closeOnChildInteraction={false}
             contentStyle={TOUR_CARD_STYLE}
             arrowSize={{ width: 18, height: 9 }}
-            arrowStyle={{ borderBottomColor: TOUR_NEON }}
+            arrowStyle={{ borderTopColor: TOUR_NEON }}
             disableShadow={false}
             topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
             displayInsets={{ top: 24, bottom: 24, left: 12, right: 12 }}
