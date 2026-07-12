@@ -510,7 +510,6 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
           )}
         </View>
         <View style={styles.heroInfo}>
-          <Text style={styles.heroTitle} numberOfLines={3}>{media?.title ?? '...'}</Text>
           <View style={styles.heroBadgeRow}>
             {!!media?.type && (
               <View style={styles.heroBadge}>
