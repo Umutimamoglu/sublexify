@@ -217,3 +217,78 @@ Bu bölümde, projenin mimarisini ve kullanıcı deneyimini geliştirmek için p
   * **Onboarding Prefetching (Ön Yükleme):** Kullanıcı uygulamayı ilk indirdiğinde 6-7 sayfalık "Onboarding" (Tanıtım) ekranlarını okurken, arka planda gizlice bir `/api/app-init` servisinin çağrılması.
   * Bu servis sayesinde kullanıcı tanıtımı bitirip ana ekrana geçene kadar (15-20 saniye içinde) tüm kritik öncelikli veriler (popüler filmler, kullanıcının listeleri vb.) indirilmiş ve hazır bekletilmiş olacak.
   * **Temel Amaç:** İnternet yavaş bile olsa, kullanıcı anasayfaya düştüğünde hiçbir "Loading" animasyonu veya rahatsız edici beyaz ekran görmeden anında dolu bir ekranla karşılaşmasını sağlamak.
+
+### 2. AsyncStorage / Cache Stratejisi ve Performans Optimizasyonu
+
+**Konu:** Mobil uygulamada hangi veriler cihazda (AsyncStorage) saklanıyor, hangileri saklanmıyor ve gereksiz API çağrıları nerede oluşuyor.
+
+#### A) Şu An AsyncStorage'da Saklanan Veriler (Mevcut Durum)
+| Dosya | Saklanan Veri | Mekanizma |
+|-------|--------------|-----------|
+| `authStore.ts` | Token, kullanıcı bilgileri, onboarding durumu | Zustand + `persist` |
+| `settingsStore.ts` | Tema, dil, ses tercihleri, palet | Zustand + `persist` |
+| `streakStore.ts` | Günlük seri (streak) sayacı | Zustand + `persist` |
+| `guidedFlowStore.ts` | Rehber akışı tamamlandı mı? | Manuel `AsyncStorage.setItem` |
+| `tourStore.ts` | Discover tour tamamlandı mı? | Manuel `AsyncStorage.setItem` |
+| `vocabTourStore.ts` | Vocabulary tour tamamlandı mı? | Manuel `AsyncStorage.setItem` |
+| `listsTourStore.ts` | Lists tour tamamlandı mı? | Manuel `AsyncStorage.setItem` |
+| `exploreTourStore.ts` | Explore tour tamamlandı mı? | Manuel `AsyncStorage.setItem` |
+| `ListScreen.tsx` | Play/View/Quiz hint gösterildi mi? | Manuel `AsyncStorage.setItem` |
+| `useListPreferences.ts` | Liste görünüm tercihleri (sıralama, gruplama) | Manuel `AsyncStorage` |
+| `i18n/index.ts` | Seçili uygulama dili | Manuel `AsyncStorage` |
+
+#### B) AsyncStorage'da Saklanmayan Ama Saklanması Gereken Veriler (Performans Açıkları)
+
+1. **React Query Cache Persistence YOK**
+   - **Sorun:** `queryClient` ayarlarında `gcTime: 24 saat` tanımlı ama `persistQueryClient` (AsyncStorage'a yazma) kullanılmamış. Uygulama kapatılıp açıldığında tüm cache sıfırdan çekiliyor.
+   - **Çözüm:** `@tanstack/react-query-persist-client` + `createAsyncStoragePersister` entegrasyonu yapılmalı. Bu sayede medya listesi, kelime listeleri gibi veriler uygulama kapansa bile tekrar açıldığında cache'den gelir, boş beyaz ekran gösterilmez.
+
+2. **Kullanıcı Bilinen Kelimeler (`knownWords`) Her Seferinde Sunucudan Çekiliyor**
+   - **Sorun:** `useKnownWords()` hook'unda `staleTime` tanımlı değil (varsayılan 5 dk). Kelime sayısı arttıkça (örn. 500+ kelime) her 5 dk'da bir tüm liste tekrar çekiliyor. Yavaş internette bu ciddi gecikmeye neden olur.
+   - **Çözüm:** Bilinen kelimeler AsyncStorage'da da tutulmalı ve sunucu ile delta (fark) senkronizasyonu yapılmalı.
+
+3. **`useLists()` Hook'unda `staleTime` Tanımsız**
+   - **Sorun:** Kullanıcının kelime listeleri için `staleTime` belirtilmemiş (varsayılan 5 dk). Listeler nadiren değişir ama her ekran geçişinde potansiyel olarak yeniden çekilebilir.
+   - **Çözüm:** `staleTime: 1000 * 60 * 15` (15 dakika) veya daha uzun yapılmalı.
+
+4. **`useListDetail()` Hook'unda Cache Yok**
+   - **Sorun:** Bir kelime listesinin detayı (içindeki tüm kelimeler) her girişte sunucudan tekrar çekiliyor. Eğer listede 200+ kelime varsa ve internet yavaşsa bu ciddi bir gecikme yaratır.
+   - **Çözüm:** Liste detayları için en az `staleTime: 1000 * 60 * 10` (10 dakika) eklenmeli.
+
+5. **`useMediaWords()` Hook'unda Cache Yok**
+   - **Sorun:** Bir film/dizideki kelimelere her girildiğinde sunucudan tekrar çekiliyor. Kelime sayısı yüksekse (500-2000) ve internet yavaşsa ciddi bekleme süresi oluşur.
+   - **Çözüm:** `staleTime: 1000 * 60 * 15` eklenmeli; kelimeler nadiren değişir.
+
+6. **`useMediaDetail()` Hook'unda Cache Yok**
+   - **Sorun:** Film/dizi detayı her seferinde sunucudan çekiliyor. Bu veri neredeyse hiç değişmez.
+   - **Çözüm:** `staleTime: 1000 * 60 * 30` (30 dakika) veya daha uzun yapılmalı.
+
+7. **`useSeriesEpisodes()` Hook'unda Cache Yok**
+   - **Sorun:** Bir dizinin bölüm listesi her girişte yeniden çekiliyor. Bu veri hiç değişmez.
+   - **Çözüm:** `staleTime: Infinity` veya çok uzun bir süre yapılmalı.
+
+8. **`useContinueLearning()` Her Focus'ta Yeniden Çekiliyor**
+   - **Sorun:** `staleTime: 0` + `useFocusEffect` ile her ekrana dönüşte sunucuya istek atılıyor. Tablar arası hızlı geçişlerde gereksiz yük oluşturur.
+   - **Çözüm:** `staleTime: 1000 * 60 * 2` (2 dakika) yapılmalı, `useFocusEffect` içindeki zoraki refetch kaldırılmalı.
+
+9. **DiscoverScreen'de `useFocusEffect` ile Gereksiz Refetch**
+   - **Sorun:** `refetchLists()` ve `refetchContinue()` her focus'ta zoraki çağrılıyor. React Query'nin kendi stale/refetch mekanizması varken bu gereksiz sunucu yükü oluşturur.
+   - **Çözüm:** `staleTime` değerleri düzgün ayarlanırsa `useFocusEffect` refetch'leri kaldırılabilir.
+
+10. **`useUserStats()` Hook'unda Cache Yok**
+    - **Sorun:** Kullanıcı istatistikleri (toplam bilinen kelime sayısı vb.) her seferinde sunucudan çekiliyor.
+    - **Çözüm:** `staleTime: 1000 * 60 * 5` (5 dakika) eklenmeli.
+
+11. **`useMarkKnownBatch()` Paralel İstek Patlaması**
+    - **Sorun:** Toplu "biliyorum" işaretlemede her kelime için ayrı bir `Promise.all` API çağrısı yapılıyor. 20 kelime = 20 paralel HTTP isteği. Yavaş internette bazıları timeout olabilir.
+    - **Çözüm:** Backend'e toplu `/api/words/mark-known-batch` endpoint'i eklenmeli, tek bir istekle işlenmeli.
+
+#### C) Öncelik Sıralaması
+| Öncelik | İş | Etki |
+|---------|-----|------|
+| **P0 - Kritik** | React Query Persistence (cache'i AsyncStorage'a yaz) | Uygulama kapanıp açılınca beyaz ekran sorunu tamamen çözülür |
+| **P0 - Kritik** | `useMediaWords`, `useListDetail` staleTime ekle | Yavaş internette liste/film detayları anında görünür |
+| **P1 - Yüksek** | `useContinueLearning` staleTime > 0 yap, gereksiz refetch kaldır | Tab geçişlerinde gereksiz API çağrıları engellenir |
+| **P1 - Yüksek** | Bilinen kelimeler delta sync | Büyük veri transferi azalır |
+| **P2 - Orta** | `useMarkKnownBatch` tek endpoint | Ağ yükü 20x azalır |
+| **P2 - Orta** | Diğer hook'lara staleTime ekle | Genel performans iyileşir |
