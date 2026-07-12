@@ -206,6 +206,9 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
 
     // ── Bulk Delete for Audit Purge ──────────────────────────────────────
 
+    @Query(value = "SELECT id FROM word WHERE problem_found = true", nativeQuery = true)
+    List<Long> findIdsByProblemFoundTrue();
+
     @Modifying
     @Query(value = "DELETE FROM media_word WHERE word_id IN :ids", nativeQuery = true)
     int bulkDeleteMediaWordsByWordIds(@Param("ids") List<Long> ids);

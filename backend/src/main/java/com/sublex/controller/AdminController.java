@@ -704,11 +704,7 @@ public class AdminController {
     @Operation(summary = "Permanently deletes all problem_found words and their FK dependencies")
     @Transactional
     public ResponseEntity<Map<String, Object>> purgeAuditProblems() {
-        // Collect IDs first
-        List<Long> problemIds = wordRepository.findAll().stream()
-                .filter(w -> Boolean.TRUE.equals(w.getProblemFound()))
-                .map(Word::getId)
-                .toList();
+        List<Long> problemIds = wordRepository.findIdsByProblemFoundTrue();
 
         if (problemIds.isEmpty()) {
             return ResponseEntity.ok(Map.of("deleted", 0, "message", "No problem words to purge."));

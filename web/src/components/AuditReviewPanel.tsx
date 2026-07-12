@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Loader2, AlertCircle, CheckCircle, RefreshCw, X, ChevronLeft, ChevronRight, Info, Download, BarChart3 } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, RefreshCw, X, ChevronLeft, ChevronRight, Info, Download, BarChart3, Trash2 } from 'lucide-react';
 import { PipelineAPI, Page } from '@/services/MediaService';
 import { Word } from '@/services/WordListService';
 import api from '@/services/api';
@@ -304,7 +304,7 @@ const AuditReviewPanel = () => {
                     >
                         {actionLoading === 'purge' ? <Loader2 className="w-3 h-3 animate-spin" /> : (
                             <>
-                                <X className="w-3 h-3" />
+                                <Trash2 className="w-3 h-3" />
                                 Temizle ({stats?.totalProblems || 0})
                             </>
                         )}
