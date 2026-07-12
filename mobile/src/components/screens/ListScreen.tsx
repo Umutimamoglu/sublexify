@@ -807,6 +807,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   // One-time hints for tour
   const [showPlayHint, setShowPlayHint] = useState(false);
   const [showViewHint, setShowViewHint] = useState(false);
+  const [showQuizHint, setShowQuizHint] = useState(false);
   const [onlyUnknown, setOnlyUnknown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchActive, setSearchActive] = useState(false);
@@ -821,7 +822,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const [addModal, setAddModal] = useState<{ wordId: number; wordName: string } | null>(null);
   const [previewWord, setPreviewWord] = useState<ListWord | null>(null);
   const hintShown = useRef(false);
-  
+
   // Auto Play State
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [activeAutoPlayWordId, setActiveAutoPlayWordId] = useState<number | null>(null);
@@ -858,6 +859,11 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     return () => clearTimeout(timer);
   }, []);
 
+  // ⚠️ TEST ONLY — sil test bittikten sonra
+  useEffect(() => {
+    AsyncStorage.multiRemove(['@list_play_hint_shown', '@list_view_toggle_hint_shown', '@list_quiz_hint_shown']);
+  }, []);
+
 
 
   // One-time hint for the play button — shown first, then view-toggle hint follows
@@ -888,12 +894,15 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   useEffect(() => {
     if (viewHintChecked.current || isLoading) return;
     viewHintChecked.current = true;
-    // Only show standalone if play hint was already seen
-    AsyncStorage.multiGet(['@list_play_hint_shown', '@list_view_toggle_hint_shown']).then(([playItem, viewItem]) => {
+    AsyncStorage.multiGet(['@list_play_hint_shown', '@list_view_toggle_hint_shown', '@list_quiz_hint_shown']).then(([playItem, viewItem, quizItem]) => {
       const playSeen = playItem[1] === 'true';
       const viewSeen = viewItem[1] === 'true';
+      const quizSeen = quizItem[1] === 'true';
+      
       if (playSeen && !viewSeen) {
         setTimeout(() => setShowViewHint(true), 600);
+      } else if (playSeen && viewSeen && !quizSeen) {
+        setTimeout(() => setShowQuizHint(true), 600);
       }
     });
   }, [isLoading]);
@@ -901,6 +910,17 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const dismissViewHint = useCallback(() => {
     setShowViewHint(false);
     AsyncStorage.setItem('@list_view_toggle_hint_shown', 'true');
+    // Show quiz hint next
+    AsyncStorage.getItem('@list_quiz_hint_shown').then((seen) => {
+      if (seen !== 'true') {
+        setTimeout(() => setShowQuizHint(true), 400);
+      }
+    });
+  }, []);
+
+  const dismissQuizHint = useCallback(() => {
+    setShowQuizHint(false);
+    AsyncStorage.setItem('@list_quiz_hint_shown', 'true');
   }, []);
 
   // ─── Auto Play TTS Logic ──────────────────────────────────
@@ -924,53 +944,53 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
       stopAutoPlay();
       return;
     }
-    
+
     if (filteredWords.length === 0) return;
 
     isAutoPlayingRef.current = true;
     setIsAutoPlaying(true);
-    
+
     if (autoPlayIndexRef.current >= filteredWords.length) {
-        autoPlayIndexRef.current = 0;
+      autoPlayIndexRef.current = 0;
     }
 
     const playNextWord = () => {
       if (!isAutoPlayingRef.current) return;
-      
+
       if (autoPlayIndexRef.current >= filteredWords.length) {
         stopAutoPlay();
         return;
       }
-      
+
       const currentWord = filteredWords[autoPlayIndexRef.current];
       setActiveAutoPlayWordId(currentWord.id);
-      
+
       const enWord = currentWord.word;
       const trMeaning = currentWord.definition?.meanings?.[0]?.definition;
       const exampleText = currentWord.definition?.meanings?.[0]?.example;
       const enExample = stripTr(exampleText);
       const trExample = getTurkishExample(exampleText);
-      
+
       const sequence: { text: string; lang: string }[] = [];
       if (enWord) sequence.push({ text: enWord, lang: 'en-US' });
       if (trMeaning) sequence.push({ text: trMeaning, lang: 'tr-TR' });
       if (enExample) sequence.push({ text: enExample, lang: 'en-US' });
       if (trExample) sequence.push({ text: trExample, lang: 'tr-TR' });
-      
+
       let step = 0;
-      
+
       const playNextStep = () => {
         if (!isAutoPlayingRef.current) return;
-        
+
         if (step >= sequence.length) {
           autoPlayIndexRef.current++;
           autoPlayTimeoutRef.current = setTimeout(playNextWord, 1000);
           return;
         }
-        
+
         const item = sequence[step];
         step++;
-        
+
         speakText(item.text, item.lang as any, {
           language: item.lang,
           rate: 0.9,
@@ -984,10 +1004,10 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
           }
         });
       };
-      
+
       playNextStep();
     };
-    
+
     playNextWord();
   }, [filteredWords, stopAutoPlay]);
 
@@ -1242,7 +1262,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             placement="bottom"
             onClose={dismissPlayHint}
             backgroundColor="transparent"
-            showChildInTooltip={false}
+            showChildInTooltip={true}
             closeOnBackgroundInteraction
             closeOnContentInteraction={false}
             closeOnChildInteraction={false}
@@ -1255,8 +1275,8 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
           >
             <TouchableOpacity
               style={[
-                styles.toggleBtn, 
-                isAutoPlaying && styles.toggleActive, 
+                styles.toggleBtn,
+                isAutoPlaying && styles.toggleActive,
                 { flexDirection: 'row', gap: 4, width: 'auto', paddingHorizontal: 8 }
               ]}
               onPress={toggleAutoPlay}
@@ -1264,7 +1284,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
             >
               <Ionicons name={isAutoPlaying ? "pause-circle-outline" : "play-circle-outline"} size={18} color={isAutoPlaying ? '#fff' : c.TEXT_S} />
               <Text style={{ fontSize: 13, fontWeight: 'bold', color: isAutoPlaying ? '#fff' : c.TEXT_S }}>
-                 {isAutoPlaying ? 'Duraklat' : (autoPlayIndexRef.current > 0 && autoPlayIndexRef.current < filteredWords.length ? `Sürdür (${filteredWords.length - autoPlayIndexRef.current})` : `Çal (${filteredWords.length})`)}
+                {isAutoPlaying ? 'Duraklat' : (autoPlayIndexRef.current > 0 && autoPlayIndexRef.current < filteredWords.length ? `Sürdür (${filteredWords.length - autoPlayIndexRef.current})` : `Çal (${filteredWords.length})`)}
               </Text>
             </TouchableOpacity>
           </Tooltip>
@@ -1274,13 +1294,13 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
               onPress={dismissViewHint}
               icon="albums-outline"
               title="Çalışma modunu değiştir"
-              text="Buradan kelimeleri kart kart çevirerek (flashcard) çalışabilir ya da liste görünümüne geri dönebilirsin. Hadi dene!"
-              isLast={true}
+              text="Buradan kelimeleri kart kart çevirerek (flashcard) çalışabilir ya da liste görünümüne geri dönebilirsin."
+              isLast={false}
             />}
             placement="bottom"
             onClose={dismissViewHint}
             backgroundColor="transparent"
-            showChildInTooltip={false}
+            showChildInTooltip={true}
             closeOnBackgroundInteraction
             closeOnContentInteraction={false}
             closeOnChildInteraction={false}
