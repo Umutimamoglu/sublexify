@@ -313,3 +313,31 @@ Bu bölümde, projenin mimarisini ve kullanıcı deneyimini geliştirmek için p
   * iOS'ta `AVAudioSession` kategori ayarının `ambient` yerine `playback` olarak değiştirilmesi gerekiyor. Bu, sessiz anahtarını bypass eder.
   * Expo'da bu ayar `expo-av`'nin `Audio.setAudioModeAsync({ playsInSilentModeIOS: true })` fonksiyonu ile yapılabilir.
   * Android'de zaten medya ses kanalı (STREAM_MUSIC) kullanıldığı için bu sorun genellikle oluşmaz.
+
+### 4. UI Akıcılığı, Performans ve Modernizasyon (Animasyonlar, Butonlar, Listeler)
+
+**Konu:** Uygulamanın hissiyatını (feel) daha modern, akıcı ve premium hale getirmek için yapılması gereken teknik güncellemeler.
+
+#### A) `FlatList` Yerine `FlashList` (Shopify) Kullanımı
+- **Mevcut Durum:** Uygulama genelinde (`ListScreen`, `VocabularyScreen`, `DiscoverScreen`, `MediaDetailScreen` vb.) listeleme için standart React Native `FlatList` kullanılıyor. 
+- **Sorun:** Özellikle kullanıcının listesinde veya bir filmde 200+ kelime olduğunda, kaydırma sırasında FPS düşüşleri (kasmalar) ve bellek (RAM) şişmesi yaşanıyor.
+- **Çözüm:** Tüm uzun listeler Shopify'ın `@shopify/flash-list` kütüphanesine geçirilmeli. Cell-recycling (hücre geri dönüşümü) sayesinde 5x daha akıcı kaydırma (60/120 FPS) sağlanır.
+
+#### B) `TouchableOpacity` Yerine Modern `Pressable` + Reanimated (Haptic Feedback)
+- **Mevcut Durum:** Uygulamadaki butonlar, kartlar ve tıklanabilir alanların %90'ında standart `TouchableOpacity` kullanılmış.
+- **Sorun:** Sadece opaklık değişimi modern bir hissiyat vermiyor. Kullanıcı etkileşimi zayıf hissettiriyor. Ayrıca buton hit (tıklama) alanları (`hitSlop`) yetersiz bırakılmış.
+- **Çözüm:** 
+  1. Standart `TouchableOpacity` yerine React Native'in `Pressable` bileşeni (veya `react-native-gesture-handler`'ın tıklama bileşenleri) kullanılmalı.
+  2. Tıklamalarda küçülme/büyüme animasyonları (`react-native-reanimated` ile scale animasyonları) eklenmeli.
+  3. Buton tıklamalarında (özellikle listeye ekleme, kelimeyi öğrendim işaretleme gibi aksiyonlarda) `expo-haptics` ile hafif titreşim (haptic feedback) verilmeli.
+
+#### C) Görsel (Image) Optimizasyonu
+- **Mevcut Durum:** Uygulama genelinde React Native'in kendi `<Image>` componenti kullanılmış.
+- **Sorun:** Film ve dizi posterlerinin yüklendiği sayfalarda (`DiscoverScreen`, `ExploreScreen`) listeler kaydırıldıkça resimler bellekte yer kaplıyor ve eski resimlerin renderlanması sorun yaratıyor.
+- **Çözüm:** `expo-image` kütüphanesine geçilmeli. Disk ve memory caching (önbellekleme) sayesinde resimler anında yüklenir ve bellek taşması önlenir.
+
+#### D) Flashcard ve Guided Flow Optimizasyonu
+- **Mevcut Durum:** Rehber akışında (Guided Flow) ve kart çevirme animasyonlarında (`FlashCard.tsx`) Reanimated kullanılsa da, kartın içeriğindeki render yükü (iç içe ScrollView'lar, çok fazla bileşen) ağır olduğu için jest/kaydırma anlarında droplar olabiliyor.
+- **Çözüm:** 
+  1. Kart çevirme (flip) animasyonu sadece kart yüzeyi değiştiğinde tetiklenmeli, React render döngüsünden tamamen bağımsız (worklet) çalıştırılmalı.
+  2. Kartların arka planları için modern UI blur efektleri (Glassmorphism, `expo-blur`) ve hafif gölgeler eklenebilir.
