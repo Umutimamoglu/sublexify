@@ -59,17 +59,17 @@ function UserInfoSection({ requests, feedbacks, loading, onUpdateStatus }: {
                                     </div>
                                     <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
                                         <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {req.userName}</span>
-                                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(req.createdAt).toLocaleDateString()}</span>
+                                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : ''}</span>
                                     </div>
                                     <div className="mt-4 flex gap-2">
                                         <button 
-                                            onClick={() => onUpdateStatus(req.id, 'APPROVED')}
+                                            onClick={() => req.id && onUpdateStatus(req.id, 'APPROVED')}
                                             className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors"
                                         >
                                             Onayla
                                         </button>
                                         <button 
-                                            onClick={() => onUpdateStatus(req.id, 'REJECTED')}
+                                            onClick={() => req.id && onUpdateStatus(req.id, 'REJECTED')}
                                             className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors"
                                         >
                                             Reddet
@@ -105,7 +105,7 @@ function UserInfoSection({ requests, feedbacks, loading, onUpdateStatus }: {
                                             {f.category}
                                         </span>
                                     </div>
-                                    <span className="text-[10px] text-gray-500">{new Date(f.createdAt).toLocaleString()}</span>
+                                    <span className="text-[10px] text-gray-500">{f.createdAt ? new Date(f.createdAt).toLocaleString() : ''}</span>
                                 </div>
                                 <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                                     {f.message}

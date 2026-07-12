@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MediaService, { type Media, type MediaWordsResponse } from '@/services/MediaService';
 import MediaHeader from '@/components/features/MediaHeader';

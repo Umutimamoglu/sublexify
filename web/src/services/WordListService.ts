@@ -27,6 +27,8 @@ export interface Word {
     language: string;
     definition?: WordDefinition;
     difficulty?: string;
+    frequency?: number;
+    isKnown?: boolean;
     isEnriched?: boolean;
     isVerified?: boolean;
     judgeStatus?: string;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Circle, Volume2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Circle, Volume2, X, List, Check } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 // Types
