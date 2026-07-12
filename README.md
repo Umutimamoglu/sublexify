@@ -210,8 +210,10 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 Bu bölümde, projenin mimarisini ve kullanıcı deneyimini geliştirmek için planlanan veya üzerinde çalışılması gereken maddeler yer almaktadır:
 
 ### 1. Splash Screen ve App Initialization (İlk Veri Çekme Optimizasyonu)
-**Konu:** Uygulama ilk açıldığında temel verilerin ne zaman ve nasıl çekildiği.
+**Konu:** Uygulama ilk açıldığında temel verilerin ne zaman ve nasıl çekildiği ve Yavaş İnternet/Beyaz Ekran sorununun çözümü.
 - **Mevcut Durum:** 
-  Şu anda filmler, diziler ve kelime listeleri (`useMedia`, `useLists`); kullanıcı uygulamayı açıp anasayfa (Discover) veya Listeler sekmesine girdiğinde sayfa bazlı (React Query ile) çekilmektedir. Filmlerin ve dizilerin *içindeki kelimelerin listesi* ise sadece o yapıma tıklanıp detayına (`ListScreen`) girildiğinde yüklenmektedir.
+  Şu anda filmler, diziler ve kelime listeleri (`useMedia`, `useLists`); kullanıcı uygulamayı açıp anasayfa (Discover) veya Listeler sekmesine girdiğinde sayfa bazlı çekilmektedir. Filmlerin ve dizilerin *içindeki kelimelerin listesi* ise sadece o yapıma tıklanıp detayına girildiğinde yüklenmektedir. İnternet kötü olduğunda veya backend yavaş yanıt verdiğinde anasayfa uzun süre **beyaz ekran** olarak kalabilmektedir.
 - **Yapılması Gereken (To-Do):** 
-  Uygulamanın başlangıcında (henüz Splash Screen ekrandayken veya bir açılış/yükleme ekranındayken) tüm kritik öncelikli verileri (kullanıcının devam eden dizileri, temel listeleri ve app ayarları) tek bir servisten (örn: `/api/app-init`) çekecek bir mekanizma kurulması. Bu sayede kullanıcı ana ekrana düştüğünde hiçbir "Loading" animasyonu görmeyecek ve ekranlar anında dolu olarak açılacaktır.
+  * **Onboarding Prefetching (Ön Yükleme):** Kullanıcı uygulamayı ilk indirdiğinde 6-7 sayfalık "Onboarding" (Tanıtım) ekranlarını okurken, arka planda gizlice bir `/api/app-init` servisinin çağrılması.
+  * Bu servis sayesinde kullanıcı tanıtımı bitirip ana ekrana geçene kadar (15-20 saniye içinde) tüm kritik öncelikli veriler (popüler filmler, kullanıcının listeleri vb.) indirilmiş ve hazır bekletilmiş olacak.
+  * **Temel Amaç:** İnternet yavaş bile olsa, kullanıcı anasayfaya düştüğünde hiçbir "Loading" animasyonu veya rahatsız edici beyaz ekran görmeden anında dolu bir ekranla karşılaşmasını sağlamak.
