@@ -779,7 +779,7 @@ const UserListsPage = () => {
                                                     )}
                                                 </div>
                                             ) : (
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-5">
                                                     {filteredWords.slice(0, visibleCount).map((word: any) => (
                                                         <WordCard
                                                             key={word.id}
@@ -825,7 +825,7 @@ const UserListsPage = () => {
                                 <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-5">
                                 {frequentWords.map((word, index) => (
                                     <div key={word.id} className="relative group">
                                         <div className="absolute -top-3 -left-3 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold z-10 shadow-lg shadow-indigo-500/30">

@@ -360,7 +360,7 @@ const MediaDetailPage = () => {
 
 
             {/* Word Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
                 {wordData.words
                     .filter(w => selectedLevels.length === 0 || (w.difficulty && selectedLevels.includes(w.difficulty)))
                     .filter(w => !filterUnknown || !w.isKnown || sessionKnownIdsRef.current.has(w.id))

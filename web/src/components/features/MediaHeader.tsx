@@ -18,7 +18,7 @@ const MediaHeader = ({ media }: MediaHeaderProps) => {
             {media.backdropUrl ? (
                 <div
                     className="absolute inset-0 bg-cover bg-center opacity-30 transition-transform duration-700 group-hover:scale-105"
-                    style={{ backgroundImage: `url(${media.backdropUrl})` }}
+                    style={{ backgroundImage: `url(${media.backdropUrl?.replace('/original/', '/w1280/')})` }}
                 />
             ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-gray-900 to-black opacity-80" />
@@ -32,8 +32,9 @@ const MediaHeader = ({ media }: MediaHeaderProps) => {
                 {/* Poster */}
                 {media.posterUrl && (
                     <img
-                        src={media.posterUrl}
+                        src={media.posterUrl?.replace('/original/', '/w500/')}
                         alt={media.title}
+                        loading="lazy"
                         className="w-32 sm:w-48 rounded-xl shadow-2xl border border-white/10 hidden sm:block object-cover aspect-[2/3]"
                     />
                 )}

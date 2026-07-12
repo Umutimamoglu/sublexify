@@ -204,8 +204,8 @@ const LandingPage = () => {
                             key={heroIndex}
                             className="absolute inset-0 bg-cover bg-center transition-all duration-700"
                             style={{
-                                backgroundImage: `url(${heroItem.backdropUrl || heroItem.posterUrl})`,
-                                filter: 'brightness(0.55)',
+                                backgroundImage: `url(${(heroItem.backdropUrl || heroItem.posterUrl)?.replace('/original/', '/w1280/')})`,
+                                backgroundPosition: 'center 20%',
                             }}
                         />
                         {/* Gradient overlay */}
@@ -331,7 +331,7 @@ const LandingPage = () => {
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-14 rounded-lg overflow-hidden shrink-0 bg-gray-100 dark:bg-gray-800">
                                                     {(item.posterUrl || item.backdropUrl) ? (
-                                                        <img src={item.posterUrl || item.backdropUrl} alt={item.title} className="w-full h-full object-cover" />
+                                                        <img src={(item.posterUrl || item.backdropUrl)?.replace('/original/', '/w500/')} alt={item.title} loading="lazy" className="w-full h-full object-cover" />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-gray-400">
                                                             {item.type === 'MOVIE' ? <Film className="w-4 h-4" /> : <Tv className="w-4 h-4" />}
@@ -558,7 +558,7 @@ function MediaLandscapeCard({ media, onClick, t }: { media: Media; onClick: () =
             {/* Poster left */}
             <div className="w-24 h-full bg-gray-900 shrink-0 overflow-hidden">
                 {media.posterUrl ? (
-                    <img src={media.posterUrl} alt={title} className="w-full h-full object-cover" />
+                    <img src={media.posterUrl?.replace('/original/', '/w500/')} alt={title} loading="lazy" className="w-full h-full object-cover" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-indigo-900/50">
                         <span className="text-4xl font-black text-white/30">{title.charAt(0)}</span>
@@ -572,7 +572,7 @@ function MediaLandscapeCard({ media, onClick, t }: { media: Media; onClick: () =
                 {media.backdropUrl && (
                     <div
                         className="absolute inset-0 opacity-20 bg-cover bg-center"
-                        style={{ backgroundImage: `url(${media.backdropUrl})` }}
+                        style={{ backgroundImage: `url(${media.backdropUrl?.replace('/original/', '/w780/')})` }}
                     />
                 )}
 

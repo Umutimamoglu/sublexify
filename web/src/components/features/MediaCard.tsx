@@ -57,8 +57,9 @@ const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
                 <div className={`aspect-[2/3] w-full relative overflow-hidden ${!imageUrl ? `${config.bgLight} ${config.bgDark}` : ''}`}>
                     {imageUrl ? (
                         <img
-                            src={imageUrl}
+                            src={imageUrl.replace('/original/', '/w500/')}
                             alt={media.title}
+                            loading="lazy"
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                     ) : (
