@@ -147,3 +147,17 @@ export type ProgressStatsDTO = {
   difficultWords: number;
   wordsToReviewToday: number;
 };
+
+// ─── App Init ─────────────────────────────────────────────────
+// GET /api/app-init — açılışta tüm kritik veri tek istekte.
+// Anonim çağrıda (onboarding) sadece public alanlar dolu gelir.
+export type AppInitDTO = {
+  media: MediaDTO[] | null;
+  frequentWords: WordDTO[] | null;
+  continueLearning: MediaDTO[] | null;
+  lists: WordListDTO[] | null;
+  userStatistics: UserStatistics | null;
+  knownWords: WordDTO[] | null;
+  watchedMediaIds: number[] | null;
+  progressStats: ProgressStatsDTO | null;
+};

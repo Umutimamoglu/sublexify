@@ -1,4 +1,5 @@
 export const ENDPOINTS = {
+  appInit: '/app-init',
   media: {
     list:             '/media',
     detail:           (id: number) => `/media/${id}`,
@@ -9,10 +10,11 @@ export const ENDPOINTS = {
     watchedIds:       '/media/watched-ids',
   },
   words: {
-    search:    '/words/search',
-    frequent:  '/words/frequent',
-    detail:    (id: number) => `/words/${id}`,
-    markKnown: (id: number) => `/words/${id}/mark-known`,
+    search:         '/words/search',
+    frequent:       '/words/frequent',
+    detail:         (id: number) => `/words/${id}`,
+    markKnown:      (id: number) => `/words/${id}/mark-known`,
+    markKnownBatch: '/words/mark-known/batch',
   },
   user: {
     stats:           '/user/statistics',

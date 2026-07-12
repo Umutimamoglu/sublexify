@@ -22,6 +22,8 @@ import LottieView from 'lottie-react-native';
 import { useAuthStore } from '@/src/store/authStore';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { Text } from '@/src/components/ui/Text';
+import { queryClient } from '@/src/api/queryClient';
+import { prefetchAppInit } from '@/src/api/appInit';
 
 const { width, height } = Dimensions.get('window');
 
@@ -932,6 +934,13 @@ export default function OnboardingScreen() {
 
   const total = SLIDES.length;
   const isLast = currentIndex === total - 1;
+
+  // Kullanıcı slaytları okurken kritik veriler (katalog, sık kelimeler)
+  // arka planda insin — onboarding bitince ana ekran anında dolu açılır.
+  // Login olmuş kullanıcı için root layout zaten tetikliyor.
+  useEffect(() => {
+    if (!isAuthenticated) prefetchAppInit(queryClient);
+  }, [isAuthenticated]);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / width);

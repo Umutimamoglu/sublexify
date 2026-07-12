@@ -38,6 +38,8 @@ public class SecurityConfig {
                 // Public read-only content
                 .requestMatchers(HttpMethod.GET, "/api/media/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/words/**").permitAll()
+                // App startup aggregate — anonymous gets public catalog, JWT gets full payload
+                .requestMatchers(HttpMethod.GET, "/api/app-init").permitAll()
 
                 // Swagger / OpenAPI
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
