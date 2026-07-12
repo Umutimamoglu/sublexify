@@ -51,7 +51,7 @@ export function Text({ variant, className, style, tabularNums, ...props }: Theme
   const fontFamily = FONT_MAP[fw as keyof typeof FONT_MAP] || 'PlusJakartaSans_400Regular';
 
   // Include tabular-nums if requested
-  const fontVariant = tabularNums ? ['tabular-nums'] as const : flatStyle.fontVariant;
+  const fontVariant: TextStyle['fontVariant'] = tabularNums ? ['tabular-nums'] : flatStyle.fontVariant;
 
   // We explicitly map the fontFamily based on className or inline style.
   // We MUST leave fontWeight as undefined in our override so that NativeWind's generated fontWeight (e.g. 700)
