@@ -141,16 +141,15 @@ public class DefinitionShorteningService {
         }
 
         String systemPrompt = """
-                You are a Turkish Dictionary Editor. Your ONLY job is to SHORTEN verbose Turkish definitions to their simplest form.
+                You are a Turkish Dictionary Editor. Your job is to SHORTEN verbose Turkish definitions to their simplest dictionary form.
 
                 CRITICAL INSTRUCTIONS:
-                1. PRESERVE THE ORIGINAL MEANING: You MUST strictly retain the exact semantic meaning of the original Turkish definition. Do NOT provide a different, obscure, or slang translation of the English word (e.g., if original definition is about "digging dirt", do NOT output "hoşlanmak (argo)").
-                2. Her anlamı kısaltırken o anlamın örnek cümlesini (Example) REFERANS AL. Kısaltılan tanım ile örnek cümle anlam olarak kesinlikle uyuşmalıdır. Örnek cümleye bakarak orijinal tanımın hangi anlamda kullanıldığını teyit et.
-                3. Replace long explanatory definitions with the shortest possible Turkish equivalent word(s).
-                4. If a simple 1-2 word Turkish translation exists, USE IT.
-                5. Keep the same POS (part of speech). Do NOT add new meanings or remove existing ones.
-                6. NO DUPLICATE DEFINITIONS: If your shortening results in two identical definitions for the same word and the same POS, you MUST slightly differentiate them (e.g., provide a secondary nuance) or remove/merge one. Never return two exact same strings like "Eğlence." and "Eğlence."
-                7. Avoid confusing words: e.g. for 'resume', if it means 'to start again after a pause', use 'kaldığı yerden devam etmek', not 'yeniden başlatmak'. For 'capital' as a city, use 'başkent', not 'sermaye'. Only give what the ORIGINAL definition describes.
+                1. 1-TO-1 TRANSLATION IS PRIORITY: Eğer İngilizce kelimenin doğrudan Türkçe tek veya iki kelimelik tam bir karşılığı varsa (Örn: Hallucination = Halüsinasyon, Apple = Elma), KESİNLİKLE açıklayıcı cümle kurma! Doğrudan bu kısa karşılığı yaz.
+                2. PRESERVE THE ORIGINAL MEANING: Eğer kelimenin kısa bir çevirisi yoksa ve anlamı vermek için orijinal uzun cümlenin kalması ŞART ise (yani kısaltmak anlamı bozacaksa), DÜZENLEME YAPMAMA HAKKINA SAHİPSİN. Bu durumda orijinal cümleyi aynen bırak.
+                3. Her anlamı kısaltırken o anlamın örnek cümlesini (Example) REFERANS AL. Kısaltılan tanım ile örnek cümle anlam olarak kesinlikle uyuşmalıdır.
+                4. Keep the same POS (part of speech). Do NOT add new meanings or remove existing ones.
+                5. NO DUPLICATE DEFINITIONS: If your shortening results in two identical definitions for the same word and the same POS, you MUST slightly differentiate them.
+                6. Avoid confusing words: e.g. for 'resume' (to start again), use 'kaldığı yerden devam etmek', not 'yeniden başlatmak'. Sadece ORİJİNAL tanımın kastettiği anlamı ver.
 
                 EXAMPLES:
                 - "Motorlu, dört tekerlekli, insanları bir yerden taşımak için kullanılan taşıt." → "Araba, otomobil."
@@ -167,7 +166,7 @@ public class DefinitionShorteningService {
         String userPrompt = "SHORTEN the following verbose Turkish definitions:\n\n" + input;
 
         try {
-            String response = openAIService.generateContent(systemPrompt, userPrompt, "gpt-5-mini");
+            String response = openAIService.generateContent(systemPrompt, userPrompt, "gpt-5.4-mini");
             if (response == null) {
                 log.error("GPT returned null for shortening batch");
                 return;
