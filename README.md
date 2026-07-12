@@ -231,7 +231,13 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 - **Yapılacak:** Silip yeniden yazmak yerine mevcut kayıtlarla farkı hesaplayıp sadece değişenleri INSERT/UPDATE/DELETE etmek (upsert/diff yaklaşımı).
 - **Not:** İçerik ekleme seyrek olduğu sürece acil değil.
 
-### 2. Küçük Kalanlar (kademeli)
+### 2. Web Mobil UI Optimizasyonu (Kritik Eksikler)
+- [ ] **MediaHeader:** Mobilde `hidden sm:block` nedeniyle film/dizi afişi (poster) tamamen gizleniyor. Mobilde başlığın üstünde küçük, masaüstünde yanda olacak şekilde güncellenmeli (`flex-col sm:flex-row`).
+- [ ] **WordCard:** Sağ-sol padding (`px-16`) dar ekranlarda kelimeleri çok sıkıştırıyor veya taşırıyor. Responsive padding (`px-6 sm:px-14`) uygulanmalı.
+- [ ] **Admin Paneli:** Tablolar mobilde taşıyor. Tüm `<table` elementleri `<div className="overflow-x-auto w-full">` içine alınmalı.
+- [ ] **FlashCardComponents:** `WordPreviewModal` mobilde ekrana tam yapışıyor, dışına `mx-4` eklenerek nefes alması sağlanmalı.
+
+### 3. Küçük Kalanlar (kademeli)
 - [ ] **Cihaz testi:** Arka plan TTS (ekran kilitliyken auto-play) yeni dev build ile gerçek cihazda doğrulanmalı (`eas build --profile development` — native config değişti).
 - [ ] **Web paritesi:** Web açılışta da `/api/app-init` endpoint'ini kullanabilir (şu an mobile-only).
 - [ ] **Kilit ekranı kontrolleri:** Auto-play için oynat/duraklat — `react-native-track-player` + TTS buffer gerektirir, ayrı iş.

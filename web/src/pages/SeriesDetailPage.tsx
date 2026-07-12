@@ -48,10 +48,9 @@ const SeriesDetailPage = () => {
         }
     };
 
-    // Get all episodes for this series
     const seriesEpisodes = useMemo(() => {
         if (!tmdbId) return [];
-        return mediaList.filter(m => m.tmdbId === parseInt(tmdbId) && (m.type === 'EPISODE' || m.type === 'SEASON'));
+        return mediaList.filter(m => String(m.tmdbId) === String(tmdbId) && (m.type === 'EPISODE' || m.type === 'SEASON'));
     }, [mediaList, tmdbId]);
 
     // Metadata from the first episode found (usually easiest way without dedicated series endpoint)
