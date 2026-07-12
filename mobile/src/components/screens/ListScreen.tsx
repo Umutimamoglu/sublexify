@@ -804,7 +804,8 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
   // ─── State ────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  // One-time hint pointing at the view-mode toggle (list ↔ flashcard)
+  // One-time hints for tour
+  const [showPlayHint, setShowPlayHint] = useState(false);
   const [showViewHint, setShowViewHint] = useState(false);
   const [onlyUnknown, setOnlyUnknown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -859,13 +860,39 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
 
 
-  // One-time hint for the view-toggle button — shown once ever, after a list loads
+  // One-time hint for the play button — shown first, then view-toggle hint follows
+  const playHintChecked = useRef(false);
+  useEffect(() => {
+    if (playHintChecked.current || isLoading) return;
+    playHintChecked.current = true;
+    AsyncStorage.getItem('@list_play_hint_shown').then((seen) => {
+      if (seen !== 'true') {
+        setTimeout(() => setShowPlayHint(true), 800);
+      }
+    });
+  }, [isLoading]);
+
+  const dismissPlayHint = useCallback(() => {
+    setShowPlayHint(false);
+    AsyncStorage.setItem('@list_play_hint_shown', 'true');
+    // After dismissing play hint, show view hint if not seen yet
+    AsyncStorage.getItem('@list_view_toggle_hint_shown').then((seen) => {
+      if (seen !== 'true') {
+        setTimeout(() => setShowViewHint(true), 400);
+      }
+    });
+  }, []);
+
+  // One-time hint for the view-toggle button
   const viewHintChecked = useRef(false);
   useEffect(() => {
     if (viewHintChecked.current || isLoading) return;
     viewHintChecked.current = true;
-    AsyncStorage.getItem('@list_view_toggle_hint_shown').then((seen) => {
-      if (seen !== 'true') {
+    // Only show standalone if play hint was already seen
+    AsyncStorage.multiGet(['@list_play_hint_shown', '@list_view_toggle_hint_shown']).then(([playItem, viewItem]) => {
+      const playSeen = playItem[1] === 'true';
+      const viewSeen = viewItem[1] === 'true';
+      if (playSeen && !viewSeen) {
         setTimeout(() => setShowViewHint(true), 600);
       }
     });
@@ -1203,20 +1230,44 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
           >
             <Ionicons name="search-outline" size={16} color={searchActive ? '#fff' : c.TEXT_S} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.toggleBtn, 
-              isAutoPlaying && styles.toggleActive, 
-              { flexDirection: 'row', gap: 4, width: 'auto', paddingHorizontal: 8 }
-            ]}
-            onPress={toggleAutoPlay}
-            activeOpacity={0.75}
+          <Tooltip
+            isVisible={showPlayHint}
+            content={<TourTooltipContent
+              onPress={dismissPlayHint}
+              icon="play-circle-outline"
+              title="Kelimeleri sesli dinle 🔊"
+              text="Bu butona basarak listedeki tüm kelimeleri sırayla seslendir! Kelime, Türkçe anlamı ve örnek cümleyle tam bir çalışma seansı başlatır."
+              isLast={false}
+            />}
+            placement="bottom"
+            onClose={dismissPlayHint}
+            backgroundColor="transparent"
+            showChildInTooltip={false}
+            closeOnBackgroundInteraction
+            closeOnContentInteraction={false}
+            closeOnChildInteraction={false}
+            contentStyle={TOUR_CARD_STYLE}
+            arrowSize={{ width: 18, height: 9 }}
+            arrowStyle={{ borderBottomColor: TOUR_NEON }}
+            disableShadow={false}
+            topAdjustment={Platform.OS === 'android' ? -(StatusBar.currentHeight ?? 0) : 0}
+            displayInsets={{ top: 24, bottom: 24, left: 12, right: 12 }}
           >
-            <Ionicons name={isAutoPlaying ? "pause-circle-outline" : "play-circle-outline"} size={18} color={isAutoPlaying ? '#fff' : c.TEXT_S} />
-            <Text style={{ fontSize: 13, fontWeight: 'bold', color: isAutoPlaying ? '#fff' : c.TEXT_S }}>
-               {isAutoPlaying ? 'Duraklat' : (autoPlayIndexRef.current > 0 && autoPlayIndexRef.current < filteredWords.length ? `Sürdür (${filteredWords.length - autoPlayIndexRef.current})` : `Çal (${filteredWords.length})`)}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.toggleBtn, 
+                isAutoPlaying && styles.toggleActive, 
+                { flexDirection: 'row', gap: 4, width: 'auto', paddingHorizontal: 8 }
+              ]}
+              onPress={toggleAutoPlay}
+              activeOpacity={0.75}
+            >
+              <Ionicons name={isAutoPlaying ? "pause-circle-outline" : "play-circle-outline"} size={18} color={isAutoPlaying ? '#fff' : c.TEXT_S} />
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: isAutoPlaying ? '#fff' : c.TEXT_S }}>
+                 {isAutoPlaying ? 'Duraklat' : (autoPlayIndexRef.current > 0 && autoPlayIndexRef.current < filteredWords.length ? `Sürdür (${filteredWords.length - autoPlayIndexRef.current})` : `Çal (${filteredWords.length})`)}
+              </Text>
+            </TouchableOpacity>
+          </Tooltip>
           <Tooltip
             isVisible={showViewHint}
             content={<TourTooltipContent
