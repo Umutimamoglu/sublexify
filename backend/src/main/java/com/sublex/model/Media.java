@@ -9,7 +9,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "media")
+@Table(name = "media", indexes = {
+    @Index(name = "idx_media_imdb_id", columnList = "imdb_id"),
+    @Index(name = "idx_media_tmdb_id", columnList = "tmdb_id"),
+    @Index(name = "idx_media_type", columnList = "type"),
+    @Index(name = "idx_media_language", columnList = "language")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

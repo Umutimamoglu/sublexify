@@ -16,6 +16,13 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(name = "word", uniqueConstraints = {
         @UniqueConstraint(columnNames = { "word", "language" })
+}, indexes = {
+        @Index(name = "idx_word_word", columnList = "word"),
+        @Index(name = "idx_word_language", columnList = "language"),
+        @Index(name = "idx_word_difficulty", columnList = "difficulty"),
+        @Index(name = "idx_word_status", columnList = "status"),
+        @Index(name = "idx_word_is_enriched", columnList = "is_enriched"),
+        @Index(name = "idx_word_global_frequency", columnList = "global_frequency")
 })
 @Getter
 @Setter

@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "user_known_word", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"user_id", "word_id"})
+}, indexes = {
+    @Index(name = "idx_ukw_user_id", columnList = "user_id"),
+    @Index(name = "idx_ukw_word_id", columnList = "word_id")
 })
 @Data
 @NoArgsConstructor

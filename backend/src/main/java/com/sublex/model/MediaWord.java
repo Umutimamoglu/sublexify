@@ -12,6 +12,9 @@ import lombok.EqualsAndHashCode;
 @Entity
 @Table(name = "media_word", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"media_id", "word_id"})
+}, indexes = {
+    @Index(name = "idx_media_word_media_id", columnList = "media_id"),
+    @Index(name = "idx_media_word_word_id", columnList = "word_id")
 })
 @Getter
 @Setter

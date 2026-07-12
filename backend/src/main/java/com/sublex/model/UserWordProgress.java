@@ -13,6 +13,10 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "user_word_progress", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"user_id", "word_id"})
+}, indexes = {
+    @Index(name = "idx_uwp_user_id", columnList = "user_id"),
+    @Index(name = "idx_uwp_word_id", columnList = "word_id"),
+    @Index(name = "idx_uwp_next_review", columnList = "next_review_date")
 })
 @Data
 @NoArgsConstructor

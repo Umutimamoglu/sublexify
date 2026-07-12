@@ -15,7 +15,10 @@ import lombok.Setter;
 import lombok.EqualsAndHashCode;
 
 @Entity
-@Table(name = "word_lists")
+@Table(name = "word_lists", indexes = {
+    @Index(name = "idx_word_lists_user_id", columnList = "user_id"),
+    @Index(name = "idx_word_lists_source_media", columnList = "source_media_id")
+})
 @Getter
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
