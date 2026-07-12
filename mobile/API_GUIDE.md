@@ -86,6 +86,35 @@ Mobile platform geliştirme rehberi. Tüm API endpoint'leri, request/response fo
 
 ---
 
+## 0. App Init API — `/api/app-init`
+
+### Açılış verisi (aggregate, tek istek)
+
+```
+GET /api/app-init
+```
+
+Auth opsiyonel: JWT yoksa sadece `media` + `frequentWords` dolu döner (onboarding prefetch), JWT varsa tüm alanlar. Hata veren bölüm `null` gelir.
+
+**Response:**
+
+```json
+{
+  "media": "Media[]",
+  "frequentWords": "Word[] (page 0, size 50)",
+  "continueLearning": "Media[] | null",
+  "lists": "WordListDTO[] | null",
+  "userStatistics": { "totalKnownWords": 941, "totalWords": 15640 },
+  "knownWords": "Word[] | null",
+  "watchedMediaIds": "number[] | null",
+  "progressStats": "ProgressStatsDTO | null"
+}
+```
+
+Mobile kullanımı: `src/api/appInit.ts` → `prefetchAppInit(queryClient)` — yanıtı React Query cache'ine yazar.
+
+---
+
 ## 1. Media API — `/api/media`
 
 ### Tüm medya listesi
@@ -189,6 +218,16 @@ POST /api/words/{id}/mark-known?userId={userId}
 ```
 
 **Response:** `200 OK`
+
+### Toplu kelime biliyorum işaretle (tek istek)
+
+```
+POST /api/words/mark-known/batch
+Content-Type: application/json
+Body: [123, 456, 789]
+```
+
+**Response:** `200 OK` — N paralel istek yerine tek transaction. Auth zorunlu.
 
 ### Kelime bilmiyorum işaretle (geri al)
 

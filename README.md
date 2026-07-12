@@ -214,16 +214,28 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 
 Bu bölümde, projenin mimarisini ve kullanıcı deneyimini geliştirmek için planlanan veya üzerinde çalışılması gereken maddeler yer almaktadır:
 
-### 1. Splash Screen ve App Initialization (İlk Veri Çekme Optimizasyonu)
+### 1. ✅ Splash Screen ve App Initialization (İlk Veri Çekme Optimizasyonu) — TAMAMLANDI
 **Konu:** Uygulama ilk açıldığında temel verilerin ne zaman ve nasıl çekildiği ve Yavaş İnternet/Beyaz Ekran sorununun çözümü.
-- **Mevcut Durum:** 
-  Şu anda filmler, diziler ve kelime listeleri (`useMedia`, `useLists`); kullanıcı uygulamayı açıp anasayfa (Discover) veya Listeler sekmesine girdiğinde sayfa bazlı çekilmektedir. Filmlerin ve dizilerin *içindeki kelimelerin listesi* ise sadece o yapıma tıklanıp detayına girildiğinde yüklenmektedir. İnternet kötü olduğunda veya backend yavaş yanıt verdiğinde anasayfa uzun süre **beyaz ekran** olarak kalabilmektedir.
-- **Yapılması Gereken (To-Do):** 
-  * **Onboarding Prefetching (Ön Yükleme):** Kullanıcı uygulamayı ilk indirdiğinde 6-7 sayfalık "Onboarding" (Tanıtım) ekranlarını okurken, arka planda gizlice bir `/api/app-init` servisinin çağrılması.
-  * Bu servis sayesinde kullanıcı tanıtımı bitirip ana ekrana geçene kadar (15-20 saniye içinde) tüm kritik öncelikli veriler (popüler filmler, kullanıcının listeleri vb.) indirilmiş ve hazır bekletilmiş olacak.
-  * **Temel Amaç:** İnternet yavaş bile olsa, kullanıcı anasayfaya düştüğünde hiçbir "Loading" animasyonu veya rahatsız edici beyaz ekran görmeden anında dolu bir ekranla karşılaşmasını sağlamak.
+- **Yapılan (2026-07):**
+  * **Backend `GET /api/app-init`:** Açılışta gereken tüm kritik veriyi (katalog, sık kelimeler, devam edilen içerikler, listeler, istatistikler, bilinen kelimeler, izlenen ID'ler, progress) **tek istekte** dönen aggregate endpoint (`AppInitController`). Anonim çağrıda sadece public kısım (katalog + sık kelimeler) döner; bölümlerden biri hata verirse o alan `null` döner, istek patlamaz.
+  * **Mobile `src/api/appInit.ts`:** `/app-init` yanıtını doğru query key'lerle React Query cache'ine yazar (`prefetchAppInit`). Endpoint erişilemezse eski usul paralel prefetch'lere düşer (fallback). Aynı anda çift tetiklenmeye karşı tek uçuş (in-flight) koruması var.
+  * **Splash artık ağı BEKLEMİYOR:** Eskiden `_layout.tsx` splash'i gizlemeden önce 8 isteği `await` ediyordu (yavaş internette 10+ sn splash). Artık ekran persist edilen cache ile anında açılıyor; taze veri arka planda tek istekle geliyor.
+  * **Onboarding Prefetching:** Yeni kullanıcı tanıtım slaytlarını okurken `/api/app-init` anonim olarak çağrılıyor → katalog ve sık kelimeler kullanıcı ana ekrana düşmeden hazır. Login/register sonrası authenticated çağrı kullanıcı verilerini de dolduruyor.
+- **Kalan / İzlenecek:** Web tarafı da açılışta aynı `/api/app-init` endpoint'ini kullanabilir (henüz mobile-only).
 
-### 2. AsyncStorage / Cache Stratejisi ve Performans Optimizasyonu
+### 2. ✅ AsyncStorage / Cache Stratejisi ve Performans Optimizasyonu — TAMAMLANDI (delta sync hariç)
+
+**Yapılan (2026-07):**
+* **staleTime'lar eklendi:** `useMediaDetail` 30 dk, `useMediaWords` 15 dk, `useSeriesEpisodes` 24 sa, `useListDetail` 10 dk, `useLists` 15 dk, `useContinueLearning` 2 dk, `useUserStats` 5 dk, `useWatchedMediaIds` 10 dk.
+* **Akıllı invalidation kalıbı:** Mark-known mutation'ları büyük listeleri (knownWords, frequent, lists, continueLearning) `refetchType: 'none'` ile sadece *stale işaretler* — ağa hemen çıkmaz. Ekranlar (Discover, Lists, Vocabulary) focus olduğunda `isStale` kontrolüyle tek istekte tazeler. Sonuç: hızlı tab geçişlerinde 0 istek, her kelime işaretlemede 500+ kelimelik listelerin yeniden inmesi bitti.
+* **Zoraki `useFocusEffect` refetch'leri kaldırıldı** (DiscoverScreen) → yerine stale-kontrollü focus refresh.
+* **Batch mark-known tek istek:** Backend'e `POST /api/words/mark-known/batch` (body: `[id,...]`, tek transaction) eklendi; mobil `useMarkKnownBatch` artık 20 paralel istek yerine 1 istek atıyor (eski backend'e karşı 404/405 fallback'li).
+* React Query persistence zaten mevcuttu (`PersistQueryClientProvider` + AsyncStorage, 24 sa).
+
+**Bilinçli ertelenen:** Bilinen kelimeler *delta sync* — gerçek delta için sunucuda silme kayıtlarının (soft-delete/audit) tutulması gerekiyor (şema değişikliği). Persistence + `refetchType: 'none'` + tek istek batch, veri transferini zaten büyük oranda azalttığı için şimdilik gerek yok.
+
+<details>
+<summary>Orijinal analiz (arşiv)</summary>
 
 **Konu:** Mobil uygulamada hangi veriler cihazda (AsyncStorage) saklanıyor, hangileri saklanmıyor ve gereksiz API çağrıları nerede oluşuyor.
 
@@ -298,7 +310,21 @@ Bu bölümde, projenin mimarisini ve kullanıcı deneyimini geliştirmek için p
 | **P2 - Orta** | `useMarkKnownBatch` tek endpoint | Ağ yükü 20x azalır |
 | **P2 - Orta** | Diğer hook'lara staleTime ekle | Genel performans iyileşir |
 
-### 3. TTS (Otomatik Seslendirme) Arka Plan ve Sessiz Mod Sorunları
+</details>
+
+### 3. ✅ TTS Arka Plan ve Sessiz Mod Sorunları — TAMAMLANDI (cihaz testi bekliyor)
+
+**Yapılan (2026-07):**
+* **Sorun 2 (sessiz mod):** `Audio.setAudioModeAsync({ playsInSilentModeIOS: true })` zaten mevcuttu — iOS mute switch bypass ediliyor.
+* **Sorun 1 (arka plan):**
+  * iOS: `app.json` → `UIBackgroundModes: ["audio"]` eklendi + `staysActiveInBackground: true`. Ekran kilitli / arka plandayken audio session aktif kalır, TTS devam eder.
+  * Android: notifee **foreground service** (mediaPlayback tipli) — auto-play başlarken kalıcı "sesli çalışma" bildirimi gösterilir, sistem süreci öldürmez; durdurunca kapanır. Kod: `src/notifications/ttsPlaybackService.ts`; manifest izinleri/service tipi `plugins/withTtsForegroundService.js` config plugin'i ile (Android 14+ şartı).
+  * ⚠️ Native config değişti → **yeni dev build gerekir** (`eas build --profile development`). Gerçek cihazda ekran kapatarak test edilmeli.
+
+**Kalan (nice-to-have):** Kilit ekranında oynat/duraklat kontrolleri — `react-native-track-player` + TTS'i ses buffer'ına çevirme gerektirir; ayrı bir iş olarak planlanmalı.
+
+<details>
+<summary>Orijinal analiz (arşiv)</summary>
 
 **Konu:** Kelime listelerinde "Çal" butonuna basıldığında başlayan otomatik seslendirme (Auto-Play TTS) özelliğinin iki kritik sorunu var.
 
@@ -319,7 +345,22 @@ Bu bölümde, projenin mimarisini ve kullanıcı deneyimini geliştirmek için p
   * Expo'da bu ayar `expo-av`'nin `Audio.setAudioModeAsync({ playsInSilentModeIOS: true })` fonksiyonu ile yapılabilir.
   * Android'de zaten medya ses kanalı (STREAM_MUSIC) kullanıldığı için bu sorun genellikle oluşmaz.
 
-### 4. UI Akıcılığı, Performans ve Modernizasyon (Animasyonlar, Butonlar, Listeler)
+</details>
+
+### 4. 🟡 UI Akıcılığı, Performans ve Modernizasyon — BÜYÜK ORANDA TAMAMLANDI
+
+**Yapılan (2026-07):**
+* **A) FlashList:** `@shopify/flash-list@2` kuruldu; ağır kelime listeleri geçirildi: `VocabularyScreen` (havuz), `ListScreen` (liste görünümü), `MediaDetailScreen` (medya kelimeleri). Hücre geri dönüşümü için `SwipeableWordRow`'a recycle-reset eklendi (açık swipe / silme animasyonu sızmaz).
+* **B) AnimatedPressable:** Yeni `src/components/ui/AnimatedPressable.tsx` — Pressable + Reanimated scale (UI thread) + `expo-haptics` + hitSlop. En sık kullanılan aksiyonlarda aktif: tüm "✓ biliyorum" butonları (List/Vocabulary/MediaDetail) ve quiz FAB'i.
+* **C) expo-image:** DiscoverScreen (hero + kartlar) ve ExploreScreen (story + grid) posterleri `expo-image`'a geçti — `memory-disk` cache, `recyclingKey`, fade `transition`.
+
+**Kalan (kademeli devam):**
+* Geri kalan `TouchableOpacity`'lerin AnimatedPressable'a taşınması (dokunulan her yeni ekranla birlikte).
+* Kısa yatay carousel'lerin (Discover devam/continue şeridi vb.) FlashList'e geçmesi — küçük listeler, kazanç düşük.
+* **D) FlashCard / Guided Flow render optimizasyonu** — flip zaten Reanimated; kart içi render yükü (iç içe ScrollView) ayrı bir optimizasyon turu ister, cihazda profiling ile yapılmalı.
+
+<details>
+<summary>Orijinal analiz (arşiv)</summary>
 
 **Konu:** Uygulamanın hissiyatını (feel) daha modern, akıcı ve premium hale getirmek için yapılması gereken teknik güncellemeler.
 
@@ -346,3 +387,5 @@ Bu bölümde, projenin mimarisini ve kullanıcı deneyimini geliştirmek için p
 - **Çözüm:** 
   1. Kart çevirme (flip) animasyonu sadece kart yüzeyi değiştiğinde tetiklenmeli, React render döngüsünden tamamen bağımsız (worklet) çalıştırılmalı.
   2. Kartların arka planları için modern UI blur efektleri (Glassmorphism, `expo-blur`) ve hafif gölgeler eklenebilir.
+
+</details>
