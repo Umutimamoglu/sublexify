@@ -9,10 +9,12 @@ type SettingsState = {
     language: SupportedLanguage;
     dailyReviewCount: number;
     preferredVoiceGender: VoiceGenderPreference;
+    hasSeenTour: boolean;
     setThemePreference: (pref: ThemePreference) => void;
     setLanguage: (lang: SupportedLanguage) => void;
     setDailyReviewCount: (count: number) => void;
     setVoiceGender: (gender: VoiceGenderPreference) => void;
+    setHasSeenTour: (seen: boolean) => void;
 };
 
 export const useSettingsStore = create<SettingsState>()((set) => {
@@ -21,12 +23,14 @@ export const useSettingsStore = create<SettingsState>()((set) => {
     const savedLang = localStorage.getItem('language') as SupportedLanguage || 'tr';
     const savedCount = parseInt(localStorage.getItem('sublex-daily-review') || '20', 10);
     const savedVoice = localStorage.getItem('sublex-voice-gender') as VoiceGenderPreference || 'system';
+    const savedTour = localStorage.getItem('sublex-has-seen-tour') === 'true';
 
     return {
         themePreference: savedTheme,
         language: savedLang,
         dailyReviewCount: savedCount,
         preferredVoiceGender: savedVoice,
+        hasSeenTour: savedTour,
 
         setThemePreference: (pref) => {
             localStorage.setItem('sublex-theme', pref);
@@ -47,6 +51,10 @@ export const useSettingsStore = create<SettingsState>()((set) => {
         setVoiceGender: (gender) => {
             localStorage.setItem('sublex-voice-gender', gender);
             set({ preferredVoiceGender: gender });
+        },
+        setHasSeenTour: (seen) => {
+            localStorage.setItem('sublex-has-seen-tour', seen ? 'true' : 'false');
+            set({ hasSeenTour: seen });
         }
     };
 });

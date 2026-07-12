@@ -1,18 +1,39 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Moon, Globe, Settings2, BellRing, Shield, User, Volume2, Check } from 'lucide-react';
+import { ArrowLeft, Moon, Globe, Settings2, BellRing, Shield, User, Volume2, Check, Trash2 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, ThemePreference, SupportedLanguage, VoiceGenderPreference } from '@/store/useSettingsStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import api from '@/services/api';
 
 const SettingsPage = () => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
+    const { clearAuth } = useAuthStore();
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const { 
         themePreference, setThemePreference, 
         language, setLanguage, 
         dailyReviewCount, setDailyReviewCount,
         preferredVoiceGender, setVoiceGender 
     } = useSettingsStore();
+
+    const handleDeleteAccount = async () => {
+        if (!window.confirm("Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) return;
+        
+        setIsDeleting(true);
+        try {
+            await api.delete('/auth/account');
+            clearAuth();
+            navigate('/login');
+        } catch (e) {
+            console.error("Hesap silinirken hata oluştu:", e);
+            alert("Hesap silinirken bir hata oluştu.");
+            setIsDeleting(false);
+        }
+    };
 
     const handleLanguageChange = (lang: SupportedLanguage) => {
         setLanguage(lang);
@@ -169,6 +190,31 @@ const SettingsPage = () => {
                                     +
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Danger Zone */}
+                <div className="pt-8">
+                    <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest mb-3 ml-2">Tehlikeli Bölge</h3>
+                    <div className="bg-white dark:bg-[#161822] border border-red-200/60 dark:border-red-900/50 rounded-3xl overflow-hidden">
+                        <div className="p-5 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center shrink-0">
+                                    <Trash2 className="w-5 h-5 text-red-500" />
+                                </div>
+                                <div>
+                                    <span className="block font-bold text-gray-900 dark:text-white">Hesabımı Sil</span>
+                                    <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">Tüm ilerlemeniz ve verileriniz kalıcı olarak silinir.</span>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={handleDeleteAccount}
+                                disabled={isDeleting}
+                                className="px-4 py-2 rounded-xl font-bold text-sm bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                            >
+                                {isDeleting ? "Siliniyor..." : "Sil"}
+                            </button>
                         </div>
                     </div>
                 </div>

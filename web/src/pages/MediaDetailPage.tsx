@@ -158,6 +158,53 @@ const MediaDetailPage = () => {
 
             <MediaHeader media={media} />
 
+            {/* Guided Flow Banner */}
+            {totalCount > 0 && (
+                <div className={cn(
+                    "mb-6 p-5 rounded-2xl border transition-all shadow-sm",
+                    progressPercent >= 80 
+                        ? "bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200/60 dark:border-emerald-800/60" 
+                        : "bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200/60 dark:border-indigo-800/60"
+                )}>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex-1">
+                            <h3 className={cn(
+                                "text-lg font-bold mb-1",
+                                progressPercent >= 80 ? "text-emerald-700 dark:text-emerald-400" : "text-indigo-700 dark:text-indigo-400"
+                            )}>
+                                {progressPercent >= 80 
+                                    ? "🎉 Harika! Bu bölümü izlemeye hazırsın" 
+                                    : "🎬 İzlemeye Başlamadan Önce"}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {progressPercent >= 80 
+                                    ? "Kelime dağarcığın bu bölüm için oldukça yeterli görünüyor. Hemen izlemeye geçebilirsin!" 
+                                    : `Kelimelerin %${progressPercent}'ini biliyorsun. Kalan bilinmeyen kelimelere göz atarak deneyimini artırabilirsin.`}
+                            </p>
+                        </div>
+                        <div className="w-full sm:w-48">
+                            <div className="flex justify-between text-xs font-bold mb-1.5">
+                                <span className={progressPercent >= 80 ? "text-emerald-600 dark:text-emerald-500" : "text-indigo-600 dark:text-indigo-500"}>
+                                    Hazırlık Seviyesi
+                                </span>
+                                <span className={progressPercent >= 80 ? "text-emerald-600 dark:text-emerald-500" : "text-indigo-600 dark:text-indigo-500"}>
+                                    %{progressPercent}
+                                </span>
+                            </div>
+                            <div className="h-2.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div 
+                                    className={cn(
+                                        "h-full rounded-full transition-all duration-1000",
+                                        progressPercent >= 80 ? "bg-emerald-500" : "bg-indigo-500"
+                                    )}
+                                    style={{ width: `${progressPercent}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Progress + Filter Bar */}
             <div className="bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-2xl p-5 mb-6 sticky top-20 z-40 backdrop-blur-xl">
                 {/* Progress */}

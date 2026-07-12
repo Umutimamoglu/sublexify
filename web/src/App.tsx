@@ -22,6 +22,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import NotificationsPage from '@/pages/NotificationsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import OnboardingPage from '@/pages/OnboardingPage';
+import AppTour from '@/components/features/AppTour';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useEffect } from 'react';
 
@@ -45,6 +46,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <AppTour />
       <Routes>
         {/* Public auth pages (no layout) */}
         <Route path="/login" element={<LoginPage />} />

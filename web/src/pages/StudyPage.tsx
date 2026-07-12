@@ -166,21 +166,38 @@ const StudyPage = () => {
         const correctCount = results.filter(r => r.isCorrect).length;
         const total = results.length;
         const percentage = Math.round((correctCount / total) * 100) || 0;
+        let message = "İyi İş Çıkardın!";
+        let emoji = "👍";
+        if (percentage >= 90) { message = "Mükemmel!"; emoji = "🏆"; }
+        else if (percentage >= 70) { message = "Çok İyi!"; emoji = "🌟"; }
+        else if (percentage < 50) { message = "Daha Fazla Pratik Yapmalısın"; emoji = "💪"; }
 
         return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#0f1117] flex flex-col items-center py-10 px-4">
-                <div className="w-full max-w-2xl bg-white dark:bg-[#161822] rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-800 flex flex-col items-center animate-in fade-in zoom-in-95">
-                    <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2">Quiz Complete!</h2>
-                    <p className="text-gray-500 mb-8">Here's how you did on this batch.</p>
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0f1117] flex flex-col items-center py-10 px-4 overflow-hidden relative">
+                {/* Confetti effect background for high scores */}
+                {percentage >= 70 && (
+                    <div className="absolute inset-0 pointer-events-none opacity-50 dark:opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent animate-pulse" />
+                )}
+                
+                <div className="w-full max-w-2xl bg-white dark:bg-[#161822] rounded-3xl p-8 shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center animate-in fade-in zoom-in-95 duration-500 z-10">
+                    <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex items-center justify-center text-4xl mb-4 shadow-inner">
+                        {emoji}
+                    </div>
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-2">{message}</h2>
+                    <p className="text-gray-500 mb-8 font-medium">Bu çalışma seansındaki performansın</p>
 
-                    <div className="flex gap-6 w-full mb-8">
-                        <div className="flex-1 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl p-6 text-center border border-indigo-100 dark:border-indigo-500/20">
-                            <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400 mb-2">{percentage}%</div>
-                            <div className="text-sm font-bold text-indigo-400 dark:text-indigo-500 uppercase tracking-wider">Score</div>
+                    <div className="flex gap-4 w-full mb-8">
+                        <div className="flex-1 bg-indigo-50/80 dark:bg-indigo-500/10 rounded-3xl p-6 text-center border border-indigo-100 dark:border-indigo-500/20 transition-transform hover:scale-105">
+                            <div className="text-5xl font-black text-indigo-600 dark:text-indigo-400 mb-2">{percentage}%</div>
+                            <div className="text-xs font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-widest">Başarı Oranı</div>
                         </div>
-                        <div className="flex-1 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl p-6 text-center border border-emerald-100 dark:border-emerald-500/20">
-                            <div className="text-4xl font-black text-emerald-600 dark:text-emerald-400 mb-2">{correctCount}</div>
-                            <div className="text-sm font-bold text-emerald-400 dark:text-emerald-500 uppercase tracking-wider">Correct</div>
+                        <div className="flex-1 bg-emerald-50/80 dark:bg-emerald-500/10 rounded-3xl p-6 text-center border border-emerald-100 dark:border-emerald-500/20 transition-transform hover:scale-105">
+                            <div className="text-5xl font-black text-emerald-600 dark:text-emerald-400 mb-2">{correctCount}</div>
+                            <div className="text-xs font-black text-emerald-400 dark:text-emerald-500 uppercase tracking-widest">Doğru Kelime</div>
+                        </div>
+                        <div className="flex-1 bg-amber-50/80 dark:bg-amber-500/10 rounded-3xl p-6 text-center border border-amber-100 dark:border-amber-500/20 transition-transform hover:scale-105">
+                            <div className="text-5xl font-black text-amber-600 dark:text-amber-400 mb-2">+{correctCount * 10}</div>
+                            <div className="text-xs font-black text-amber-400 dark:text-amber-500 uppercase tracking-widest">XP Kazanıldı</div>
                         </div>
                     </div>
 
@@ -218,17 +235,17 @@ const StudyPage = () => {
                     <button
                         onClick={finishBatch}
                         disabled={saving}
-                        className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25"
+                        className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black text-lg rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/30 hover:scale-105"
                     >
-                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Continue Studying"}
-                        {!saving && <ArrowRight className="w-5 h-5" />}
+                        {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : "Çalışmaya Devam Et"}
+                        {!saving && <ArrowRight className="w-6 h-6" />}
                     </button>
                     
                     <button
                         onClick={() => navigate('/lists')}
-                        className="mt-4 w-full py-4 text-gray-500 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                        className="mt-4 w-full py-4 text-gray-500 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-colors"
                     >
-                        Return to Lists
+                        Listelere Dön
                     </button>
                 </div>
             </div>
