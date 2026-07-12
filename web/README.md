@@ -9,7 +9,13 @@ React, TypeScript ve Vite ile geliştirilmiş, Sublex platformunun kullanıcı v
 - **Medya Detay & Analiz**: Bir içeriğe girmeden önce seviye bazlı (A1-C2) kelime dağılımını görme.
 - **Kişisel Listeler**: "Biliyorum" dediğin kelimeler ve özel oluşturduğun listelerin yönetimi.
 - **İnteraktif Kelime Kartları**: AI tarafından üretilmiş tanımlar, örnek cümleler ve çeviriler.
+- **Havuz (Vocabulary) Alıştırma Modu**: Öğrenilen kelimeler üzerinde Quiz/Flashcard pratiği yapma.
+- **Otomatik Seslendirme (TTS)**: Kelime listelerinde İngilizce/Türkçe/Örnek Cümle olarak kesintisiz otomatik dinleme.
+- **Yönlendirici İlerleme Banner'ı (Guided Flow)**: Kullanıcının izleme öncesi hazırlık yüzdesini ölçen akıllı uyarı sistemi.
+- **Sıradaki Bölüm Barı**: Dizilerde kalınan yerden devam etmeyi sağlayan akıllı, sabit alt panel.
+- **Gelişmiş Çalışma Özeti (Study Recap)**: Quiz seansı bitiminde XP ve başarı oranını emoji/animasyonla sunan özet ekranı.
 - **Çoklu Dil & Tema**: Dark/Light mode ve Türkçe/İngilizce dil desteği.
+- **Uygulama Turu (Onboarding)**: İlk kez giren kullanıcılar için 5 adımlık interaktif tanıtım turu.
 
 ## 🛠️ Teknolojiler
 

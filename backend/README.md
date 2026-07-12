@@ -18,8 +18,9 @@ Bu backend servisi şu görevleri yerine getirir:
 - **AI Clients**: Gemini (Google), Anthropic (Claude), OpenAI entegrasyonları
 - **Subtitle Scraping**: Jsoup (Web scraping) ve OpenSubtitles API
 - **Annotation Processing**: Lombok (Kod sadeleştirme)
-- **Spring Data JPA & PostgreSQL** - Veri yönetimi
+- **Spring Data JPA & PostgreSQL** - Veri yönetimi (Optimizasyon: Kritik tablolarda 22 adet Index yapılandırması)
 - **Spring Security & JWT** - Kimlik doğrulama
+- **Gzip Compression** - API yanıtlarında veri sıkıştırma ile 5-7x daha az ağ kullanımı
 
 ## Domain Model (Yeni Eklenenler)
 
@@ -63,8 +64,8 @@ backend/
 
 Bu backend'in en kritik parçası, kelimeleri anlamlı verilere dönüştüren 3 aşamalı AI hattıdır:
 
-1. **Sheriff (Şerif)**: Kelimeyi ilk analiz eden, tanım ve örnekleri oluşturan ana ajan.
-2. **Specialist (Uzman)**: Şerif'in ürettiği veriyi dilbilgisi ve doğallık açısından kontrol eden ajan.
+1. **Sheriff (Şerif)**: Kelimeyi ilk analiz eden, tanım ve örnekleri oluşturan ana ajan. (Kısa ve tek kelimelik agresif çeviri kısıtlamalarına sahip prompt mimarisi)
+2. **Specialist (Uzman)**: Şerif'in ürettiği veriyi dilbilgisi ve doğallık açısından kontrol eden ajan. (`gpt-5.4-mini` destekli yüksek hız)
 3. **Judge (Hakim)**: Son kalite kontrolünü yapan ve veritabanına kaydı onaylayan ajan.
 
 ## Altyazı Edinme ve İşleme

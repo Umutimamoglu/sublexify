@@ -177,6 +177,20 @@ Her bir uygulamanın kurulum ve çalıştırma talimatları için ilgili klasör
 2. Web uygulaması için `web/README.md`
 3. Mobil uygulama için `mobile/README.md`
 
+### 🚀 Hızlı Deployment (Mobil)
+Mobil uygulamayı doğrudan mağazalara göndermek veya build almak için ortam değişkenlerini güvenli yükleyen özel `npm run eas` betiğini kullanmalısın:
+
+```bash
+cd mobile
+
+# iOS App Store / TestFlight'a gönder
+npm run eas -- build --platform ios --profile production --auto-submit
+
+# Android Play Store'a gönder
+npm run eas -- build --platform android --profile production --auto-submit
+```
+*(Detaylar ve manuel işlemler için `mobile/README.md` dosyasına bakabilirsin)*
+
 ## Geliştirme
 
 Detaylı geliştirme talimatları ve standartları her bir uygulamanın kendi README dosyasında bulunmaktadır.
@@ -245,3 +259,7 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 - **UI modernizasyonu:** Ağır kelime listeleri FlashList v2; `AnimatedPressable` (scale+haptic) check butonları ve quiz FAB'de; Discover/Explore posterleri expo-image.
 - **Backend RAM düzeltmesi:** `deleteByMediaId` bulk `@Query`'ye çevrildi — altyazı işlerken heap'in 2.3 GB'a fırlaması ve GC donmaları giderildi.
 - **Build düzeltmeleri:** Lombok 1.18.42 (JDK 24/25), TypeScript hataları sıfırlandı.
+- **Web UI Paritesi (7 Özellik):** Hesap silme, Auto-play TTS, Kelime Quiz Pratik Modu, Sıradaki Bölüm Barı, İlerleme Banner'ı (Guided Flow), Gelişmiş Çalışma Özeti ve App Tour eklendi.
+- **Backend Optimizasyonu:** Tüm kritik tablolara 22 adet database index eklendi (5-10x sorgu hızlandırması). 1KB üzeri JSON verileri için Gzip compression aktif edildi (5-7x daha küçük payload).
+- **AI Pipeline İyileştirmesi:** Çeviri uzunluk kısıtlamaları agresifleştirildi ve model `gpt-5.4-mini` olarak güncellendi.
+- **Sürüm:** Mobil uygulama sürümü `2.0.0`'a yükseltildi.
