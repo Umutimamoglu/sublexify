@@ -232,10 +232,10 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 - **Not:** İçerik ekleme seyrek olduğu sürece acil değil.
 
 ### 2. Web Mobil UI Optimizasyonu (Kritik Eksikler)
-- [ ] **MediaHeader:** Mobilde `hidden sm:block` nedeniyle film/dizi afişi (poster) tamamen gizleniyor. Mobilde başlığın üstünde küçük, masaüstünde yanda olacak şekilde güncellenmeli (`flex-col sm:flex-row`).
-- [ ] **WordCard:** Sağ-sol padding (`px-16`) dar ekranlarda kelimeleri çok sıkıştırıyor veya taşırıyor. Responsive padding (`px-6 sm:px-14`) uygulanmalı.
-- [ ] **Admin Paneli:** Tablolar mobilde taşıyor. Tüm `<table` elementleri `<div className="overflow-x-auto w-full">` içine alınmalı.
-- [ ] **FlashCardComponents:** `WordPreviewModal` mobilde ekrana tam yapışıyor, dışına `mx-4` eklenerek nefes alması sağlanmalı.
+- [x] **MediaHeader:** Mobilde `hidden sm:block` nedeniyle film/dizi afişi (poster) tamamen gizleniyor. Mobilde başlığın üstünde küçük, masaüstünde yanda olacak şekilde güncellenmeli (`flex-col sm:flex-row`).
+- [x] **WordCard:** Sağ-sol padding (`px-16`) dar ekranlarda kelimeleri çok sıkıştırıyor veya taşırıyor. Responsive padding (`px-6 sm:px-14`) uygulanmalı.
+- [x] **Admin Paneli:** Tablolar mobilde taşıyor. Tüm `<table` elementleri `<div className="overflow-x-auto w-full">` içine alınmalı.
+- [x] **FlashCardComponents:** `WordPreviewModal` mobilde ekrana tam yapışıyor, dışına `mx-4` eklenerek nefes alması sağlanmalı.
 
 ### 3. Küçük Kalanlar (kademeli)
 - [ ] **Cihaz testi:** Arka plan TTS (ekran kilitliyken auto-play) yeni dev build ile gerçek cihazda doğrulanmalı (`eas build --profile development` — native config değişti).
@@ -248,6 +248,7 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 ---
 
 ### ✅ Tamamlananlar (2026-07 — özet)
+- **Deployment Resilience (2026-07-13):** `application.yml` dosyasına HikariCP resilience ayarları (`initialization-fail-timeout: 0`) eklendi. Spring Boot uygulaması, Railway private-network DNS (postgres.railway.internal) hazır olana kadar hızlı çökmek yerine veritabanı bağlantısını yeniden deneyecek şekilde yapılandırıldı. Böylece `/v3/api-docs` healthcheck süreçlerindeki 5 dakikalık downtime / fail loop sorunu çözüldü.
 - **DB bakımı (2026-07-13):** `VACUUM FULL media, media_word` çalıştırıldı (44 sn, veri kaybı yok). DB 1042 → 954 MB (~90 MB, index sıkıştırması). **Önemli düzeltme:** "bloat" teşhisi büyük ölçüde yanlış çıktı — `media_word` 16 bin değil **5.26 milyon gerçek satır** içeriyor (16k rakamı, PostgreSQL restart sonrası sıfırlanan istatistiklerden okunmuştu). `media` tablosunun 175 MB'ı da gerçek altyazı metinleri (159 MB `subtitle_content`). Yani ~950 MB'lık DB boyutu meşru veri; disk endişesi yersiz.
 - **App-init & splash:** `GET /api/app-init` (tek istekte tüm açılış verisi), splash artık ağı beklemiyor, onboarding sırasında anonim prefetch.
 - **Cache stratejisi:** Tüm kritik hook'lara `staleTime`; mutation'larda `refetchType: 'none'` + focus'ta stale-kontrollü tazeleme; `POST /api/words/mark-known/batch` (N istek → 1).
