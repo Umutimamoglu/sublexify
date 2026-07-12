@@ -14,7 +14,7 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": ["remote-notification", "audio"]
       }
     },
     "android": {
@@ -64,7 +64,8 @@
           }
         }
       ],
-      "./plugins/withNonModularHeaders"
+      "./plugins/withNonModularHeaders",
+      "./plugins/withTtsForegroundService"
     ],
     "experiments": {
       "typedRoutes": true,

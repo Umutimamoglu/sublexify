@@ -42,5 +42,9 @@
   "Top Verbs": "En Sık Kullanılan Fiiller",
   "Top Adjectives": "En Sık Kullanılan Sıfatlar",
   "Top Adverbs": "En Sık Kullanılan Zarflar",
-  "200 Common Phrasal Verbs": "200 Yaygın Phrasal Verb"
+  "200 Common Phrasal Verbs": "200 Yaygın Phrasal Verb",
+  "autoPlayNotification": {
+    "title": "Dinleme seansı",
+    "body": "Otomatik çalma sürüyor — kelimeler sesli okunuyor"
+  }
 }

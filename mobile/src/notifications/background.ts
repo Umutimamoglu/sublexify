@@ -2,6 +2,7 @@ import { getApp } from '@react-native-firebase/app';
 import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
 import notifee from '@notifee/react-native';
 import { displayNotification } from './pushNotifications';
+import './ttsPlaybackService'; // registers the TTS foreground service (module scope)
 
 /**
  * Background / quit-state message + tap handlers.

@@ -42,5 +42,9 @@
   "Top Verbs": "Top Verbs",
   "Top Adjectives": "Top Adjectives",
   "Top Adverbs": "Top Adverbs",
-  "200 Common Phrasal Verbs": "200 Common Phrasal Verbs"
+  "200 Common Phrasal Verbs": "200 Common Phrasal Verbs",
+  "autoPlayNotification": {
+    "title": "Listening session",
+    "body": "Auto-play is running — words are being read aloud"
+  }
 }
