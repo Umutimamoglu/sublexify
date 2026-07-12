@@ -29,6 +29,7 @@ public class MediaService {
     private final UserKnownWordRepository userKnownWordRepository;
     private final UserMediaProgressService userMediaProgressService;
     private final WordListRepository wordListRepository;
+    private final MediaStatsCacheService mediaStatsCacheService;
 
     /**
      * Get recent media for user (Continue Learning)
@@ -41,24 +42,10 @@ public class MediaService {
         List<Long> mediaIds = recentMedia.stream().map(Media::getId).collect(Collectors.toList());
 
         // Batch 1: total word counts per media
-        Map<Long, Integer> wordCounts = mediaWordRepository.countAllByMediaId()
-                .stream()
-                .filter(obj -> mediaIds.contains((Long) obj[0]))
-                .collect(Collectors.toMap(
-                        obj -> (Long) obj[0],
-                        obj -> ((Long) obj[1]).intValue()
-                ));
+        Map<Long, Integer> wordCounts = mediaStatsCacheService.getGlobalWordCounts();
 
         // Batch 2: level counts per media
-        Map<Long, Map<String, Long>> levelCountsByMedia = new java.util.HashMap<>();
-        for (Object[] row : mediaWordRepository.findLevelCountsAllMedia()) {
-            Long mediaId = (Long) row[0];
-            if (mediaIds.contains(mediaId)) {
-                String diff = (String) row[1];
-                Long count = (Long) row[2];
-                levelCountsByMedia.computeIfAbsent(mediaId, k -> new LinkedHashMap<>()).put(diff, count);
-            }
-        }
+        Map<Long, Map<String, Long>> levelCountsByMedia = mediaStatsCacheService.getGlobalLevelCounts();
 
         // Batch 3: known-word counts per media
         Map<Long, Integer> knownCountByMedia = new java.util.HashMap<>();
@@ -117,21 +104,10 @@ public class MediaService {
         List<com.sublex.repository.MediaProjection> all = mediaRepository.findAllProjectedBy();
 
         // Batch 1: total word counts per media
-        Map<Long, Integer> wordCounts = mediaWordRepository.countAllByMediaId()
-                .stream()
-                .collect(Collectors.toMap(
-                        obj -> (Long) obj[0],
-                        obj -> ((Long) obj[1]).intValue()
-                ));
+        Map<Long, Integer> wordCounts = mediaStatsCacheService.getGlobalWordCounts();
 
         // Batch 2: level counts per media  →  Map<mediaId, Map<difficulty, count>>
-        Map<Long, Map<String, Long>> levelCountsByMedia = new java.util.HashMap<>();
-        for (Object[] row : mediaWordRepository.findLevelCountsAllMedia()) {
-            Long   mediaId = (Long)   row[0];
-            String diff    = (String) row[1];
-            Long   count   = (Long)   row[2];
-            levelCountsByMedia.computeIfAbsent(mediaId, k -> new LinkedHashMap<>()).put(diff, count);
-        }
+        Map<Long, Map<String, Long>> levelCountsByMedia = mediaStatsCacheService.getGlobalLevelCounts();
 
         // Batch 3: known-word counts per media for this user
         Map<Long, Integer> knownCountByMedia = new java.util.HashMap<>();

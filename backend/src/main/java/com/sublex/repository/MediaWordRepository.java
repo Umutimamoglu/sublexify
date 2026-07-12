@@ -52,8 +52,8 @@ public interface MediaWordRepository extends JpaRepository<MediaWord, Long> {
        List<Object[]> findLevelCountsAllMedia();
 
        @Query("SELECT mw.media.id, COUNT(DISTINCT mw.word.id) FROM MediaWord mw " +
-                     "WHERE mw.word.id IN " +
-                     "(SELECT ukw.word.id FROM UserKnownWord ukw WHERE ukw.user.id = :userId) " +
+                     "JOIN UserKnownWord ukw ON mw.word.id = ukw.word.id " +
+                     "WHERE ukw.user.id = :userId " +
                      "AND (mw.word.isProperNoun IS NULL OR mw.word.isProperNoun = false) " +
                      "GROUP BY mw.media.id")
        List<Object[]> countKnownWordsPerMedia(@Param("userId") Long userId);

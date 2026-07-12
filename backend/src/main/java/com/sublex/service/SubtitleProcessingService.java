@@ -28,6 +28,7 @@ public class SubtitleProcessingService {
     private static final Object DICTIONARY_LOCK = new Object();
     private final org.springframework.transaction.support.TransactionTemplate transactionTemplate;
     private final ApplicationEventPublisher eventPublisher;
+    private final MediaStatsCacheService mediaStatsCacheService;
 
     /**
      * Process subtitle file and save words to database
@@ -150,5 +151,8 @@ public class SubtitleProcessingService {
 
         // Publish event so WordAnalysisService can pick up PENDING words (debounced)
         eventPublisher.publishEvent(new SubtitleProcessedEvent(this, mediaId));
+        
+        // Evict global caches so the frontend gets the latest media counts
+        mediaStatsCacheService.evictMediaStatsCache();
     }
 }
