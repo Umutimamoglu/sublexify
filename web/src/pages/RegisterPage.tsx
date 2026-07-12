@@ -22,7 +22,7 @@ const RegisterPage = () => {
         try {
             const res = await AuthService.register({ email, password, name });
             setAuth(res.user, res.token);
-            navigate('/');
+            window.location.href = '/';
         } catch {
             setError('Bu email adresi zaten kayıtlı.');
         } finally {

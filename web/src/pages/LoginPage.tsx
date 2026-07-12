@@ -23,7 +23,7 @@ const LoginPage = () => {
         try {
             const res = await AuthService.login({ email, password });
             setAuth(res.user, res.token);
-            navigate('/');
+            window.location.href = '/';
         } catch {
             setError(t('login.error_invalid'));
         } finally {
