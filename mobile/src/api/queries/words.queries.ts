@@ -106,10 +106,10 @@ export function useMarkKnown() {
       qc.invalidateQueries({ queryKey: userKeys.stats });
       qc.invalidateQueries({ queryKey: ['progress', 'stats'] });
       qc.invalidateQueries({ queryKey: wordKeys.frequent }); // Refresh frequent words
-      if (mediaId) {
-        qc.invalidateQueries({ queryKey: mediaKeys.words(mediaId) });
-        qc.invalidateQueries({ queryKey: mediaKeys.detail(mediaId) });
-      }
+      // DO NOT invalidate mediaKeys.words here. It causes instant refetches 
+      // with onlyUnknown=true, making words disappear instantly from lists.
+      // Optimistic updates are enough for UI checkmarks.
+      
       // Record streak when marking as known (not when unmarking)
       if (!isKnown) {
         useStreakStore.getState().recordActivity();

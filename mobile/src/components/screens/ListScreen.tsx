@@ -830,6 +830,9 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const isAutoPlayingRef = useRef(false);
   const autoPlayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // We track words marked known DURING this session to prevent them from disappearing instantly
+  const sessionKnownIdsRef = useRef<Set<number>>(new Set());
+
   // Derive from query cache — onMutate updates it instantly (same pattern as VocabularyScreen)
   const knownIdsSet = useMemo(() => new Set(knownWordsData.map((w) => w.id)), [knownWordsData]);
 
@@ -838,7 +841,9 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     if (!effectiveList?.words) return [];
     let words = effectiveList.words;
     if (onlyUnknown) {
-      words = words.filter((w) => !knownIdsSet.has(w.id));
+      // Hide known words, EXCEPT the ones we just marked as known in this exact session
+      // This prevents the list from jumping/shifting when the user taps "✓"
+      words = words.filter((w) => !knownIdsSet.has(w.id) || sessionKnownIdsRef.current.has(w.id));
     }
     if (selectedLevels.size > 0) {
       words = words.filter((w) => w.difficulty && selectedLevels.has(w.difficulty));
@@ -1021,6 +1026,14 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     Haptics.impactAsync(
       currentlyKnown ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium
     );
+    
+    // UI'ın anında kaymasını engellemek için mevcut oturumda işaretlenenleri kaydet
+    if (!currentlyKnown) {
+      sessionKnownIdsRef.current.add(wordId);
+    } else {
+      sessionKnownIdsRef.current.delete(wordId);
+    }
+
     toggleKnown({ wordId, isKnown: currentlyKnown });
   }, [knownIdsSet, toggleKnown]);
 
