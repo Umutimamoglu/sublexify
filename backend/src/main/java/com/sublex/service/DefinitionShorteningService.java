@@ -23,7 +23,7 @@ public class DefinitionShorteningService {
     private final OpenAIService openAIService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final int MAX_DEFINITION_LENGTH = 40;
+    private static final int MAX_DEFINITION_LENGTH = 56;
 
     public Map<String, Object> getStats() {
         long pendingShortening = wordRepository.countShorteningCandidates("en", MAX_DEFINITION_LENGTH);
