@@ -150,6 +150,8 @@ public class DefinitionShorteningService {
                 4. Keep the same POS (part of speech). Do NOT add new meanings or remove existing ones.
                 5. NO DUPLICATE DEFINITIONS: If your shortening results in two identical definitions for the same word and the same POS, you MUST slightly differentiate them.
                 6. Avoid confusing words: e.g. for 'resume' (to start again), use 'kaldığı yerden devam etmek', not 'yeniden başlatmak'. Sadece ORİJİNAL tanımın kastettiği anlamı ver.
+                7. DO NOT LENGTHEN: Yeni tanım ASLA orijinal tanımdan daha uzun veya karakter sayısı olarak daha fazla olamaz. Eğer kelime zaten kısaysa (örn: "Nişasta") KESİNLİKLE DOKUNMA. Noktalama işareti veya büyük harf eklemek için (örn: "ağ" -> "Ağ.") asla değişiklik yapma.
+                8. NO TRANSLITERATION OF MEDICAL/TECHNICAL TERMS: Eğer İngilizce tıbbi bir terimin Türkçe karşılığı sadece o kelimenin Türkçe okunuşuysa (Örn: "dysesthesia" -> "Disestezi"), KISALTMA YAPMA. Orijinal açıklayıcı tanımı AYNEN BIRAK.
 
                 EXAMPLES:
                 - "Motorlu, dört tekerlekli, insanları bir yerden taşımak için kullanılan taşıt." → "Araba, otomobil."
