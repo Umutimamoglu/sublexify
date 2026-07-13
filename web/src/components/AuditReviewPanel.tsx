@@ -118,7 +118,7 @@ const AuditReviewPanel = () => {
                             <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl">
                                 <h4 className="text-red-500 font-black text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
                                     <AlertCircle className="w-4 h-4" />
-                                    GPT-5 Audit Hatası
+                                    GPT-5.4 Audit Hatası
                                 </h4>
                                 <p className="text-red-700 dark:text-red-400 font-bold text-lg leading-relaxed">
                                     {selectedWord.step3Error || 'Hata açıklaması belirtilmemiş.'}
@@ -256,7 +256,7 @@ const AuditReviewPanel = () => {
                         <AlertCircle className="w-5 h-5 text-red-500" />
                         Teftiş Panosu (AI Auditor Problems)
                     </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">GPT-5 tarafından bayraklanan sorunlu kelimeleri gözden geçir</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">GPT-5.4 tarafından bayraklanan sorunlu kelimeleri gözden geçir</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -341,7 +341,7 @@ const AuditReviewPanel = () => {
                             </th>
                             <th className="px-4 py-3">Kelime</th>
                             <th className="px-4 py-3">CEFR</th>
-                            <th className="px-4 py-3">Hata Detayı (GPT-5)</th>
+                            <th className="px-4 py-3">Hata Detayı (GPT-5.4)</th>
                             <th className="px-4 py-3 text-right">Aksiyon</th>
                         </tr>
                     </thead>
