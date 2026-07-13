@@ -42,7 +42,7 @@ public class OpenAIService implements AIService {
         }
 
         private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-        private static final String MODEL = "gpt-5-mini";
+        private static final String MODEL = "gpt-5.4-mini";
 
         // CACHING OPTIMIZATION: Static System Instructions for Prefix Caching
         private static final String SYSTEM_INSTRUCTIONS = """
@@ -407,7 +407,7 @@ public class OpenAIService implements AIService {
         }
 
         /**
-         * Fixes a batch of rejected words using OpenAI gpt-5-mini.
+         * Fixes a batch of rejected words using OpenAI gpt-5.4-mini.
          * Mirrors the logic of GeminiService.fixWordsBatch.
          */
         public Map<String, WordDefinition> fixWordsBatch(List<Word> words) {

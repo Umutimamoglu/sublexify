@@ -107,8 +107,8 @@ public class PipelineService {
     private void runPipeline(int batchSize, Long mediaId) {
         long pipelineStart = System.currentTimeMillis();
 
-        // ======= STEP 1: WORKER (OpenAI gpt-5-mini) =======
-        log.info("=== PIPELINE STEP 1: WORKER (OpenAI gpt-5-mini) via OpenAIService ===");
+        // ======= STEP 1: WORKER (OpenAI gpt-5.4-mini) =======
+        log.info("=== PIPELINE STEP 1: WORKER (OpenAI gpt-5.4-mini) via OpenAIService ===");
         long stepStart = System.currentTimeMillis();
 
         List<Word> words = (mediaId == null)
@@ -235,8 +235,8 @@ public class PipelineService {
         });
         log.info("WORKER complete in {}ms. {} words enriched.", workerTime, actualSize);
 
-        // ======= STEP 2: SHERIFF (OpenAI gpt-5-mini; useGPT5=true always -> Gemini path unused) =======
-        log.info("=== PIPELINE STEP 2: SHERIFF (OpenAI gpt-5-mini) ===");
+        // ======= STEP 2: SHERIFF (OpenAI gpt-5.4-mini; useGPT5=true always -> Gemini path unused) =======
+        log.info("=== PIPELINE STEP 2: SHERIFF (OpenAI gpt-5.4-mini) ===");
         stepStart = System.currentTimeMillis();
 
         updateStep(PipelineStatus.Step.SHERIFF);
@@ -267,8 +267,8 @@ public class PipelineService {
         });
         log.info("SHERIFF complete in {}ms.", sheriffTime);
 
-        // ======= STEP 3: SPECIALIST (OpenAI gpt-5-mini) =======
-        log.info("=== PIPELINE STEP 3: SPECIALIST (OpenAI gpt-5-mini) ===");
+        // ======= STEP 3: SPECIALIST (OpenAI gpt-5.4-mini) =======
+        log.info("=== PIPELINE STEP 3: SPECIALIST (OpenAI gpt-5.4-mini) ===");
         stepStart = System.currentTimeMillis();
         updateStep(PipelineStatus.Step.SPECIALIST);
 

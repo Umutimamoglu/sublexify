@@ -146,7 +146,7 @@ public class AuditService {
                 return;
             }
 
-            // 2. Sheriff AI Çağrısı (useGPT5=true -> OpenAI gpt-5-mini; false -> Gemini, currently unused path)
+            // 2. Sheriff AI Çağrısı (useGPT5=true -> OpenAI gpt-5.4-mini; false -> Gemini, currently unused path)
             String inputJson = objectMapper.writeValueAsString(auditInput);
             String systemPrompt = """
                     You are the Sheriff. A ruthless, zero-tolerance Dictionary Auditor for an English-to-Turkish dictionary.
@@ -216,7 +216,7 @@ public class AuditService {
             String response;
             if (useGPT5) {
                 log.info("Auditing with GPT-5 (Teftiş Panosu)");
-                response = openAIService.generateContent(systemPrompt, userPrompt, "gpt-5-mini");
+                response = openAIService.generateContent(systemPrompt, userPrompt, "gpt-5.4-mini");
             } else {
                 log.info("Auditing with Gemini (Pipeline Sheriff)");
                 response = geminiService.generateContent(systemPrompt, userPrompt, GeminiService.SHERIFF_MODEL);

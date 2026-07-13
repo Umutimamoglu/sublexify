@@ -151,7 +151,7 @@ public class SpecialistService {
         word.setProblemFound(false);
         word.setStep3Error(null);
         word.setEnrichedAt(batchTime != null ? batchTime : java.time.LocalDateTime.now());
-        word.setAuditNotes("Fixed by Specialist (OpenAI gpt-5-mini)");
+        word.setAuditNotes("Fixed by Specialist (OpenAI gpt-5.4-mini)");
         log.info("AFTER Specialist flag update for '{}': needs_re_enrichment={}, is_verified={}",
                 word.getWord(), word.getNeedsReEnrichment(), word.getIsVerified());
 
