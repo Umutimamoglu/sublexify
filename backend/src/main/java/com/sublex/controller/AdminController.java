@@ -743,7 +743,7 @@ public class AdminController {
         long totalIgnored = wordRepository.countIgnored();
 
         long totalAudited = totalAuditedClean + totalProblems + totalFixed + totalIgnored;
-        long totalPending = totalEnriched - totalAudited;
+        long totalPending = wordRepository.countPendingAudit();
 
         Map<String, Long> stats = new HashMap<>();
         stats.put("totalEnriched", totalEnriched);
