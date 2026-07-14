@@ -216,7 +216,7 @@ public class AuditService {
             String response;
             if (useGPT5) {
                 log.info("Auditing with GPT-5 (Teftiş Panosu)");
-                response = openAIService.generateContent(systemPrompt, userPrompt, "gpt-5.4-mini");
+                response = openAIService.generateContent(systemPrompt, userPrompt, "gpt-5.6-luna");
             } else {
                 log.info("Auditing with Gemini (Pipeline Sheriff)");
                 response = geminiService.generateContent(systemPrompt, userPrompt, GeminiService.SHERIFF_MODEL);

@@ -33,7 +33,7 @@ public class JudgeService {
             .build();
 
     private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-    private static final String MODEL = "gpt-5.4-mini";
+    private static final String MODEL = "gpt-5.6-luna";
 
     /**
      * The Judge evaluates C1/C2 words and complex flagged entries.

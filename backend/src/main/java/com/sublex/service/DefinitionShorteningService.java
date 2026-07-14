@@ -170,7 +170,7 @@ public class DefinitionShorteningService {
         String userPrompt = "SHORTEN the following verbose Turkish definitions:\n\n" + input;
 
         try {
-            String response = openAIService.generateContent(systemPrompt, userPrompt, "gpt-5.4-mini");
+            String response = openAIService.generateContent(systemPrompt, userPrompt, "gpt-5.6-luna");
             if (response == null) {
                 log.error("GPT returned null for shortening batch");
                 return;

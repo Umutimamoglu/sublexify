@@ -42,7 +42,7 @@ public class OpenAIService implements AIService {
         }
 
         private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
-        private static final String MODEL = "gpt-5.4-mini";
+        private static final String MODEL = "gpt-5.6-luna";
 
         // CACHING OPTIMIZATION: Static System Instructions for Prefix Caching
         private static final String SYSTEM_INSTRUCTIONS = """
