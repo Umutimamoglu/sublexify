@@ -23,10 +23,8 @@ public class DefinitionShorteningService {
     private final OpenAIService openAIService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final int MAX_DEFINITION_LENGTH = 40;
-
     public Map<String, Object> getStats() {
-        long pendingShortening = wordRepository.countShorteningCandidates("en", MAX_DEFINITION_LENGTH);
+        long pendingShortening = wordRepository.countShorteningCandidates("en");
         long shortened = wordRepository.countByAuditNotesContaining("Definition shortened");
 
         Map<String, Object> stats = new LinkedHashMap<>();
@@ -52,7 +50,7 @@ public class DefinitionShorteningService {
         stats.put("lastBatchId", lastBatchId);
 
         // Breakdown by difficulty from native query GROUP BY
-        List<Object[]> difficultyCounts = wordRepository.countShorteningCandidatesByDifficulty("en", MAX_DEFINITION_LENGTH);
+        List<Object[]> difficultyCounts = wordRepository.countShorteningCandidatesByDifficulty("en");
         Map<String, Long> byDifficulty = new LinkedHashMap<>();
         for (String diff : List.of("A1", "A2", "B1", "B2", "C1", "C2")) {
             long count = 0;
@@ -71,13 +69,15 @@ public class DefinitionShorteningService {
     }
 
     /**
-     * Finds words with verbose definitions (A1-B1, definition > 60 chars).
+     * Finds words the AI Auditor has flagged as having a verbose definition
+     * (audit_notes = "Auditor: SHORTEN..."). Candidacy is an AI judgment call,
+     * not a character-count threshold.
      */
     public List<Word> findCandidates(int limit) {
         if (limit == Integer.MAX_VALUE) {
-            return wordRepository.findShorteningCandidatesWithoutPageable("en", MAX_DEFINITION_LENGTH);
+            return wordRepository.findShorteningCandidatesWithoutPageable("en");
         }
-        return wordRepository.findShorteningCandidates("en", MAX_DEFINITION_LENGTH, 
+        return wordRepository.findShorteningCandidates("en",
                 org.springframework.data.domain.PageRequest.of(0, limit));
     }
 
@@ -126,8 +126,10 @@ public class DefinitionShorteningService {
         for (int i = 0; i < batch.size(); i++) {
             Word w = batch.get(i);
             StringBuilder defs = new StringBuilder();
+            // The word was already flagged verbose by the Auditor's semantic judgment,
+            // so every meaning is offered to the model — no character-length gate here.
             for (WordDefinition.Meaning m : w.getDefinition().getMeanings()) {
-                if (m.getDefinition() != null && m.getDefinition().length() > MAX_DEFINITION_LENGTH) {
+                if (m.getDefinition() != null) {
                     String examplePart = (m.getExample() != null && !m.getExample().isEmpty())
                             ? (" | Example: " + m.getExample())
                             : "";
