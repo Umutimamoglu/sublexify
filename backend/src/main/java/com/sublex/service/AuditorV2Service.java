@@ -98,8 +98,13 @@ public class AuditorV2Service {
                 log.warn("Auditor v2 DELETE: '{}' - {}", word.getWord(), reason);
             }
             case "RE_ENRICH" -> {
-                // Reversible: clears the definition so the WORKER re-enriches it.
-                WordAuditUtil.resetForReEnrichment(word, REENRICH_NOTE);
+                // Reversible: clears the definition so the WORKER re-enriches it. The
+                // AI's reason is kept in audit_notes so it stays inspectable until
+                // re-enrichment succeeds — WORKER (and the trusted-enrichment path)
+                // already overwrite audit_notes on success, so this never lingers as
+                // permanent clutter once the word is re-enriched.
+                String note = reason.isBlank() ? REENRICH_NOTE : REENRICH_NOTE + ": " + reason;
+                WordAuditUtil.resetForReEnrichment(word, note);
                 counts[1]++;
                 log.info("Auditor v2 RE_ENRICH (reset): '{}' - {}", word.getWord(), reason);
             }
