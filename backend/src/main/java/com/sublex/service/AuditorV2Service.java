@@ -59,7 +59,7 @@ public class AuditorV2Service {
 
         int batchSize = 25; // Route 25 words per call, mirroring v1 auditor's batch size
         AtomicInteger processed = new AtomicInteger(0);
-        int[] counts = new int[5]; // [DELETE, RE_ENRICH, SHORTEN, CLEAN, PROPER_NOUN]
+        int[] counts = new int[6]; // [DELETE, RE_ENRICH, SHORTEN, CLEAN, PROPER_NOUN, RE_ENRICH_SKIPPED_NO_REASON]
 
         for (int i = 0; i < words.size(); i += batchSize) {
             int end = Math.min(i + batchSize, words.size());
@@ -89,8 +89,8 @@ public class AuditorV2Service {
             }
         }
 
-        log.info("AI Auditor v2 complete. Routed {} words -> DELETE={}, RE_ENRICH={}, SHORTEN={}, CLEAN={}, PROPER_NOUN={}",
-                total, counts[0], counts[1], counts[2], counts[3], counts[4]);
+        log.info("AI Auditor v2 complete. Routed {} words -> DELETE={}, RE_ENRICH={}, SHORTEN={}, CLEAN={}, PROPER_NOUN={}, RE_ENRICH_SKIPPED_NO_REASON={}",
+                total, counts[0], counts[1], counts[2], counts[3], counts[4], counts[5]);
     }
 
     private void applyAction(Word word, String action, String reason, int[] counts, List<Word> tentativeShorten) {
@@ -117,15 +117,24 @@ public class AuditorV2Service {
                 log.warn("Auditor v2 DELETE: '{}' - {}", word.getWord(), reason);
             }
             case "RE_ENRICH" -> {
-                // Reversible: clears the definition so the WORKER re-enriches it. The
-                // AI's reason is kept in audit_notes so it stays inspectable until
-                // re-enrichment succeeds — WORKER (and the trusted-enrichment path)
-                // already overwrite audit_notes on success, so this never lingers as
-                // permanent clutter once the word is re-enriched.
-                String note = reason.isBlank() ? REENRICH_NOTE : REENRICH_NOTE + ": " + reason;
-                WordAuditUtil.resetForReEnrichment(word, note);
-                counts[1]++;
-                log.info("Auditor v2 RE_ENRICH (reset): '{}' - {}", word.getWord(), reason);
+                if (reason.isBlank()) {
+                    // Strict mode: RE_ENRICH wipes the current definition immediately, so an
+                    // unauditable verdict (no reason) would destroy the only evidence needed
+                    // to later check whether the AI was right — worse than just leaving the
+                    // word pending. Skip; findWordsForAuditing will re-select it next run.
+                    counts[5]++;
+                    log.warn("Auditor v2 RE_ENRICH SKIPPED for '{}' — no reason provided, leaving pending.",
+                            word.getWord());
+                } else {
+                    // Reversible: clears the definition so the WORKER re-enriches it. The
+                    // AI's reason is kept in audit_notes so it stays inspectable until
+                    // re-enrichment succeeds — WORKER (and the trusted-enrichment path)
+                    // already overwrite audit_notes on success, so this never lingers as
+                    // permanent clutter once the word is re-enriched.
+                    WordAuditUtil.resetForReEnrichment(word, REENRICH_NOTE + ": " + reason);
+                    counts[1]++;
+                    log.info("Auditor v2 RE_ENRICH (reset): '{}' - {}", word.getWord(), reason);
+                }
             }
             case "SHORTEN" ->
                 // Not applied yet — needs a second-opinion check first, see finalizeShortenVerdicts().
