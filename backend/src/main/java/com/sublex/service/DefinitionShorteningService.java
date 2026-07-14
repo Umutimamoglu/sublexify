@@ -248,9 +248,10 @@ public class DefinitionShorteningService {
                 if (updated) {
                     word.setAuditNotes("Definition shortened by AI [BATCH:" + batchId + "]");
 
-                    // Sadece sorunları sıfırlıyoruz, ama orijinal enrich tarihini (enrichedAt)
-                    // bozmuyoruz!
-                    word.setStep3Error(null);
+                    // step3Error='Clean' (not null) marks this word as already audited, so
+                    // findWordsForAuditing() doesn't pull it back into the pending pool and
+                    // re-route it endlessly. Orijinal enrich tarihini (enrichedAt) bozmuyoruz.
+                    word.setStep3Error("Clean");
                     word.setProblemFound(false);
                 } else {
                     // GPT decided this word needed no actual change (already concise, or a

@@ -460,6 +460,55 @@ public class OpenAIService implements AIService {
                 }
         }
 
+        /**
+         * AUDITOR v2 — second-opinion check for a SHORTEN verdict, using a distinct
+         * ("gpt-5.4", non-mini) model as an independent reviewer. Narrow binary
+         * question only: is this definition genuinely verbose, or already concise?
+         * This is NOT a code-side word-count rule — the verdict stays 100% AI-judged,
+         * just by a second independent model call instead of a single pass.
+         * Returns a map keyed by word -> true (genuinely too long, keep SHORTEN) or
+         * false (already concise, should be routed back to CLEAN).
+         */
+        public Map<String, Boolean> verifyShortenBatch(List<Word> words) {
+                if (words == null || words.isEmpty()) {
+                        return Collections.emptyMap();
+                }
+
+                String systemPrompt = """
+                                You are an independent second reviewer for a Turkish dictionary. For EACH word below, you are told another AI already flagged its Turkish definition(s) as "too verbose, should be shortened". Your ONLY job is to confirm or reject that specific claim.
+
+                                Answer TRUE only if at least one meaning's Turkish "definition" is a genuinely long, multi-clause, encyclopedic explanation (a full descriptive sentence).
+                                Answer FALSE if every meaning is already a short dictionary-style gloss (a single word or a short phrase, roughly 1-4 words) — there is nothing meaningful to shorten.
+
+                                Return ONLY a JSON object: { "word1": true, "word2": false, ... }
+                                """;
+
+                StringBuilder userPromptBuilder = new StringBuilder(
+                                "Review these SHORTEN verdicts:\n\n");
+                for (Word w : words) {
+                        try {
+                                String defJson = objectMapper.writeValueAsString(w.getDefinition());
+                                userPromptBuilder.append(String.format("- Word: '%s'\n  Current Definition: %s\n\n",
+                                                w.getWord(), defJson));
+                        } catch (Exception e) {
+                                log.error("Error serializing definition for shorten-verification: {}", w.getWord());
+                        }
+                }
+
+                String response = generateContent(systemPrompt, userPromptBuilder.toString(), "gpt-5.4");
+                if (response == null) {
+                        return Collections.emptyMap();
+                }
+
+                try {
+                        String clean = response.replace("```json", "").replace("```", "").trim();
+                        return objectMapper.readValue(clean, Map.class);
+                } catch (Exception e) {
+                        log.error("Failed to parse shorten-verification response", e);
+                        return Collections.emptyMap();
+                }
+        }
+
         @Override
         public Map<String, WordDefinition> enrichWordsBatch(List<Word> words) {
                 if (words == null || words.isEmpty()) {

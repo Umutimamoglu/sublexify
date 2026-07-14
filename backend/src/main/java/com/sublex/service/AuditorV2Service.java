@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +52,7 @@ public class AuditorV2Service {
             return;
         }
 
-        int batchSize = 25; // Route 25 words per gpt-5.4-mini call, mirroring v1 auditor
+        int batchSize = 25; // Route 25 words per call, mirroring v1 auditor's batch size
         AtomicInteger processed = new AtomicInteger(0);
         int[] counts = new int[4]; // [DELETE, RE_ENRICH, SHORTEN, CLEAN]
 
@@ -62,17 +63,21 @@ public class AuditorV2Service {
             log.info("Routing batch of {} words...", batch.size());
             Map<String, Map<String, Object>> results = openAIService.auditAndRouteWordsBatch(batch);
 
+            List<Word> tentativeShorten = new ArrayList<>();
             for (Word word : batch) {
                 Map<String, Object> result = results.get(word.getWord());
                 if (result != null) {
                     String action = String.valueOf(result.get("action")).trim().toUpperCase();
                     String reason = result.get("reason") != null ? String.valueOf(result.get("reason")) : "";
-                    applyAction(word, action, reason, counts);
+                    applyAction(word, action, reason, counts, tentativeShorten);
                 } else {
                     log.warn("Auditor v2 returned no verdict for '{}' — leaving pending.", word.getWord());
                 }
                 processed.incrementAndGet();
             }
+
+            finalizeShortenVerdicts(tentativeShorten, counts);
+
             wordRepository.saveAll(batch);
             if (progressCallback != null) {
                 progressCallback.accept(processed.get(), total);
@@ -83,7 +88,7 @@ public class AuditorV2Service {
                 total, counts[0], counts[1], counts[2], counts[3]);
     }
 
-    private void applyAction(Word word, String action, String reason, int[] counts) {
+    private void applyAction(Word word, String action, String reason, int[] counts, List<Word> tentativeShorten) {
         switch (action) {
             case "DELETE" -> {
                 // Never auto-deletes: only flags for the manual purge review list.
@@ -98,18 +103,48 @@ public class AuditorV2Service {
                 counts[1]++;
                 log.info("Auditor v2 RE_ENRICH (reset): '{}' - {}", word.getWord(), reason);
             }
-            case "SHORTEN" -> {
-                word.setProblemFound(false);
-                word.setStep3Error("Clean");
-                word.setAuditNotes(SHORTEN_NOTE);
-                counts[2]++;
-            }
+            case "SHORTEN" ->
+                // Not applied yet — needs a second-opinion check first, see finalizeShortenVerdicts().
+                tentativeShorten.add(word);
             case "CLEAN" -> {
                 word.setProblemFound(false);
                 word.setStep3Error("Clean");
                 counts[3]++;
             }
             default -> log.warn("Auditor v2 unknown action '{}' for '{}' — leaving pending.", action, word.getWord());
+        }
+    }
+
+    /**
+     * Second-opinion check for SHORTEN verdicts using a distinct model (gpt-5.4).
+     * The router's first-pass "too verbose" judgment stays fully AI-driven — this
+     * just adds an independent second AI review instead of a code-side length rule,
+     * since the router alone showed a high false-positive rate on already-concise
+     * definitions (e.g. flagging "Güçlü" or "kuzey" as needing shortening).
+     */
+    private void finalizeShortenVerdicts(List<Word> tentativeShorten, int[] counts) {
+        if (tentativeShorten.isEmpty()) {
+            return;
+        }
+
+        Map<String, Boolean> verified = openAIService.verifyShortenBatch(tentativeShorten);
+
+        for (Word word : tentativeShorten) {
+            // Fail-open on missing/unparseable verdicts: trust the router's original call
+            // rather than silently dropping the word back to pending.
+            boolean genuinelyVerbose = verified.getOrDefault(word.getWord(), true);
+
+            word.setProblemFound(false);
+            word.setStep3Error("Clean");
+
+            if (genuinelyVerbose) {
+                word.setAuditNotes(SHORTEN_NOTE);
+                counts[2]++;
+            } else {
+                counts[3]++;
+                log.info("Auditor v2 SHORTEN verdict REJECTED by verifier for '{}' — already concise, routed to CLEAN.",
+                        word.getWord());
+            }
         }
     }
 }
