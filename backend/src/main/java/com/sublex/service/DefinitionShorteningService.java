@@ -121,23 +121,28 @@ public class DefinitionShorteningService {
     }
 
     private void shortenBatch(List<Word> batch, String batchId) {
-        // Build input: word + current verbose definitions + examples
+        // Build input: word + current verbose definitions + examples, each meaning
+        // tagged with its exact index in that word's meanings array. The model must
+        // echo this index back — that's what lets us apply the result unambiguously
+        // instead of fuzzy-matching old text, which previously mixed up meanings
+        // (e.g. wrote a verb's shortened text into a noun slot for words with
+        // multiple same-POS meanings).
         StringBuilder input = new StringBuilder();
         for (int i = 0; i < batch.size(); i++) {
             Word w = batch.get(i);
             StringBuilder defs = new StringBuilder();
-            // The word was already flagged verbose by the Auditor's semantic judgment,
-            // so every meaning is offered to the model — no character-length gate here.
-            for (WordDefinition.Meaning m : w.getDefinition().getMeanings()) {
+            List<WordDefinition.Meaning> meaningsList = w.getDefinition().getMeanings();
+            for (int mi = 0; mi < meaningsList.size(); mi++) {
+                WordDefinition.Meaning m = meaningsList.get(mi);
                 if (m.getDefinition() != null) {
                     String examplePart = (m.getExample() != null && !m.getExample().isEmpty())
                             ? (" | Example: " + m.getExample())
                             : "";
-                    defs.append(String.format("  - [%s] %s%s\n", m.getPos(), m.getDefinition(), examplePart));
+                    defs.append(String.format("  - [%d][%s] %s%s\n", mi, m.getPos(), m.getDefinition(), examplePart));
                 }
             }
             if (defs.length() > 0) {
-                input.append(String.format("%d. WORD: \"%s\" (DIFFICULTY: %s)\n   VERBOSE DEFINITIONS:\n%s",
+                input.append(String.format("%d. WORD: \"%s\" (DIFFICULTY: %s)\n   VERBOSE DEFINITIONS (format: [index][pos] definition):\n%s",
                         i + 1, w.getWord(), w.getDifficulty(), defs));
             }
         }
@@ -162,7 +167,8 @@ public class DefinitionShorteningService {
                 OUTPUT FORMAT (JSON):
                 Return a JSON array where each object has:
                 - "word": the English word
-                - "shortened": array of objects with {"pos": "...", "old": "original definition", "new": "shortened definition"}
+                - "shortened": array of objects with {"index": <the exact [index] number shown before that meaning in the input>, "new": "shortened definition"}
+                Only include an entry for a meaning if you actually changed its text. The "index" MUST exactly match the [index] tag from the input — this is how your answer gets applied, so never guess or renumber it.
 
                 Return ONLY valid JSON. No explanations.
                 """;
@@ -196,10 +202,10 @@ public class DefinitionShorteningService {
             }
 
             // Apply shortened definitions
-            Map<String, List<Map<String, String>>> shortenedMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            Map<String, List<Map<String, Object>>> shortenedMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             for (Map<String, Object> r : results) {
                 String word = (String) r.get("word");
-                List<Map<String, String>> shortened = objectMapper.convertValue(r.get("shortened"),
+                List<Map<String, Object>> shortened = objectMapper.convertValue(r.get("shortened"),
                         new TypeReference<>() {
                         });
                 if (word != null && shortened != null) {
@@ -208,40 +214,30 @@ public class DefinitionShorteningService {
             }
 
             for (Word word : batch) {
-                List<Map<String, String>> shortenings = shortenedMap.get(word.getWord());
+                List<Map<String, Object>> shortenings = shortenedMap.get(word.getWord());
 
                 boolean updated = false;
                 if (shortenings != null && !shortenings.isEmpty()) {
-                    for (WordDefinition.Meaning meaning : word.getDefinition().getMeanings()) {
-                        for (Map<String, String> s : shortenings) {
-                            if (meaning.getDefinition() != null && s.get("new") != null) {
-                                String currentDef = meaning.getDefinition().trim();
-                                String gptOld = s.get("old") != null ? s.get("old").trim() : "";
-
-                                // Eşleşmeyi esnek yap. GPT bazen boşlukları veya harfleri hafif kırpabilir.
-                                boolean isMatch = currentDef.equals(gptOld) ||
-                                        currentDef.contains(gptOld) ||
-                                        gptOld.contains(currentDef);
-
-                                // Alternatif olarak, eğer o POS (isim, fiil vb.) için kelimenin SADECE 1 anlamı
-                                // varsa da esnek eşleşebiliriz
-                                long posCount = word.getDefinition().getMeanings().stream()
-                                        .filter(m -> m.getPos() != null && m.getPos().equals(meaning.getPos()))
-                                        .count();
-
-                                if (!isMatch && meaning.getPos() != null && meaning.getPos().equals(s.get("pos"))
-                                        && posCount == 1) {
-                                    isMatch = true;
-                                }
-
-                                if (isMatch) {
-                                    log.info("Shortened '{}' [{}]: '{}' → '{}'",
-                                            word.getWord(), meaning.getPos(), meaning.getDefinition(), s.get("new"));
-                                    meaning.setDefinition(s.get("new"));
-                                    updated = true;
-                                }
-                            }
+                    List<WordDefinition.Meaning> meanings = word.getDefinition().getMeanings();
+                    for (Map<String, Object> s : shortenings) {
+                        Object indexObj = s.get("index");
+                        Object newObj = s.get("new");
+                        if (indexObj == null || newObj == null) {
+                            continue;
                         }
+                        int index = ((Number) indexObj).intValue();
+                        if (index < 0 || index >= meanings.size()) {
+                            log.warn("Shortening batch: '{}' returned out-of-range index {} (has {} meanings) — skipped",
+                                    word.getWord(), index, meanings.size());
+                            continue;
+                        }
+
+                        WordDefinition.Meaning meaning = meanings.get(index);
+                        String newDef = String.valueOf(newObj);
+                        log.info("Shortened '{}' [{}] idx={}: '{}' → '{}'",
+                                word.getWord(), meaning.getPos(), index, meaning.getDefinition(), newDef);
+                        meaning.setDefinition(newDef);
+                        updated = true;
                     }
                 }
 
