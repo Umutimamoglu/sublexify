@@ -14,12 +14,26 @@ const AuditReviewPanel = () => {
 
     const [selectedWord, setSelectedWord] = useState<Word | null>(null);
 
+    // Smart Auditor v2 (router)
+    const [v2Stats, setV2Stats] = useState<{ routedDelete: number; routedShorten: number; routedReEnrich: number; pending: number } | null>(null);
+    const [v2Size, setV2Size] = useState(200);
+    const [v2Running, setV2Running] = useState(false);
+
     const fetchStats = useCallback(async () => {
         try {
             const data = await PipelineAPI.getAuditStats();
             setStats(data);
         } catch (err) {
             console.error('Failed to fetch audit stats', err);
+        }
+    }, []);
+
+    const fetchV2Stats = useCallback(async () => {
+        try {
+            const data = await PipelineAPI.getAuditV2Stats();
+            setV2Stats(data);
+        } catch (err) {
+            console.error('Failed to fetch auditor v2 stats', err);
         }
     }, []);
 
@@ -38,11 +52,12 @@ const AuditReviewPanel = () => {
     useEffect(() => {
         fetchProblems();
         fetchStats();
-    }, [fetchProblems, fetchStats]);
+        fetchV2Stats();
+    }, [fetchProblems, fetchStats, fetchV2Stats]);
 
     const handleBatchAction = async (action: 'resolve' | 'reset') => {
         if (selectedIds.length === 0) return;
-        
+
         setActionLoading(action);
         try {
             if (action === 'resolve') {
@@ -52,9 +67,41 @@ const AuditReviewPanel = () => {
             }
             setSelectedIds([]);
             fetchProblems();
+            fetchStats();
+            fetchV2Stats();
             setSelectedWord(null);
         } catch (err) {
             alert(`Batch ${action} failed`);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const startV2 = async () => {
+        if (!v2Size || v2Size < 1) return;
+        if (!confirm(`Akıllı Auditor v2, ${v2Size} kelime üzerinde çalışsın mı?\n\nCanlı uygulama:\n• Hatalı/eksik → yeniden zenginleştirme için SIFIRLANIR (otomatik)\n• Uzun → kısaltma için işaretlenir\n• Anlamsız → SİLİNECEKLER listesine düşer (sen onaylayınca silinir)`)) return;
+
+        setActionLoading('v2');
+        try {
+            await PipelineAPI.startAuditorV2(v2Size);
+            setV2Running(true);
+            const poll = setInterval(async () => {
+                try {
+                    const status = await PipelineAPI.getStatus();
+                    if (!status.running) {
+                        clearInterval(poll);
+                        setV2Running(false);
+                        fetchStats();
+                        fetchV2Stats();
+                        fetchProblems();
+                    }
+                } catch {
+                    clearInterval(poll);
+                    setV2Running(false);
+                }
+            }, 3000);
+        } catch (err) {
+            alert('Auditor v2 başlatılamadı.');
         } finally {
             setActionLoading(null);
         }
@@ -249,6 +296,59 @@ const AuditReviewPanel = () => {
                     </div>
                 </div>
             )}
+
+            {/* Smart Auditor v2 (Router) */}
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-cyan-500/5 to-indigo-500/5">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div>
+                        <span className="text-xs font-black uppercase tracking-widest text-cyan-500">🤖 Akıllı Auditor v2 (Router)</span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xl mt-1">
+                            Her kelimeyi yönlendirir: <b className="text-red-500">SİL</b> (anlamsız → onaylı liste), <b className="text-amber-500">TEKRAR</b> (hatalı/eksik → otomatik sıfırlanır), <b className="text-cyan-500">KISALT</b> (uzun → kısaltma), <b className="text-green-500">TEMİZ</b>.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5">
+                            <span className="text-[10px] font-bold uppercase text-gray-400 mr-2">Adet</span>
+                            <input
+                                type="number"
+                                min={1}
+                                max={5000}
+                                value={v2Size}
+                                onChange={(e) => setV2Size(parseInt(e.target.value) || 0)}
+                                className="w-20 bg-transparent outline-none text-sm font-bold text-gray-900 dark:text-white"
+                            />
+                        </div>
+                        <button
+                            onClick={startV2}
+                            disabled={!!actionLoading || v2Running}
+                            className="px-5 py-2 text-xs font-bold bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-all disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {(v2Running || actionLoading === 'v2') ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                            {v2Running ? 'Çalışıyor…' : 'Akıllı Taramayı Başlat'}
+                        </button>
+                    </div>
+                </div>
+                {v2Stats && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-red-100 dark:border-red-900/30">
+                            <p className="text-[10px] font-bold uppercase text-red-500 tracking-wider">🗑️ Silinecek</p>
+                            <p className="text-xl font-black text-red-600 dark:text-red-400">{v2Stats.routedDelete.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-amber-100 dark:border-amber-900/30">
+                            <p className="text-[10px] font-bold uppercase text-amber-500 tracking-wider">♻️ Tekrar Verilecek</p>
+                            <p className="text-xl font-black text-amber-600 dark:text-amber-400">{v2Stats.routedReEnrich.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-cyan-100 dark:border-cyan-900/30">
+                            <p className="text-[10px] font-bold uppercase text-cyan-500 tracking-wider">✂️ Kısaltılacak</p>
+                            <p className="text-xl font-black text-cyan-600 dark:text-cyan-400">{v2Stats.routedShorten.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-gray-700">
+                            <p className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">⏳ Bekleyen</p>
+                            <p className="text-xl font-black text-gray-600 dark:text-gray-400">{v2Stats.pending.toLocaleString('tr-TR')}</p>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

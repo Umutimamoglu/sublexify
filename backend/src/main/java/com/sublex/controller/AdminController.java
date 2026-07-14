@@ -657,6 +657,26 @@ public class AdminController {
         return ResponseEntity.accepted().body("AI Auditor started for " + size + " words.");
     }
 
+    @PostMapping("/pipeline/auditor-v2")
+    @Operation(summary = "Starts the smart AI Auditor v2 router (DELETE/RE_ENRICH/SHORTEN/CLEAN)")
+    public ResponseEntity<String> startAuditorV2(@RequestParam(defaultValue = "200") int size) {
+        log.info("Starting AI Auditor v2 (router) for {} words", size);
+        pipelineService.startAuditorV2(size);
+        return ResponseEntity.accepted().body("AI Auditor v2 started for " + size + " words.");
+    }
+
+    @GetMapping("/words/audit-v2-stats")
+    @Operation(summary = "Returns bucket counts routed by AI Auditor v2")
+    public ResponseEntity<Map<String, Long>> getAuditV2Stats() {
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("routedDelete", wordRepository.countProblems());
+        stats.put("routedShorten",
+                wordRepository.countByAuditNotesContaining(com.sublex.service.AuditorV2Service.SHORTEN_NOTE));
+        stats.put("routedReEnrich", wordRepository.countByAuditNotesContaining("Auditor v2"));
+        stats.put("pending", wordRepository.countPendingAudit());
+        return ResponseEntity.ok(stats);
+    }
+
     @GetMapping("/words/audit-problems")
     @Operation(summary = "Returns words flagged by the Step 3 Auditor")
     public ResponseEntity<org.springframework.data.domain.Page<com.sublex.model.Word>> getAuditProblems(
@@ -815,18 +835,7 @@ public class AdminController {
     @Transactional
     public ResponseEntity<String> resetDefinitions(@RequestBody List<Long> wordIds) {
         List<com.sublex.model.Word> words = wordRepository.findAllById(wordIds);
-        words.forEach(w -> {
-            w.setDefinition(null);
-            w.setIsEnriched(false);
-            w.setEnrichedAt(null);
-            w.setNeedsReEnrichment(false);
-            w.setIsVerified(false);
-            w.setJudgeVerdict(null);
-            w.setJudgeStatus(null);
-            w.setProblemFound(false);
-            w.setStep3Error(null);
-            w.setAuditNotes("Reset by admin for re-enrichment");
-        });
+        words.forEach(w -> com.sublex.util.WordAuditUtil.resetForReEnrichment(w, "Reset by admin for re-enrichment"));
         wordRepository.saveAll(words);
         return ResponseEntity.ok("Successfully reset " + words.size() + " words for re-enrichment.");
     }

@@ -386,6 +386,16 @@ const PipelineAPI = {
         return response.data;
     },
 
+    startAuditorV2: async (size: number): Promise<string> => {
+        const response = await api.post(`/admin/pipeline/auditor-v2?size=${size}`);
+        return response.data;
+    },
+
+    getAuditV2Stats: async (): Promise<{ routedDelete: number; routedShorten: number; routedReEnrich: number; pending: number }> => {
+        const response = await api.get('/admin/words/audit-v2-stats');
+        return response.data;
+    },
+
     bulkFixDefinitions: async (fixes: Array<{ id: number; definition: unknown; clearRootWord?: boolean }>): Promise<string> => {
         const response = await api.post('/admin/words/bulk-fix-definitions', fixes);
         return response.data;

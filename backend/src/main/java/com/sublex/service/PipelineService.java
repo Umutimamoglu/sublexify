@@ -32,6 +32,7 @@ public class PipelineService {
     private final JudgeService judgeService;
     private final GeminiService geminiService;
     private final AuditorService auditorService;
+    private final AuditorV2Service auditorV2Service;
     private final DefinitionShorteningService definitionShorteningService;
 
     private final AtomicReference<PipelineStatus> currentStatus = new AtomicReference<>(
@@ -584,6 +585,50 @@ public class PipelineService {
                 log.info("=== AUDITOR COMPLETE === Total time: {}ms", duration);
             } catch (Exception e) {
                 log.error("Auditor failed: {}", e.getMessage(), e);
+                currentStatus.updateAndGet(s -> s.toBuilder()
+                        .currentStep(PipelineStatus.Step.FAILED)
+                        .running(false)
+                        .completedAt(LocalDateTime.now())
+                        .build());
+            }
+        });
+    }
+
+    /**
+     * AI Auditor v2 — smart router. Classifies each pending-audit word into
+     * DELETE / RE_ENRICH / SHORTEN / CLEAN and applies the action live.
+     * Reuses the existing AUDITOR step for UI display.
+     */
+    public void startAuditorV2(int limit) {
+        if (currentStatus.get().isRunning()) {
+            throw new RuntimeException("Pipeline is already running");
+        }
+        PipelineStatus initial = PipelineStatus.builder()
+                .currentStep(PipelineStatus.Step.AUDITOR)
+                .totalWords(limit)
+                .processedWords(0)
+                .running(true)
+                .startedAt(LocalDateTime.now())
+                .build();
+        currentStatus.set(initial);
+
+        Thread.startVirtualThread(() -> {
+            try {
+                long start = System.currentTimeMillis();
+                auditorV2Service.auditAndRoute(limit, (done, total) -> {
+                    updateProgress(PipelineStatus.Step.AUDITOR, done, total);
+                });
+                long duration = System.currentTimeMillis() - start;
+
+                currentStatus.updateAndGet(s -> s.toBuilder()
+                        .currentStep(PipelineStatus.Step.COMPLETE)
+                        .running(false)
+                        .completedAt(LocalDateTime.now())
+                        .progressPercent(100)
+                        .build());
+                log.info("=== AUDITOR v2 COMPLETE === Total time: {}ms", duration);
+            } catch (Exception e) {
+                log.error("Auditor v2 failed: {}", e.getMessage(), e);
                 currentStatus.updateAndGet(s -> s.toBuilder()
                         .currentStep(PipelineStatus.Step.FAILED)
                         .running(false)

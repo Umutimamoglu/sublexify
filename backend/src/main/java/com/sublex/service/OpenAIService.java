@@ -383,6 +383,80 @@ public class OpenAIService implements AIService {
                 }
         }
 
+        /**
+         * AUDITOR v2 — Routes each enriched word into exactly one bucket:
+         * DELETE (nonsense/invalid), RE_ENRICH (wrong/incomplete translation),
+         * SHORTEN (correct but too verbose), or CLEAN. Uses the same gpt-5.4-mini model.
+         * Returns a map keyed by word -> { "action": "...", "reason": "..." }.
+         */
+        public Map<String, Map<String, Object>> auditAndRouteWordsBatch(List<Word> words) {
+                if (words == null || words.isEmpty()) {
+                        return Collections.emptyMap();
+                }
+
+                String systemPrompt = """
+                                You are a Master Lexicographer and the strict Quality-Assurance ROUTER for a professional English→Turkish dictionary database. For EACH provided entry ("word", "contextSentence", "current_definitions") you must choose EXACTLY ONE routing action.
+
+                                ### THE 4 ACTIONS — evaluate in this PRIORITY order and pick the FIRST that applies:
+
+                                1. DELETE — The token is NOT a legitimate dictionary entry: gibberish, subtitle/OCR artifacts or fragments ("frm", "wh-wh", "s-themed", "sync"), obvious typos/misspellings ("libary", "thanaving"), or a foreign (non-English) word ("nunca", "mierda", "conmigo").
+                                   ⚠️ Be CONSERVATIVE — DELETE is destructive. Choose it ONLY when the token is clearly not a real, usable English word or slang. Real words that happen to be used as names in the context (e.g. "Apple", "Hope", "Left", "Tangerine") are NEVER DELETE.
+
+                                2. RE_ENRICH — It IS a real English word, but the current Turkish definition is WRONG, misleading, hallucinated, or MISSES the core / most-common meaning (e.g. "left" defined only as "past tense of leave" but missing the direction "sol"). The entry must be regenerated from scratch.
+
+                                3. SHORTEN — The definition is CORRECT and complete, but at least one Turkish "definition" string is unnecessarily long/verbose (an encyclopedic explanation instead of a concise dictionary gloss). Aim for short dictionary-style glosses.
+
+                                4. CLEAN — The entry is accurate, complete AND concise. Nothing to do.
+
+                                ### OUTPUT (STRICT):
+                                Return a JSON object where each key is the word and each value is an object:
+                                { "action": "DELETE" | "RE_ENRICH" | "SHORTEN" | "CLEAN", "reason": "Türkçe kısa ve net gerekçe" }
+                                Return ONLY the JSON object, nothing else.
+                                """;
+
+                StringBuilder userPromptBuilder = new StringBuilder("Route the following words:\n\n");
+                for (Word w : words) {
+                        try {
+                                String defJson = objectMapper.writeValueAsString(w.getDefinition());
+                                userPromptBuilder.append(String.format("- Word: '%s'\n  Context: '%s'\n  Current Definition: %s\n\n",
+                                                w.getWord(),
+                                                w.getContextSentence() != null ? w.getContextSentence() : "No context",
+                                                defJson));
+                        } catch (Exception e) {
+                                log.error("Error serializing definition for routing: {}", w.getWord());
+                        }
+                }
+
+                try {
+                        Map<String, Object> requestBody = Map.of(
+                                        "model", MODEL,
+                                        "messages", List.of(
+                                                        Map.of("role", "system", "content", systemPrompt),
+                                                        Map.of("role", "user", "content", userPromptBuilder.toString())),
+                                        "response_format", Map.of("type", "json_object"));
+
+                        String response = restClient.post()
+                                        .uri(OPENAI_URL)
+                                        .header("Authorization", "Bearer " + apiKey)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .body(requestBody)
+                                        .retrieve()
+                                        .body(String.class);
+
+                        Map<String, Object> responseMap = objectMapper.readValue(response, Map.class);
+                        List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+                        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                        String content = (String) message.get("content");
+
+                        Map<String, Map<String, Object>> routeResults = objectMapper.readValue(content, Map.class);
+                        return routeResults;
+
+                } catch (Exception e) {
+                        log.error("Batch audit-route failed", e);
+                        return Collections.emptyMap();
+                }
+        }
+
         @Override
         public Map<String, WordDefinition> enrichWordsBatch(List<Word> words) {
                 if (words == null || words.isEmpty()) {
