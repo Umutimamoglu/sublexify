@@ -404,9 +404,12 @@ public class OpenAIService implements AIService {
 
                                 2. RE_ENRICH — It IS a real English word, but the current Turkish definition is WRONG, misleading, hallucinated, or MISSES the core / most-common meaning (e.g. "left" defined only as "past tense of leave" but missing the direction "sol"). The entry must be regenerated from scratch.
 
-                                3. SHORTEN — The definition is CORRECT and complete, but at least one Turkish "definition" string is unnecessarily long/verbose (an encyclopedic explanation instead of a concise dictionary gloss). Aim for short dictionary-style glosses.
+                                3. SHORTEN — The definition is CORRECT, but at least one meaning's Turkish "definition" string is a genuinely long, multi-clause, ENCYCLOPEDIC explanation (a full descriptive sentence, often with commas/subordinate clauses) INSTEAD OF a concise dictionary gloss.
+                                   ⚠️ STRICT FLOOR — if EVERY meaning's Turkish definition is ALREADY a single word or a short phrase (roughly 1-4 words, e.g. "Güçlü.", "kuzey", "eğlence", "Yayınlamak.", "Diyalog, konuşma.", "Güvenlik görevlisi"), there is NOTHING to shorten — you MUST NOT choose SHORTEN, choose CLEAN instead. Do not flag something just because it *could* theoretically be one word shorter.
+                                   PASS EXAMPLE (genuinely verbose → SHORTEN): "Bir kişinin ya da kurumun resmi olarak bir göreve veya makama atanmasını sağlayan, genellikle törenle gerçekleştirilen resmi işlem." (a full descriptive sentence).
+                                   FAIL EXAMPLE (already concise → must be CLEAN, NOT SHORTEN): "Güçlü.", "kuzey", "tatil beldesi", "Yayınlamak.".
 
-                                4. CLEAN — The entry is accurate, complete AND concise. Nothing to do.
+                                4. CLEAN — The entry is accurate, complete AND already concise. This is the DEFAULT when you are unsure whether something counts as SHORTEN — only choose SHORTEN when the verbosity is obvious and undeniable.
 
                                 ### OUTPUT (STRICT):
                                 Return a JSON object where each key is the word and each value is an object:

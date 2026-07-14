@@ -209,37 +209,37 @@ public class DefinitionShorteningService {
 
             for (Word word : batch) {
                 List<Map<String, String>> shortenings = shortenedMap.get(word.getWord());
-                if (shortenings == null || shortenings.isEmpty())
-                    continue;
 
                 boolean updated = false;
-                for (WordDefinition.Meaning meaning : word.getDefinition().getMeanings()) {
-                    for (Map<String, String> s : shortenings) {
-                        if (meaning.getDefinition() != null && s.get("new") != null) {
-                            String currentDef = meaning.getDefinition().trim();
-                            String gptOld = s.get("old") != null ? s.get("old").trim() : "";
+                if (shortenings != null && !shortenings.isEmpty()) {
+                    for (WordDefinition.Meaning meaning : word.getDefinition().getMeanings()) {
+                        for (Map<String, String> s : shortenings) {
+                            if (meaning.getDefinition() != null && s.get("new") != null) {
+                                String currentDef = meaning.getDefinition().trim();
+                                String gptOld = s.get("old") != null ? s.get("old").trim() : "";
 
-                            // Eşleşmeyi esnek yap. GPT bazen boşlukları veya harfleri hafif kırpabilir.
-                            boolean isMatch = currentDef.equals(gptOld) ||
-                                    currentDef.contains(gptOld) ||
-                                    gptOld.contains(currentDef);
+                                // Eşleşmeyi esnek yap. GPT bazen boşlukları veya harfleri hafif kırpabilir.
+                                boolean isMatch = currentDef.equals(gptOld) ||
+                                        currentDef.contains(gptOld) ||
+                                        gptOld.contains(currentDef);
 
-                            // Alternatif olarak, eğer o POS (isim, fiil vb.) için kelimenin SADECE 1 anlamı
-                            // varsa da esnek eşleşebiliriz
-                            long posCount = word.getDefinition().getMeanings().stream()
-                                    .filter(m -> m.getPos() != null && m.getPos().equals(meaning.getPos()))
-                                    .count();
+                                // Alternatif olarak, eğer o POS (isim, fiil vb.) için kelimenin SADECE 1 anlamı
+                                // varsa da esnek eşleşebiliriz
+                                long posCount = word.getDefinition().getMeanings().stream()
+                                        .filter(m -> m.getPos() != null && m.getPos().equals(meaning.getPos()))
+                                        .count();
 
-                            if (!isMatch && meaning.getPos() != null && meaning.getPos().equals(s.get("pos"))
-                                    && posCount == 1) {
-                                isMatch = true;
-                            }
+                                if (!isMatch && meaning.getPos() != null && meaning.getPos().equals(s.get("pos"))
+                                        && posCount == 1) {
+                                    isMatch = true;
+                                }
 
-                            if (isMatch) {
-                                log.info("Shortened '{}' [{}]: '{}' → '{}'",
-                                        word.getWord(), meaning.getPos(), meaning.getDefinition(), s.get("new"));
-                                meaning.setDefinition(s.get("new"));
-                                updated = true;
+                                if (isMatch) {
+                                    log.info("Shortened '{}' [{}]: '{}' → '{}'",
+                                            word.getWord(), meaning.getPos(), meaning.getDefinition(), s.get("new"));
+                                    meaning.setDefinition(s.get("new"));
+                                    updated = true;
+                                }
                             }
                         }
                     }
@@ -251,6 +251,13 @@ public class DefinitionShorteningService {
                     // Sadece sorunları sıfırlıyoruz, ama orijinal enrich tarihini (enrichedAt)
                     // bozmuyoruz!
                     word.setStep3Error(null);
+                    word.setProblemFound(false);
+                } else {
+                    // GPT decided this word needed no actual change (already concise, or a
+                    // false-positive SHORTEN routing). Clear the marker so it exits the
+                    // candidate pool instead of being re-queued by every future run.
+                    word.setAuditNotes("Clean");
+                    word.setStep3Error("Clean");
                     word.setProblemFound(false);
                 }
             }
