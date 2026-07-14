@@ -15,7 +15,7 @@ const AuditReviewPanel = () => {
     const [selectedWord, setSelectedWord] = useState<Word | null>(null);
 
     // Smart Auditor v2 (router)
-    const [v2Stats, setV2Stats] = useState<{ routedDelete: number; routedShorten: number; routedReEnrich: number; pending: number } | null>(null);
+    const [v2Stats, setV2Stats] = useState<{ routedDelete: number; routedShorten: number; routedReEnrich: number; routedProperNoun: number; pending: number } | null>(null);
     const [v2Size, setV2Size] = useState(200);
     const [v2Running, setV2Running] = useState(false);
 
@@ -303,7 +303,7 @@ const AuditReviewPanel = () => {
                     <div>
                         <span className="text-xs font-black uppercase tracking-widest text-cyan-500">🤖 Akıllı Auditor v2 (Router)</span>
                         <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xl mt-1">
-                            Her kelimeyi yönlendirir: <b className="text-red-500">SİL</b> (anlamsız → onaylı liste), <b className="text-amber-500">TEKRAR</b> (hatalı/eksik → otomatik sıfırlanır), <b className="text-cyan-500">KISALT</b> (uzun → kısaltma), <b className="text-green-500">TEMİZ</b>.
+                            Her kelimeyi yönlendirir: <b className="text-purple-500">ÖZEL İSİM</b> (sadece işaretlenir), <b className="text-red-500">SİL</b> (anlamsız → onaylı liste), <b className="text-amber-500">TEKRAR</b> (hatalı/eksik → otomatik sıfırlanır), <b className="text-cyan-500">KISALT</b> (uzun → kısaltma), <b className="text-green-500">TEMİZ</b>.
                         </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -329,7 +329,7 @@ const AuditReviewPanel = () => {
                     </div>
                 </div>
                 {v2Stats && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
                         <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-red-100 dark:border-red-900/30">
                             <p className="text-[10px] font-bold uppercase text-red-500 tracking-wider">🗑️ Silinecek</p>
                             <p className="text-xl font-black text-red-600 dark:text-red-400">{v2Stats.routedDelete.toLocaleString('tr-TR')}</p>
@@ -341,6 +341,10 @@ const AuditReviewPanel = () => {
                         <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-cyan-100 dark:border-cyan-900/30">
                             <p className="text-[10px] font-bold uppercase text-cyan-500 tracking-wider">✂️ Kısaltılacak</p>
                             <p className="text-xl font-black text-cyan-600 dark:text-cyan-400">{v2Stats.routedShorten.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-purple-100 dark:border-purple-900/30">
+                            <p className="text-[10px] font-bold uppercase text-purple-500 tracking-wider">🏷️ Özel İsim</p>
+                            <p className="text-xl font-black text-purple-600 dark:text-purple-400">{v2Stats.routedProperNoun.toLocaleString('tr-TR')}</p>
                         </div>
                         <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-gray-700">
                             <p className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">⏳ Bekleyen</p>

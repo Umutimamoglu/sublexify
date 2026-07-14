@@ -397,23 +397,30 @@ public class OpenAIService implements AIService {
                 String systemPrompt = """
                                 You are a Master Lexicographer and the strict Quality-Assurance ROUTER for a professional English→Turkish dictionary database. For EACH provided entry ("word", "contextSentence", "current_definitions") you must choose EXACTLY ONE routing action.
 
-                                ### THE 4 ACTIONS — evaluate in this PRIORITY order and pick the FIRST that applies:
+                                ### THE 5 ACTIONS — evaluate in this PRIORITY order and pick the FIRST that applies:
 
-                                1. DELETE — The token is NOT a legitimate dictionary entry: gibberish, subtitle/OCR artifacts or fragments ("frm", "wh-wh", "s-themed", "sync"), obvious typos/misspellings ("libary", "thanaving"), or a foreign (non-English) word ("nunca", "mierda", "conmigo").
+                                1. PROPER_NOUN — The token is STRICTLY a specific person, place, or brand name with NO common, ordinary dictionary meaning at all (e.g. "Vivaldi", "Keldysh", "Stallone", "Albany" the city, "Denise" the given name). It just needs to be classified as a proper noun — do NOT invent or keep a "definition" for it.
+                                   PASS EXAMPLE (do NOT choose this): "Tangerine", "Apple", "Left", "Hope", "Guard" — even if capitalized or used as a name in the context, these are real, common dictionary words with an ordinary meaning. Never route these here.
+
+                                2. DELETE — The token is NOT a legitimate, reusable dictionary entry:
+                                   - Gibberish, subtitle/OCR artifacts or fragments ("frm", "wh-wh", "s-themed", "sync").
+                                   - Obvious typos/misspellings ("libary", "thanaving").
+                                   - A foreign (non-English) word ("nunca", "mierda", "conmigo").
+                                   - A SITUATIONAL PUN/WORDPLAY coined for one specific scene — e.g. blending a character's NAME with another word ("jo-incidence" = "Jo" + "coincidence"; "brisketcase" = "brisket" + "basketcase"). These look grammatically plausible and may even get a serious-sounding definition, but they are one-off jokes, not real words anyone would look up. Do NOT invent a dictionary meaning for them.
                                    ⚠️ Be CONSERVATIVE — DELETE is destructive. Choose it ONLY when the token is clearly not a real, usable English word or slang. Real words that happen to be used as names in the context (e.g. "Apple", "Hope", "Left", "Tangerine") are NEVER DELETE.
 
-                                2. RE_ENRICH — It IS a real English word, but the current Turkish definition is WRONG, misleading, hallucinated, or MISSES the core / most-common meaning (e.g. "left" defined only as "past tense of leave" but missing the direction "sol"). The entry must be regenerated from scratch.
+                                3. RE_ENRICH — It IS a real English word, but the current Turkish definition is WRONG, misleading, hallucinated, or MISSES the core / most-common meaning (e.g. "left" defined only as "past tense of leave" but missing the direction "sol"). The entry must be regenerated from scratch.
 
-                                3. SHORTEN — The definition is CORRECT, but at least one meaning's Turkish "definition" string is a genuinely long, multi-clause, ENCYCLOPEDIC explanation (a full descriptive sentence, often with commas/subordinate clauses) INSTEAD OF a concise dictionary gloss.
+                                4. SHORTEN — The definition is CORRECT, but at least one meaning's Turkish "definition" string is a genuinely long, multi-clause, ENCYCLOPEDIC explanation (a full descriptive sentence, often with commas/subordinate clauses) INSTEAD OF a concise dictionary gloss.
                                    ⚠️ STRICT FLOOR — if EVERY meaning's Turkish definition is ALREADY a single word or a short phrase (roughly 1-4 words, e.g. "Güçlü.", "kuzey", "eğlence", "Yayınlamak.", "Diyalog, konuşma.", "Güvenlik görevlisi"), there is NOTHING to shorten — you MUST NOT choose SHORTEN, choose CLEAN instead. Do not flag something just because it *could* theoretically be one word shorter.
                                    PASS EXAMPLE (genuinely verbose → SHORTEN): "Bir kişinin ya da kurumun resmi olarak bir göreve veya makama atanmasını sağlayan, genellikle törenle gerçekleştirilen resmi işlem." (a full descriptive sentence).
                                    FAIL EXAMPLE (already concise → must be CLEAN, NOT SHORTEN): "Güçlü.", "kuzey", "tatil beldesi", "Yayınlamak.".
 
-                                4. CLEAN — The entry is accurate, complete AND already concise. This is the DEFAULT when you are unsure whether something counts as SHORTEN — only choose SHORTEN when the verbosity is obvious and undeniable.
+                                5. CLEAN — The entry is accurate, complete AND already concise. This is the DEFAULT when you are unsure whether something counts as SHORTEN — only choose SHORTEN when the verbosity is obvious and undeniable.
 
                                 ### OUTPUT (STRICT):
                                 Return a JSON object where each key is the word and each value is an object:
-                                { "action": "DELETE" | "RE_ENRICH" | "SHORTEN" | "CLEAN", "reason": "Türkçe kısa ve net gerekçe" }
+                                { "action": "PROPER_NOUN" | "DELETE" | "RE_ENRICH" | "SHORTEN" | "CLEAN", "reason": "Türkçe kısa ve net gerekçe" }
                                 Return ONLY the JSON object, nothing else.
                                 """;
 

@@ -17,16 +17,19 @@ import java.util.function.BiConsumer;
 
 /**
  * AI Auditor v2 — a smarter second-pass auditor that ROUTES each enriched word
- * into one of four buckets and applies the action live (no schema change):
+ * into one of five buckets and applies the action live (no schema change):
  * <ul>
- * <li>DELETE    -> problem_found=true (+ reason) -> feeds the existing manual purge review list.</li>
- * <li>RE_ENRICH -> full reset -> WORKER re-enrichment queue (automatic).</li>
- * <li>SHORTEN   -> marked in audit_notes; the existing length-based shortening pipeline handles it.</li>
- * <li>CLEAN     -> step3_error='Clean' (leaves the pending-audit pool).</li>
+ * <li>PROPER_NOUN -> is_proper_noun=true (keeps the existing definition) -> a word that
+ *     slipped through analysis without being flagged as a name-only entry gets fixed.</li>
+ * <li>DELETE      -> problem_found=true (+ reason) -> feeds the existing manual purge review list.</li>
+ * <li>RE_ENRICH   -> full reset -> WORKER re-enrichment queue (automatic).</li>
+ * <li>SHORTEN     -> marked in audit_notes; the existing length-based shortening pipeline handles it.</li>
+ * <li>CLEAN       -> step3_error='Clean' (leaves the pending-audit pool).</li>
  * </ul>
  * Reuses the existing {@code findWordsForAuditing} selection (EN, enriched,
  * non-proper-noun, never-audited) so it is idempotent: a processed word either
- * gets a non-null step3_error or becomes is_enriched=false, so it is never re-selected.
+ * gets a non-null step3_error, becomes is_enriched=false, or becomes is_proper_noun=true,
+ * so it is never re-selected.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,6 +43,8 @@ public class AuditorV2Service {
     public static final String SHORTEN_NOTE = "Auditor: SHORTEN";
     /** audit_notes marker written when a word is reset for re-enrichment. */
     public static final String REENRICH_NOTE = "Auditor v2: hatalı/eksik çeviri — sıfırlandı";
+    /** audit_notes marker written when a word is reclassified as a proper noun. */
+    public static final String PROPER_NOUN_NOTE = "Auditor v2: özel isim olarak işaretlendi";
 
     @Transactional
     public void auditAndRoute(int limit, BiConsumer<Integer, Integer> progressCallback) {
@@ -54,7 +59,7 @@ public class AuditorV2Service {
 
         int batchSize = 25; // Route 25 words per call, mirroring v1 auditor's batch size
         AtomicInteger processed = new AtomicInteger(0);
-        int[] counts = new int[4]; // [DELETE, RE_ENRICH, SHORTEN, CLEAN]
+        int[] counts = new int[5]; // [DELETE, RE_ENRICH, SHORTEN, CLEAN, PROPER_NOUN]
 
         for (int i = 0; i < words.size(); i += batchSize) {
             int end = Math.min(i + batchSize, words.size());
@@ -84,12 +89,26 @@ public class AuditorV2Service {
             }
         }
 
-        log.info("AI Auditor v2 complete. Routed {} words -> DELETE={}, RE_ENRICH={}, SHORTEN={}, CLEAN={}",
-                total, counts[0], counts[1], counts[2], counts[3]);
+        log.info("AI Auditor v2 complete. Routed {} words -> DELETE={}, RE_ENRICH={}, SHORTEN={}, CLEAN={}, PROPER_NOUN={}",
+                total, counts[0], counts[1], counts[2], counts[3], counts[4]);
     }
 
     private void applyAction(Word word, String action, String reason, int[] counts, List<Word> tentativeShorten) {
         switch (action) {
+            case "PROPER_NOUN" -> {
+                // Reuses the same mutation as the existing /words/mark-proper-noun
+                // endpoint — the definition is left untouched (a name doesn't need a
+                // fabricated dictionary meaning). This word slipped through analysis
+                // without being flagged is_proper_noun=true; only the classification
+                // is fixed. Matches the permanent-note precedent already used by the
+                // WORKER's own proper-noun bypass path.
+                word.setIsProperNoun(true);
+                word.setProblemFound(false);
+                word.setStep3Error("Clean");
+                word.setAuditNotes(PROPER_NOUN_NOTE);
+                counts[4]++;
+                log.info("Auditor v2 PROPER_NOUN: '{}' marked is_proper_noun=true - {}", word.getWord(), reason);
+            }
             case "DELETE" -> {
                 // Never auto-deletes: only flags for the manual purge review list.
                 word.setProblemFound(true);

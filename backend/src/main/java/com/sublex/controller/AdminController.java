@@ -672,7 +672,10 @@ public class AdminController {
         stats.put("routedDelete", wordRepository.countProblems());
         stats.put("routedShorten",
                 wordRepository.countByAuditNotesContaining(com.sublex.service.AuditorV2Service.SHORTEN_NOTE));
-        stats.put("routedReEnrich", wordRepository.countByAuditNotesContaining("Auditor v2"));
+        stats.put("routedReEnrich",
+                wordRepository.countByAuditNotesContaining(com.sublex.service.AuditorV2Service.REENRICH_NOTE));
+        stats.put("routedProperNoun",
+                wordRepository.countByAuditNotesContaining(com.sublex.service.AuditorV2Service.PROPER_NOUN_NOTE));
         stats.put("pending", wordRepository.countPendingAudit());
         return ResponseEntity.ok(stats);
     }
