@@ -111,6 +111,14 @@ public class Word {
     @Column(name = "step3_error", columnDefinition = "text")
     private String step3Error;
 
+    // AI Auditor v2 (Phase 2) — permanent per-word routing record. Internal/admin
+    // only; deliberately NOT exposed in WordDTO, so it never reaches web/mobile.
+    @Column(name = "audit_action", length = 20)
+    private String auditAction; // DELETE | RE_ENRICH | SHORTEN | CLEAN | PROPER_NOUN
+
+    @Column(name = "audited_at")
+    private LocalDateTime auditedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

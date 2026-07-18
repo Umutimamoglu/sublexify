@@ -668,15 +668,15 @@ public class AdminController {
     @GetMapping("/words/audit-v2-stats")
     @Operation(summary = "Returns bucket counts routed by AI Auditor v2")
     public ResponseEntity<Map<String, Long>> getAuditV2Stats() {
+        // Phase 2: counts come from the permanent audit_action column (clean, queryable,
+        // no collision between v1 semantics and v2 buckets).
         Map<String, Long> stats = new HashMap<>();
-        stats.put("routedDelete", wordRepository.countProblems());
-        stats.put("routedShorten",
-                wordRepository.countByAuditNotesContaining(com.sublex.service.AuditorV2Service.SHORTEN_NOTE));
-        stats.put("routedReEnrich",
-                wordRepository.countByAuditNotesContaining(com.sublex.service.AuditorV2Service.REENRICH_NOTE));
-        stats.put("routedProperNoun",
-                wordRepository.countByAuditNotesContaining(com.sublex.service.AuditorV2Service.PROPER_NOUN_NOTE));
-        stats.put("pending", wordRepository.countPendingAudit());
+        stats.put("routedDelete", wordRepository.countByAuditAction("DELETE"));
+        stats.put("routedReEnrich", wordRepository.countByAuditAction("RE_ENRICH"));
+        stats.put("routedShorten", wordRepository.countByAuditAction("SHORTEN"));
+        stats.put("routedProperNoun", wordRepository.countByAuditAction("PROPER_NOUN"));
+        stats.put("routedClean", wordRepository.countByAuditAction("CLEAN"));
+        stats.put("pending", wordRepository.countPendingReAudit());
         return ResponseEntity.ok(stats);
     }
 

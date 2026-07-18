@@ -391,7 +391,7 @@ const PipelineAPI = {
         return response.data;
     },
 
-    getAuditV2Stats: async (): Promise<{ routedDelete: number; routedShorten: number; routedReEnrich: number; routedProperNoun: number; pending: number }> => {
+    getAuditV2Stats: async (): Promise<{ routedDelete: number; routedShorten: number; routedReEnrich: number; routedProperNoun: number; routedClean: number; pending: number }> => {
         const response = await api.get('/admin/words/audit-v2-stats');
         return response.data;
     },

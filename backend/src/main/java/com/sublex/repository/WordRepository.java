@@ -144,6 +144,19 @@ public interface WordRepository extends JpaRepository<Word, Long>, JpaSpecificat
     @Query("SELECT w FROM Word w WHERE w.language = 'en' AND w.isEnriched = true AND (w.isProperNoun IS NULL OR w.isProperNoun = false) AND (w.problemFound IS NULL OR (w.problemFound = false AND w.step3Error IS NULL)) ORDER BY w.id ASC")
     List<Word> findWordsForAuditing(org.springframework.data.domain.Pageable pageable);
 
+    // ======= AUDITOR V2 (Phase 2 — audit_action based, full re-audit) =======
+    // Selects enriched EN words not yet audited in the v2 pass (auditedAt IS NULL).
+    // Independent of v1's step3Error, so a full sweep covers ALL enriched words once;
+    // repeatable later by clearing auditedAt.
+    @Query("SELECT w FROM Word w WHERE w.language = 'en' AND w.isEnriched = true AND (w.isProperNoun IS NULL OR w.isProperNoun = false) AND w.auditedAt IS NULL ORDER BY w.id ASC")
+    List<Word> findWordsForReAudit(org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT COUNT(w) FROM Word w WHERE w.language = 'en' AND w.isEnriched = true AND (w.isProperNoun IS NULL OR w.isProperNoun = false) AND w.auditedAt IS NULL")
+    long countPendingReAudit();
+
+    @Query("SELECT COUNT(w) FROM Word w WHERE w.auditAction = :action")
+    long countByAuditAction(@org.springframework.data.repository.query.Param("action") String action);
+
     // ======= AUDIT STATS QUERIES =======
     @Query("SELECT COUNT(w) FROM Word w WHERE w.isEnriched = true")
     long countEnriched();

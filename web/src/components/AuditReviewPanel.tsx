@@ -15,7 +15,7 @@ const AuditReviewPanel = () => {
     const [selectedWord, setSelectedWord] = useState<Word | null>(null);
 
     // Smart Auditor v2 (router)
-    const [v2Stats, setV2Stats] = useState<{ routedDelete: number; routedShorten: number; routedReEnrich: number; routedProperNoun: number; pending: number } | null>(null);
+    const [v2Stats, setV2Stats] = useState<{ routedDelete: number; routedShorten: number; routedReEnrich: number; routedProperNoun: number; routedClean: number; pending: number } | null>(null);
     const [v2Size, setV2Size] = useState(200);
     const [v2Running, setV2Running] = useState(false);
 
@@ -329,10 +329,14 @@ const AuditReviewPanel = () => {
                     </div>
                 </div>
                 {v2Stats && (
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4">
                         <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-red-100 dark:border-red-900/30">
                             <p className="text-[10px] font-bold uppercase text-red-500 tracking-wider">🗑️ Silinecek</p>
                             <p className="text-xl font-black text-red-600 dark:text-red-400">{v2Stats.routedDelete.toLocaleString('tr-TR')}</p>
+                        </div>
+                        <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-green-100 dark:border-green-900/30">
+                            <p className="text-[10px] font-bold uppercase text-green-500 tracking-wider">✅ Temiz</p>
+                            <p className="text-xl font-black text-green-600 dark:text-green-400">{v2Stats.routedClean.toLocaleString('tr-TR')}</p>
                         </div>
                         <div className="p-3 bg-white/60 dark:bg-white/5 rounded-xl border border-amber-100 dark:border-amber-900/30">
                             <p className="text-[10px] font-bold uppercase text-amber-500 tracking-wider">♻️ Tekrar Verilecek</p>

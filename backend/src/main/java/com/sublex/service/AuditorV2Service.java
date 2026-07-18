@@ -50,7 +50,7 @@ public class AuditorV2Service {
     public void auditAndRoute(int limit, BiConsumer<Integer, Integer> progressCallback) {
         log.info("Starting AI Auditor v2 (routing) for {} words", limit);
 
-        List<Word> words = wordRepository.findWordsForAuditing(PageRequest.of(0, limit));
+        List<Word> words = wordRepository.findWordsForReAudit(PageRequest.of(0, limit));
         int total = words.size();
         if (total == 0) {
             log.info("No words found for auditing (v2).");
@@ -106,6 +106,7 @@ public class AuditorV2Service {
                 word.setProblemFound(false);
                 word.setStep3Error("Clean");
                 word.setAuditNotes(PROPER_NOUN_NOTE);
+                stamp(word, "PROPER_NOUN");
                 counts[4]++;
                 log.info("Auditor v2 PROPER_NOUN: '{}' marked is_proper_noun=true - {}", word.getWord(), reason);
             }
@@ -113,6 +114,7 @@ public class AuditorV2Service {
                 // Never auto-deletes: only flags for the manual purge review list.
                 word.setProblemFound(true);
                 word.setStep3Error(reason.isBlank() ? "Anlamsız/geçersiz kelime (Auditor v2)" : reason);
+                stamp(word, "DELETE");
                 counts[0]++;
                 log.warn("Auditor v2 DELETE: '{}' - {}", word.getWord(), reason);
             }
@@ -121,7 +123,8 @@ public class AuditorV2Service {
                     // Strict mode: RE_ENRICH wipes the current definition immediately, so an
                     // unauditable verdict (no reason) would destroy the only evidence needed
                     // to later check whether the AI was right — worse than just leaving the
-                    // word pending. Skip; findWordsForAuditing will re-select it next run.
+                    // word pending. Skip (no auditedAt stamp); it stays pending and is
+                    // re-selected next run.
                     counts[5]++;
                     log.warn("Auditor v2 RE_ENRICH SKIPPED for '{}' — no reason provided, leaving pending.",
                             word.getWord());
@@ -130,8 +133,10 @@ public class AuditorV2Service {
                     // AI's reason is kept in audit_notes so it stays inspectable until
                     // re-enrichment succeeds — WORKER (and the trusted-enrichment path)
                     // already overwrite audit_notes on success, so this never lingers as
-                    // permanent clutter once the word is re-enriched.
+                    // permanent clutter once the word is re-enriched. auditedAt is stamped
+                    // so the re-enriched word is not re-audited in this pass (no loop).
                     WordAuditUtil.resetForReEnrichment(word, REENRICH_NOTE + ": " + reason);
+                    stamp(word, "RE_ENRICH");
                     counts[1]++;
                     log.info("Auditor v2 RE_ENRICH (reset): '{}' - {}", word.getWord(), reason);
                 }
@@ -142,10 +147,17 @@ public class AuditorV2Service {
             case "CLEAN" -> {
                 word.setProblemFound(false);
                 word.setStep3Error("Clean");
+                stamp(word, "CLEAN");
                 counts[3]++;
             }
             default -> log.warn("Auditor v2 unknown action '{}' for '{}' — leaving pending.", action, word.getWord());
         }
+    }
+
+    /** Records the permanent v2 routing decision + timestamp (Phase 2). */
+    private void stamp(Word word, String action) {
+        word.setAuditAction(action);
+        word.setAuditedAt(java.time.LocalDateTime.now());
     }
 
     /**
@@ -172,8 +184,10 @@ public class AuditorV2Service {
 
             if (genuinelyVerbose) {
                 word.setAuditNotes(SHORTEN_NOTE);
+                stamp(word, "SHORTEN");
                 counts[2]++;
             } else {
+                stamp(word, "CLEAN");
                 counts[3]++;
                 log.info("Auditor v2 SHORTEN verdict REJECTED by verifier for '{}' — already concise, routed to CLEAN.",
                         word.getWord());
