@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import Reanimated from 'react-native-reanimated';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import type { ListWord } from '@/src/types/api';
@@ -12,12 +13,73 @@ const DIFF_COLORS: Record<string, string> = {
   C1: '#EF4444', C2: '#9333EA',
 };
 
+// ─── Note Box ─────────────────────────────────────────────────
+function NoteBox({
+  note,
+  onEditPress,
+  c,
+}: {
+  note?: string | null;
+  onEditPress?: () => void;
+  c: any;
+}) {
+  if (note) {
+    return (
+      <TouchableOpacity
+        style={[noteStyles.box, { backgroundColor: '#F59E0B18', borderColor: '#F59E0B55' }]}
+        onPress={onEditPress}
+        activeOpacity={0.75}
+      >
+        <View style={noteStyles.boxHeader}>
+          <Text style={noteStyles.boxLabel}>📝 Notun</Text>
+          <Text style={[noteStyles.editHint, { color: '#F59E0B' }]}>Düzenle ✏️</Text>
+        </View>
+        <Text style={[noteStyles.boxText, { color: c.TEXT_P }]}>{note}</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  // No note yet — subtle add prompt
+  if (onEditPress) {
+    return (
+      <TouchableOpacity style={noteStyles.addPrompt} onPress={onEditPress} activeOpacity={0.6}>
+        <Text style={[noteStyles.addPromptText, { color: c.TEXT_S }]}>+ Kişisel not ekle</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return null;
+}
+
+const noteStyles = StyleSheet.create({
+  box: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    padding: 12,
+    marginTop: 14,
+    marginBottom: 2,
+    gap: 6,
+  },
+  boxHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  boxLabel: { fontSize: 12, fontWeight: '800', color: '#F59E0B' },
+  editHint: { fontSize: 11, fontWeight: '600' },
+  boxText: { fontSize: 14, lineHeight: 20 },
+  addPrompt: { paddingVertical: 8, marginTop: 10 },
+  addPromptText: { fontSize: 13, fontWeight: '600' },
+});
+
+// ─── FlashCard Back ───────────────────────────────────────────
 export function FlashCardBack({
   word,
   isKnown,
   onToggle,
   onButtonPressIn,
   onButtonPressOut,
+  onNoteEdit,
   styles,
   c,
   animStyle,
@@ -29,6 +91,8 @@ export function FlashCardBack({
   onToggle: () => void;
   onButtonPressIn?: () => void;
   onButtonPressOut?: () => void;
+  /** Called when user wants to add/edit a note */
+  onNoteEdit?: () => void;
   styles: any;
   c: any;
   animStyle?: any;
@@ -98,6 +162,9 @@ export function FlashCardBack({
           ) : null}
         </>
       )}
+
+      {/* ── Personal Note ────────────────────────── */}
+      <NoteBox note={word.note} onEditPress={onNoteEdit} c={c} />
 
       <View style={{ height: 80 }} />
     </>

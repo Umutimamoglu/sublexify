@@ -238,7 +238,7 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 - [x] **FlashCardComponents:** `WordPreviewModal` mobilde ekrana tam yapışıyor, dışına `mx-4` eklenerek nefes alması sağlanmalı.
 
 ### 3. Küçük Kalanlar (kademeli)
-- [ ] **Cihaz testi:** Arka plan TTS (ekran kilitliyken auto-play) yeni dev build ile gerçek cihazda doğrulanmalı (`eas build --profile development` — native config değişti).
+- [ ] **Cihaz testi:** Arka plan TTS (ekran kilitliyken / uygulama arka plandayken auto-play) gerçek cihazda doğrulanmalı. Sessiz "keep-alive" ses döngüsü eklendi (aşağıdaki Tamamlananlar) — expo-av/notifee zaten build'de olduğu için genelde `expo start --clear` + reload yeter; asset paketlemede sorun çıkarsa `eas build --profile development`. iOS tamamen sessiz track'i askıya alırsa çok düşük genlikli tonlu varyanta geçilecek.
 - [ ] **Web paritesi:** Web açılışta da `/api/app-init` endpoint'ini kullanabilir (şu an mobile-only).
 - [ ] **Kilit ekranı kontrolleri:** Auto-play için oynat/duraklat — `react-native-track-player` + TTS buffer gerektirir, ayrı iş.
 - [ ] **Kalan `TouchableOpacity`'ler:** Dokunulan her ekranla birlikte `AnimatedPressable`'a taşınmaya devam.
@@ -252,7 +252,8 @@ Proje geliştirirken aşağıdaki kurallara uyulmalıdır:
 - **DB bakımı (2026-07-13):** `VACUUM FULL media, media_word` çalıştırıldı (44 sn, veri kaybı yok). DB 1042 → 954 MB (~90 MB, index sıkıştırması). **Önemli düzeltme:** "bloat" teşhisi büyük ölçüde yanlış çıktı — `media_word` 16 bin değil **5.26 milyon gerçek satır** içeriyor (16k rakamı, PostgreSQL restart sonrası sıfırlanan istatistiklerden okunmuştu). `media` tablosunun 175 MB'ı da gerçek altyazı metinleri (159 MB `subtitle_content`). Yani ~950 MB'lık DB boyutu meşru veri; disk endişesi yersiz.
 - **App-init & splash:** `GET /api/app-init` (tek istekte tüm açılış verisi), splash artık ağı beklemiyor, onboarding sırasında anonim prefetch.
 - **Cache stratejisi:** Tüm kritik hook'lara `staleTime`; mutation'larda `refetchType: 'none'` + focus'ta stale-kontrollü tazeleme; `POST /api/words/mark-known/batch` (N istek → 1).
-- **Arka plan TTS:** iOS `UIBackgroundModes: audio` + Android notifee foreground service (mediaPlayback) + config plugin.
+- **Arka plan TTS (2026-07-19):** iOS `UIBackgroundModes: audio` + `Audio.setAudioModeAsync` (`playsInSilentModeIOS` + `staysActiveInBackground` + mix/duck interruption modları) + Android notifee foreground service (mediaPlayback) + config plugin. **Kesik akış düzeltmesi:** auto-play kelimeleri `setTimeout` boşluklarıyla sıralıyor; iOS bu sessiz boşluklarda uygulamayı askıya alıp zinciri kesiyordu. Döngüsel sessiz bir ses track'i (`assets/silence.wav`, `startSilentKeepAlive`/`stopSilentKeepAlive`) audio session'ı sürekli aktif tutarak ekran kapalı/arka planda okumanın devam etmesini sağlar. (Cihaz doğrulaması bekliyor — yukarı bkz.)
+- **Onboarding tur bayrakları birleştirildi (2026-07-19):** 8 dağınık "görüldü" bayrağı (4 near-identical tur store + ListScreen'deki 3 ham AsyncStorage anahtarı) tek `onboardingStore`'da toplandı (tek persist key `@onboarding_v1`, `resetAll` ile "eğitimleri tekrar göster" hazır, mevcut kullanıcılar için tek-seferlik legacy migration). **Bug düzeltmesi:** ListScreen'de her mount'ta hint bayraklarını silen bir TEST ONLY kalıntısı kaldırıldı — liste sayfasına her girişte rehberin tekrar tekrar açılması giderildi.
 - **UI modernizasyonu:** Ağır kelime listeleri FlashList v2; `AnimatedPressable` (scale+haptic) check butonları ve quiz FAB'de; Discover/Explore posterleri expo-image.
 - **Backend RAM düzeltmesi:** `deleteByMediaId` bulk `@Query`'ye çevrildi — altyazı işlerken heap'in 2.3 GB'a fırlaması ve GC donmaları giderildi.
 - **Build düzeltmeleri:** Lombok 1.18.42 (JDK 24/25), TypeScript hataları sıfırlandı.

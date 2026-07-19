@@ -42,6 +42,7 @@ import { useAuthStore } from '@/src/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import { FlashCardBack } from '@/src/components/ui/FlashCard';
+import { NoteEditSheet } from '@/src/components/ui/NoteEditSheet';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
 import { useOnboarding, ensureOnboardingReady } from '@/src/store/onboardingStore';
@@ -109,7 +110,7 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     separator: { height: 1, backgroundColor: c.BORDER, marginHorizontal: pad },
 
     // List view row
-    row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 13 },
+    row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 13, backgroundColor: c.BG },
     rowInfo: { flex: 1 },
     rowWord: { color: c.TEXT_P, fontSize: 16, fontWeight: '700' },
     rowMeaning: { color: c.TEXT_S, fontSize: 13, marginTop: 3, lineHeight: 18 },
@@ -846,6 +847,9 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const isAutoPlayingRef = useRef(false);
   const autoPlayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Note edit sheet state
+  const [noteSheet, setNoteSheet] = useState<{ wordId: number; wordName: string; note?: string | null } | null>(null);
+
   // We track words marked known DURING this session to prevent them from disappearing instantly
   const sessionKnownIdsRef = useRef<Set<number>>(new Set());
 
@@ -1159,7 +1163,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     flipProgress.value = 0;
     isFlipped.value = false;
     setIsFlippedState(false);
-  }, [cardIndex, flipProgress, isFlipped]);
+  }, [cardIndex, filteredWords[cardIndex]?.id, flipProgress, isFlipped]);
 
   const triggerLight = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), []);
   const triggerMedium = useCallback(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), []);
@@ -1196,8 +1200,8 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   // Gestures
   const panGesture = Gesture.Pan()
     .minDistance(5)
-    .activeOffsetX([-8, 8])
-    .failOffsetY([-15, 15])
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-5, 5])
     .onUpdate((e) => {
       cardX.value = e.translationX;
       cardY.value = e.translationY * 0.15;
@@ -1578,6 +1582,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
                     onToggle={() => handleToggle(currentWord.id)}
                     onButtonPressIn={() => { buttonActiveRef.current = true; }}
                     onButtonPressOut={() => { buttonActiveRef.current = false; }}
+                    onNoteEdit={() => setNoteSheet({ wordId: currentWord.id, wordName: currentWord.word, note: currentWord.note })}
                     styles={styles}
                     c={c}
                     animStyle={backAnimStyle}
@@ -1748,6 +1753,15 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
           handleToggle(wordId);
         }}
         knownIdsSet={knownIdsSet}
+      />
+
+      {/* Note Edit Sheet */}
+      <NoteEditSheet
+        visible={!!noteSheet}
+        wordId={noteSheet?.wordId ?? null}
+        wordName={noteSheet?.wordName}
+        currentNote={noteSheet?.note}
+        onClose={() => setNoteSheet(null)}
       />
     </View>
   );

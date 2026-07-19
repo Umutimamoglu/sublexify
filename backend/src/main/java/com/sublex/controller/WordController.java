@@ -2,6 +2,7 @@ package com.sublex.controller;
 
 import com.sublex.dto.WordDTO;
 import com.sublex.service.UserKnownWordService;
+import com.sublex.service.UserWordNoteService;
 import com.sublex.service.WordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/words")
@@ -17,6 +19,7 @@ public class WordController {
 
     private final WordService wordService;
     private final UserKnownWordService userKnownWordService;
+    private final UserWordNoteService userWordNoteService;
 
     /**
      * GET /api/words/search?q=chemistry&language=en&userId=1
@@ -122,6 +125,37 @@ public class WordController {
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         userKnownWordService.unmarkWordAsKnown(userId, id);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * PUT /api/words/{id}/note
+     * Body: { "note": "..." } — creates or updates user's personal note for a word
+     */
+    @PutMapping("/{id}/note")
+    public ResponseEntity<Void> upsertNote(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        String note = body.get("note");
+        if (note == null || note.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        userWordNoteService.upsertNote(userId, id, note.trim());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * DELETE /api/words/{id}/note
+     * Removes user's personal note for a word.
+     */
+    @DeleteMapping("/{id}/note")
+    public ResponseEntity<Void> deleteNote(
+            @PathVariable Long id,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        userWordNoteService.deleteNote(userId, id);
         return ResponseEntity.ok().build();
     }
 }

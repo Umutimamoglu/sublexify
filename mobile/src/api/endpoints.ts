@@ -15,6 +15,7 @@ export const ENDPOINTS = {
     detail:         (id: number) => `/words/${id}`,
     markKnown:      (id: number) => `/words/${id}/mark-known`,
     markKnownBatch: '/words/mark-known/batch',
+    note:           (id: number) => `/words/${id}/note`,
   },
   user: {
     stats:           '/user/statistics',

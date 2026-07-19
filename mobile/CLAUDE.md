@@ -59,6 +59,8 @@ mobile/
 - **Dev build zorunlu:** Push (react-native-firebase + notifee) native modüller getirdi → **Expo Go artık çalışmaz**. `eas build --profile development` ile dev client gerekir.
 - **Push notifications:** FCM (`@react-native-firebase/messaging`) + `notifee`. Kod: `src/notifications/`, `src/hooks/usePushNotifications.ts`, `useNotificationObserver.ts`. Client config (`google-services.json`, `GoogleService-Info.plist`) gitignore'lu → EAS'e file env var olarak verilir (`GOOGLE_SERVICES_JSON`, `GOOGLE_SERVICE_INFO_PLIST`); `app.config.js` bunları okur.
 - **Android emulator:** API base URL `10.0.2.2:8080` (localhost değil) → `src/api/client.ts`'de Platform.OS kontrolü var.
+- **Onboarding/tur bayrakları:** Rehber/tur "görüldü" durumu **tek kaynakta** — `src/store/onboardingStore.ts` (`useTourFlag(id)` veya `useOnboarding`). Yeni bir tur için ekrana özel store/`AsyncStorage` anahtarı **açma**, yeni bir `id` ekle. `tourStore` (discover, çok-adımlı) ve `guidedFlowStore` yalnızca orkestrasyon tutar, kalıcılığı onboardingStore'a delege eder.
+- **Auto-play arka plan sesi:** Auto-play TTS ekran kapalı/arka planda dururken kesilmesin diye `src/notifications/ttsPlaybackService.ts`'teki sessiz keep-alive döngüsü (`startSilentKeepAlive`/`stopSilentKeepAlive`, `assets/silence.wav`) audio session'ı canlı tutar; Android'de ayrıca notifee foreground service. iOS ayrıca `UIBackgroundModes: audio` + `Audio.setAudioModeAsync` gerektirir.
 
 ---
 

@@ -1,0 +1,28 @@
+package com.sublex.repository;
+
+import com.sublex.model.UserWordNote;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Repository
+public interface UserWordNoteRepository extends JpaRepository<UserWordNote, Long> {
+
+    Optional<UserWordNote> findByUserIdAndWordId(Long userId, Long wordId);
+
+    @Transactional
+    void deleteByUserIdAndWordId(Long userId, Long wordId);
+
+    @Query("SELECT n FROM UserWordNote n WHERE n.user.id = :userId AND n.word.id IN :wordIds")
+    java.util.List<UserWordNote> findByUserIdAndWordIdIn(
+        @Param("userId") Long userId,
+        @Param("wordIds") Set<Long> wordIds
+    );
+}

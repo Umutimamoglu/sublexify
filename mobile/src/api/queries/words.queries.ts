@@ -162,3 +162,62 @@ export function useMarkKnownBatch() {
     },
   });
 }
+
+// ─── Word Note Mutations ───────────────────────────────────────
+
+/**
+ * Creates or updates the user's personal note for a word.
+ * Invalidates all list detail caches so the note appears immediately.
+ */
+export function useUpsertWordNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ wordId, note }: { wordId: number; note: string }) => {
+      await apiClient.put(ENDPOINTS.words.note(wordId), { note });
+      return { wordId, note };
+    },
+    onSuccess: ({ wordId, note }) => {
+      // Optimistically update all cached list details that contain this word
+      qc.setQueriesData<any>(
+        { queryKey: ['lists'], predicate: (query) => query.queryKey.length === 2 },
+        (old: any) => {
+          if (!old?.words) return old;
+          return {
+            ...old,
+            words: old.words.map((w: any) =>
+              w.id === wordId ? { ...w, note } : w
+            ),
+          };
+        },
+      );
+    },
+  });
+}
+
+/**
+ * Deletes the user's personal note for a word.
+ */
+export function useDeleteWordNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (wordId: number) => {
+      await apiClient.delete(ENDPOINTS.words.note(wordId));
+      return wordId;
+    },
+    onSuccess: (wordId) => {
+      // Optimistically clear note from all cached list details
+      qc.setQueriesData<any>(
+        { queryKey: ['lists'], predicate: (query) => query.queryKey.length === 2 },
+        (old: any) => {
+          if (!old?.words) return old;
+          return {
+            ...old,
+            words: old.words.map((w: any) =>
+              w.id === wordId ? { ...w, note: null } : w
+            ),
+          };
+        },
+      );
+    },
+  });
+}

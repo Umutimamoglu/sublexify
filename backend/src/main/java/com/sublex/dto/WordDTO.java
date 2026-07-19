@@ -21,4 +21,5 @@ public class WordDTO {
     private Boolean isProperNoun;
     private Integer globalFrequency;
     private String contextSentence;
+    private String note; // User's personal note for this word (null if none)
 }

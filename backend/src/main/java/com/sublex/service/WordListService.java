@@ -28,6 +28,7 @@ public class WordListService {
         private final UserKnownWordRepository userKnownWordRepository;
         private final UserMediaProgressService userMediaProgressService;
         private final UserWordProgressRepository userWordProgressRepository;
+        private final UserWordNoteService userWordNoteService;
 
         public Set<Long> getKnownWordIds(Long userId) {
                 return userKnownWordRepository.findWordIdsByUserId(userId);
@@ -188,13 +189,25 @@ public class WordListService {
                 // Get user's known words once
                 Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
 
-                // Filter and convert to DTOs, and calculate stats in a single pass if possible
-                // But for now, let's at least share the knownWordIds set
-                List<WordDTO> words = wordList.getWords().stream()
+                // Collect all word IDs first, then bulk-fetch notes in one query
+                List<Word> resolvedWords = wordList.getWords().stream()
                                 .map(word -> word.getRootWord() != null ? word.getRootWord() : word)
                                 .distinct()
                                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
-                                .map(word -> convertToWordDTO(word, knownWordIds.contains(word.getId())))
+                                .collect(Collectors.toList());
+
+                Set<Long> wordIds = resolvedWords.stream()
+                                .map(Word::getId)
+                                .collect(Collectors.toSet());
+
+                java.util.Map<Long, String> noteMap = userWordNoteService.getNoteMap(userId, wordIds);
+
+                List<WordDTO> words = resolvedWords.stream()
+                                .map(word -> {
+                                        WordDTO dto = convertToWordDTO(word, knownWordIds.contains(word.getId()));
+                                        dto.setNote(noteMap.get(word.getId()));
+                                        return dto;
+                                })
                                 .filter(w -> !onlyUnknown || !w.getIsKnown())
                                 .collect(Collectors.toList());
 

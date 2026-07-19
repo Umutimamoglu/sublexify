@@ -39,6 +39,7 @@ export type WordDTO = {
   definition: WordDefinition | null;
   difficulty: Difficulty | null;
   isEnriched: boolean;
+  note?: string | null;
 };
 
 export type MediaType = 'MOVIE' | 'SEASON' | 'EPISODE' | 'SONG' | 'OTHER';
@@ -119,6 +120,7 @@ export type ListWord = {
   definition: WordDefinition | null;
   isEnriched: boolean;
   isKnown?: boolean;
+  note?: string | null;
 };
 
 export type ListDetailDTO = {

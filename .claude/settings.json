@@ -3,7 +3,11 @@
     "allow": [
       "Bash(git stash *)",
       "Bash(git pull *)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "Bash(awk '/16:24:30.953/{flag=1} flag; /16:25:21.819/{if\\(flag\\)exit}')",
+      "Bash(psql -h autorack.proxy.rlwy.net -p 34938 -U postgres -d railway -c ' *)",
+      "Bash(awk '/16:42:02.696/{flag=1} flag; /16:42:46.293/{if\\(flag\\)exit}')",
+      "Bash(psql -h autorack.proxy.rlwy.net -p 34938 -U postgres -d railway)"
     ]
   }
 }

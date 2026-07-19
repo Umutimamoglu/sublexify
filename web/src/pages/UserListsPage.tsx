@@ -30,7 +30,12 @@ const UserListsPage = () => {
     // View Modes
     const [viewMode, setViewMode] = useState<'list' | 'flashcard'>('list');
     const [currentCardIndex, setCurrentCardIndex] = useState(0);
-    
+
+    // Note modal state
+    const [noteModal, setNoteModal] = useState<{ wordId: number; wordName: string; note?: string | null } | null>(null);
+    const [noteDraft, setNoteDraft] = useState('');
+    const [noteLoading, setNoteLoading] = useState(false);
+
     // Auto Play State
     const [isAutoPlaying, setIsAutoPlaying] = useState(false);
     const autoPlayRef = useRef(false);
@@ -770,7 +775,13 @@ const UserListsPage = () => {
                                                             onToggleKnown={() => handleToggleKnown(filteredWords[currentCardIndex].id, filteredWords[currentCardIndex].isKnown)}
                                                             onPrev={() => setCurrentCardIndex(p => Math.max(0, p - 1))}
                                                             onNext={() => setCurrentCardIndex(p => Math.min(filteredWords.length - 1, p + 1))}
-                                                            onAddToList={selectedList.id !== -1 ? undefined : () => {}} 
+                                                            onAddToList={selectedList.id !== -1 ? undefined : () => {}}
+                                                            note={(filteredWords[currentCardIndex] as any).note}
+                                                            onNoteEdit={() => {
+                                                                const w = filteredWords[currentCardIndex];
+                                                                setNoteDraft((w as any).note ?? '');
+                                                                setNoteModal({ wordId: w.id, wordName: w.word, note: (w as any).note });
+                                                            }}
                                                         />
                                                     ) : (
                                                         <div className="text-center py-12 text-gray-400">
@@ -1016,6 +1027,92 @@ const UserListsPage = () => {
                                 className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 transition-all"
                             >
                                 {t('actions.delete', 'Sil')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Note Edit Modal ──────────────────────────── */}
+            {noteModal && (
+                <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setNoteModal(null)}
+                    />
+                    {/* Sheet */}
+                    <div className="relative w-full sm:max-w-lg bg-white dark:bg-[#161822] rounded-t-3xl sm:rounded-3xl shadow-2xl p-6 animate-slide-up">
+                        {/* Handle (mobile only) */}
+                        <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mx-auto mb-5 sm:hidden" />
+
+                        <div className="flex items-center gap-3 mb-5">
+                            <span className="text-2xl">📝</span>
+                            <div>
+                                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">Kişisel Notun</h3>
+                                {noteModal.wordName && (
+                                    <p className="text-sm font-semibold text-amber-500">{noteModal.wordName}</p>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => setNoteModal(null)}
+                                className="ml-auto text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl leading-none"
+                            >✕</button>
+                        </div>
+
+                        <textarea
+                            className="w-full min-h-[110px] p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            placeholder="Bu kelimeyle ilgili aklında ne var? Bağlam, hafıza kancası, anekdot..."
+                            maxLength={320}
+                            value={noteDraft}
+                            onChange={(e) => setNoteDraft(e.target.value.slice(0, 300))}
+                            autoFocus
+                        />
+                        <p className={cn('text-xs text-right mt-1', (300 - noteDraft.length) < 30 ? 'text-amber-500' : 'text-gray-400')}>
+                            {300 - noteDraft.length} karakter kaldı
+                        </p>
+
+                        <div className="flex gap-3 mt-4">
+                            {noteModal.note && (
+                                <button
+                                    onClick={async () => {
+                                        setNoteLoading(true);
+                                        try {
+                                            await api.delete(`/words/${noteModal.wordId}/note`);
+                                            if (wordData) {
+                                                setWordData(prev => prev ? {
+                                                    ...prev,
+                                                    words: prev.words.map(w => w.id === noteModal.wordId ? { ...w, note: null } : w)
+                                                } : prev);
+                                            }
+                                            setNoteModal(null);
+                                        } finally { setNoteLoading(false); }
+                                    }}
+                                    className="px-4 py-2.5 rounded-xl border border-red-300 text-red-500 text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                    disabled={noteLoading}
+                                >
+                                    🗑 Notu Sil
+                                </button>
+                            )}
+                            <button
+                                onClick={async () => {
+                                    if (!noteDraft.trim()) return;
+                                    setNoteLoading(true);
+                                    try {
+                                        await api.put(`/words/${noteModal.wordId}/note`, { note: noteDraft.trim() });
+                                        if (wordData) {
+                                            setWordData(prev => prev ? {
+                                                ...prev,
+                                                words: prev.words.map(w => w.id === noteModal.wordId ? { ...w, note: noteDraft.trim() } : w)
+                                            } : prev);
+                                        }
+                                        setNoteModal(null);
+                                    } finally { setNoteLoading(false); }
+                                }}
+                                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-extrabold shadow-lg shadow-amber-500/30 transition-all disabled:opacity-50"
+                                disabled={!noteDraft.trim() || noteLoading}
+                            >
+                                {noteLoading ? 'Kaydediliyor...' : 'Kaydet'}
                             </button>
                         </div>
                     </div>

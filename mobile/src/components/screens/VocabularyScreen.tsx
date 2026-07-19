@@ -32,6 +32,7 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashCardBack } from '@/src/components/ui/FlashCard';
+import { NoteEditSheet } from '@/src/components/ui/NoteEditSheet';
 import { useWordSearch, useFrequentWords } from '@/src/api/queries/words.queries';
 import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown } from '@/src/api/queries/words.queries';
@@ -91,7 +92,7 @@ function makeStyles(c: Palette, isDark: boolean, sw: number, sh: number, isTable
     },
 
     // Word row
-    row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 12 },
+    row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: pad, paddingVertical: 12, backgroundColor: c.BG },
     rowInfo: { flex: 1 },
     rowWord: { color: c.TEXT_P, fontSize: 15, fontWeight: '700' },
     rowMeaning: { color: c.TEXT_S, fontSize: 12, marginTop: 3, lineHeight: 17 },
@@ -516,6 +517,8 @@ export default function VocabularyScreen() {
     };
   }, [showTour]);
   const [cardIndex, setCardIndex] = useState(0);
+  // Note edit sheet state
+  const [noteSheet, setNoteSheet] = useState<{ wordId: number; wordName: string; note?: string | null } | null>(null);
   const [isFlippedState, setIsFlippedState] = useState(false);
   const [selectedLevels, setSelectedLevels] = useState<Set<string>>(new Set());
   const [onlyUnknown, setOnlyUnknown] = useState(false);
@@ -646,7 +649,7 @@ export default function VocabularyScreen() {
     flipProgress.value = 0;
     isFlippedShared.value = false;
     setIsFlippedState(false);
-  }, [cardIndex, flipProgress, isFlippedShared]);
+  }, [cardIndex, displayWords[cardIndex]?.id, flipProgress, isFlippedShared]);
 
   // Bulk mark known mutation
   const { mutate: markMultipleKnown } = useMutation({
@@ -711,8 +714,8 @@ export default function VocabularyScreen() {
   // Gestures
   const panGesture = Gesture.Pan()
     .minDistance(5)
-    .activeOffsetX([-8, 8])
-    .failOffsetY([-15, 15])
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-5, 5])
     .onUpdate((e) => {
       cardX.value = e.translationX;
       cardY.value = e.translationY * 0.15;
@@ -890,11 +893,11 @@ export default function VocabularyScreen() {
               onToggle={() => handleToggle(currentWord.id)}
               onButtonPressIn={() => { buttonActiveRef.current = true; }}
               onButtonPressOut={() => { buttonActiveRef.current = false; }}
+              onNoteEdit={() => setNoteSheet({ wordId: currentWord.id, wordName: currentWord.word, note: (currentWord as any).note })}
               styles={styles as any}
               c={c}
               animStyle={backAnimStyle}
               pointerEvents={isFlippedState ? 'auto' : 'none'}
-              scrollEnabled={false}
             />
           </Reanimated.View>
         </GestureDetector>
@@ -1158,6 +1161,15 @@ export default function VocabularyScreen() {
           c={c}
         />
       </View>
+
+      {/* Note Edit Sheet */}
+      <NoteEditSheet
+        visible={!!noteSheet}
+        wordId={noteSheet?.wordId ?? null}
+        wordName={noteSheet?.wordName}
+        currentNote={noteSheet?.note}
+        onClose={() => setNoteSheet(null)}
+      />
     </GestureHandlerRootView>
   );
 }
