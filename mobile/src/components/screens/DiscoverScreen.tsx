@@ -704,26 +704,7 @@ export default function DiscoverScreen() {
     }).start(() => scrollAnim.removeAllListeners());
   }, []);
 
-  // -- Screen fade-in: whole screen hidden until hero content is ready --
-  const screenOpacity = useRef(new Animated.Value(0)).current;
-  const heroAnimStarted = useRef(false);
-
   const hasHero = heroItems.length > 0 && !continueLoading;
-
-  useEffect(() => {
-    if (!hasHero) return;
-    if (heroAnimStarted.current) {
-      screenOpacity.setValue(1);
-      return;
-    }
-    heroAnimStarted.current = true;
-    Animated.timing(screenOpacity, {
-      toValue: 1,
-      duration: 300,
-      easing: Easing.out(Easing.ease),
-      useNativeDriver: true,
-    }).start();
-  }, [hasHero, screenOpacity]);
 
   const card2Show = tourSteps[1]?.show ?? false;
 
@@ -848,7 +829,7 @@ export default function DiscoverScreen() {
   }, [styles, router, t, hasContinue]);
 
   return (
-    <Animated.View style={[styles.root, { opacity: screenOpacity }]}>
+    <View style={styles.root}>
       <StatusBar
         barStyle="light-content"
         translucent
@@ -1205,6 +1186,6 @@ export default function DiscoverScreen() {
       </Modal>
 
 
-    </Animated.View>
+    </View>
   );
 }
