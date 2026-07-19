@@ -14,18 +14,21 @@ import java.util.List;
 public class ProgressService {
 
     private final UserWordProgressRepository userWordProgressRepository;
+    private final com.sublex.repository.UserWordNoteRepository userWordNoteRepository;
 
     public ProgressStatsDTO getStats(Long userId) {
         Long totalLearnt = userWordProgressRepository.countByUserId(userId);
         Long totalStudied = userWordProgressRepository.countWordsStudiedByUserId(userId);
         Long difficult = userWordProgressRepository.countDifficultWordsByUserId(userId);
         Long toReview = userWordProgressRepository.countWordsToReviewByUserId(userId);
+        Long notesCount = userWordNoteRepository.countByUserId(userId);
 
         return ProgressStatsDTO.builder()
                 .totalWordsLearnt(totalLearnt != null ? totalLearnt : 0)
                 .totalWordsStudied(totalStudied != null ? totalStudied : 0)
                 .difficultWords(difficult != null ? difficult : 0)
                 .wordsToReviewToday(toReview != null ? toReview : 0)
+                .notesCount(notesCount != null ? notesCount : 0)
                 .build();
     }
 
@@ -43,6 +46,26 @@ public class ProgressService {
 
     public List<com.sublex.dto.WordDTO> getDifficultWords(Long userId) {
         return mapToWordDTOs(userWordProgressRepository.findDifficultWordsByUserId(userId));
+    }
+
+    public List<com.sublex.dto.WordDTO> getWordsWithNotes(Long userId) {
+        return userWordNoteRepository.findAllByUserIdWithWord(userId).stream()
+                .map(noteEntity -> {
+                    com.sublex.model.Word word = noteEntity.getWord();
+                    com.sublex.dto.WordDTO dto = new com.sublex.dto.WordDTO();
+                    dto.setId(word.getId());
+                    dto.setWord(word.getWord());
+                    dto.setLanguage(word.getLanguage());
+                    dto.setDifficulty(word.getDifficulty());
+                    dto.setIsKnown(true); // Default or query actual known status if needed. Usually listed as known if it has a note?
+                    dto.setIsEnriched(word.getIsEnriched());
+                    dto.setIsProperNoun(word.getIsProperNoun());
+                    dto.setDefinition(word.getDefinition());
+                    dto.setContextSentence(word.getContextSentence());
+                    dto.setNote(noteEntity.getNote());
+                    return dto;
+                })
+                .collect(java.util.stream.Collectors.toList());
     }
 
     private List<com.sublex.dto.WordDTO> mapToWordDTOs(List<UserWordProgress> progressList) {

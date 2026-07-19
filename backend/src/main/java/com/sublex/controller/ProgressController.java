@@ -45,4 +45,10 @@ public class ProgressController {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(progressService.getDifficultWords(userId));
     }
+
+    @GetMapping("/words/notes")
+    public ResponseEntity<List<WordDTO>> getWordsWithNotes(org.springframework.security.core.Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(progressService.getWordsWithNotes(userId));
+    }
 }

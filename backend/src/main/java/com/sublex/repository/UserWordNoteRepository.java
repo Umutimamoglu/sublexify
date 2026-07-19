@@ -25,4 +25,9 @@ public interface UserWordNoteRepository extends JpaRepository<UserWordNote, Long
         @Param("userId") Long userId,
         @Param("wordIds") Set<Long> wordIds
     );
+
+    Long countByUserId(Long userId);
+
+    @Query("SELECT n FROM UserWordNote n JOIN FETCH n.word WHERE n.user.id = :userId ORDER BY n.updatedAt DESC")
+    java.util.List<UserWordNote> findAllByUserIdWithWord(@Param("userId") Long userId);
 }

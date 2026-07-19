@@ -739,7 +739,7 @@ function SwipeableWordRow({
 // ─── FLASHCARD BACK MOVED TO UI/FLASHCARD.TSX ─────────────────
 
 // ─── Main Screen ──────────────────────────────────────────────
-export default function ListScreen({ listId, category }: { listId?: number; category?: 'learnt' | 'studied' | 'due' | 'difficult' }) {
+export default function ListScreen({ listId, category }: { listId?: number; category?: 'learnt' | 'studied' | 'due' | 'difficult' | 'notes' }) {
   const router = useRouter();
   const { t } = useTranslation('lists');
   const { t: tCommon } = useTranslation('common');
@@ -779,13 +779,14 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
   const getCategoryTitle = useCallback((cat: string) => {
     switch (cat) {
-      case 'learnt': return tCommon('progress.categories.learnt.title');
-      case 'studied': return tCommon('progress.categories.learnt.title');
-      case 'due': return tCommon('progress.categories.due.title');
-      case 'difficult': return tCommon('progress.categories.difficult.title');
+      case 'due': return t('dueTodayTitle');
+      case 'learnt': return t('totalLearntTitle');
+      case 'studied': return t('totalStudiedTitle');
+      case 'difficult': return t('difficultTitle');
+      case 'notes': return t('notesTitle', 'Notlarım');
       default: return 'Category';
     }
-  }, [tCommon]);
+  }, [t]);
 
   const effectiveList = useMemo(() => {
     if (isCategoryMode && category) {

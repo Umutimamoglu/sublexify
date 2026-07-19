@@ -55,5 +55,6 @@ export const ENDPOINTS = {
     learnt:    '/progress/words/learnt',
     studied:   '/progress/words/studied',
     due:       '/progress/words/due',
+    notes:     '/progress/words/notes',
   },
 } as const;

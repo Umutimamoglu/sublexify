@@ -14,4 +14,5 @@ public class ProgressStatsDTO {
     private long totalWordsStudied;
     private long difficultWords;
     private long wordsToReviewToday;
+    private long notesCount;
 }

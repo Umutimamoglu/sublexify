@@ -14,7 +14,7 @@ export function useProgressStats() {
   });
 }
 
-export function useCategoryWords(category: 'learnt' | 'studied' | 'due' | 'difficult', options?: { enabled?: boolean }) {
+export function useCategoryWords(category: 'learnt' | 'studied' | 'due' | 'difficult' | 'notes', options?: { enabled?: boolean }) {
   return useQuery<any[]>({
     queryKey: ['progress', category],
     queryFn: async () => {

@@ -48,6 +48,13 @@ const STATS = [
     gradientColors: ['#FBBF24', '#F59E0B'] as [string, string],
     route: '/progress/difficult',
   },
+  {
+    key: 'notes',
+    icon: 'document-text-outline' as const,
+    color: '#14B8A6',
+    gradientColors: ['#14B8A6', '#0D9488'] as [string, string],
+    route: '/progress/notes',
+  },
 ];
 
 export default function ProgressScreen() {
@@ -82,6 +89,7 @@ export default function ProgressScreen() {
     learnt: stats?.totalWordsLearnt ?? 0,
     studied: stats?.totalWordsStudied ?? 0,
     difficult: stats?.difficultWords ?? 0,
+    notes: stats?.notesCount ?? 0,
   };
 
   const statDescs: Record<string, string> = {
@@ -89,6 +97,7 @@ export default function ProgressScreen() {
     learnt: t('totalLearntDesc'),
     studied: t('totalStudiedDesc'),
     difficult: t('difficultHelp'),
+    notes: t('notesDesc', 'Not eklediğin kelimeler'),
   };
 
   const statLabels: Record<string, string> = {
@@ -96,6 +105,7 @@ export default function ProgressScreen() {
     learnt: t('totalLearntTitle'),
     studied: t('totalStudiedTitle'),
     difficult: t('difficultTitle'),
+    notes: t('notesTitle', 'Notlarım'),
   };
 
   const helpData = [
@@ -103,6 +113,7 @@ export default function ProgressScreen() {
     { icon: 'checkmark-circle-outline' as const, color: '#4F9CFF', label: t('totalLearntTitle'), text: t('totalLearntHelp') },
     { icon: 'pencil-outline' as const, color: '#A78BFA', label: t('totalStudiedTitle'), text: t('totalStudiedHelp') },
     { icon: 'flash-outline' as const, color: '#FBBF24', label: t('difficultTitle'), text: t('difficultHelp') },
+    { icon: 'document-text-outline' as const, color: '#14B8A6', label: t('notesTitle', 'Notlarım'), text: t('notesDesc', 'Not eklediğin kelimeler') },
   ];
 
   const s = useMemo(() => StyleSheet.create({
