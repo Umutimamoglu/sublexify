@@ -583,7 +583,7 @@ export default function DiscoverScreen() {
   // No scroll side-effects needed in this effect.
 
 
-  const { data: allMedia = [], isLoading: mediaLoading, isError: mediaError } = useMedia();
+  const { data: allMedia = [], isLoading: mediaLoading, refetch: refetchMedia, isStale: mediaStale, isError: mediaError } = useMedia();
   const { data: allLists = [], isLoading: listsLoading, refetch: refetchLists, isStale: listsStale } = useLists();
 
   // Focus'ta SADECE stale ise yenile: hızlı tab geçişlerinde istek atılmaz,
@@ -596,11 +596,12 @@ export default function DiscoverScreen() {
   const { data: userStats, isLoading: knownLoading } = useUserStats();
 
 
-  const { data: continueMedia = [], isLoading: continueLoading, refetch: refetchContinue, isStale: continueStale } = useContinueLearning(50);
+  const { data: continueMedia = [], isLoading: continueLoading, refetch: refetchContinue, isStale: continueStale, isError: continueError } = useContinueLearning(50);
 
   useFocusEffect(useCallback(() => {
     if (continueStale) refetchContinue();
-  }, [continueStale, refetchContinue]));
+    if (mediaStale) refetchMedia();
+  }, [continueStale, refetchContinue, mediaStale, refetchMedia]));
 
   // ─── User name & greeting ───────────────────────────────────
   const user = useAuthStore((s) => s.user);
@@ -704,7 +705,8 @@ export default function DiscoverScreen() {
     }).start(() => scrollAnim.removeAllListeners());
   }, []);
 
-  const hasHero = heroItems.length > 0 && !continueLoading;
+  const hasError = mediaError || continueError;
+  const hasHero = heroItems.length > 0 && !continueLoading && !hasError;
 
   const card2Show = tourSteps[1]?.show ?? false;
 
@@ -931,25 +933,25 @@ export default function DiscoverScreen() {
           </Tooltip>
         ) : continueLoading ? (
           <View style={styles.heroEmpty}>
-            <View style={[styles.headerOverlay, { position: 'relative', paddingTop: insets.top + 8 }]}>
-              <View style={styles.headerLeft}>
-                <TouchableOpacity onPress={() => router.push('/(tabs)/profile' as any)} activeOpacity={0.7} style={[styles.avatar, { backgroundColor: c.SURFACE2, borderColor: c.PURPLE + '66' }]}>
-                  <Text style={[styles.avatarText, { color: c.TEXT_P }]}>{avatarInitial}</Text>
-                </TouchableOpacity>
-                <Text style={[styles.headerGreeting, { color: c.TEXT_P, textShadowColor: 'transparent' }]}>{greeting}, {firstName}</Text>
-              </View>
-              <View style={styles.headerRight}>
-                <TouchableOpacity onPress={() => setShowStreakModal(true)} style={styles.streakBadge} activeOpacity={0.7}>
-                  <Text style={styles.streakIcon}>🔥</Text>
-                  <Text style={styles.streakCount}>{currentStreak}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <ActivityIndicator color="#FEE76C" size="large" />
+              <Animated.View style={[styles.headerOverlay, { opacity: headerOpacity }]}>
+                <View style={styles.headerLeft}>
+                  <TouchableOpacity onPress={() => router.push('/(tabs)/profile' as any)} activeOpacity={0.7} style={[styles.avatar, { backgroundColor: c.SURFACE2, borderColor: c.PURPLE + '66' }]}>
+                    <Text style={[styles.avatarText, { color: c.TEXT_P }]}>{avatarInitial}</Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.headerGreeting, { color: c.TEXT_P, textShadowColor: 'transparent' }]}>{greeting}, {firstName}</Text>
+                </View>
+                <View style={styles.headerRight}>
+                  <TouchableOpacity onPress={() => setShowStreakModal(true)} style={styles.streakBadge} activeOpacity={0.7}>
+                    <Text style={styles.streakIcon}>🔥</Text>
+                    <Text style={styles.streakCount}>{currentStreak}</Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            <ActivityIndicator color={c.PURPLE} size="large" />
           </View>
         ) : (
           <View style={styles.heroEmpty}>
-            <View style={[styles.headerOverlay, { position: 'relative', paddingTop: insets.top + 8 }]}>
+            <Animated.View style={[styles.headerOverlay, { opacity: headerOpacity }]}>
               <View style={styles.headerLeft}>
                 <TouchableOpacity onPress={() => router.push('/(tabs)/profile' as any)} activeOpacity={0.7} style={[styles.avatar, { backgroundColor: c.SURFACE2, borderColor: c.PURPLE + '66' }]}>
                   <Text style={[styles.avatarText, { color: c.TEXT_P }]}>{avatarInitial}</Text>
@@ -962,9 +964,23 @@ export default function DiscoverScreen() {
                   <Text style={styles.streakCount}>{currentStreak}</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-            <Text style={styles.heroEmptyIcon}>🎬</Text>
-            <Text style={styles.heroEmptyTitle}>{t('noContinueTitle')}</Text>
+            </Animated.View>
+            
+            {hasError ? (
+              <>
+                <Text style={styles.heroEmptyIcon}>⚠️</Text>
+                <Text style={styles.heroEmptyTitle}>Sunucu Bağlantı Hatası</Text>
+                <Text style={[styles.heroEmptyTitle, { fontSize: 14, color: c.TEXT_S, marginTop: 4, fontWeight: '500' }]}>Veriler yüklenemedi, lütfen bağlantınızı kontrol edin.</Text>
+                <TouchableOpacity onPress={() => { refetchMedia(); refetchContinue(); }} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: c.PURPLE, borderRadius: 12 }}>
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Tekrar Dene</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.heroEmptyIcon}>🎬</Text>
+                <Text style={styles.heroEmptyTitle}>{t('noContinueTitle')}</Text>
+              </>
+            )}
           </View>
         )}
 
