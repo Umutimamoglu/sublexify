@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Bookmark, Volume2, Trash2, ChevronDown, ChevronUp, GraduationCap, Book } from 'lucide-react';
+import { CheckCircle2, Bookmark, Volume2, Trash2, ChevronDown, ChevronUp, GraduationCap, Book, FileText, Pencil, Plus } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import ListSelectionModal from './ListSelectionModal';
 import { WordDefinition } from '@/services/WordListService';
@@ -15,9 +15,11 @@ interface WordProps {
     onToggleKnown: (id: number, currentStatus: boolean) => void;
     onRemove?: () => void;
     isSystemProtected?: boolean;
+    note?: string | null;
+    onNoteEdit?: () => void;
 }
 
-const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onToggleKnown, onRemove, isSystemProtected = false }: WordProps) => {
+const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onToggleKnown, onRemove, isSystemProtected = false, note, onNoteEdit }: WordProps) => {
     const { t } = useTranslation();
     // Frequency to visual width (cap at 100%)
     const freqWidth = Math.min(frequency * 5, 100);
@@ -269,6 +271,39 @@ const WordCard = ({ id, word, frequency, isKnown, definition, difficulty, onTogg
                                                         )}
                                                     </div>
                                                 ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Personal Note */}
+                                    {onNoteEdit && note && (
+                                        <div
+                                            onClick={(e) => { e.stopPropagation(); onNoteEdit(); }}
+                                            className="pt-2 border-t border-gray-100 dark:border-gray-800"
+                                        >
+                                            <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-col gap-2 hover:bg-amber-500/20 transition-colors cursor-pointer group text-left">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5 text-amber-500 font-bold text-[10px] uppercase">
+                                                        <FileText className="w-3.5 h-3.5" />
+                                                        <span>Notun</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 text-amber-500 text-[10px] font-medium opacity-70 group-hover:opacity-100 transition-opacity">
+                                                        <span>Düzenle</span>
+                                                        <Pencil className="w-3 h-3" />
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-gray-800 dark:text-gray-200 leading-relaxed">{note}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {onNoteEdit && !note && (
+                                        <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                                            <div
+                                                onClick={(e) => { e.stopPropagation(); onNoteEdit(); }}
+                                                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-amber-500/50 text-amber-500 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                <span className="text-xs font-semibold">Kişisel not ekle</span>
                                             </div>
                                         </div>
                                     )}

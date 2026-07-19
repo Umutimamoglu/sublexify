@@ -798,6 +798,10 @@ const UserListsPage = () => {
                                                             onToggleKnown={handleToggleKnown}
                                                             onRemove={() => handleDeleteWord(selectedList.id, word.id)}
                                                             isSystemProtected={selectedList.isSystem}
+                                                            onNoteEdit={() => {
+                                                                setNoteDraft(word.note ?? '');
+                                                                setNoteModal({ wordId: word.id, wordName: word.word, note: word.note });
+                                                            }}
                                                         />
                                                     ))}
                                                 </div>

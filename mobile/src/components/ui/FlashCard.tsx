@@ -18,10 +18,14 @@ const DIFF_COLORS: Record<string, string> = {
 function NoteBox({
   note,
   onEditPress,
+  onPressIn,
+  onPressOut,
   c,
 }: {
   note?: string | null;
   onEditPress?: () => void;
+  onPressIn?: () => void;
+  onPressOut?: () => void;
   c: any;
 }) {
   if (note) {
@@ -29,6 +33,8 @@ function NoteBox({
       <TouchableOpacity
         style={[noteStyles.box, { backgroundColor: '#F59E0B18', borderColor: '#F59E0B55' }]}
         onPress={onEditPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
         activeOpacity={0.75}
       >
         <View style={noteStyles.boxHeader}>
@@ -49,7 +55,13 @@ function NoteBox({
   // No note yet — subtle add prompt
   if (onEditPress) {
     return (
-      <TouchableOpacity style={noteStyles.addPrompt} onPress={onEditPress} activeOpacity={0.6}>
+      <TouchableOpacity 
+        style={noteStyles.addPrompt} 
+        onPress={onEditPress} 
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        activeOpacity={0.6}
+      >
         <Ionicons name="add-circle-outline" size={18} color="#F59E0B" />
         <Text style={[noteStyles.addPromptText, { color: '#F59E0B' }]}>Kişisel not ekle</Text>
       </TouchableOpacity>
@@ -184,7 +196,13 @@ export function FlashCardBack({
       )}
 
       {/* ── Personal Note ────────────────────────── */}
-      <NoteBox note={word.note} onEditPress={onNoteEdit} c={c} />
+      <NoteBox 
+        note={word.note} 
+        onEditPress={onNoteEdit} 
+        onPressIn={onButtonPressIn}
+        onPressOut={onButtonPressOut}
+        c={c} 
+      />
 
       <View style={{ height: 80 }} />
     </>
