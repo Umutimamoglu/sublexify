@@ -9,10 +9,12 @@ import api from '@/services/api';
 import { cn } from '@/utils/cn';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useNavigate } from 'react-router-dom';
 
 
 const MediaDetailPage = () => {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const { t } = useTranslation();
     const { user } = useAuthStore();
     const [media, setMedia] = useState<Media | null>(null);
@@ -37,6 +39,12 @@ const MediaDetailPage = () => {
                     MediaService.getMediaById(Number(id)),
                     MediaService.getMediaWords(Number(id), userId, filterUnknown, sortBy)
                 ]);
+
+                if (mediaRes.isPremium && !user?.isPremium) {
+                    navigate('/profile/membership');
+                    return;
+                }
+
                 setMedia(mediaRes);
                 setWordData(wordsRes);
             } catch (err) {

@@ -36,7 +36,9 @@ public class WordListController {
 
     @GetMapping("/standard")
     public ResponseEntity<List<WordListDTO>> getStandardLists(Authentication authentication) {
-        Long userId = (Long) authentication.getPrincipal();
+        Long userId = (authentication != null && authentication.getPrincipal() != null) 
+                      ? (Long) authentication.getPrincipal() 
+                      : null;
         return ResponseEntity.ok(wordListService.getStandardLists(userId));
     }
 

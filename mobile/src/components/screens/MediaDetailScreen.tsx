@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import * as Speech from 'expo-speech';
 import { speakText } from '@/src/utils/tts';
+import { useAuthStore } from '@/src/store/authStore';
 import * as Haptics from 'expo-haptics';
 import { View, ScrollView, TouchableOpacity, Modal, StyleSheet, StatusBar, ActivityIndicator, Image, Alert, Animated, Easing } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -362,6 +363,13 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
   const { mutate: toggleKnown }                             = useMarkKnown();
   const { mutate: generateList, isPending: generating }     = useGenerateListFromMedia();
   const { mutate: markKnownBatch, isPending: marking }      = useMarkKnownBatch();
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    if (media && media.isPremium && !user?.isPremium) {
+      router.replace('/profile/membership');
+    }
+  }, [media, user?.isPremium, router]);
 
   // ─── Next Episode (Continue Learning) ───────────────────────
   const { from } = useLocalSearchParams<{ from?: string }>();

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
+import { useAuthStore } from '@/src/store/authStore';
 import { useResponsive } from '@/src/hooks/useResponsive';
 import { useSeriesEpisodes, useWatchedMediaIds, useToggleWatched } from '@/src/api/queries/media.queries';
 import { useGuidedFlowStore } from '@/src/store/guidedFlowStore';
@@ -145,10 +146,17 @@ export default function ShowDetailScreen({ imdbId }: { imdbId: string }) {
   const styles = useMemo(() => makeStyles(c, isTablet), [c, isTablet]);
   const router = useRouter();
   const { active: guidedActive, step: guidedStep, advanceToMedia } = useGuidedFlowStore();
+  const { user } = useAuthStore();
 
   const { data: episodes = [], isLoading, isError } = useSeriesEpisodes(imdbId);
   const { data: watchedIds = [] } = useWatchedMediaIds();
   const { mutate: toggleWatched } = useToggleWatched();
+
+  useEffect(() => {
+    if (episodes.length > 0 && episodes[0].isPremium && !user?.isPremium) {
+      router.replace('/profile/membership');
+    }
+  }, [episodes, user?.isPremium, router]);
 
   const sections = useMemo(() => groupBySeasons(episodes), [episodes]);
 

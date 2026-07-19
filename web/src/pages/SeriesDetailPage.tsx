@@ -25,6 +25,15 @@ const SeriesDetailPage = () => {
                     MediaService.getAllMedia(user?.id),
                     isAuthenticated ? api.get('/media/watched-ids').catch(() => ({ data: [] })) : Promise.resolve({ data: [] })
                 ]);
+                
+                const seriesEpisodes = mediaData.filter(m => String(m.tmdbId) === String(tmdbId) && (m.type === 'EPISODE' || m.type === 'SEASON'));
+                const seriesMeta = seriesEpisodes[0];
+
+                if (seriesMeta?.isPremium && !user?.isPremium) {
+                    navigate('/profile/membership');
+                    return;
+                }
+
                 setMediaList(mediaData);
                 setWatchedIds(watchedRes.data);
             } catch (e) {
