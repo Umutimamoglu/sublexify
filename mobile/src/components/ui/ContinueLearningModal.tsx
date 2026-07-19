@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/context/ThemeContext';
 import type { MediaDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
+import { PremiumBadge } from '@/src/components/ui/PremiumBadge';
 
 
 function episodeLabel(media: MediaDTO): string {
@@ -127,7 +128,10 @@ export function ContinueLearningModal({ visible, onClose, media, onNavigate }: P
                     </View>
                   )}
                   <View style={styles.info}>
-                    <Text style={styles.itemTitle} numberOfLines={2}>{title}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Text style={styles.itemTitle} numberOfLines={2}>{title}</Text>
+                      {item.isPremium && <PremiumBadge />}
+                    </View>
                     <View style={styles.itemEpisode}>
                       <Text style={styles.itemEpisodeText}>{episodeLabel(item)}</Text>
                     </View>

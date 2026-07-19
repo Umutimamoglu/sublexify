@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useMemo } from 'react';
 import { View, Modal, FlatList, TouchableOpacity, TextInput, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/context/ThemeContext';
+import { PremiumBadge } from '@/src/components/ui/PremiumBadge';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { DifficultyBadge } from '@/src/components/ui/Badge';
 import type { MediaDTO } from '@/src/types/api';
@@ -108,7 +109,7 @@ export function SearchBottomSheet({ visible, onClose, allMedia, loading, onNavig
     posterLetter: { color: c.PURPLE, fontSize: 22, fontWeight: '800' },
     itemInfo: { flex: 1, gap: 4 },
     itemTitle: { color: c.TEXT_P, fontSize: 14, fontWeight: '700' },
-    itemType: { color: c.TEXT_S, fontSize: 12 },
+    itemSub: { color: c.TEXT_S, fontSize: 12 },
     badgeWrap: { alignItems: 'flex-end' },
   });
 
@@ -179,8 +180,11 @@ export function SearchBottomSheet({ visible, onClose, allMedia, loading, onNavig
                         </View>
                       )}
                       <View style={styles.itemInfo}>
-                        <Text style={styles.itemTitle} numberOfLines={2}>{title}</Text>
-                        <Text style={styles.itemType}>{item.type === 'MOVIE' ? t('movies') : t('series')}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                          <Text style={styles.itemTitle}>{title}</Text>
+                          {item.isPremium && <PremiumBadge />}
+                        </View>
+                        <Text style={styles.itemSub}>{item.type === 'MOVIE' ? t('movies') : t('series')}</Text>
                       </View>
                       <View style={styles.badgeWrap}>
                         <DifficultyBadge difficulty={diff} size="sm" />

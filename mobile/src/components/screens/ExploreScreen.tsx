@@ -10,6 +10,7 @@ import { useTranslation } from '@/src/i18n/useTranslation';
 import { useMedia } from '@/src/api/queries/media.queries';
 import type { MediaDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
+import { PremiumBadge } from '@/src/components/ui/PremiumBadge';
 import { useExploreTourStore } from '@/src/store/exploreTourStore';
 import { useAuth } from '@/src/context/AuthContext';
 import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
@@ -146,6 +147,9 @@ function GridCard({ item, onPress, styles, movieLabel, showLabel }: {
       <View style={styles.typeBadge}>
         <Text style={styles.typeBadgeText}>{item.type === 'MOVIE' ? movieLabel : showLabel}</Text>
       </View>
+      {item.isPremium && (
+        <PremiumBadge style={{ position: 'absolute', top: 6, right: 6 }} />
+      )}
       <View style={styles.gridInfo}>
         <Text style={styles.gridTitle} numberOfLines={1}>{item.title}</Text>
         {item.voteAverage != null && item.voteAverage > 0 && (

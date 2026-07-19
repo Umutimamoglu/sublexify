@@ -19,6 +19,7 @@ import { ContinueLearningModal } from '@/src/components/ui/ContinueLearningModal
 import { useAuthStore } from '@/src/store/authStore';
 import { useStreakStore } from '@/src/store/streakStore';
 import type { MediaDTO, WordListDTO, UserStatistics } from '@/src/types/api';
+import { PremiumBadge } from '@/src/components/ui/PremiumBadge';
 import { Text } from '@/src/components/ui/Text';
 import Tooltip from 'react-native-walkthrough-tooltip';
 import { useTourStore } from '@/src/store/tourStore';
@@ -402,6 +403,12 @@ function MediaBrowseCard({
       {overallDiff && (
         <View style={styles.badgeWrapperWide}>
           <OverallDifficultyBadge level={overallDiff} label={tCommon(`media.difficulty_labels.${overallDiff}`)} size="sm" />
+          {item.isPremium && <PremiumBadge style={{ marginTop: 4, alignSelf: 'flex-end' }} />}
+        </View>
+      )}
+      {!overallDiff && item.isPremium && (
+        <View style={styles.badgeWrapperWide}>
+          <PremiumBadge style={{ alignSelf: 'flex-end' }} />
         </View>
       )}
 
@@ -789,9 +796,12 @@ export default function DiscoverScreen() {
           style={styles.heroGradient}
         />
         <View style={styles.heroContent}>
-          <Text style={[styles.heroEpisode, !hasContinue && { color: '#FEE76C', letterSpacing: 1.2 }]}>
-            {hasContinue ? episodeLabel(item) : '🌟 ÖNERİLEN İÇERİK'}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <Text style={[styles.heroEpisode, !hasContinue && { color: '#FEE76C', letterSpacing: 1.2 }, { marginBottom: 0 }]}>
+              {hasContinue ? episodeLabel(item) : '🌟 ÖNERİLEN İÇERİK'}
+            </Text>
+            {item.isPremium && <PremiumBadge />}
+          </View>
           <Text style={styles.heroTitle} numberOfLines={2}>{title}</Text>
           <Text style={styles.heroSubtitle}>
             {hasContinue

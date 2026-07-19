@@ -1,5 +1,5 @@
 import type { Media } from '@/services/MediaService';
-import { Film, Music, Tv as TvIcon, FileQuestion, BookOpen, ArrowRight } from 'lucide-react';
+import { Film, Music, Tv as TvIcon, FileQuestion, BookOpen, ArrowRight, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -73,6 +73,11 @@ const MediaCard = ({ media, imageUrl, stats }: MediaCardProps) => {
                     )}
 
                     <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                        {media.isPremium && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-orange-500/20 flex items-center gap-1 border border-white/20">
+                                <Crown className="w-3 h-3" /> PRO
+                            </span>
+                        )}
                         <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-black/60 text-white backdrop-blur-md shadow-sm">
                             {media.type === 'EPISODE' && media.tmdbId ? t('common.series').toUpperCase() : media.type}
                         </span>

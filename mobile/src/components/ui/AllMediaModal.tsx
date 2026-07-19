@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/context/ThemeContext';
 import { useTranslation } from '@/src/i18n/useTranslation';
 import { OverallDifficultyBadge } from '@/src/components/ui/Badge';
+import { PremiumBadge } from '@/src/components/ui/PremiumBadge';
 import type { MediaDTO } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 
@@ -257,6 +258,12 @@ export function AllMediaModal({ visible, onClose, allMedia, loading, onNavigate,
                     {overallDiff && (
                       <View style={styles.badgeWrapper}>
                         <OverallDifficultyBadge level={overallDiff} label={tCommon(`media.difficulty_labels.${overallDiff}`)} size="sm" />
+                        {item.isPremium && <PremiumBadge style={{ marginTop: 4, alignSelf: 'flex-end' }} />}
+                      </View>
+                    )}
+                    {!overallDiff && item.isPremium && (
+                      <View style={styles.badgeWrapper}>
+                        <PremiumBadge style={{ alignSelf: 'flex-end' }} />
                       </View>
                     )}
 

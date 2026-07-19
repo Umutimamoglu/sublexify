@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Search, X, Film, Tv, Library, BookOpen,
-    Flame, ChevronRight, List, PlayCircle,
+    Flame, ChevronRight, List, PlayCircle, Crown
 } from 'lucide-react';
 import MediaService, { type Media } from '@/services/MediaService';
 import WordListService, { type WordListDTO } from '@/services/WordListService';
@@ -577,7 +577,10 @@ function MediaLandscapeCard({ media, onClick, t }: { media: Media; onClick: () =
                 )}
 
                 <div className="relative">
-                    <p className="text-white font-bold text-sm line-clamp-2 leading-tight">{title}</p>
+                    <p className="text-white font-bold text-sm line-clamp-2 leading-tight flex items-center gap-2">
+                        {title}
+                        {media.isPremium && <Crown className="w-3.5 h-3.5 text-amber-400" />}
+                    </p>
                     <p className="text-white/50 text-xs mt-1">{episodeLabel(media, t)}</p>
                 </div>
 
