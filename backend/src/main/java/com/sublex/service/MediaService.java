@@ -391,11 +391,12 @@ public class MediaService {
         long bTotal = levelCounts.getOrDefault("B1", 0L) + levelCounts.getOrDefault("B2", 0L);
         long cTotal = levelCounts.getOrDefault("C1", 0L) + levelCounts.getOrDefault("C2", 0L);
         
-        // Advanced words (B-level) and Mastery words (C-level, weighted heavily) ratio against all graded words.
-        double advancedRatio = (double) (bTotal + cTotal * 2) / counted;
+        // Advanced words (B-level) and Mastery words (C-level, weighted by 2.0).
+        // We calculate a percentage score out of all graded words.
+        double weightedScore = ((double) (bTotal + (cTotal * 2)) / counted) * 100.0;
 
-        if (advancedRatio < 0.20) return "EASY";
-        if (advancedRatio < 0.35) return "MEDIUM";
+        if (weightedScore < 9.8) return "EASY";
+        if (weightedScore <= 12.5) return "MEDIUM";
         return "HARD";
     }
 }
