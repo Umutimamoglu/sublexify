@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Circle, Volume2, X, List, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Circle, Volume2, X, List, Check, Pencil, FileText } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 // Types
@@ -107,9 +107,10 @@ export function WordPreviewModal({ word, onClose, onToggleKnown, isKnown }: {
     );
 }
 
-export function FlashCard({ word, index, total, isKnown, onToggleKnown, onPrev, onNext, onAddToList }: {
+export function FlashCard({ word, index, total, isKnown, onToggleKnown, onPrev, onNext, onAddToList, note, onNoteEdit }: {
     word: VocabWord; index: number; total: number; isKnown: boolean;
     onToggleKnown: () => void; onPrev: () => void; onNext: () => void; onAddToList?: () => void;
+    note?: string | null; onNoteEdit?: () => void;
 }) {
     const [flipped, setFlipped] = useState(false);
     const col = word.difficulty ? CEFR_COLORS[word.difficulty] : null;
@@ -213,6 +214,33 @@ export function FlashCard({ word, index, total, isKnown, onToggleKnown, onPrev, 
                                 </div>
                             ))
                         }
+                        {onNoteEdit && note && (
+                            <div
+                                onClick={(e) => { e.stopPropagation(); onNoteEdit(); }}
+                                className="mt-4 w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex flex-col gap-2 hover:bg-amber-500/20 transition-colors cursor-pointer group"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 text-amber-500 font-bold text-xs">
+                                        <FileText className="w-3.5 h-3.5" />
+                                        <span>Notun</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-amber-500 text-[10px] font-medium opacity-70 group-hover:opacity-100 transition-opacity">
+                                        <span>Düzenle</span>
+                                        <Pencil className="w-3 h-3" />
+                                    </div>
+                                </div>
+                                <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed text-left">{note}</p>
+                            </div>
+                        )}
+                        {onNoteEdit && !note && (
+                            <div
+                                onClick={(e) => { e.stopPropagation(); onNoteEdit(); }}
+                                className="mt-4 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-amber-500/50 text-amber-500 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span className="text-sm font-semibold">Kişisel not ekle</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

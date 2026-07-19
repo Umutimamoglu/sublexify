@@ -22,6 +22,7 @@ import { useTheme } from '@/src/context/ThemeContext';
 import { Text } from '@/src/components/ui/Text';
 import { useUpsertWordNote, useDeleteWordNote } from '@/src/api/queries/words.queries';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 
 const MAX_NOTE_LENGTH = 300;
 
@@ -161,7 +162,7 @@ export function NoteEditSheet({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.noteIcon]}>📝</Text>
+              <Ionicons name="document-text-outline" size={24} color={c.TEXT_P} />
               <View>
                 <Text style={[styles.title, { color: c.TEXT_P }]}>Kişisel Notun</Text>
                 {!!wordName && (
@@ -170,7 +171,7 @@ export function NoteEditSheet({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={[styles.closeText, { color: c.TEXT_S }]}>✕</Text>
+              <Ionicons name="close" size={24} color={c.TEXT_S} />
             </TouchableOpacity>
           </View>
 
@@ -206,7 +207,10 @@ export function NoteEditSheet({
                 onPress={handleDelete}
                 activeOpacity={0.75}
               >
-                <Text style={styles.deleteBtnText}>🗑 Notu Sil</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                  <Text style={styles.deleteBtnText}>Notu Sil</Text>
+                </View>
               </TouchableOpacity>
             )}
             <TouchableOpacity

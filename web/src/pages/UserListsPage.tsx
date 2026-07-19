@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import WordListService, { type WordListDTO, type WordListWordsResponseDTO } from '@/services/WordListService';
 import WordCard from '@/components/features/WordCard';
 import { FlashCard } from '@/components/features/FlashCardComponents';
-import { Loader2, Plus, Trash2, ChevronRight, Book, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock, PlayCircle, Pencil, X, Eye, EyeOff, List, Grid3X3, Volume2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, ChevronRight, Book, Filter, Wand2, Check, CheckCircle2, BookOpen, Lock, PlayCircle, Pencil, X, Eye, EyeOff, List, Grid3X3, Volume2, FileText } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import api from '@/services/api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -1047,7 +1047,7 @@ const UserListsPage = () => {
                         <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mx-auto mb-5 sm:hidden" />
 
                         <div className="flex items-center gap-3 mb-5">
-                            <span className="text-2xl">📝</span>
+                            <FileText className="w-6 h-6 text-gray-700 dark:text-gray-200" />
                             <div>
                                 <h3 className="text-base font-extrabold text-gray-900 dark:text-white">Kişisel Notun</h3>
                                 {noteModal.wordName && (
@@ -1057,7 +1057,7 @@ const UserListsPage = () => {
                             <button
                                 onClick={() => setNoteModal(null)}
                                 className="ml-auto text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl leading-none"
-                            >✕</button>
+                            ><X className="w-5 h-5" /></button>
                         </div>
 
                         <textarea
@@ -1091,7 +1091,10 @@ const UserListsPage = () => {
                                     className="px-4 py-2.5 rounded-xl border border-red-300 text-red-500 text-sm font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                     disabled={noteLoading}
                                 >
-                                    🗑 Notu Sil
+                                    <div className="flex items-center justify-center gap-1.5">
+                                        <Trash2 className="w-4 h-4" />
+                                        <span>Notu Sil</span>
+                                    </div>
                                 </button>
                             )}
                             <button

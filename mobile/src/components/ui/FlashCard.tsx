@@ -3,6 +3,7 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Reanimated from 'react-native-reanimated';
 import { useTranslation } from '@/src/i18n/useTranslation';
+import { Ionicons } from '@expo/vector-icons';
 import type { ListWord } from '@/src/types/api';
 import { Text } from '@/src/components/ui/Text';
 
@@ -31,8 +32,14 @@ function NoteBox({
         activeOpacity={0.75}
       >
         <View style={noteStyles.boxHeader}>
-          <Text style={noteStyles.boxLabel}>📝 Notun</Text>
-          <Text style={[noteStyles.editHint, { color: '#F59E0B' }]}>Düzenle ✏️</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="document-text" size={14} color="#F59E0B" />
+            <Text style={noteStyles.boxLabel}>Notun</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={[noteStyles.editHint, { color: '#F59E0B' }]}>Düzenle</Text>
+            <Ionicons name="pencil" size={12} color="#F59E0B" />
+          </View>
         </View>
         <Text style={[noteStyles.boxText, { color: c.TEXT_P }]}>{note}</Text>
       </TouchableOpacity>
@@ -43,7 +50,8 @@ function NoteBox({
   if (onEditPress) {
     return (
       <TouchableOpacity style={noteStyles.addPrompt} onPress={onEditPress} activeOpacity={0.6}>
-        <Text style={[noteStyles.addPromptText, { color: c.TEXT_S }]}>+ Kişisel not ekle</Text>
+        <Ionicons name="add-circle-outline" size={18} color="#F59E0B" />
+        <Text style={[noteStyles.addPromptText, { color: '#F59E0B' }]}>Kişisel not ekle</Text>
       </TouchableOpacity>
     );
   }
@@ -68,8 +76,20 @@ const noteStyles = StyleSheet.create({
   boxLabel: { fontSize: 12, fontWeight: '800', color: '#F59E0B' },
   editHint: { fontSize: 11, fontWeight: '600' },
   boxText: { fontSize: 14, lineHeight: 20 },
-  addPrompt: { paddingVertical: 8, marginTop: 10 },
-  addPromptText: { fontSize: 13, fontWeight: '600' },
+  addPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    marginTop: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#F59E0B55',
+    backgroundColor: '#F59E0B10',
+  },
+  addPromptText: { fontSize: 13, fontWeight: '700' },
 });
 
 // ─── FlashCard Back ───────────────────────────────────────────
@@ -119,7 +139,7 @@ export function FlashCardBack({
 
       {!def ? (
         <View style={styles.unenrichedBox}>
-          <Text style={styles.unenrichedIcon}>⏳</Text>
+          <Ionicons name="hourglass-outline" size={20} color={c.TEXT_S} style={styles.unenrichedIcon} />
           <Text style={styles.unenrichedText}>{t('notEnriched')}</Text>
         </View>
       ) : (
