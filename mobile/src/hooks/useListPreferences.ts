@@ -6,6 +6,8 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiClient } from '@/src/api/client';
+import { ENDPOINTS } from '@/src/api/endpoints';
 
 const STORAGE_KEY = 'list_preferences_v1';
 
@@ -44,16 +46,38 @@ export function useListPreferences() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     loadPrefs().then((p) => {
-      setPrefs(p);
-      setReady(true);
+      if (isMounted) {
+        setPrefs(p);
+        setReady(true);
+      }
     });
+    
+    // Sync from backend
+    apiClient.get<number[]>(ENDPOINTS.lists.preferencesHidden)
+      .then((res) => {
+        if (isMounted && res.data) {
+          setPrefs(prev => {
+            const next = { ...prev, hiddenIds: res.data };
+            savePrefs(next);
+            return next;
+          });
+        }
+      })
+      .catch((e) => console.log('Failed to fetch hidden lists from backend', e));
+
+    return () => { isMounted = false; };
   }, []);
 
   const update = useCallback((updater: (prev: ListPreferences) => ListPreferences) => {
     setPrefs((prev) => {
       const next = updater(prev);
       savePrefs(next);
+      // Sync hidden lists to backend
+      if (prev.hiddenIds !== next.hiddenIds) {
+        apiClient.post(ENDPOINTS.lists.preferencesHidden, next.hiddenIds).catch(console.log);
+      }
       return next;
     });
   }, []);

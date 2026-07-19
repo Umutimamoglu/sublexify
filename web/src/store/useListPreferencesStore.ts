@@ -1,13 +1,15 @@
 import { create } from 'zustand';
+import WordListService from '@/services/WordListService';
 
 type ListPreferencesState = {
     globalHide: boolean;
     hiddenIds: number[];
     toggleGlobalHide: () => void;
     toggleHide: (id: number) => void;
+    fetchHiddenLists: () => Promise<void>;
 };
 
-export const useListPreferencesStore = create<ListPreferencesState>()((set) => {
+export const useListPreferencesStore = create<ListPreferencesState>()((set, get) => {
     // Restore from localStorage on init
     const storedGlobalHide = localStorage.getItem('sublex-global-hide');
     const storedHiddenIds = localStorage.getItem('sublex-hidden-ids');
@@ -25,14 +27,27 @@ export const useListPreferencesStore = create<ListPreferencesState>()((set) => {
         },
 
         toggleHide: (id: number) => {
-            set((state) => {
-                const isHidden = state.hiddenIds.includes(id);
-                const nextIds = isHidden
-                    ? state.hiddenIds.filter((hiddenId) => hiddenId !== id)
-                    : [...state.hiddenIds, id];
-                localStorage.setItem('sublex-hidden-ids', JSON.stringify(nextIds));
-                return { hiddenIds: nextIds };
-            });
+            const { hiddenIds } = get();
+            const isHidden = hiddenIds.includes(id);
+            const nextIds = isHidden
+                ? hiddenIds.filter((hiddenId) => hiddenId !== id)
+                : [...hiddenIds, id];
+                
+            set({ hiddenIds: nextIds });
+            localStorage.setItem('sublex-hidden-ids', JSON.stringify(nextIds));
+            
+            // Sync with backend
+            WordListService.syncHiddenLists(nextIds).catch(console.error);
         },
+
+        fetchHiddenLists: async () => {
+            try {
+                const serverIds = await WordListService.getHiddenLists();
+                set({ hiddenIds: serverIds });
+                localStorage.setItem('sublex-hidden-ids', JSON.stringify(serverIds));
+            } catch (e) {
+                console.error("Failed to fetch hidden lists from server", e);
+            }
+        }
     };
 });

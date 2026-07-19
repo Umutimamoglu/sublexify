@@ -12,7 +12,7 @@ const SeriesDetailPage = () => {
     const { tmdbId } = useParams<{ tmdbId: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const { user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, openLoginModal } = useAuthStore();
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [watchedIds, setWatchedIds] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
@@ -47,6 +47,10 @@ const SeriesDetailPage = () => {
 
     const toggleWatched = async (e: React.MouseEvent, episodeId: number) => {
         e.stopPropagation();
+        if (!isAuthenticated) {
+            openLoginModal(t('auth.loginRequiredWatch', 'Bölümleri izlendi olarak işaretlemek için giriş yapmalısınız.'));
+            return;
+        }
         const isWatched = watchedIds.includes(episodeId);
         // Optimistic
         setWatchedIds(prev => isWatched ? prev.filter(id => id !== episodeId) : [...prev, episodeId]);

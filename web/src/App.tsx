@@ -25,10 +25,20 @@ import SettingsPage from '@/pages/SettingsPage';
 import OnboardingPage from '@/pages/OnboardingPage';
 import AppTour from '@/components/features/AppTour';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useListPreferencesStore } from '@/store/useListPreferencesStore';
 import { useEffect } from 'react';
 
 function App() {
   const { themePreference } = useSettingsStore();
+  const { isAuthenticated } = useAuthStore();
+  const { fetchHiddenLists } = useListPreferencesStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchHiddenLists();
+    }
+  }, [isAuthenticated, fetchHiddenLists]);
 
   useEffect(() => {
     const isDark = themePreference === 'dark' || (themePreference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);

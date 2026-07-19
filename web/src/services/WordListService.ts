@@ -74,9 +74,20 @@ const WordListService = {
         return response.data;
     },
 
-    getStandardLists: async (): Promise<WordListDTO[]> => {
-        const response = await api.get<WordListDTO[]>('/lists/standard');
+    getStandardLists: async (userId?: number): Promise<WordListDTO[]> => {
+        const response = await api.get<WordListDTO[]>('/lists/standard', {
+            params: { userId },
+        });
         return response.data;
+    },
+
+    getHiddenLists: async (): Promise<number[]> => {
+        const response = await api.get<number[]>('/preferences/lists/hidden');
+        return response.data;
+    },
+
+    syncHiddenLists: async (hiddenListIds: number[]): Promise<void> => {
+        await api.post('/preferences/lists/hidden', hiddenListIds);
     },
 
     getListsBySeries: async (imdbId: string): Promise<WordListDTO[]> => {
