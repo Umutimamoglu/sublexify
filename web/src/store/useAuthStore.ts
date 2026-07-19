@@ -47,8 +47,8 @@ export const useAuthStore = create<AuthState>()((set) => {
             set({ user: null, token: null, isAuthenticated: false });
         },
 
-        openLoginModal: (message = null) => {
-            set({ isLoginModalOpen: true, loginModalMessage: message });
+        openLoginModal: (message?: string) => {
+            set({ isLoginModalOpen: true, loginModalMessage: message || null });
         },
 
         closeLoginModal: () => {
