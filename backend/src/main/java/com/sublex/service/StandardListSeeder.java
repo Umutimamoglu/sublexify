@@ -239,6 +239,94 @@ public class StandardListSeeder {
     }
 
     @Transactional
+    public String seedIeltsList() {
+        String filename = "ielts-400-top-verbs.csv";
+        log.info("Seeding IELTS 400 Top Verbs list from file: {}", filename);
+
+        try {
+            ClassPathResource resource = new ClassPathResource("data/" + filename);
+            if (!resource.exists()) {
+                throw new RuntimeException("File not found: " + filename);
+            }
+
+            java.util.Set<String> wordsToSeed = new HashSet<>();
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
+
+                String header = reader.readLine(); // skip header: word,meaning
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split(",");
+                    if (parts.length >= 2) {
+                        String word = parts[0].trim().toLowerCase();
+                        if (!word.isEmpty()) {
+                            wordsToSeed.add(word);
+                        }
+                    }
+                }
+            }
+
+            if (wordsToSeed.isEmpty()) {
+                return "IELTS file is empty or invalid: " + filename;
+            }
+
+            log.info("Found {} unique IELTS words", wordsToSeed.size());
+
+            User systemUser = userRepository.findById(SYSTEM_USER_ID)
+                    .orElseThrow(() -> new RuntimeException("System user not found"));
+
+            WordList wordList = wordListRepository.findByNameAndUserId("IELTS 400 Top Verbs", SYSTEM_USER_ID)
+                    .orElseGet(() -> {
+                        WordList newList = new WordList();
+                        newList.setName("IELTS 400 Top Verbs");
+                        newList.setUser(systemUser);
+                        newList.setIsSystem(true);
+                        return wordListRepository.save(newList);
+                    });
+
+            java.util.List<Word> existingInDb = wordRepository.findByWordInAndLanguage(wordsToSeed, "en");
+            java.util.Set<String> existingWordTexts = existingInDb.stream()
+                    .map(Word::getWord)
+                    .collect(Collectors.toSet());
+
+            java.util.List<Word> newWords = new java.util.ArrayList<>();
+            for (String wordText : wordsToSeed) {
+                if (!existingWordTexts.contains(wordText)) {
+                    newWords.add(Word.builder()
+                            .word(wordText)
+                            .language("en")
+                            .isEnriched(false)
+                            .status("PENDING")
+                            .build());
+                }
+            }
+
+            if (!newWords.isEmpty()) {
+                log.info("Saving {} new IELTS words to DB...", newWords.size());
+                existingInDb.addAll(wordRepository.saveAll(newWords));
+            }
+
+            Set<Word> currentListWords = wordList.getWords();
+            if (currentListWords == null)
+                currentListWords = new HashSet<>();
+
+            for (Word word : existingInDb) {
+                currentListWords.add(word);
+            }
+            wordList.setWords(currentListWords);
+            wordListRepository.save(wordList);
+
+            return String.format("Successfully seeded IELTS 400 Top Verbs. Added %d new words. Total in list: %d",
+                    newWords.size(), wordList.getWords().size());
+
+        } catch (Exception e) {
+            log.error("Failed to seed IELTS list", e);
+            throw new RuntimeException("IELTS seeding failed: " + e.getMessage());
+        }
+    }
+
+    @Transactional
     public String seedFrequencyListJson(String listName, String fileName, Integer limit) {
         log.info("Seeding frequency list '{}' from {}", listName, fileName);
         try {
@@ -513,6 +601,7 @@ public class StandardListSeeder {
         result.append(seedFrequencyListJson("Top Adverbs", "top_adverbs_by_frequency.json", null)).append("\n");
         result.append(seedPhrasalVerbJson("200 Common Phrasal Verbs", "phrasal_verbs.json")).append("\n");
         result.append(seedOxfordList()).append("\n");
+        result.append(seedIeltsList()).append("\n");
 
         return result.toString();
     }
