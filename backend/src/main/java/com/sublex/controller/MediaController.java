@@ -122,7 +122,12 @@ public class MediaController {
     @GetMapping("/{id}/download-subtitles")
     public ResponseEntity<byte[]> downloadSubtitles(
             @PathVariable Long id,
-            @RequestParam(required = false) Long userId) {
+            Authentication authentication) {
+        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
+        // Premium content: block subtitle download without an active entitlement.
+        if (!mediaService.canAccessContent(id, userId)) {
+            return ResponseEntity.status(402).build();
+        }
         MediaDTO media = mediaService.getMediaById(id, userId);
         String content = mediaService.getSubtitleContent(id);
 
@@ -149,7 +154,12 @@ public class MediaController {
     public ResponseEntity<byte[]> downloadMediaWords(
             @PathVariable Long id,
             @RequestParam(required = false) Boolean onlyUnknown,
-            @RequestParam(required = false) Long userId) {
+            Authentication authentication) {
+        Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
+        // Premium content: block full word-list export without an active entitlement.
+        if (!mediaService.canAccessContent(id, userId)) {
+            return ResponseEntity.status(402).build();
+        }
 
         MediaDTO media = mediaService.getMediaById(id, userId);
         MediaWordsResponseDTO wordsResponse = mediaService.getMediaWords(id, userId,

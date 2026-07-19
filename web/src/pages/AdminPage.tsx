@@ -8,6 +8,7 @@ import { Upload, FileText, CheckCircle, AlertCircle, X, Loader2, Search, Downloa
 import JudgeReviewPanel from '@/components/JudgeReviewPanel';
 import PipelineControlPanel from '@/components/PipelineControlPanel';
 import AuditReviewPanel from '@/components/AuditReviewPanel';
+import PremiumSection from '@/components/features/PremiumSection';
 import NotificationService, { type AdminUser } from '@/services/NotificationService';
 
 
@@ -545,7 +546,7 @@ const AdminPage = () => {
     const [error, setError] = useState<string | null>(null);
 
     // User Information Stats / State
-    const [activeTab, setActiveTab] = useState<'system' | 'user-info' | 'push'>('system');
+    const [activeTab, setActiveTab] = useState<'system' | 'user-info' | 'push' | 'premium'>('system');
     const [requests, setRequests] = useState<MediaRequest[]>([]);
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [loadingInfo, setLoadingInfo] = useState(false);
@@ -964,6 +965,14 @@ const AdminPage = () => {
                     >
                         Push
                     </button>
+                    <button
+                        onClick={() => setActiveTab('premium')}
+                        className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === 'premium'
+                            ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                    >
+                        Premium
+                    </button>
                 </div>
             </div>
 
@@ -976,6 +985,8 @@ const AdminPage = () => {
                 />
             ) : activeTab === 'push' ? (
                 <PushNotificationSection />
+            ) : activeTab === 'premium' ? (
+                <PremiumSection />
             ) : (
                 <React.Fragment>
 

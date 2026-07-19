@@ -6,11 +6,18 @@ export interface AuthRequest {
     name?: string;
 }
 
+export type PremiumFeature = 'PREMIUM_CONTENT' | 'BACKGROUND_PLAYBACK' | 'LIST_EXPORT';
+
 export interface AuthUser {
     id: number;
     email: string;
     name: string;
     role: string;
+    // Entitlement
+    plan?: 'FREE' | 'PREMIUM';
+    isPremium?: boolean;
+    premiumUntil?: string | null;
+    features?: PremiumFeature[];
 }
 
 export interface AuthResponse {

@@ -26,6 +26,11 @@ public class MediaDTO {
     private Double voteAverage;
     private LocalDateTime createdAt;
 
+    // Premium gating
+    private Boolean isPremium;   // admin-marked as premium content
+    private Boolean locked;      // true when this caller lacks entitlement (word list withheld)
+    private Integer lockedCount; // how many words are hidden behind the paywall
+
     // Personalized difficulty fields
     private Double knownWordPercentage;
     private String difficultyLevel; // e.g. B2, C1 -> dominant level

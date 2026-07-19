@@ -4,7 +4,7 @@ import MediaService, { type Media, type MediaWordsResponse } from '@/services/Me
 import MediaHeader from '@/components/features/MediaHeader';
 import WordCard from '@/components/features/WordCard';
 import WordListService from '@/services/WordListService';
-import { Loader2, ArrowLeft, Filter, CheckCircle2, BookOpen, Download, Wand2, Check } from 'lucide-react';
+import { Loader2, ArrowLeft, Filter, CheckCircle2, BookOpen, Download, Wand2, Check, Crown, Lock } from 'lucide-react';
 import api from '@/services/api';
 import { cn } from '@/utils/cn';
 import { useTranslation } from 'react-i18next';
@@ -374,16 +374,36 @@ const MediaDetailPage = () => {
                     ))}
             </div>
 
-            {/* Load More */}
-            {visibleCount < wordData.words.length && (
-                <div className="mt-8 flex justify-center">
-                    <button
-                        onClick={() => setVisibleCount(prev => prev + 100)}
-                        className="px-8 py-3 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm"
-                    >
-                        {t('common.load_more', { count: wordData.words.length - visibleCount })}
-                    </button>
+            {/* Premium paywall — shown instead of the rest of the list for locked content */}
+            {wordData.locked ? (
+                <div className="mt-8 relative overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/10 dark:to-[#161822] p-8 text-center">
+                    <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-500">
+                        <Crown className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        Bu içerik Premium
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                        {typeof wordData.lockedCount === 'number' && wordData.lockedCount > 0
+                            ? `${wordData.lockedCount} kelime daha Premium üyelikle açılıyor. Şu an ilk ${wordData.words.length} kelimeyi önizliyorsun.`
+                            : 'Tüm kelime listesine erişmek için Premium üyelik gerekiyor.'}
+                    </p>
+                    <div className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold">
+                        <Lock className="w-4 h-4" /> Premium ile kilidi aç
+                    </div>
                 </div>
+            ) : (
+                /* Load More */
+                visibleCount < wordData.words.length && (
+                    <div className="mt-8 flex justify-center">
+                        <button
+                            onClick={() => setVisibleCount(prev => prev + 100)}
+                            className="px-8 py-3 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm"
+                        >
+                            {t('common.load_more', { count: wordData.words.length - visibleCount })}
+                        </button>
+                    </div>
+                )
             )}
         </div>
     );

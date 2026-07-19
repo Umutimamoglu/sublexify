@@ -24,12 +24,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MediaService {
 
+    /** Number of words shown as a teaser when premium content is locked. */
+    private static final int PREVIEW_LIMIT = 15;
+
     private final MediaRepository mediaRepository;
     private final MediaWordRepository mediaWordRepository;
     private final UserKnownWordRepository userKnownWordRepository;
     private final UserMediaProgressService userMediaProgressService;
     private final WordListRepository wordListRepository;
     private final MediaStatsCacheService mediaStatsCacheService;
+    private final EntitlementService entitlementService;
 
     /**
      * Get recent media for user (Continue Learning)
@@ -209,19 +213,46 @@ public class MediaService {
                 ? (int) words.stream().filter(w -> !w.getIsKnown()).count()
                 : 0;
 
-        // Calculate level counts
+        // Calculate level counts (computed on the FULL list so catalogue stats stay honest)
         java.util.Map<String, Long> levelCounts = words.stream()
                 .filter(w -> w.getDifficulty() != null)
                 .collect(Collectors.groupingBy(WordDTO::getDifficulty, Collectors.counting()));
 
+        MediaDTO mediaDto = convertToDTO(media, userId);
+
+        // Premium gating: withhold the word list for locked content, keep an honest teaser.
+        boolean locked = media.isPremium() && !entitlementService.isPremium(userId);
+        Integer lockedCount = null;
+        if (locked) {
+            lockedCount = Math.max(0, words.size() - PREVIEW_LIMIT);
+            words = words.stream().limit(PREVIEW_LIMIT).collect(Collectors.toList());
+            mediaDto.setLocked(true);
+            mediaDto.setLockedCount(lockedCount);
+        }
+
         MediaWordsResponseDTO response = new MediaWordsResponseDTO();
-        response.setMedia(convertToDTO(media, userId));
+        response.setMedia(mediaDto);
         response.setWords(words);
         response.setTotalWords(totalWords);
         response.setUnknownWords(unknownWords);
         response.setLevelCounts(levelCounts);
+        if (locked) {
+            response.setLocked(true);
+            response.setLockedCount(lockedCount);
+            response.setPreviewLimit(PREVIEW_LIMIT);
+        }
 
         return response;
+    }
+
+    /**
+     * Whether the given user may access the full word list / subtitles for a media.
+     * Free content is always accessible; premium content needs an active entitlement.
+     */
+    public boolean canAccessContent(Long mediaId, Long userId) {
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
+        return !media.isPremium() || entitlementService.isPremium(userId);
     }
 
     private MediaDTO convertToBasicDTO(Media media) {
@@ -239,6 +270,7 @@ public class MediaService {
         dto.setEpisodeNumber(media.getEpisodeNumber());
         dto.setVoteAverage(media.getVoteAverage());
         dto.setCreatedAt(media.getCreatedAt());
+        dto.setIsPremium(media.isPremium());
         return dto;
     }
 
@@ -257,6 +289,7 @@ public class MediaService {
         dto.setEpisodeNumber(media.getEpisodeNumber());
         dto.setVoteAverage(media.getVoteAverage());
         dto.setCreatedAt(media.getCreatedAt());
+        dto.setIsPremium(media.isPremium());
         return dto;
     }
 
@@ -285,6 +318,7 @@ public class MediaService {
         dto.setEpisodeNumber(media.getEpisodeNumber());
         dto.setVoteAverage(media.getVoteAverage());
         dto.setCreatedAt(media.getCreatedAt());
+        dto.setIsPremium(media.isPremium());
 
         // Calculate level counts (A1, A2, B1, B2, C1, C2)
         java.util.Map<String, Long> levelCounts = mediaWords.stream()

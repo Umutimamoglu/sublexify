@@ -23,6 +23,7 @@ public class AppInitDTO {
     private List<WordDTO> frequentWords;
 
     // Requires authentication
+    private EntitlementDTO entitlement;
     private List<MediaDTO> continueLearning;
     private List<WordListDTO> lists;
     private Map<String, Integer> userStatistics;

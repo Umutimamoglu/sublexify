@@ -38,6 +38,7 @@ import { useKnownWords } from '@/src/api/queries/user.queries';
 import { useMarkKnown, useMarkKnownBatch } from '@/src/api/queries/words.queries';
 import { useCategoryWords } from '@/src/api/queries/progress.queries';
 import { useSettingsStore } from '@/src/store/settingsStore';
+import { useAuthStore } from '@/src/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import AddToListModal from '@/src/components/ui/AddToListModal';
 import { FlashCardBack } from '@/src/components/ui/FlashCard';
@@ -838,6 +839,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   const hintShown = useRef(false);
 
   // Auto Play State
+  const user = useAuthStore((s) => s.user);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [activeAutoPlayWordId, setActiveAutoPlayWordId] = useState<number | null>(null);
   const autoPlayIndexRef = useRef(0);
@@ -954,6 +956,18 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
     if (filteredWords.length === 0) return;
 
+    // Premium gate: background / lock-screen auto-play is a premium feature.
+    const canBackgroundPlay = !!user?.isPremium
+      || !!user?.features?.includes('BACKGROUND_PLAYBACK');
+    if (!canBackgroundPlay) {
+      Alert.alert(
+        'Premium özellik',
+        'Listeyi arka planda otomatik oynatmak Premium üyeliğe özeldir.',
+        [{ text: 'Tamam' }],
+      );
+      return;
+    }
+
     isAutoPlayingRef.current = true;
     setIsAutoPlaying(true);
     // Android: ekran kapansa da devam etsin diye foreground service başlat
@@ -1024,7 +1038,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     };
 
     playNextWord();
-  }, [filteredWords, stopAutoPlay, effectiveList?.name, t]);
+  }, [filteredWords, stopAutoPlay, effectiveList?.name, t, user]);
 
 
   // Reset card index on filter change

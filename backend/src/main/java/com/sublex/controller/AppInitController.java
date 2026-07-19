@@ -1,6 +1,7 @@
 package com.sublex.controller;
 
 import com.sublex.dto.AppInitDTO;
+import com.sublex.service.EntitlementService;
 import com.sublex.service.MediaService;
 import com.sublex.service.ProgressService;
 import com.sublex.service.UserKnownWordService;
@@ -32,6 +33,7 @@ public class AppInitController {
     private final UserKnownWordService userKnownWordService;
     private final UserMediaProgressService userMediaProgressService;
     private final ProgressService progressService;
+    private final EntitlementService entitlementService;
 
     /**
      * GET /api/app-init
@@ -51,7 +53,9 @@ public class AppInitController {
                         wordService.getFrequentWords("en", null, 0, FREQUENT_WORDS_PAGE_SIZE, userId, false)));
 
         if (userId != null) {
+            final Long uid = userId;
             payload
+                .entitlement(safe("entitlement", () -> entitlementService.describe(uid)))
                 .continueLearning(safe("continueLearning", () ->
                         mediaService.getRecentMediaForUser(userId, CONTINUE_LEARNING_LIMIT)))
                 .lists(safe("lists", () -> wordListService.getUserLists(userId)))

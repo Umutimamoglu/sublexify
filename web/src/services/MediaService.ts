@@ -21,6 +21,10 @@ export interface Media {
     overallDifficulty?: string;
     levelCounts?: Record<string, number>;
     generatedListId?: number;
+    // Premium gating
+    isPremium?: boolean;
+    locked?: boolean;
+    lockedCount?: number;
 }
 
 export interface MediaWordsResponse {
@@ -31,6 +35,10 @@ export interface MediaWordsResponse {
         isKnown: boolean;
     })[];
     levelCounts: Record<string, number>;
+    // Premium gating — when locked, `words` is only a preview teaser
+    locked?: boolean;
+    lockedCount?: number;
+    previewLimit?: number;
 }
 
 const MediaService = {
@@ -77,6 +85,15 @@ const MediaService = {
 
     deleteMedia: async (id: number): Promise<void> => {
         await api.delete(`/admin/media/${id}`);
+    },
+
+    // ─── Premium content flagging (admin) ───
+    setMediaPremium: async (id: number, value: boolean): Promise<void> => {
+        await api.patch(`/admin/media/${id}/premium`, null, { params: { value } });
+    },
+
+    setSeriesPremium: async (imdbId: string, value: boolean): Promise<void> => {
+        await api.patch(`/admin/media/series/${imdbId}/premium`, null, { params: { value } });
     },
 
     getTotalWordCount: async (): Promise<number> => {

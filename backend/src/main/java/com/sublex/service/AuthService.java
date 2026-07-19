@@ -3,6 +3,7 @@ package com.sublex.service;
 import com.sublex.dto.AuthRequest;
 import com.sublex.dto.AuthResponse;
 import com.sublex.model.PasswordResetToken;
+import com.sublex.model.Plan;
 import com.sublex.model.Role;
 import com.sublex.model.User;
 import com.sublex.repository.PasswordResetTokenRepository;
@@ -27,6 +28,7 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
+    private final EntitlementService entitlementService;
 
     public AuthResponse register(AuthRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -126,11 +128,21 @@ public class AuthService {
     }
 
     private AuthResponse.UserDTO toUserDTO(User user) {
+        boolean premiumActive = user.isPremiumActive();
+        Plan effectivePlan = premiumActive ? user.getPlan() : Plan.FREE;
+        java.util.List<String> features = entitlementService.featuresForPlan(effectivePlan).stream()
+                .map(Enum::name)
+                .toList();
+
         return new AuthResponse.UserDTO(
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
-                user.getRole().name()
+                user.getRole().name(),
+                effectivePlan.name(),
+                premiumActive,
+                user.getPremiumUntil(),
+                features
         );
     }
 }

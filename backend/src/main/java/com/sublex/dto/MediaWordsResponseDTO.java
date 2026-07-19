@@ -15,4 +15,9 @@ public class MediaWordsResponseDTO {
     private Integer totalWords;
     private Integer unknownWords; // For authenticated users
     private java.util.Map<String, Long> levelCounts;
+
+    // Premium gating — when locked, `words` holds only a preview teaser
+    private Boolean locked;
+    private Integer lockedCount;  // words hidden behind the paywall
+    private Integer previewLimit; // how many words are shown in the teaser
 }

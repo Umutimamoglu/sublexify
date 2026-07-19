@@ -5,6 +5,10 @@ type User = {
     email: string;
     name: string;
     role: string;
+    plan?: 'FREE' | 'PREMIUM';
+    isPremium?: boolean;
+    premiumUntil?: string | null;
+    features?: string[];
 };
 
 type AuthState = {

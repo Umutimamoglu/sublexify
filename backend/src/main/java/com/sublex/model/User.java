@@ -30,7 +30,28 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    // ─── Premium / entitlement (denormalized fast-read; source of truth is subscriptions) ───
+
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(20) not null default 'FREE'")
+    private Plan plan = Plan.FREE;
+
+    /** Premium is active while this is non-null and in the future. Null = no premium. */
+    @Column(name = "premium_until")
+    private LocalDateTime premiumUntil;
+
+    @Column(name = "premium_since")
+    private LocalDateTime premiumSince;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /** True when the user currently holds an active premium entitlement. */
+    @Transient
+    public boolean isPremiumActive() {
+        return plan != Plan.FREE
+                && premiumUntil != null
+                && premiumUntil.isAfter(LocalDateTime.now());
+    }
 }

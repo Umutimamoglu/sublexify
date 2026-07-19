@@ -64,6 +64,10 @@ export type MediaDTO = {
   overallDifficulty?: 'EASY' | 'MEDIUM' | 'HARD' | null;
   levelCounts?: Record<string, number> | null;
   generatedListId?: number | null;
+  // Premium gating
+  isPremium?: boolean;
+  locked?: boolean;
+  lockedCount?: number;
 };
 
 // GET /api/media/{id}/words yanıtı
@@ -73,6 +77,10 @@ export type MediaWordsResponseDTO = {
   unknownWords: number;
   levelCounts: Record<string, number>;
   words: WordDTO[];
+  // Premium gating — when locked, `words` is only a preview teaser
+  locked?: boolean;
+  lockedCount?: number;
+  previewLimit?: number;
 };
 
 export type UserStatistics = {

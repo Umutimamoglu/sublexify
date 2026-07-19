@@ -58,6 +58,10 @@ public class Media {
     @Column(name = "vote_average")
     private Double voteAverage;
 
+    /** Admin-controlled: when true, word list / subtitles require a premium entitlement. */
+    @Column(name = "is_premium", columnDefinition = "boolean not null default false")
+    private boolean isPremium = false;
+
     @Column(name = "release_date")
     private String releaseDate;
 

@@ -1,5 +1,10 @@
 import VocabularyScreen from '@/src/components/screens/VocabularyScreen';
+import AuthWall from '@/src/components/layout/AuthWall';
 
 export default function VocabularyRoute() {
-  return <VocabularyScreen />;
+  return (
+    <AuthWall>
+      <VocabularyScreen />
+    </AuthWall>
+  );
 }

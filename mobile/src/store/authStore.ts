@@ -2,10 +2,17 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export type PremiumFeature = 'PREMIUM_CONTENT' | 'BACKGROUND_PLAYBACK' | 'LIST_EXPORT';
+
 export type User = {
   id: number;
   email: string;
   name: string;
+  // Entitlement (from backend auth/me/app-init)
+  plan?: 'FREE' | 'PREMIUM';
+  isPremium?: boolean;
+  premiumUntil?: string | null;
+  features?: PremiumFeature[];
 };
 
 type AuthState = {

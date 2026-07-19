@@ -224,6 +224,41 @@ function CefrBar({
 }
 
 // ─── Word row ──────────────────────────────────────────────────
+function PremiumPaywallFooter({ c, lockedCount, shownCount }: {
+  c: Palette; lockedCount?: number; shownCount: number;
+}) {
+  const AMBER = '#F59E0B';
+  return (
+    <View style={{
+      marginHorizontal: 16, marginTop: 12, marginBottom: 24, padding: 20,
+      borderRadius: 20, borderWidth: 1, borderColor: 'rgba(245,158,11,0.35)',
+      backgroundColor: 'rgba(245,158,11,0.08)', alignItems: 'center',
+    }}>
+      <View style={{
+        width: 52, height: 52, borderRadius: 16, marginBottom: 12,
+        backgroundColor: 'rgba(245,158,11,0.18)', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Ionicons name="star" size={26} color={AMBER} />
+      </View>
+      <Text style={{ color: c.TEXT_P, fontSize: 17, fontWeight: '800', marginBottom: 6 }}>
+        Bu içerik Premium
+      </Text>
+      <Text style={{ color: c.TEXT_S, fontSize: 13, textAlign: 'center', lineHeight: 19, marginBottom: 16 }}>
+        {lockedCount && lockedCount > 0
+          ? `${lockedCount} kelime daha Premium üyelikle açılıyor. Şu an ilk ${shownCount} kelimeyi önizliyorsun.`
+          : 'Tüm kelime listesine erişmek için Premium üyelik gerekiyor.'}
+      </Text>
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        backgroundColor: AMBER, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14,
+      }}>
+        <Ionicons name="lock-open" size={16} color="#fff" />
+        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>Premium ile kilidi aç</Text>
+      </View>
+    </View>
+  );
+}
+
 function WordRow({
   word,
   isKnown: isKnownProp,
@@ -676,6 +711,13 @@ export default function MediaDetailScreen({ mediaId }: { mediaId: number }) {
             data={filteredWords}
             keyExtractor={(item) => String(item.id)}
             ListHeaderComponent={ListHeader}
+            ListFooterComponent={wordData?.locked ? (
+              <PremiumPaywallFooter
+                c={c}
+                lockedCount={wordData.lockedCount}
+                shownCount={wordData.words.length}
+              />
+            ) : undefined}
             renderItem={({ item }) => (
               <WordRow
                 word={item}
