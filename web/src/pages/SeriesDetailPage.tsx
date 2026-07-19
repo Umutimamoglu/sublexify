@@ -209,35 +209,6 @@ const SeriesDetailPage = () => {
                 ))}
             </div>
 
-            {/* Next Episode Floating Bar */}
-            {nextEpisode && (
-                <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 z-40 animate-in slide-in-from-bottom-10 pointer-events-none">
-                    <div className="container mx-auto max-w-4xl flex justify-center pointer-events-auto">
-                        <div className="bg-white/80 dark:bg-[#161822]/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 shadow-2xl rounded-2xl p-4 w-full md:w-auto md:min-w-[400px] flex items-center justify-between gap-6 transition-all hover:bg-white dark:hover:bg-[#161822]">
-                            <div className="flex flex-col">
-                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                    Sıradaki Bölüm
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-black text-indigo-600 dark:text-indigo-400">
-                                        S{nextEpisode.seasonNumber}E{nextEpisode.episodeNumber}
-                                    </span>
-                                    <span className="text-gray-900 dark:text-white font-medium line-clamp-1">
-                                        {nextEpisode.title}
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => navigate(`/media/${nextEpisode.id}`)}
-                                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all hover:scale-105 shadow-lg shadow-indigo-600/20 whitespace-nowrap"
-                            >
-                                <PlayIcon className="w-4 h-4 fill-white" />
-                                {t('series_detail.watch_now', { defaultValue: 'İzle' })}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
