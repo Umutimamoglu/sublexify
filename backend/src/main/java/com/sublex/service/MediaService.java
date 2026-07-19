@@ -289,7 +289,7 @@ public class MediaService {
         dto.setEpisodeNumber(media.getEpisodeNumber());
         dto.setVoteAverage(media.getVoteAverage());
         dto.setCreatedAt(media.getCreatedAt());
-        dto.setIsPremium(media.isPremium());
+        dto.setIsPremium(media.getIsPremium());
         return dto;
     }
 

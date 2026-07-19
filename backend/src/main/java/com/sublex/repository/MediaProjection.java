@@ -18,5 +18,5 @@ public interface MediaProjection {
     Integer getEpisodeNumber();
     Double getVoteAverage();
     LocalDateTime getCreatedAt();
-    boolean isPremium();
+    boolean getIsPremium();
 }
