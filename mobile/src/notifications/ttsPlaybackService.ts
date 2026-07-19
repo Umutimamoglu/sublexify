@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import notifee, { AndroidImportance, AndroidForegroundServiceType } from '@notifee/react-native';
+import { Audio } from 'expo-av';
 
 /**
  * Android: auto-play TTS sırasında foreground service çalıştırır.
@@ -72,5 +73,45 @@ export async function stopTtsPlaybackService(): Promise<void> {
     await notifee.cancelNotification(NOTIFICATION_ID);
   } catch (e) {
     console.warn('TTS foreground service stop failed:', e);
+  }
+}
+
+// ─── Sessiz "keep-alive" ses döngüsü ───────────────────────────
+// expo-speech auto-play'i kelimeler arası setTimeout ile sürüyor; bu sessiz
+// boşluklarda iOS "ses üretilmiyor" deyip uygulamayı askıya alır ve zincir
+// kopar. Sürekli döngüde çalan sessiz bir track, audio session'ı boşluklarda
+// da aktif tutar → uygulama askıya alınmaz → arka planda/ekran kapalıyken
+// okuma devam eder. (Android'de asıl işi foreground service yapar; sessiz
+// track orada da zararsız ek sigortadır.)
+let keepAlive: Audio.Sound | null = null;
+let keepAliveStarting = false;
+
+/** Auto-play başlarken çağır — sessiz döngüyü başlatır. */
+export async function startSilentKeepAlive(): Promise<void> {
+  if (keepAlive || keepAliveStarting) return;
+  keepAliveStarting = true;
+  try {
+    const { sound } = await Audio.Sound.createAsync(
+      require('../../assets/silence.wav'),
+      { isLooping: true, volume: 1, shouldPlay: true },
+    );
+    keepAlive = sound;
+  } catch (e) {
+    console.warn('Silent keep-alive start failed:', e);
+  } finally {
+    keepAliveStarting = false;
+  }
+}
+
+/** Auto-play durunca çağır — sessiz döngüyü durdurur ve belleği boşaltır. */
+export async function stopSilentKeepAlive(): Promise<void> {
+  const s = keepAlive;
+  keepAlive = null;
+  if (!s) return;
+  try {
+    await s.stopAsync();
+    await s.unloadAsync();
+  } catch (e) {
+    console.warn('Silent keep-alive stop failed:', e);
   }
 }

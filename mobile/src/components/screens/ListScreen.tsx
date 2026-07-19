@@ -27,7 +27,7 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import * as Haptics from 'expo-haptics';
 import * as Speech from 'expo-speech';
 import { speakText, stopTts } from '@/src/utils/tts';
-import { startTtsPlaybackService, stopTtsPlaybackService } from '@/src/notifications/ttsPlaybackService';
+import { startTtsPlaybackService, stopTtsPlaybackService, startSilentKeepAlive, stopSilentKeepAlive } from '@/src/notifications/ttsPlaybackService';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/context/ThemeContext';
@@ -935,6 +935,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     setActiveAutoPlayWordId(null);
     stopTts();
     stopTtsPlaybackService(); // Android foreground service'i kapat
+    stopSilentKeepAlive();     // arka plan session'ını canlı tutan sessiz döngüyü kapat
     if (autoPlayTimeoutRef.current) {
       clearTimeout(autoPlayTimeoutRef.current);
       autoPlayTimeoutRef.current = null;
@@ -960,6 +961,9 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
       effectiveList?.name ?? t('autoPlayNotification.title'),
       t('autoPlayNotification.body'),
     );
+    // iOS (+Android sigorta): sessiz döngü audio session'ı arka planda/ekran
+    // kapalıyken aktif tutar → kelimeler arası boşlukta uygulama askıya alınmaz
+    startSilentKeepAlive();
 
     if (autoPlayIndexRef.current >= filteredWords.length) {
       autoPlayIndexRef.current = 0;

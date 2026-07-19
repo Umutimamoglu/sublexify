@@ -17,7 +17,7 @@ import { prefetchAppInit } from '@/src/api/appInit';
 import { useAuthStore } from '@/src/store/authStore';
 import { usePushNotifications } from '@/src/hooks/usePushNotifications';
 import { useNotificationObserver } from '@/src/hooks/useNotificationObserver';
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { useSettingsStore } from '@/src/store/settingsStore';
 import type { SupportedLanguage } from '@/src/i18n';
 import { Platform } from 'react-native';
@@ -95,6 +95,10 @@ export default function RootLayout() {
         await Audio.setAudioModeAsync({
           playsInSilentModeIOS: true,
           staysActiveInBackground: true,
+          // Sessiz keep-alive track'i ile TTS konuşmasının birbirini kesmemesi
+          // için ikisinin de aynı session'da karışmasına izin ver.
+          interruptionModeIOS: InterruptionModeIOS.MixWithOthers,
+          interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
         });
 
         // Wait for hydration if not already done
