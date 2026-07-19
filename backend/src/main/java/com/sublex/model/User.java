@@ -50,8 +50,9 @@ public class User {
     /** True when the user currently holds an active premium entitlement. */
     @Transient
     public boolean isPremiumActive() {
-        return plan != Plan.FREE
-                && premiumUntil != null
-                && premiumUntil.isAfter(LocalDateTime.now());
+        if (plan == Plan.FREE) return false;
+        // If plan is PREMIUM but until is null, treat as lifetime
+        if (premiumUntil == null) return true;
+        return premiumUntil.isAfter(LocalDateTime.now());
     }
 }

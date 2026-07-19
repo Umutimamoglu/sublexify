@@ -112,8 +112,8 @@ public class SubscriptionService {
 
         boolean premium = user.isPremiumActive();
         LocalDateTime until = user.getPremiumUntil();
-        // LIFETIME grants are stored as a far-future sentinel (year 2099).
-        boolean lifetime = premium && until != null && until.getYear() >= 2099;
+        // LIFETIME grants are stored as a far-future sentinel (year 2099) or null
+        boolean lifetime = premium && (until == null || until.getYear() >= 2099);
 
         Integer daysLeft = null;
         if (premium && !lifetime && until != null) {
