@@ -76,10 +76,10 @@ const AppTour = () => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none p-4">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center md:justify-end pointer-events-none p-4 md:p-8">
             <div className="absolute inset-0 bg-black/20 pointer-events-auto" onClick={finishTour} />
 
-            <div className="relative w-full max-w-sm bg-white dark:bg-[#161822] rounded-3xl p-6 shadow-2xl border border-gray-100 dark:border-gray-800 pointer-events-auto animate-in zoom-in-95 duration-300">
+            <div className="relative w-full max-w-sm bg-white dark:bg-[#161822] rounded-3xl p-6 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border border-gray-100 dark:border-gray-800 pointer-events-auto animate-in slide-in-from-bottom-8 fade-in zoom-in-95 duration-300">
                 <button 
                     onClick={finishTour}
                     className="absolute top-4 right-4 p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
