@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useOnboarding, ensureOnboardingReady } from '@/src/store/onboardingStore';
 
-const STORAGE_KEY = '@guided_flow_done';
+// Kalıcılık artık ortak onboardingStore'da ('guidedFlow' ID'si). Bu store
+// sadece ekranlar-arası (discover → media) akış orkestrasyonunu yönetir.
 
 type Step = 'discover' | 'media' | 'done';
 
@@ -23,12 +24,12 @@ export const useGuidedFlowStore = create<GuidedFlowState>((set) => ({
   advanceToMedia: () => set({ step: 'media' }),
 
   finish: async () => {
-    await AsyncStorage.setItem(STORAGE_KEY, 'true');
+    useOnboarding.getState().markSeen('guidedFlow');
     set({ active: false, step: 'done' });
   },
 
   checkIfDone: async () => {
-    const done = await AsyncStorage.getItem(STORAGE_KEY);
-    return done === 'true';
+    await ensureOnboardingReady();
+    return useOnboarding.getState().isSeen('guidedFlow');
   },
 }));

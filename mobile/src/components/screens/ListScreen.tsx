@@ -43,7 +43,7 @@ import AddToListModal from '@/src/components/ui/AddToListModal';
 import { FlashCardBack } from '@/src/components/ui/FlashCard';
 import { WordPreviewOverlay } from '@/src/components/ui/WordPreviewOverlay';
 import { QuizTypeModal } from '@/src/components/ui/QuizTypeModal';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useOnboarding, ensureOnboardingReady } from '@/src/store/onboardingStore';
 import Tooltip from 'react-native-walkthrough-tooltip';
 import { TOUR_NEON, TOUR_CARD_STYLE, TourTooltipContent } from '@/src/components/ui/TourTooltip';
 import type { ListWord, Difficulty } from '@/src/types/api';
@@ -878,20 +878,13 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
     return () => clearTimeout(timer);
   }, []);
 
-  // ⚠️ TEST ONLY — sil test bittikten sonra
-  useEffect(() => {
-    AsyncStorage.multiRemove(['@list_play_hint_shown', '@list_view_toggle_hint_shown', '@list_quiz_hint_shown']);
-  }, []);
-
-
-
   // One-time hint for the play button — shown first, then view-toggle hint follows
   const playHintChecked = useRef(false);
   useEffect(() => {
     if (playHintChecked.current || isLoading) return;
     playHintChecked.current = true;
-    AsyncStorage.getItem('@list_play_hint_shown').then((seen) => {
-      if (seen !== 'true') {
+    ensureOnboardingReady().then(() => {
+      if (!useOnboarding.getState().isSeen('lists.play')) {
         setTimeout(() => setShowPlayHint(true), 800);
       }
     });
@@ -899,13 +892,11 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
   const dismissPlayHint = useCallback(() => {
     setShowPlayHint(false);
-    AsyncStorage.setItem('@list_play_hint_shown', 'true');
+    useOnboarding.getState().markSeen('lists.play');
     // After dismissing play hint, show view hint if not seen yet
-    AsyncStorage.getItem('@list_view_toggle_hint_shown').then((seen) => {
-      if (seen !== 'true') {
-        setTimeout(() => setShowViewHint(true), 400);
-      }
-    });
+    if (!useOnboarding.getState().isSeen('lists.view')) {
+      setTimeout(() => setShowViewHint(true), 400);
+    }
   }, []);
 
   // One-time hint for the view-toggle button
@@ -913,14 +904,11 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
   useEffect(() => {
     if (viewHintChecked.current || isLoading) return;
     viewHintChecked.current = true;
-    AsyncStorage.multiGet(['@list_play_hint_shown', '@list_view_toggle_hint_shown', '@list_quiz_hint_shown']).then(([playItem, viewItem, quizItem]) => {
-      const playSeen = playItem[1] === 'true';
-      const viewSeen = viewItem[1] === 'true';
-      const quizSeen = quizItem[1] === 'true';
-      
-      if (playSeen && !viewSeen) {
+    ensureOnboardingReady().then(() => {
+      const { seen } = useOnboarding.getState();
+      if (seen['lists.play'] && !seen['lists.view']) {
         setTimeout(() => setShowViewHint(true), 600);
-      } else if (playSeen && viewSeen && !quizSeen) {
+      } else if (seen['lists.play'] && seen['lists.view'] && !seen['lists.quiz']) {
         setTimeout(() => setShowQuizHint(true), 600);
       }
     });
@@ -928,18 +916,16 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
 
   const dismissViewHint = useCallback(() => {
     setShowViewHint(false);
-    AsyncStorage.setItem('@list_view_toggle_hint_shown', 'true');
+    useOnboarding.getState().markSeen('lists.view');
     // Show quiz hint next
-    AsyncStorage.getItem('@list_quiz_hint_shown').then((seen) => {
-      if (seen !== 'true') {
-        setTimeout(() => setShowQuizHint(true), 400);
-      }
-    });
+    if (!useOnboarding.getState().isSeen('lists.quiz')) {
+      setTimeout(() => setShowQuizHint(true), 400);
+    }
   }, []);
 
   const dismissQuizHint = useCallback(() => {
     setShowQuizHint(false);
-    AsyncStorage.setItem('@list_quiz_hint_shown', 'true');
+    useOnboarding.getState().markSeen('lists.quiz');
   }, []);
 
   // ─── Auto Play TTS Logic ──────────────────────────────────
@@ -1688,7 +1674,7 @@ export default function ListScreen({ listId, category }: { listId?: number; cate
                   overflow: 'hidden',
                 }}
               >
-                <ShimmerOverlay active bandColor="rgba(255,255,255,0.4)" />
+                <ShimmerOverlay active bandColor="rgba(255,255,255,0.4)" pauseBetween={8700} />
                 <Ionicons name="school" size={24} color="#fff" />
               </LinearGradient>
             </AnimatedPressable>

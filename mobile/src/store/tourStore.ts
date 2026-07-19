@@ -1,5 +1,8 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useOnboarding, ensureOnboardingReady } from '@/src/store/onboardingStore';
+
+// Kalıcılık artık ortak onboardingStore'da ('discover' ID'si). Bu store
+// sadece Discover turunun çok-adımlı orkestrasyonunu (tourSteps sırası) yönetir.
 
 interface TourState {
   isTourCompleted: boolean;
@@ -17,9 +20,9 @@ export const useTourStore = create<TourState>((set, get) => ({
 
   initializeTour: async () => {
     try {
-      // if (__DEV__) { await AsyncStorage.removeItem('@discover_tour_completed'); }
-      const completed = await AsyncStorage.getItem('@discover_tour_completed');
-      if (completed !== 'true') {
+      await ensureOnboardingReady();
+      const completed = useOnboarding.getState().isSeen('discover');
+      if (!completed) {
         // Not completed, start the tour by showing the first step
         const newSteps = Array(TOTAL_STEPS).fill({ show: false });
         newSteps[0] = { show: true };
@@ -55,10 +58,10 @@ export const useTourStore = create<TourState>((set, get) => ({
 
   skipTour: async () => {
     try {
-      await AsyncStorage.setItem('@discover_tour_completed', 'true');
-      set({ 
-        isTourCompleted: true, 
-        tourSteps: Array(TOTAL_STEPS).fill({ show: false }) 
+      useOnboarding.getState().markSeen('discover');
+      set({
+        isTourCompleted: true,
+        tourSteps: Array(TOTAL_STEPS).fill({ show: false })
       });
     } catch (e) {
       console.error('Error saving tour state', e);

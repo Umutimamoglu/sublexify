@@ -1,36 +1,9 @@
-import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTourFlag } from '@/src/store/onboardingStore';
 
-const STORAGE_KEY = '@explore_tour_completed';
-
-interface ExploreTourState {
-  show: boolean;
-  initializeTour: () => Promise<void>;
-  finishTour: () => Promise<void>;
-}
-
-export const useExploreTourStore = create<ExploreTourState>((set) => ({
-  show: false,
-
-  initializeTour: async () => {
-    try {
-      // DEV ONLY: her yenilemede tur baştan çalışsın diye flag'i sıfırla.
-      if (false) { // DEV auto-reset disabled
-        await AsyncStorage.removeItem(STORAGE_KEY);
-      }
-      const completed = await AsyncStorage.getItem(STORAGE_KEY);
-      set({ show: completed !== 'true' });
-    } catch (e) {
-      console.error('Error reading explore tour state', e);
-    }
-  },
-
-  finishTour: async () => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, 'true');
-    } catch (e) {
-      console.error('Error saving explore tour state', e);
-    }
-    set({ show: false });
-  },
-}));
+/**
+ * Explore turu — kalıcılık artık ortak onboardingStore'da ('explore' ID'si).
+ * @deprecated Yeni kod doğrudan `useTourFlag('explore')` kullanabilir; bu
+ * sarmalayıcı sadece mevcut ekran API'sini (show/initializeTour/finishTour)
+ * korumak için tutuluyor.
+ */
+export const useExploreTourStore = () => useTourFlag('explore');
