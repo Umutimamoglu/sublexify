@@ -22,41 +22,40 @@ const RequireLoginModal: React.FC = () => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-800 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-4">
+            <div className="bg-white/90 dark:bg-[#11131A]/90 backdrop-blur-xl rounded-3xl w-full max-w-md shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] overflow-hidden border border-white/20 dark:border-white/10 animate-in fade-in zoom-in-[0.98] duration-300">
                 
-                {/* Header Image/Icon Area */}
-                <div className="relative h-32 bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
-                    <button 
-                        onClick={closeLoginModal}
-                        className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-inner">
-                        <Lock className="w-8 h-8 text-white" />
-                    </div>
-                </div>
+                {/* Close Button */}
+                <button 
+                    onClick={closeLoginModal}
+                    className="absolute top-4 right-4 p-2.5 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all"
+                >
+                    <X className="w-5 h-5" />
+                </button>
 
-                {/* Content Area */}
-                <div className="p-6 text-center">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                <div className="p-8 pt-10 text-center">
+                    {/* Elegant Icon */}
+                    <div className="mx-auto w-16 h-16 bg-gray-50 dark:bg-[#1A1D24] border border-gray-100 dark:border-gray-800 rounded-2xl flex items-center justify-center mb-6 shadow-sm rotate-3">
+                        <Lock className="w-7 h-7 text-indigo-500 dark:text-indigo-400 -rotate-3" strokeWidth={1.5} />
+                    </div>
+
+                    <h3 className="text-2xl font-semibold tracking-tight text-gray-900 dark:text-white mb-3">
                         {t('auth.loginRequired', 'Giriş Yapmanız Gerekiyor')}
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                        {loginModalMessage || t('auth.loginRequiredMessage', 'Bu işlemi gerçekleştirebilmek için lütfen hesabınıza giriş yapın.')}
+                    <p className="text-base text-gray-500 dark:text-gray-400 mb-8 leading-relaxed max-w-sm mx-auto">
+                        {loginModalMessage || t('auth.loginRequiredMessage', 'Bu içeriğe erişmek ve işlemlerinize devam edebilmek için hesabınıza giriş yapmalısınız.')}
                     </p>
 
                     <div className="space-y-3">
                         <button
                             onClick={handleLogin}
-                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-sm shadow-blue-600/20"
+                            className="w-full py-3.5 px-4 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-xl transition-all shadow-sm shadow-black/5 active:scale-[0.98]"
                         >
                             {t('auth.login', 'Giriş Yap')}
                         </button>
                         <button
                             onClick={handleRegister}
-                            className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium rounded-xl transition-colors"
+                            className="w-full py-3.5 px-4 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-all active:scale-[0.98]"
                         >
                             {t('auth.register', 'Hesap Oluştur')}
                         </button>

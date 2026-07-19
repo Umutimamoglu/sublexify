@@ -40,9 +40,16 @@ const MediaDetailPage = () => {
                     MediaService.getMediaWords(Number(id), userId, filterUnknown, sortBy)
                 ]);
 
-                if (mediaRes.isPremium && !user?.isPremium) {
-                    navigate('/profile/membership');
-                    return;
+                if (mediaRes.isPremium) {
+                    if (!isAuthenticated) {
+                        openLoginModal(t('auth.loginRequiredPremium', 'Bu Premium içeriği görüntüleyebilmek için giriş yapmalısınız.'));
+                        navigate('/');
+                        return;
+                    }
+                    if (!user?.isPremium) {
+                        navigate('/profile/membership');
+                        return;
+                    }
                 }
 
                 setMedia(mediaRes);

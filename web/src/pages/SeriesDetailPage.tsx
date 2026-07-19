@@ -29,9 +29,16 @@ const SeriesDetailPage = () => {
                 const seriesEpisodes = mediaData.filter(m => String(m.tmdbId) === String(tmdbId) && (m.type === 'EPISODE' || m.type === 'SEASON'));
                 const seriesMeta = seriesEpisodes[0];
 
-                if (seriesMeta?.isPremium && !user?.isPremium) {
-                    navigate('/profile/membership');
-                    return;
+                if (seriesMeta?.isPremium) {
+                    if (!isAuthenticated) {
+                        openLoginModal(t('auth.loginRequiredPremium', 'Bu Premium içeriği görüntüleyebilmek için giriş yapmalısınız.'));
+                        navigate('/');
+                        return;
+                    }
+                    if (!user?.isPremium) {
+                        navigate('/profile/membership');
+                        return;
+                    }
                 }
 
                 setMediaList(mediaData);
