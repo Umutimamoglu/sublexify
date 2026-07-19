@@ -4,11 +4,13 @@ import MediaService, { type Media } from '@/services/MediaService';
 import MediaCard from '@/components/features/MediaCard';
 import { Loader2, Search, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const BrowsePage = () => {
     const { type } = useParams<{ type: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { user } = useAuthStore();
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -16,7 +18,7 @@ const BrowsePage = () => {
     useEffect(() => {
         const fetchMedia = async () => {
             try {
-                const data = await MediaService.getAllMedia(1);
+                const data = await MediaService.getAllMedia(user?.id);
                 setMediaList(data);
             } catch (err) {
                 console.error(err);

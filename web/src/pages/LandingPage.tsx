@@ -101,7 +101,7 @@ const LandingPage = () => {
         const load = async () => {
             try {
                 const [cont, all, lists] = await Promise.all([
-                    MediaService.getContinueLearning(user?.id, 8),
+                    isAuthenticated ? MediaService.getContinueLearning(user?.id, 8) : Promise.resolve([]),
                     MediaService.getAllMedia(user?.id),
                     WordListService.getStandardLists(),
                 ]);

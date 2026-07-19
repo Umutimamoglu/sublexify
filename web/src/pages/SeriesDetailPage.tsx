@@ -4,6 +4,7 @@ import MediaService, { type Media } from '@/services/MediaService';
 import api from '@/services/api';
 import { Loader2, ArrowLeft, Play, Clock, Star, CheckCircle2, Circle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/utils/cn';
 import { Play as PlayIcon } from 'lucide-react';
 
@@ -11,6 +12,7 @@ const SeriesDetailPage = () => {
     const { tmdbId } = useParams<{ tmdbId: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { user, isAuthenticated } = useAuthStore();
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [watchedIds, setWatchedIds] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
@@ -20,8 +22,8 @@ const SeriesDetailPage = () => {
         const fetchData = async () => {
             try {
                 const [mediaData, watchedRes] = await Promise.all([
-                    MediaService.getAllMedia(1),
-                    api.get('/media/watched-ids').catch(() => ({ data: [] }))
+                    MediaService.getAllMedia(user?.id),
+                    isAuthenticated ? api.get('/media/watched-ids').catch(() => ({ data: [] })) : Promise.resolve({ data: [] })
                 ]);
                 setMediaList(mediaData);
                 setWatchedIds(watchedRes.data);

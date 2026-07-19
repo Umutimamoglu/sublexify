@@ -8,11 +8,13 @@ import { Loader2, ArrowLeft, Filter, CheckCircle2, BookOpen, Download, Wand2, Ch
 import api from '@/services/api';
 import { cn } from '@/utils/cn';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/store/useAuthStore';
 
 
 const MediaDetailPage = () => {
     const { id } = useParams<{ id: string }>();
     const { t } = useTranslation();
+    const { user } = useAuthStore();
     const [media, setMedia] = useState<Media | null>(null);
     const [wordData, setWordData] = useState<MediaWordsResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -22,8 +24,7 @@ const MediaDetailPage = () => {
     const [isGeneratingList, setIsGeneratingList] = useState(false);
     const [isGenerationSuccess, setIsGenerationSuccess] = useState(false);
 
-    // Mock userId for now (Sprint 4)
-    const userId = 1;
+    const userId = user?.id;
 
     const [sortBy, setSortBy] = useState<string | undefined>(undefined);
 
