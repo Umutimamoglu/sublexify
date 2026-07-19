@@ -90,8 +90,9 @@ const MainLayout = () => {
                         </Link>
 
                         {/* Desktop Nav */}
-                        <nav className="hidden md:flex items-center space-x-2">
+                        <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2">
                             {navItems.map((item) => {
+                                if (item.path === '/profile') return null; // Hide from desktop nav, user can click top right profile badge
                                 const isActive = location.pathname === item.path;
                                 return (
                                     <Link
@@ -129,7 +130,7 @@ const MainLayout = () => {
                             </button>
 
                             {isAuthenticated ? (
-                                <div className="hidden md:flex items-center gap-2">
+                                <div className="hidden lg:flex items-center gap-1 xl:gap-2">
                                     <Link 
                                         to="/notifications"
                                         className="relative p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-all"
@@ -140,10 +141,16 @@ const MainLayout = () => {
                                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-[#161822]"></span>
                                         )}
                                     </Link>
-                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-xl ml-2">
-                                        <User className="w-4 h-4 text-indigo-500" />
-                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user?.name}</span>
-                                    </div>
+                                    <Link 
+                                        to="/profile"
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors rounded-xl ml-1 xl:ml-2"
+                                        title={t('nav.profile')}
+                                    >
+                                        <User className="w-4 h-4 text-indigo-500 shrink-0" />
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[100px] xl:max-w-[150px] truncate">
+                                            {user?.name}
+                                        </span>
+                                    </Link>
                                     <button
                                         onClick={handleLogout}
                                         className="p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-all"
@@ -155,7 +162,7 @@ const MainLayout = () => {
                             ) : (
                                 <Link
                                     to="/login"
-                                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/25"
+                                    className="hidden lg:flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/25"
                                 >
                                     <LogIn className="w-4 h-4" />
                                     {t('nav.login')}
@@ -165,7 +172,7 @@ const MainLayout = () => {
                             {/* Mobile menu button */}
                             <button
                                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                                className="md:hidden p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+                                className="lg:hidden p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
                             >
                                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                             </button>
@@ -175,7 +182,7 @@ const MainLayout = () => {
 
                 {/* Mobile Nav */}
                 {mobileMenuOpen && (
-                    <div className="md:hidden border-t border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-[#161822] px-4 py-3 space-y-1">
+                    <div className="lg:hidden border-t border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-[#161822] px-4 py-3 space-y-1">
                         {navItems.map((item) => {
                             const isActive = location.pathname === item.path;
                             return (
