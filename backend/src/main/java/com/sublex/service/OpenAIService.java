@@ -498,11 +498,24 @@ public class OpenAIService implements AIService {
                                 "Review these SHORTEN verdicts:\n\n");
                 for (Word w : words) {
                         try {
-                                String defJson = objectMapper.writeValueAsString(w.getDefinition());
-                                userPromptBuilder.append(String.format("- Word: '%s'\n  Current Definition: %s\n\n",
-                                                w.getWord(), defJson));
+                                // Judge verbosity on the CORE meaning glosses only — not phrasal verbs
+                                // or examples. The shortening pipeline can only rewrite meanings[].definition,
+                                // so a long phrasal-verb explanation must not keep an already-concise word in
+                                // the SHORTEN bucket (that produced false positives like flesh/trust/escape).
+                                var meanings = w.getDefinition() != null ? w.getDefinition().getMeanings() : null;
+                                if (meanings == null || meanings.isEmpty()) {
+                                        continue;
+                                }
+                                StringBuilder defs = new StringBuilder();
+                                for (var m : meanings) {
+                                        if (m.getDefinition() != null) {
+                                                defs.append(String.format("    - [%s] %s\n", m.getPos(), m.getDefinition()));
+                                        }
+                                }
+                                userPromptBuilder.append(String.format("- Word: '%s'\n  Meaning definitions:\n%s\n",
+                                                w.getWord(), defs));
                         } catch (Exception e) {
-                                log.error("Error serializing definition for shorten-verification: {}", w.getWord());
+                                log.error("Error building meanings for shorten-verification: {}", w.getWord());
                         }
                 }
 
