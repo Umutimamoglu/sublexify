@@ -105,6 +105,56 @@ public class SubscriptionService {
         return subscriptionRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
+    /** Derived, client-ready membership detail for the profile screen. */
+    public com.sublex.dto.MembershipDTO getMembership(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        boolean premium = user.isPremiumActive();
+        LocalDateTime until = user.getPremiumUntil();
+        // LIFETIME grants are stored as a far-future sentinel (year 2099).
+        boolean lifetime = premium && until != null && until.getYear() >= 2099;
+
+        Integer daysLeft = null;
+        if (premium && !lifetime && until != null) {
+            long days = java.time.Duration.between(LocalDateTime.now(), until).toDays();
+            daysLeft = (int) Math.max(0, days) + (until.isAfter(LocalDateTime.now()) ? 1 : 0);
+        }
+
+        // Most recent active subscription carries the provenance (provider / note / start).
+        Subscription active = subscriptionRepository
+                .findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE)
+                .stream()
+                .max(java.util.Comparator.comparing(Subscription::getCreatedAt))
+                .orElse(null);
+
+        SubscriptionProvider provider = active != null ? active.getProvider() : null;
+
+        return com.sublex.dto.MembershipDTO.builder()
+                .isPremium(premium)
+                .plan((premium ? Plan.PREMIUM : Plan.FREE).name())
+                .source(provider != null ? provider.name() : null)
+                .sourceLabel(sourceLabel(provider))
+                .billingInterval(null) // Phase 2: derived from the paid plan
+                .lifetime(lifetime)
+                .startedAt(user.getPremiumSince() != null ? user.getPremiumSince()
+                        : (active != null ? active.getStartedAt() : null))
+                .premiumUntil(lifetime ? null : (premium ? until : null))
+                .daysLeft(daysLeft)
+                .note(active != null ? active.getNote() : null)
+                .build();
+    }
+
+    private String sourceLabel(SubscriptionProvider provider) {
+        if (provider == null) return null;
+        return switch (provider) {
+            case MANUAL -> "Yönetici tarafından tanımlandı";
+            case STRIPE -> "Web aboneliği (kart)";
+            case APPLE -> "App Store aboneliği";
+            case GOOGLE -> "Google Play aboneliği";
+        };
+    }
+
     private void supersedeActive(Long userId, SubscriptionStatus newStatus, LocalDateTime at) {
         List<Subscription> actives = subscriptionRepository.findByUserIdAndStatus(userId, SubscriptionStatus.ACTIVE);
         for (Subscription s : actives) {

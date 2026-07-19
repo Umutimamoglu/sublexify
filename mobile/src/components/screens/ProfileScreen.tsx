@@ -320,6 +320,28 @@ export default function ProfileScreen() {
             </>
           )}
 
+          {/* ── Membership ── */}
+          <Text style={styles.sectionLabel}>Üyelik</Text>
+          <TouchableOpacity
+            style={[styles.tile, !!user?.isPremium && { borderColor: 'rgba(245,158,11,0.35)', backgroundColor: 'rgba(245,158,11,0.06)' }]}
+            onPress={() => router.push('/profile/membership' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.tileIconBox, !!user?.isPremium && { backgroundColor: 'rgba(245,158,11,0.18)' }]}>
+              <Ionicons name="star" size={20} color={user?.isPremium ? '#F59E0B' : (isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)')} />
+            </View>
+            <Text style={styles.tileLabel}>{user?.isPremium ? 'Premium Üyelik' : 'Üyelik'}</Text>
+            <View style={{
+              backgroundColor: user?.isPremium ? 'rgba(245,158,11,0.18)' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'),
+              paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, marginRight: 8,
+            }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: user?.isPremium ? '#F59E0B' : (isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)') }}>
+                {user?.isPremium ? 'Premium' : 'Ücretsiz'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)'} />
+          </TouchableOpacity>
+
           {/* ── Main Menu ── */}
           <Text style={styles.sectionLabel}>{t('settings')}</Text>
           <SettingsTile

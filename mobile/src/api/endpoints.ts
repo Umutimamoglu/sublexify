@@ -45,6 +45,9 @@ export const ENDPOINTS = {
     forgotPassword: '/auth/forgot-password',
     resetPassword:  '/auth/reset-password',
   },
+  subscription: {
+    me: '/subscription/me',
+  },
   study: {
     nextBatch: '/study/next-batch',
     result:    '/study/result',

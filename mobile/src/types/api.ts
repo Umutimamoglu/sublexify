@@ -90,6 +90,20 @@ export type UserStatistics = {
   wordsLearnedToday?: number;
 };
 
+// GET /api/subscription/me
+export type MembershipDTO = {
+  isPremium: boolean;
+  plan: 'FREE' | 'PREMIUM';
+  source: string | null;                 // MANUAL | STRIPE | APPLE | GOOGLE | null
+  sourceLabel: string | null;
+  billingInterval: 'MONTHLY' | 'YEARLY' | null;
+  lifetime: boolean;
+  startedAt: string | null;
+  premiumUntil: string | null;
+  daysLeft: number | null;
+  note: string | null;
+};
+
 // GET /api/lists ve /api/lists/standard yanıtı
 export type WordListDTO = {
   id: number;
@@ -156,6 +170,7 @@ export type ProgressStatsDTO = {
   totalWordsStudied: number;
   difficultWords: number;
   wordsToReviewToday: number;
+  notesCount: number;
 };
 
 // ─── App Init ─────────────────────────────────────────────────

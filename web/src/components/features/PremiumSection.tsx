@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Crown, Lock, Search, Film, Tv, Check, X, Clock, Loader2 } from 'lucide-react';
+import { Crown, Lock, Search, Film, Tv, Plus, X, Clock, Loader2 } from 'lucide-react';
 import MediaService, { Media } from '@/services/MediaService';
 import PremiumService, { AdminPremiumUser, SubscriptionRow } from '@/services/PremiumService';
 
@@ -244,9 +244,13 @@ function UsersPanel() {
                                 <div className="min-w-0">
                                     <div className="flex items-center gap-2">
                                         <p className="font-semibold text-gray-900 dark:text-white truncate">{u.name || u.email}</p>
-                                        {u.isPremium && (
+                                        {u.isPremium ? (
                                             <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
                                                 <Crown className="w-3 h-3" /> Premium
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center text-[11px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/60 px-2 py-0.5 rounded-full">
+                                                Ücretsiz
                                             </span>
                                         )}
                                     </div>
@@ -271,8 +275,8 @@ function UsersPanel() {
                                                 disabled={busy === u.id}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
                                             >
-                                                {busy === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                                                30 gün
+                                                {busy === u.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                                30 gün ver
                                             </button>
                                             <button
                                                 onClick={() => grant(u, true)}

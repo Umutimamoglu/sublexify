@@ -34,6 +34,19 @@ export interface GrantPremiumBody {
     note?: string;
 }
 
+export interface Membership {
+    isPremium: boolean;
+    plan: 'FREE' | 'PREMIUM';
+    source: string | null;          // MANUAL | STRIPE | APPLE | GOOGLE | null
+    sourceLabel: string | null;
+    billingInterval: 'MONTHLY' | 'YEARLY' | null;
+    lifetime: boolean;
+    startedAt: string | null;
+    premiumUntil: string | null;
+    daysLeft: number | null;
+    note: string | null;
+}
+
 const PremiumService = {
     searchUsers: async (search = ''): Promise<AdminPremiumUser[]> => {
         const res = await api.get<AdminPremiumUser[]>('/admin/users', { params: { search } });
@@ -52,6 +65,12 @@ const PremiumService = {
 
     getSubscriptions: async (userId: number): Promise<SubscriptionRow[]> => {
         const res = await api.get<SubscriptionRow[]>(`/admin/users/${userId}/subscriptions`);
+        return res.data;
+    },
+
+    // Current user's own membership detail (profile screen)
+    getMyMembership: async (): Promise<Membership> => {
+        const res = await api.get<Membership>('/subscription/me');
         return res.data;
     },
 };

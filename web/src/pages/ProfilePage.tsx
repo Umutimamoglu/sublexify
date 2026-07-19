@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
-import { User, Film, MessageCircle, BarChart3, Compass, Settings, LogOut, ChevronRight, Loader2 } from 'lucide-react';
+import { User, Film, MessageCircle, BarChart3, Compass, Settings, LogOut, ChevronRight, Loader2, Crown } from 'lucide-react';
 import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
 
@@ -143,6 +143,27 @@ const ProfilePage = () => {
                 </div>
             </button>
             )}
+
+            {/* Membership row */}
+            <button
+                onClick={() => navigate('/profile/membership')}
+                className={`w-full flex items-center gap-4 px-5 py-4 mb-8 rounded-2xl border transition-all group ${user?.isPremium
+                    ? 'bg-gradient-to-r from-amber-50 to-white dark:from-amber-900/10 dark:to-[#161822] border-amber-300/50 dark:border-amber-500/25'
+                    : 'bg-white dark:bg-[#161822] border-gray-200/60 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}
+            >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${user?.isPremium
+                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-500'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-400'}`}>
+                    <Crown className="w-5 h-5" />
+                </div>
+                <span className="flex-1 text-left font-bold text-gray-900 dark:text-white">Üyelik</span>
+                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${user?.isPremium
+                    ? 'text-amber-600 bg-amber-100 dark:bg-amber-900/30'
+                    : 'text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-400'}`}>
+                    {user?.isPremium ? 'Premium' : 'Ücretsiz'}
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-amber-500 transition-colors" />
+            </button>
 
             {/* Settings Links */}
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1">{t('profile.settings')}</h4>
