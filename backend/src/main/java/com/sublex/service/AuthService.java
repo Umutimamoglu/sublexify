@@ -2,10 +2,13 @@ package com.sublex.service;
 
 import com.sublex.dto.AuthRequest;
 import com.sublex.dto.AuthResponse;
+import com.sublex.dto.SocialAuthRequest;
+import com.sublex.model.AuthProvider;
 import com.sublex.model.PasswordResetToken;
 import com.sublex.model.Plan;
 import com.sublex.model.Role;
 import com.sublex.model.User;
+import com.sublex.security.SocialTokenVerifier;
 import com.sublex.repository.PasswordResetTokenRepository;
 import com.sublex.repository.UserRepository;
 import com.sublex.security.JwtUtils;
@@ -29,6 +32,7 @@ public class AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
     private final EntitlementService entitlementService;
+    private final SocialTokenVerifier socialTokenVerifier;
 
     public AuthResponse register(AuthRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -58,6 +62,69 @@ public class AuthService {
 
         String token = jwtUtils.generateToken(user.getId(), user.getEmail(), user.getRole().name());
 
+        return new AuthResponse(token, toUserDTO(user));
+    }
+
+    /**
+     * Social sign-in. Verifies the provider token server-side, then finds or
+     * creates the local user:
+     *   1. match on (provider, providerId) — the stable link;
+     *   2. else match on a verified email and attach the provider to it;
+     *   3. else create a fresh social user (random, unusable password).
+     * Fails closed: an unverified/invalid token never yields a session.
+     */
+    @Transactional
+    public AuthResponse socialLogin(SocialAuthRequest request) {
+        AuthProvider provider;
+        try {
+            provider = AuthProvider.valueOf(String.valueOf(request.getProvider()).trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Unsupported provider");
+        }
+        if (provider == AuthProvider.LOCAL) {
+            throw new RuntimeException("Unsupported provider");
+        }
+
+        SocialTokenVerifier.VerifiedSocialUser verified =
+                socialTokenVerifier.verify(provider, request.getToken());
+
+        // 1) Existing link by (provider, providerId)
+        User user = userRepository.findByProviderAndProviderId(provider, verified.providerId())
+                .orElse(null);
+
+        if (user == null) {
+            String email = verified.email() != null ? verified.email().trim().toLowerCase() : null;
+
+            // 2) Attach provider to an existing account with the same verified email
+            if (email != null && verified.emailVerified()) {
+                user = userRepository.findByEmail(email).orElse(null);
+                if (user != null) {
+                    user.setProvider(provider);
+                    user.setProviderId(verified.providerId());
+                }
+            }
+
+            // 3) Brand-new social user
+            if (user == null) {
+                if (email == null) {
+                    // No stable email to key on (e.g. Apple private relay withheld) —
+                    // synthesize a unique placeholder so the unique constraint holds.
+                    email = provider.name().toLowerCase() + "_" + verified.providerId() + "@social.sublex";
+                }
+                user = new User();
+                user.setEmail(email);
+                user.setPassword(passwordEncoder.encode("social:" + java.util.UUID.randomUUID()));
+                user.setName(verified.name() != null ? verified.name() : request.getName());
+                user.setRole(Role.USER);
+                user.setProvider(provider);
+                user.setProviderId(verified.providerId());
+            }
+
+            user = userRepository.save(user);
+            log.info("Social sign-in ({}): user {} ({})", provider, user.getId(), user.getEmail());
+        }
+
+        String token = jwtUtils.generateToken(user.getId(), user.getEmail(), user.getRole().name());
         return new AuthResponse(token, toUserDTO(user));
     }
 

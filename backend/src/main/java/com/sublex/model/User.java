@@ -30,6 +30,16 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    // ─── Auth provider (LOCAL = email/password; others = verified social sign-in) ───
+
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(20) not null default 'LOCAL'")
+    private AuthProvider provider = AuthProvider.LOCAL;
+
+    /** Stable user id from the social provider (Google sub / Apple sub / Facebook id). */
+    @Column(name = "provider_id")
+    private String providerId;
+
     // ─── Premium / entitlement (denormalized fast-read; source of truth is subscriptions) ───
 
     @Enumerated(EnumType.STRING)

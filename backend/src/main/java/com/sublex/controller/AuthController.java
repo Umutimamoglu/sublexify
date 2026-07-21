@@ -2,6 +2,7 @@ package com.sublex.controller;
 
 import com.sublex.dto.AuthRequest;
 import com.sublex.dto.AuthResponse;
+import com.sublex.dto.SocialAuthRequest;
 import com.sublex.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,16 @@ public class AuthController {
         try {
             return ResponseEntity.ok(authService.login(request));
         } catch (RuntimeException e) {
+            return ResponseEntity.status(401).build();
+        }
+    }
+
+    @PostMapping("/social")
+    public ResponseEntity<AuthResponse> social(@RequestBody SocialAuthRequest request) {
+        try {
+            return ResponseEntity.ok(authService.socialLogin(request));
+        } catch (RuntimeException e) {
+            // Fail-closed: any verification/config failure yields no session.
             return ResponseEntity.status(401).build();
         }
     }
