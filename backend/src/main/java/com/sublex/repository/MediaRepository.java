@@ -32,6 +32,8 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
 
     List<Media> findByImdbIdAndTypeOrderBySeasonNumberAscEpisodeNumberAsc(String imdbId, MediaType type);
 
+    List<Media> findByTmdbIdAndTypeOrderBySeasonNumberAscEpisodeNumberAsc(Long tmdbId, MediaType type);
+
     @Query("""
         SELECT m FROM Media m 
         WHERE (

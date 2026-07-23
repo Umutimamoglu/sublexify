@@ -28,7 +28,6 @@
     "done": "Tamam",
     "known": "biliniyor",
     "movie": "Film",
-    "series": "Dizi",
     "episode": "Bölüm",
     "song": "Şarkı",
     "other": "Diğer",
@@ -126,7 +125,10 @@
     "quiz_multiple": "Çoktan Seçmeli (Multiple Choice)",
     "quiz_fill": "Boşluk Doldurma (Fill in)",
     "quiz_listen": "Dinleme (Listening)",
-    "start": "Başla"
+    "start": "Başla",
+    "pause": "Duraklat",
+    "resume_with_count": "Sürdür ({{count}})",
+    "auto_play_with_count": "Otomatik Çal ({{count}})"
   },
   "profile": {
     "title": "Profil",

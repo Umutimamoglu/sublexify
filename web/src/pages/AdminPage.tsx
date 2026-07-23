@@ -706,8 +706,8 @@ const AdminPage = () => {
     const fetchMedia = async () => {
         setLoadingMedia(true);
         try {
-            const data = await MediaService.getAllMedia(1);
-            setMediaList(data);
+            const data = await MediaService.getAllMedia(1, 0, 1000, '', 'ALL');
+            setMediaList(data.content);
         } catch (err) {
             console.error('Failed to fetch media', err);
         } finally {

@@ -21,12 +21,13 @@ const SeriesDetailPage = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [mediaData, watchedRes] = await Promise.all([
-                    MediaService.getAllMedia(user?.id),
+                if (!tmdbId) return;
+                
+                const [seriesEpisodes, watchedRes] = await Promise.all([
+                    MediaService.getSeriesEpisodesByTmdbId(Number(tmdbId)),
                     isAuthenticated ? api.get('/media/watched-ids').catch(() => ({ data: [] })) : Promise.resolve({ data: [] })
                 ]);
                 
-                const seriesEpisodes = mediaData.filter(m => String(m.tmdbId) === String(tmdbId) && (m.type === 'EPISODE' || m.type === 'SEASON'));
                 const seriesMeta = seriesEpisodes[0];
 
                 if (seriesMeta?.isPremium) {
@@ -41,7 +42,7 @@ const SeriesDetailPage = () => {
                     }
                 }
 
-                setMediaList(mediaData);
+                setMediaList(seriesEpisodes);
                 setWatchedIds(watchedRes.data);
             } catch (e) {
                 console.error(e);

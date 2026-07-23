@@ -63,6 +63,11 @@ const MediaService = {
         return response.data;
     },
 
+    getSeriesEpisodesByTmdbId: async (tmdbId: number): Promise<Media[]> => {
+        const response = await api.get<Media[]>(`/media/series/tmdb/${tmdbId}/episodes`);
+        return response.data;
+    },
+
     getMediaById: async (id: number, userId?: number): Promise<Media> => {
         const response = await api.get<Media>(`/media/${id}`, {
             params: { userId },

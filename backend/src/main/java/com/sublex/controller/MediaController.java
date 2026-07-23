@@ -91,6 +91,11 @@ public class MediaController {
         return ResponseEntity.ok(mediaService.getSeriesEpisodes(imdbId));
     }
 
+    @GetMapping("/series/tmdb/{tmdbId}/episodes")
+    public ResponseEntity<List<MediaDTO>> getSeriesEpisodesByTmdbId(@PathVariable Long tmdbId) {
+        return ResponseEntity.ok(mediaService.getSeriesEpisodesByTmdbId(tmdbId));
+    }
+
     /**
      * GET /api/media/{id}
      * Get specific media details

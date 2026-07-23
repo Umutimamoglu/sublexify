@@ -52,7 +52,8 @@ function ContentPanel() {
     const load = async () => {
         setLoading(true);
         try {
-            setMedia(await MediaService.getAllMedia());
+            const data = await MediaService.getAllMedia(undefined, 0, 100, '', 'ALL');
+            setMedia(data.content);
         } finally {
             setLoading(false);
         }

@@ -28,7 +28,6 @@
     "done": "Done",
     "known": "known",
     "movie": "Movie",
-    "series": "Series",
     "episode": "Episode",
     "song": "Song",
     "other": "Other",
@@ -126,7 +125,10 @@
     "quiz_multiple": "Multiple Choice",
     "quiz_fill": "Fill in the Blanks",
     "quiz_listen": "Listening",
-    "start": "Start"
+    "start": "Start",
+    "pause": "Pause",
+    "resume_with_count": "Resume ({{count}})",
+    "auto_play_with_count": "Auto Play ({{count}})"
   },
   "profile": {
     "title": "Profile",

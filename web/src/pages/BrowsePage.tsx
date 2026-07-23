@@ -139,15 +139,13 @@ const BrowsePage = () => {
                         }
 
                         return (
-                            <MediaCard
-                                key={media.id}
-                                title={media.title}
-                                type={type === 'series' ? 'SERIES' : 'MOVIE'}
-                                imageUrl={imageUrl || ''}
-                                stats={stats}
-                                progress={media.knownWordPercentage}
-                                onClick={() => handleCardClick(media)}
-                            />
+                            <div key={media.id} onClick={() => handleCardClick(media)} className="cursor-pointer">
+                                <MediaCard 
+                                    media={media} 
+                                    imageUrl={imageUrl || undefined} 
+                                    stats={stats} 
+                                />
+                            </div>
                         );
                     })}
                 </div>

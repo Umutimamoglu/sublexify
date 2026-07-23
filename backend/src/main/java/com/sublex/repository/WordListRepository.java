@@ -22,6 +22,22 @@ public interface WordListRepository extends JpaRepository<WordList, Long> {
         "WHERE wl.user.id = :userId OR wl.isSystem = true")
     List<WordList> findAllByUserIdOrSystem(@org.springframework.data.repository.query.Param("userId") Long userId);
 
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT DISTINCT wl FROM WordList wl LEFT JOIN FETCH wl.sourceMedia " +
+        "WHERE wl.user.id = :userId OR wl.isSystem = true")
+    List<WordList> findAllByUserIdOrSystemWithoutWords(@org.springframework.data.repository.query.Param("userId") Long userId);
+
+    @org.springframework.data.jpa.repository.Query(value =
+           "SELECT wlw.word_list_id, " +
+           "       COALESCE(w.root_word_id, w.id) AS effective_id, " +
+           "       COALESCE(rw.is_proper_noun, w.is_proper_noun) AS is_proper_noun, " +
+           "       COALESCE(rw.difficulty, w.difficulty) AS difficulty " +
+           "FROM word_list_words wlw " +
+           "JOIN word w ON wlw.word_id = w.id " +
+           "LEFT JOIN word rw ON w.root_word_id = rw.id " +
+           "WHERE wlw.word_list_id IN :listIds", nativeQuery = true)
+    List<Object[]> findWordMetadataForLists(@org.springframework.data.repository.query.Param("listIds") java.util.List<Long> listIds);
+
     java.util.Optional<WordList> findByNameAndUserId(String name, Long userId);
 
     @org.springframework.data.jpa.repository.Query("SELECT DISTINCT wl FROM WordList wl LEFT JOIN FETCH wl.words WHERE wl.user.id = :userId AND wl.sourceMedia.imdbId = :imdbId")

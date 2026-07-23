@@ -167,6 +167,14 @@ public class MediaService {
                 .collect(Collectors.toList());
     }
 
+    public List<MediaDTO> getSeriesEpisodesByTmdbId(Long tmdbId) {
+        return mediaRepository
+                .findByTmdbIdAndTypeOrderBySeasonNumberAscEpisodeNumberAsc(tmdbId, MediaType.EPISODE)
+                .stream()
+                .map(this::convertToBasicDTO)
+                .collect(Collectors.toList());
+    }
+
     /**
      * Get media by ID
      */
