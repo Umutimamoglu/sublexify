@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Search, X, Film, Tv, Library, BookOpen,
-    Flame, ChevronRight, List, PlayCircle, Crown
+    Flame, ChevronRight, List, PlayCircle, Crown, Loader2
 } from 'lucide-react';
 import MediaService, { type Media } from '@/services/MediaService';
 import WordListService, { type WordListDTO } from '@/services/WordListService';
@@ -75,7 +75,7 @@ const LandingPage = () => {
     const avatarInitial = firstName.charAt(0).toUpperCase();
 
     const [continueMedia, setContinueMedia] = useState<Media[]>([]);
-    const [allMedia, setAllMedia] = useState<Media[]>([]);
+    const [heroFallback, setHeroFallback] = useState<Media[]>([]);
     const [systemLists, setSystemLists] = useState<WordListDTO[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -85,10 +85,16 @@ const LandingPage = () => {
 
     // Search
     const [query, setQuery] = useState('');
+    const [debouncedQuery, setDebouncedQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<Media[]>([]);
     const [showResults, setShowResults] = useState(false);
 
-    // Media filter
+    // Media filter and browse pagination
     const [mediaFilter, setMediaFilter] = useState<MediaFilter>('series');
+    const [browsedMedia, setBrowsedMedia] = useState<Media[]>([]);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     // Series Intercept Modal
     const [seriesListsModalOpen, setSeriesListsModalOpen] = useState(false);
@@ -100,30 +106,30 @@ const LandingPage = () => {
     useEffect(() => {
         const load = async () => {
             try {
-                const [cont, all, lists] = await Promise.all([
+                const [cont, lists, fallback] = await Promise.all([
                     isAuthenticated ? MediaService.getContinueLearning(user?.id, 8) : Promise.resolve([]),
-                    MediaService.getAllMedia(user?.id),
                     WordListService.getStandardLists(),
+                    MediaService.getAllMedia(user?.id, 0, 10, '', 'ALL')
                 ]);
                 setContinueMedia(cont || []);
-                setAllMedia(all || []);
                 setSystemLists(lists || []);
+                setHeroFallback(fallback.content || []);
             } catch (err) {
                 console.error("Failed to load landing page data", err);
             }
             finally { setLoading(false); }
         };
         load();
-    }, [user?.id]);
+    }, [user?.id, isAuthenticated]);
 
     // Hero auto-scroll
     const heroItems = useMemo(() => {
         if (continueMedia.length > 0) return continueMedia.slice(0, 6);
-        return [...allMedia]
+        return [...heroFallback]
             .filter(m => m.backdropUrl || m.posterUrl)
             .sort((a, b) => b.totalWords - a.totalWords)
             .slice(0, 5);
-    }, [continueMedia, allMedia]);
+    }, [continueMedia, heroFallback]);
 
     useEffect(() => {
         if (heroItems.length <= 1) return;
@@ -138,26 +144,64 @@ const LandingPage = () => {
         setHeroIndex(i => (i + dir + heroItems.length) % heroItems.length);
     };
 
-    // Search results
-    const searchResults = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        if (q.length < 2 || !Array.isArray(allMedia) || allMedia.length === 0) return [];
-        const seen = new Set<string>();
-        const out: Media[] = [];
-        for (const m of allMedia) {
-            if (!m || !m.title) continue;
-            if (!m.title.toLowerCase().includes(q)) continue;
-            const key = m.type !== 'MOVIE' && m.imdbId ? m.imdbId : String(m.id);
-            if (seen.has(key)) continue;
-            seen.add(key);
-            out.push({ ...m, title: seriesTitle(m, t) });
-            if (out.length >= 8) break;
-        }
-        return out;
-    }, [query, allMedia]);
+    // Debounce Search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(query);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [query]);
 
-    // Browse media
-    const browsedMedia = useMemo(() => deduplicateMedia(allMedia, mediaFilter), [allMedia, mediaFilter]);
+    // Search results via backend
+    useEffect(() => {
+        if (!debouncedQuery.trim()) {
+            setSearchResults([]);
+            return;
+        }
+        const search = async () => {
+            try {
+                const data = await MediaService.getAllMedia(user?.id, 0, 8, debouncedQuery, 'ALL');
+                setSearchResults(data.content.map(m => ({ ...m, title: seriesTitle(m, t) })));
+            } catch (err) {
+                console.error("Failed to search", err);
+            }
+        };
+        search();
+    }, [debouncedQuery, user?.id, t]);
+
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setPage(0);
+    }, [mediaFilter]);
+
+    // Fetch Browsed Media
+    useEffect(() => {
+        const fetchBrowse = async () => {
+            try {
+                if (page > 0) setLoadingMore(true);
+                const backendType = mediaFilter === 'series' ? 'SERIES' : mediaFilter === 'movie' ? 'MOVIE' : 'ALL';
+                const data = await MediaService.getAllMedia(user?.id, page, 20, '', backendType);
+                
+                // Fix titles for series
+                const processedContent = data.content.map(m => ({ ...m, title: seriesTitle(m, t) }));
+
+                if (page === 0) {
+                    setBrowsedMedia(processedContent);
+                } else {
+                    setBrowsedMedia(prev => {
+                        const newItems = processedContent.filter(newItem => !prev.some(p => p.id === newItem.id));
+                        return [...prev, ...newItems];
+                    });
+                }
+                setHasMore(!data.last);
+            } catch (err) {
+                console.error("Failed to load browse media", err);
+            } finally {
+                setLoadingMore(false);
+            }
+        };
+        fetchBrowse();
+    }, [page, mediaFilter, user?.id, t]);
 
     const showToast = (msg: string) => {
         setToastMessage(msg);
@@ -401,7 +445,7 @@ const LandingPage = () => {
                         </div>
                     ) : (
                         <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                            {browsedMedia.slice(0, 20).map(m => (
+                            {browsedMedia.map(m => (
                                 <MediaLandscapeCard
                                     key={`${m.id}-${m.imdbId}`}
                                     media={m}
@@ -413,6 +457,16 @@ const LandingPage = () => {
                                     }}
                                 />
                             ))}
+                            {hasMore && browsedMedia.length > 0 && (
+                                <button
+                                    onClick={() => setPage(p => p + 1)}
+                                    disabled={loadingMore}
+                                    className="w-[280px] h-36 shrink-0 rounded-2xl bg-gray-50 dark:bg-[#1c1e2b] border-2 border-dashed border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center text-gray-500 hover:text-indigo-500 hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/10 transition-all disabled:opacity-50"
+                                >
+                                    {loadingMore ? <Loader2 className="w-6 h-6 animate-spin mb-2" /> : <ChevronRight className="w-8 h-8 mb-2" />}
+                                    <span className="font-semibold">{t('lists.load_more', { defaultValue: 'Load More' })}</span>
+                                </button>
+                            )}
                         </div>
                     )}
                 </section>

@@ -253,9 +253,14 @@ const UserListsPage = () => {
                 });
             }
             
-            // Refresh lists to update counts in sidebar
-            const updatedLists = await WordListService.getUserLists();
-            setLists(updatedLists);
+            // Update sidebar counts locally instead of re-fetching from backend
+            if (selectedList) {
+                const delta = currentStatus ? 1 : -1; // marking unknown adds 1, marking known subtracts 1
+                setLists(prev => prev.map(l => {
+                    if (l.id !== selectedList.id) return l;
+                    return { ...l, unknownWords: Math.max(0, (l.unknownWords || 0) + delta) };
+                }));
+            }
             
         } catch (err) {
             console.error('Failed to update word status', err);
@@ -325,19 +330,25 @@ const UserListsPage = () => {
             }
             if (!autoPlayRef.current) break;
 
-            // 3. English example
-            const example = w.definition?.meanings?.[0]?.example;
-            if (example) {
-                await speakText(example, 'en-US');
-                await sleep(800);
-            }
-            if (!autoPlayRef.current) break;
-            
-            // 4. Turkish example
-            const exampleTr = (w.definition?.meanings?.[0] as any)?.exampleTr;
-            if (exampleTr) {
-                await speakText(exampleTr, 'tr-TR');
-                await sleep(1000);
+            // 3. English example and 4. Turkish translation
+            const exampleStr = w.definition?.meanings?.[0]?.example;
+            if (exampleStr) {
+                // Extract English and Turkish parts: "English Sentence (Turkish Sentence)"
+                const match = exampleStr.match(/^(.*?)\s*\((.*)\)\s*$/);
+                if (match) {
+                    const enPart = match[1];
+                    const trPart = match[2];
+                    
+                    await speakText(enPart, 'en-US');
+                    await sleep(500);
+                    if (!autoPlayRef.current) break;
+                    
+                    await speakText(trPart, 'tr-TR');
+                    await sleep(1000);
+                } else {
+                    await speakText(exampleStr, 'en-US');
+                    await sleep(1000);
+                }
             }
         }
         
@@ -359,13 +370,22 @@ const UserListsPage = () => {
         try {
             await WordListService.removeWordFromList(listId, wordId);
             if (wordData) {
+                const removedWord = wordData.words.find(w => w.id === wordId);
+                const newWords = wordData.words.filter(w => w.id !== wordId);
                 setWordData({
                     ...wordData,
-                    words: wordData.words.filter(w => w.id !== wordId)
+                    words: newWords,
+                    totalWords: wordData.totalWords - 1,
+                    unknownWords: removedWord && !removedWord.isKnown 
+                        ? wordData.unknownWords - 1 
+                        : wordData.unknownWords
                 });
             }
-            // Update lists to reflect count change
-            fetchLists();
+            // Update sidebar counts locally instead of re-fetching
+            setLists(prev => prev.map(l => {
+                if (l.id !== listId) return l;
+                return { ...l, totalWords: Math.max(0, (l.totalWords || 0) - 1) };
+            }));
         } catch (error) {
             console.error("Failed to remove word", error);
         }
@@ -646,7 +666,7 @@ const UserListsPage = () => {
                                                         onClick={stopAutoPlay}
                                                         className="flex items-center gap-2 px-6 py-2.5 bg-rose-100 hover:bg-rose-200 text-rose-600 font-bold rounded-xl transition-all whitespace-nowrap border border-rose-200"
                                                     >
-                                                        Duraklat
+                                                        {t('lists.pause')}
                                                     </button>
                                                 ) : (
                                                     <button
@@ -654,7 +674,9 @@ const UserListsPage = () => {
                                                         className="flex items-center gap-2 px-6 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-xl transition-all whitespace-nowrap border border-indigo-100"
                                                     >
                                                         <Volume2 className="w-5 h-5" />
-                                                        {currentCardIndex > 0 && currentCardIndex < filteredWords.length - 1 ? `Sürdür (${filteredWords.length - currentCardIndex})` : `Otomatik Çal (${filteredWords.length})`}
+                                                        {currentCardIndex > 0 && currentCardIndex < filteredWords.length - 1 
+                                                            ? t('lists.resume_with_count', { count: filteredWords.length - currentCardIndex }) 
+                                                            : t('lists.auto_play_with_count', { count: filteredWords.length })}
                                                     </button>
                                                 )}
                                                 <button

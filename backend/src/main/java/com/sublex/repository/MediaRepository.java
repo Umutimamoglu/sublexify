@@ -31,4 +31,22 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
             Integer episodeNumber);
 
     List<Media> findByImdbIdAndTypeOrderBySeasonNumberAscEpisodeNumberAsc(String imdbId, MediaType type);
+
+    @Query("""
+        SELECT m FROM Media m 
+        WHERE (
+            (:type = 'ALL' AND (
+                (m.type = 'MOVIE' AND (:search IS NULL OR :search = '' OR LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%'))))
+                OR 
+                (m.id IN (SELECT MIN(m2.id) FROM Media m2 WHERE m2.type = 'EPISODE' AND (:search IS NULL OR :search = '' OR LOWER(m2.title) LIKE LOWER(CONCAT('%', :search, '%'))) GROUP BY m2.tmdbId))
+            ))
+            OR (:type = 'MOVIE' AND m.type = 'MOVIE' AND (:search IS NULL OR :search = '' OR LOWER(m.title) LIKE LOWER(CONCAT('%', :search, '%'))))
+            OR (:type = 'SERIES' AND m.id IN (SELECT MIN(m2.id) FROM Media m2 WHERE m2.type = 'EPISODE' AND (:search IS NULL OR :search = '' OR LOWER(m2.title) LIKE LOWER(CONCAT('%', :search, '%'))) GROUP BY m2.tmdbId))
+        )
+    """)
+    org.springframework.data.domain.Page<MediaProjection> searchAndFilterMedia(
+        @Param("search") String search, 
+        @Param("type") String type, 
+        org.springframework.data.domain.Pageable pageable
+    );
 }

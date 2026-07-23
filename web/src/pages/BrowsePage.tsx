@@ -14,57 +14,52 @@ const BrowsePage = () => {
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+            setPage(0); // reset page on search change
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Reset page on type change
+    useEffect(() => {
+        setPage(0);
+    }, [type]);
 
     useEffect(() => {
         const fetchMedia = async () => {
             try {
-                const data = await MediaService.getAllMedia(user?.id);
-                setMediaList(data);
+                if (page === 0) setLoading(true);
+                else setLoadingMore(true);
+
+                const backendType = type === 'series' ? 'SERIES' : type === 'movies' ? 'MOVIE' : 'ALL';
+                const data = await MediaService.getAllMedia(user?.id, page, 20, debouncedSearch, backendType);
+                
+                if (page === 0) {
+                    setMediaList(data.content);
+                } else {
+                    setMediaList(prev => {
+                        const newItems = data.content.filter(newItem => !prev.some(p => p.id === newItem.id));
+                        return [...prev, ...newItems];
+                    });
+                }
+                setHasMore(!data.last);
             } catch (err) {
                 console.error(err);
             } finally {
                 setLoading(false);
+                setLoadingMore(false);
             }
         };
         fetchMedia();
-    }, []);
-
-    const filteredMedia = useMemo(() => {
-        let filtered = mediaList;
-
-        // Filter by type
-        if (type === 'series') {
-            // Filter for seasons/episodes and Group by Series (TMDB ID)
-            const seriesMap = new Map<number, Media>();
-
-            filtered.forEach(media => {
-                if ((media.type === 'SEASON' || media.type === 'EPISODE') && media.tmdbId) {
-                    if (!seriesMap.has(media.tmdbId)) {
-                        // Create a copy to modify the title for display without changing the original record
-                        const seriesMedia = { ...media };
-                        const sep = seriesMedia.title.indexOf(' - ');
-                        if (sep > 0) {
-                            seriesMedia.title = seriesMedia.title.substring(0, sep);
-                        }
-                        seriesMap.set(media.tmdbId, seriesMedia);
-                    }
-                }
-            });
-            filtered = Array.from(seriesMap.values());
-
-        } else if (type === 'movies') {
-            filtered = filtered.filter(m => m.type === 'MOVIE');
-        }
-
-        // Filter by search
-        if (searchQuery) {
-            filtered = filtered.filter(m =>
-                m.title.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-        }
-
-        return filtered;
-    }, [mediaList, type, searchQuery]);
+    }, [debouncedSearch, type, page]);
 
     const handleCardClick = (media: Media) => {
         if (type === 'series' && media.tmdbId) {
@@ -121,40 +116,52 @@ const BrowsePage = () => {
             </div>
 
             {/* Grid */}
-            {filteredMedia.length === 0 ? (
+            {mediaList.length === 0 ? (
                 <div className="text-center py-16 text-gray-500">
                     {t('browse.no_content')}
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                    {filteredMedia.map((media) => {
+                    {mediaList.map((media) => {
                         let stats = undefined;
                         let imageUrl = media.posterUrl || media.backdropUrl;
 
                         if (type === 'series' && media.tmdbId) {
-                            // Calculate stats for this series
-                            const seriesEpisodes = mediaList.filter(m => m.tmdbId === media.tmdbId);
-                            const seasonCount = new Set(seriesEpisodes.map(m => m.seasonNumber)).size;
-                            const episodeCount = seriesEpisodes.length;
-                            const seasonLabel = seasonCount !== 1 ? t('browse.season_plural') : t('browse.season_single');
-                            const episodeLabel = episodeCount !== 1 ? t('browse.episode_plural') : t('browse.episode_single');
-                            stats = `${seasonCount} ${seasonLabel} • ${episodeCount} ${episodeLabel}`;
-
-                            // Try to find the best image from all episodes if the current one is missing
-                            if (!imageUrl) {
-                                const episodeWithImage = seriesEpisodes.find(m => m.posterUrl || m.backdropUrl);
-                                if (episodeWithImage) {
-                                    imageUrl = episodeWithImage.posterUrl || episodeWithImage.backdropUrl;
-                                }
+                            // Backend already handles grouping, so we just display the stats from the object
+                            stats = `${media.difficultyLevel ? t('level.' + media.difficultyLevel.toLowerCase()) : ''}`;
+                            // Fix title format if needed
+                            const sep = media.title.indexOf(' - ');
+                            if (sep > 0) {
+                                media.title = media.title.substring(0, sep);
                             }
+                        } else {
+                            stats = `${media.difficultyLevel ? t('level.' + media.difficultyLevel.toLowerCase()) : ''}`;
                         }
 
                         return (
-                            <div key={media.id} onClick={() => handleCardClick(media)} className="cursor-pointer">
-                                <MediaCard media={media} imageUrl={imageUrl} stats={stats} />
-                            </div>
+                            <MediaCard
+                                key={media.id}
+                                title={media.title}
+                                type={type === 'series' ? 'SERIES' : 'MOVIE'}
+                                imageUrl={imageUrl || ''}
+                                stats={stats}
+                                progress={media.knownWordPercentage}
+                                onClick={() => handleCardClick(media)}
+                            />
                         );
                     })}
+                </div>
+            )}
+            
+            {hasMore && mediaList.length > 0 && (
+                <div className="mt-12 flex justify-center">
+                    <button
+                        onClick={() => setPage(p => p + 1)}
+                        disabled={loadingMore}
+                        className="px-8 py-3 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50"
+                    >
+                        {loadingMore ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('lists.load_more', { defaultValue: 'Load More' })}
+                    </button>
                 </div>
             )}
         </div>

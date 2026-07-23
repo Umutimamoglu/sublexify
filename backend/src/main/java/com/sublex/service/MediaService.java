@@ -101,11 +101,15 @@ public class MediaService {
         return result;
     }
 
-    /**
-     * Get all media with level distribution and known-word percentage — 4 batch queries, no N+1
-     */
-    public List<MediaDTO> getAllMedia(Long userId) {
-        List<com.sublex.repository.MediaProjection> all = mediaRepository.findAllProjectedBy();
+    public org.springframework.data.domain.Page<MediaDTO> getAllMedia(Long userId, int page, int size, String search, String type) {
+        if (type == null || type.isEmpty()) type = "ALL";
+        
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+            page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt")
+        );
+        
+        org.springframework.data.domain.Page<com.sublex.repository.MediaProjection> mediaPage = 
+            mediaRepository.searchAndFilterMedia(search, type, pageable);
 
         // Batch 1: total word counts per media
         Map<Long, Integer> wordCounts = mediaStatsCacheService.getGlobalWordCounts();
@@ -123,8 +127,7 @@ public class MediaService {
             }
         }
 
-        List<MediaDTO> result = new ArrayList<>();
-        for (com.sublex.repository.MediaProjection media : all) {
+        return mediaPage.map(media -> {
             MediaDTO dto = convertToBasicDTO(media);
             int total    = wordCounts.getOrDefault(media.getId(), 0);
             dto.setTotalWords(total);
@@ -149,9 +152,8 @@ public class MediaService {
                 dto.setKnownWordPercentage((double) known / total * 100);
             }
 
-            result.add(dto);
-        }
-        return result;
+            return dto;
+        });
     }
 
     /**

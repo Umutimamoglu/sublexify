@@ -36,10 +36,19 @@ public class WordListService {
 
         public List<WordListDTO> getUserLists(Long userId) {
                 Set<Long> knownWordIds = userKnownWordRepository.findWordIdsByUserId(userId);
-                // Kullanıcının kendi listelerini + sistem listelerini birlikte getir
-                return wordListRepository.findAllByUserIdOrSystem(userId).stream()
-                                .map(list -> convertToDTO(list, userId, knownWordIds))
-                                .collect(Collectors.toList());
+                
+                List<WordList> lists = wordListRepository.findAllByUserIdOrSystemWithoutWords(userId);
+                if (lists.isEmpty()) return java.util.Collections.emptyList();
+                
+                List<Long> listIds = lists.stream().map(WordList::getId).collect(Collectors.toList());
+                List<Object[]> wordMetadata = wordListRepository.findWordMetadataForLists(listIds);
+                
+                java.util.Map<Long, List<Object[]>> metadataByList = wordMetadata.stream()
+                    .collect(Collectors.groupingBy(row -> ((Number) row[0]).longValue()));
+                    
+                return lists.stream()
+                        .map(list -> convertToDTOOptimized(list, knownWordIds, metadataByList.getOrDefault(list.getId(), java.util.Collections.emptyList())))
+                        .collect(Collectors.toList());
         }
 
         public WordList getListById(Long listId) {
@@ -194,6 +203,7 @@ public class WordListService {
                                 .map(word -> word.getRootWord() != null ? word.getRootWord() : word)
                                 .distinct()
                                 .filter(word -> !Boolean.TRUE.equals(word.getIsProperNoun()))
+                                .sorted(java.util.Comparator.comparing(Word::getId))
                                 .collect(Collectors.toList());
 
                 Set<Long> wordIds = resolvedWords.stream()
@@ -289,6 +299,58 @@ public class WordListService {
 
                         if (word.getDifficulty() != null) {
                                 levelCounts.merge(word.getDifficulty(), 1L, Long::sum);
+                        }
+                }
+
+                dto.setTotalWords(totalWords);
+                dto.setUnknownWords(unknownWords);
+                dto.setLevelCounts(levelCounts);
+                dto.setColor(list.getColor());
+
+                if (list.getSourceMedia() != null) {
+                        dto.setSourceMediaId(list.getSourceMedia().getId());
+                        dto.setSourceMediaPosterUrl(list.getSourceMedia().getPosterUrl());
+                        dto.setSourceMediaTmdbId(list.getSourceMedia().getTmdbId());
+                        dto.setSourceMediaImdbId(list.getSourceMedia().getImdbId());
+                }
+
+                return dto;
+        }
+
+        private WordListDTO convertToDTOOptimized(WordList list, Set<Long> knownWordIds, List<Object[]> metadata) {
+                WordListDTO dto = new WordListDTO();
+                dto.setId(list.getId());
+                dto.setName(list.getName());
+                dto.setIsSystem(list.getIsSystem());
+                dto.setCreatedAt(list.getCreatedAt());
+
+                int totalWords = 0;
+                int unknownWords = 0;
+                java.util.Map<String, Long> levelCounts = new java.util.HashMap<>();
+                java.util.Set<Long> processedIds = new java.util.HashSet<>();
+
+                for (Object[] row : metadata) {
+                        // Columns: word_list_id(0), effective_id(1), is_proper_noun(2), difficulty(3)
+                        Long effectiveId = ((Number) row[1]).longValue();
+                        Boolean isProperNoun = (Boolean) row[2];
+                        String difficulty = (String) row[3];
+                        
+                        if (!processedIds.add(effectiveId)) {
+                                continue;
+                        }
+
+                        if (Boolean.TRUE.equals(isProperNoun)) {
+                                continue;
+                        }
+
+                        totalWords++;
+
+                        if (knownWordIds != null && !knownWordIds.contains(effectiveId)) {
+                                unknownWords++;
+                        }
+
+                        if (difficulty != null) {
+                                levelCounts.merge(difficulty, 1L, Long::sum);
                         }
                 }
 

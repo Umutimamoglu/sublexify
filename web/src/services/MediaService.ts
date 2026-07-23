@@ -41,10 +41,24 @@ export interface MediaWordsResponse {
     previewLimit?: number;
 }
 
+export interface Page<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    last: boolean;
+    number: number;
+}
+
 const MediaService = {
-    getAllMedia: async (userId?: number): Promise<Media[]> => {
-        const response = await api.get<Media[]>('/media', {
-            params: { userId },
+    getAllMedia: async (
+        userId?: number, 
+        page: number = 0, 
+        size: number = 20, 
+        search: string = '', 
+        type: string = 'ALL'
+    ): Promise<Page<Media>> => {
+        const response = await api.get<Page<Media>>('/media', {
+            params: { userId, page, size, search, type },
         });
         return response.data;
     },
