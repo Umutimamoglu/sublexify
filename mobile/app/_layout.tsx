@@ -49,12 +49,15 @@ const persister = createAsyncStoragePersister({
 });
 
 /**
- * The whole cache is written as a single AsyncStorage row, and Android caps
- * that database at 6 MB by default. The media catalogue alone serialises to
- * roughly 5 MB, so persisting it pushes the write over the limit and *nothing*
- * gets stored — the small, genuinely useful entries (lists, stats, known words)
- * included. Leaving the catalogue out keeps the row well under the cap; it is
- * re-fetched on launch, which is what already happens today.
+ * The whole cache is written as a single AsyncStorage row. On Android that row
+ * lives in a SQLite database capped at 6 MB by default (async-storage's
+ * config.gradle sets dbSizeInMB = 6 and we don't override it), and the media
+ * catalogue alone serialises to roughly 5 MB — so the write overflows and
+ * *nothing* is stored, the small useful entries included. Dropping the
+ * catalogue there keeps the row well under the cap.
+ *
+ * iOS has no equivalent cap: values above 1 KB are written as their own files,
+ * so the full cache — catalogue included — persists fine and is left alone.
  */
 const isMediaCatalogueQuery = (query: Query) =>
   query.queryKey.length === 1 && query.queryKey[0] === 'media';
@@ -62,10 +65,13 @@ const isMediaCatalogueQuery = (query: Query) =>
 const persistOptions = {
   persister,
   maxAge: 1000 * 60 * 60 * 24,
-  dehydrateOptions: {
-    shouldDehydrateQuery: (query: Query) =>
-      defaultShouldDehydrateQuery(query) && !isMediaCatalogueQuery(query),
-  },
+  dehydrateOptions:
+    Platform.OS === 'android'
+      ? {
+          shouldDehydrateQuery: (query: Query) =>
+            defaultShouldDehydrateQuery(query) && !isMediaCatalogueQuery(query),
+        }
+      : undefined,
 };
 
 export default function RootLayout() {
