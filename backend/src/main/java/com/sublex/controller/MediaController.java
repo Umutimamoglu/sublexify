@@ -27,13 +27,20 @@ public class MediaController {
      * Get all available media
      */
     @GetMapping
-    public ResponseEntity<org.springframework.data.domain.Page<MediaDTO>> getAllMedia(
+    public ResponseEntity<?> getAllMedia(
             Authentication authentication,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "ALL") String type) {
         Long userId = (authentication != null) ? (Long) authentication.getPrincipal() : null;
+
+        // Callers that don't ask for a page get the plain list they always got.
+        // Shipped mobile builds parse this response as an array and cannot be
+        // updated remotely, so the unpaged shape has to stay available.
+        if (page == null) {
+            return ResponseEntity.ok(mediaService.getAllMedia(userId));
+        }
         return ResponseEntity.ok(mediaService.getAllMedia(userId, page, size, search, type));
     }
 

@@ -102,24 +102,39 @@ public class MediaService {
     }
 
     /**
-     * Whole catalogue as a plain list — the shape app-init and the existing
-     * callers expect. Kept as an overload so pagination stays an opt-in for the
-     * browse screens without changing the cold-start payload.
+     * Whole catalogue as a plain list — every movie and every episode, which is
+     * what app-init's cold-start payload has always carried. Deliberately does
+     * not go through the paginated query: that one collapses a series down to a
+     * single representative episode, which would silently drop episodes here.
      */
     public List<MediaDTO> getAllMedia(Long userId) {
-        return getAllMedia(userId, 0, Integer.MAX_VALUE, "", "ALL").getContent();
+        java.util.function.Function<com.sublex.repository.MediaProjection, MediaDTO> enrich = mediaEnricher(userId);
+        List<MediaDTO> result = new ArrayList<>();
+        for (com.sublex.repository.MediaProjection media : mediaRepository.findAllProjectedBy()) {
+            result.add(enrich.apply(media));
+        }
+        return result;
     }
 
     public org.springframework.data.domain.Page<MediaDTO> getAllMedia(Long userId, int page, int size, String search, String type) {
         if (type == null || type.isEmpty()) type = "ALL";
-        
+
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
             page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt")
         );
-        
-        org.springframework.data.domain.Page<com.sublex.repository.MediaProjection> mediaPage = 
+
+        org.springframework.data.domain.Page<com.sublex.repository.MediaProjection> mediaPage =
             mediaRepository.searchAndFilterMedia(search, type, pageable);
 
+        return mediaPage.map(mediaEnricher(userId));
+    }
+
+    /**
+     * Builds the per-request lookup tables once, then returns a mapper that
+     * turns a projection into a fully populated DTO. Shared by the list and
+     * paginated variants so both enrich identically.
+     */
+    private java.util.function.Function<com.sublex.repository.MediaProjection, MediaDTO> mediaEnricher(Long userId) {
         // Batch 1: total word counts per media
         Map<Long, Integer> wordCounts = mediaStatsCacheService.getGlobalWordCounts();
 
@@ -136,7 +151,7 @@ public class MediaService {
             }
         }
 
-        return mediaPage.map(media -> {
+        return media -> {
             MediaDTO dto = convertToBasicDTO(media);
             int total    = wordCounts.getOrDefault(media.getId(), 0);
             dto.setTotalWords(total);
@@ -162,7 +177,7 @@ public class MediaService {
             }
 
             return dto;
-        });
+        };
     }
 
     /**
