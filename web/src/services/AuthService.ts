@@ -36,6 +36,15 @@ const AuthService = {
         return res.data;
     },
 
+    /**
+     * Social sign-in. `token` is the provider-issued credential (Google ID
+     * token); the backend verifies it before issuing our own JWT.
+     */
+    socialLogin: async (provider: 'GOOGLE' | 'APPLE' | 'FACEBOOK', token: string, name?: string): Promise<AuthResponse> => {
+        const res = await api.post('/auth/social', { provider, token, name });
+        return res.data;
+    },
+
     me: async (): Promise<AuthUser> => {
         const res = await api.get('/auth/me');
         return res.data;

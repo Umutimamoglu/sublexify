@@ -5,6 +5,7 @@ import AuthService from '@/services/AuthService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 import Mascot from '@/components/Mascot';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -91,6 +92,8 @@ const LoginPage = () => {
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('nav.login')}
                         </button>
                     </form>
+
+                    <GoogleSignInButton />
 
                     <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
                         {t('login.no_account')}{' '}

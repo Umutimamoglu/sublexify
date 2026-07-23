@@ -4,6 +4,7 @@ import { Loader2, BookOpen } from 'lucide-react';
 import AuthService from '@/services/AuthService';
 import { useAuthStore } from '@/store/useAuthStore';
 import Mascot from '@/components/Mascot';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 const RegisterPage = () => {
     const [name, setName] = useState('');
@@ -97,6 +98,8 @@ const RegisterPage = () => {
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Hesap Oluştur'}
                         </button>
                     </form>
+
+                    <GoogleSignInButton />
 
                     <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
                         Zaten hesabın var mı?{' '}

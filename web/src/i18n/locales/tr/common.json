@@ -225,7 +225,9 @@
     "password": "Şifre",
     "forgot_password": "Şifremi Unuttum",
     "no_account": "Hesabın yok mu?",
-    "register": "Kayıt Ol"
+    "register": "Kayıt Ol",
+    "or": "veya",
+    "google_error": "Google ile giriş başarısız oldu. Lütfen tekrar deneyin."
   },
   "onboarding": {
     "welcome": "Hoş Geldiniz",

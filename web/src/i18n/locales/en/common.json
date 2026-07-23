@@ -225,7 +225,9 @@
     "password": "Password",
     "forgot_password": "Forgot Password",
     "no_account": "Don't have an account?",
-    "register": "Register"
+    "register": "Register",
+    "or": "or",
+    "google_error": "Google sign-in failed. Please try again."
   },
   "onboarding": {
     "welcome": "Welcome",
