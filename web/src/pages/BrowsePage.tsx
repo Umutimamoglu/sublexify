@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import MediaService, { type Media } from '@/services/MediaService';
 import MediaCard from '@/components/features/MediaCard';
@@ -134,7 +134,7 @@ const BrowsePage = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                     {mediaList.map((media) => {
                         let stats = undefined;
-                        let imageUrl = media.posterUrl || media.backdropUrl;
+                        const imageUrl = media.posterUrl || media.backdropUrl;
 
                         if (type === 'series' && media.tmdbId) {
                             // Backend already handles grouping, so we just display the stats from the object
