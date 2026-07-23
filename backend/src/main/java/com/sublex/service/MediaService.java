@@ -101,6 +101,15 @@ public class MediaService {
         return result;
     }
 
+    /**
+     * Whole catalogue as a plain list — the shape app-init and the existing
+     * callers expect. Kept as an overload so pagination stays an opt-in for the
+     * browse screens without changing the cold-start payload.
+     */
+    public List<MediaDTO> getAllMedia(Long userId) {
+        return getAllMedia(userId, 0, Integer.MAX_VALUE, "", "ALL").getContent();
+    }
+
     public org.springframework.data.domain.Page<MediaDTO> getAllMedia(Long userId, int page, int size, String search, String type) {
         if (type == null || type.isEmpty()) type = "ALL";
         
