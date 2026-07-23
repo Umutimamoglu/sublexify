@@ -1088,9 +1088,9 @@ export default function DiscoverScreen() {
               getItemLayout={getBrowseItemLayout}
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.hScrollContent}
-              initialNumToRender={4}
-              maxToRenderPerBatch={8}
-              windowSize={5}
+              initialNumToRender={6}
+              maxToRenderPerBatch={10}
+              windowSize={11}
             />
           )}
         </View>
