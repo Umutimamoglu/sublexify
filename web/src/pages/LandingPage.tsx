@@ -89,10 +89,12 @@ const LandingPage = () => {
     const [searchResults, setSearchResults] = useState<Media[]>([]);
     const [showResults, setShowResults] = useState(false);
 
-    // Media filter and browse pagination
-    const [mediaFilter, setMediaFilter] = useState<MediaFilter>('series');
+    // Media filter and browse pagination. Filter and page live in one piece of
+    // state so switching filters resets the page in the same update — keeping
+    // them apart let a request for the previous page stay in flight and append
+    // its results to the new filter's list.
+    const [browse, setBrowse] = useState<{ filter: MediaFilter; page: number }>({ filter: 'series', page: 0 });
     const [browsedMedia, setBrowsedMedia] = useState<Media[]>([]);
-    const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
 
@@ -152,56 +154,61 @@ const LandingPage = () => {
         return () => clearTimeout(timer);
     }, [query]);
 
-    // Search results via backend
+    // Search results via backend. Each keystroke supersedes the previous
+    // request, so an earlier slow response can't overwrite a newer one.
     useEffect(() => {
         if (!debouncedQuery.trim()) {
             setSearchResults([]);
             return;
         }
+        const controller = new AbortController();
         const search = async () => {
             try {
-                const data = await MediaService.getAllMedia(user?.id, 0, 8, debouncedQuery, 'ALL');
-                setSearchResults(data.content.map(m => ({ ...m, title: seriesTitle(m, t) })));
+                const data = await MediaService.getAllMedia(user?.id, 0, 8, debouncedQuery, 'ALL', controller.signal);
+                setSearchResults(data.content);
             } catch (err) {
-                console.error("Failed to search", err);
+                if (!controller.signal.aborted) console.error("Failed to search", err);
             }
         };
         search();
-    }, [debouncedQuery, user?.id, t]);
-
-    // Reset pagination when filter changes
-    useEffect(() => {
-        setPage(0);
-    }, [mediaFilter]);
+        return () => controller.abort();
+    }, [debouncedQuery, user?.id]);
 
     // Fetch Browsed Media
     useEffect(() => {
+        const controller = new AbortController();
+        const { filter, page } = browse;
         const fetchBrowse = async () => {
             try {
                 if (page > 0) setLoadingMore(true);
-                const backendType = mediaFilter === 'series' ? 'SERIES' : mediaFilter === 'movie' ? 'MOVIE' : 'ALL';
-                const data = await MediaService.getAllMedia(user?.id, page, 20, '', backendType);
-                
-                // Fix titles for series
-                const processedContent = data.content.map(m => ({ ...m, title: seriesTitle(m, t) }));
+                const backendType = filter === 'series' ? 'SERIES' : filter === 'movie' ? 'MOVIE' : 'ALL';
+                const data = await MediaService.getAllMedia(user?.id, page, 20, '', backendType, controller.signal);
 
                 if (page === 0) {
-                    setBrowsedMedia(processedContent);
+                    setBrowsedMedia(data.content);
                 } else {
                     setBrowsedMedia(prev => {
-                        const newItems = processedContent.filter(newItem => !prev.some(p => p.id === newItem.id));
+                        const newItems = data.content.filter(newItem => !prev.some(p => p.id === newItem.id));
                         return [...prev, ...newItems];
                     });
                 }
                 setHasMore(!data.last);
             } catch (err) {
-                console.error("Failed to load browse media", err);
+                if (!controller.signal.aborted) console.error("Failed to load browse media", err);
             } finally {
-                setLoadingMore(false);
+                if (!controller.signal.aborted) setLoadingMore(false);
             }
         };
         fetchBrowse();
-    }, [page, mediaFilter, user?.id, t]);
+        return () => controller.abort();
+    }, [browse, user?.id]);
+
+    // Series titles are derived at render: keeping them out of the fetched state
+    // means a language change re-labels the list without refetching it.
+    const searchResultsView = useMemo(
+        () => searchResults.map(m => ({ ...m, title: seriesTitle(m, t) })),
+        [searchResults, t]
+    );
 
     const showToast = (msg: string) => {
         setToastMessage(msg);
@@ -356,11 +363,11 @@ const LandingPage = () => {
                     {/* Search Dropdown */}
                     {showResults && query.length >= 2 && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#161822] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-                            {searchResults.length === 0 ? (
+                            {searchResultsView.length === 0 ? (
                                 <div className="p-10 text-center text-gray-400">{t('landing.no_results_for', { query })}</div>
                             ) : (
                                 <div className="p-2">
-                                    {searchResults.map(item => (
+                                    {searchResultsView.map(item => (
                                         <button
                                             key={item.id}
                                             onClick={() => {
@@ -415,22 +422,22 @@ const LandingPage = () => {
                     {/* Filter chips */}
                     <div className="flex items-center gap-2 mb-4 flex-wrap">
                         <button
-                            onClick={() => setMediaFilter('all')}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${mediaFilter === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-[#161822] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}
+                            onClick={() => setBrowse(b => (b.filter === 'all' ? b : { filter: 'all', page: 0 }))}
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${browse.filter === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-[#161822] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}
                         >
                             {t('landing.all_content')}
                         </button>
                         {([{ key: 'movie', label: t('landing.filter_movies') }, { key: 'series', label: t('landing.filter_series') }] as const).map(f => (
                             <button
                                 key={f.key}
-                                onClick={() => setMediaFilter(f.key)}
-                                className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${mediaFilter === f.key ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-[#161822] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}
+                                onClick={() => setBrowse(b => (b.filter === f.key ? b : { filter: f.key, page: 0 }))}
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${browse.filter === f.key ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white dark:bg-[#161822] text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'}`}
                             >
                                 {f.label}
                             </button>
                         ))}
                         <button
-                            onClick={() => navigate(mediaFilter === 'movie' ? '/browse/movies' : '/browse/series')}
+                            onClick={() => navigate(browse.filter === 'movie' ? '/browse/movies' : '/browse/series')}
                             className="ml-auto flex items-center gap-1 text-xs font-bold text-yellow-500 uppercase tracking-wider hover:text-yellow-400 transition-colors"
                         >
                             {t('landing.view_all')} <ChevronRight className="w-3.5 h-3.5" />
@@ -459,7 +466,7 @@ const LandingPage = () => {
                             ))}
                             {hasMore && browsedMedia.length > 0 && (
                                 <button
-                                    onClick={() => setPage(p => p + 1)}
+                                    onClick={() => setBrowse(b => ({ ...b, page: b.page + 1 }))}
                                     disabled={loadingMore}
                                     className="w-[280px] h-36 shrink-0 rounded-2xl bg-gray-50 dark:bg-[#1c1e2b] border-2 border-dashed border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center text-gray-500 hover:text-indigo-500 hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/10 transition-all disabled:opacity-50"
                                 >

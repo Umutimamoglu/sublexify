@@ -50,15 +50,22 @@ export interface Page<T> {
 }
 
 const MediaService = {
+    /**
+     * Paginated catalogue. Pass a `signal` when the caller can supersede its own
+     * request (search-as-you-type, filter switches) so a slow earlier response
+     * cannot land after a newer one.
+     */
     getAllMedia: async (
-        userId?: number, 
-        page: number = 0, 
-        size: number = 20, 
-        search: string = '', 
-        type: string = 'ALL'
+        userId?: number,
+        page: number = 0,
+        size: number = 20,
+        search: string = '',
+        type: string = 'ALL',
+        signal?: AbortSignal
     ): Promise<Page<Media>> => {
         const response = await api.get<Page<Media>>('/media', {
             params: { userId, page, size, search, type },
+            signal,
         });
         return response.data;
     },

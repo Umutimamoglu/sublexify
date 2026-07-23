@@ -8,8 +8,12 @@ import { useListPreferencesStore } from '@/store/useListPreferencesStore';
 import { useEffect, Suspense, lazy } from 'react';
 import { Loader2 } from 'lucide-react';
 
+// The landing page is the entry route for every visitor, so it ships in the
+// main bundle: code-splitting it only adds a round trip before the page can
+// start fetching its data. Everything below is lazy.
+import LandingPage from '@/pages/LandingPage';
+
 // Lazy loaded pages
-const LandingPage = lazy(() => import('@/pages/LandingPage'));
 const BrowsePage = lazy(() => import('@/pages/BrowsePage'));
 const SeriesDetailPage = lazy(() => import('@/pages/SeriesDetailPage'));
 const MediaDetailPage = lazy(() => import('@/pages/MediaDetailPage'));

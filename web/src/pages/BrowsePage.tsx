@@ -14,34 +14,41 @@ const BrowsePage = () => {
     const [mediaList, setMediaList] = useState<Media[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [page, setPage] = useState(0);
+    // The committed search term and the page move together: a new term always
+    // restarts at page 0, so a request for the previous page can never append
+    // its results to a different result set.
+    const [query, setQuery] = useState<{ search: string; page: number }>({ search: '', page: 0 });
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
 
     // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
-            setDebouncedSearch(searchQuery);
-            setPage(0); // reset page on search change
+            setQuery(q => (q.search === searchQuery ? q : { search: searchQuery, page: 0 }));
         }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Reset page on type change
-    useEffect(() => {
-        setPage(0);
-    }, [type]);
+    // Reset pagination when the route switches between movies/series. Done
+    // during render rather than in an effect so the fetch below never runs once
+    // for the new type paired with the old page.
+    const [renderedType, setRenderedType] = useState(type);
+    if (type !== renderedType) {
+        setRenderedType(type);
+        setQuery(q => (q.page === 0 ? q : { ...q, page: 0 }));
+    }
 
     useEffect(() => {
+        const controller = new AbortController();
+        const { search, page } = query;
         const fetchMedia = async () => {
             try {
                 if (page === 0) setLoading(true);
                 else setLoadingMore(true);
 
                 const backendType = type === 'series' ? 'SERIES' : type === 'movies' ? 'MOVIE' : 'ALL';
-                const data = await MediaService.getAllMedia(user?.id, page, 20, debouncedSearch, backendType);
-                
+                const data = await MediaService.getAllMedia(user?.id, page, 20, search, backendType, controller.signal);
+
                 if (page === 0) {
                     setMediaList(data.content);
                 } else {
@@ -52,14 +59,17 @@ const BrowsePage = () => {
                 }
                 setHasMore(!data.last);
             } catch (err) {
-                console.error(err);
+                if (!controller.signal.aborted) console.error(err);
             } finally {
-                setLoading(false);
-                setLoadingMore(false);
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                    setLoadingMore(false);
+                }
             }
         };
         fetchMedia();
-    }, [debouncedSearch, type, page]);
+        return () => controller.abort();
+    }, [query, type, user?.id]);
 
     const handleCardClick = (media: Media) => {
         if (type === 'series' && media.tmdbId) {
@@ -154,7 +164,7 @@ const BrowsePage = () => {
             {hasMore && mediaList.length > 0 && (
                 <div className="mt-12 flex justify-center">
                     <button
-                        onClick={() => setPage(p => p + 1)}
+                        onClick={() => setQuery(q => ({ ...q, page: q.page + 1 }))}
                         disabled={loadingMore}
                         className="px-8 py-3 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50"
                     >
