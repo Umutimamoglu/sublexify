@@ -14,7 +14,10 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification", "audio"]
+        "UIBackgroundModes": [
+          "remote-notification",
+          "audio"
+        ]
       }
     },
     "android": {
@@ -65,7 +68,13 @@
         }
       ],
       "./plugins/withNonModularHeaders",
-      "./plugins/withTtsForegroundService"
+      "./plugins/withTtsForegroundService",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.1053185645423-0pqc5ukku7qsqchs2jj9bnlgaplp563o"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -18,6 +18,7 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { signInWithGoogle, GoogleSignInCancelled } from '@/src/auth/googleSignIn';
 import { apiClient } from '@/src/api/client';
 import { ENDPOINTS } from '@/src/api/endpoints';
 import { useAuthStore } from '@/src/store/authStore';
@@ -39,6 +40,7 @@ export default function AuthScreen() {
   const [showPass, setShowPass] = useState(false);
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const emailRef = useRef<RNTextInput>(null);
   const passRef  = useRef<RNTextInput>(null);
@@ -77,6 +79,20 @@ export default function AuthScreen() {
       setError(t('auth.wrongCredentials'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setError(''); setGoogleLoading(true);
+    try {
+      const res = await signInWithGoogle();
+      setAuth(res.user, res.token);
+      router.replace('/(tabs)/discover');
+    } catch (err) {
+      // Backing out of the account picker is a normal exit, not a failure.
+      if (!(err instanceof GoogleSignInCancelled)) setError(t('auth.googleFailed'));
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -126,17 +142,22 @@ export default function AuthScreen() {
             {/* ── Sosyal butonlar ── */}
             <View style={s.btnGroup}>
 
-              {/* Google — placeholder */}
-              <View>
-                <TouchableOpacity style={[s.socialBtn, s.socialDisabled]} disabled activeOpacity={1}>
-                  <Ionicons name="logo-google" size={20} color="#4285F4" />
-                  <Text style={s.socialTxt}>{t('auth.continueGoogle')}</Text>
-                </TouchableOpacity>
-                <View style={s.badge}>
-                  <Ionicons name="lock-closed" size={10} color="#F59E0B" />
-                  <Text style={s.badgeTxt}>Şu an aktif değil</Text>
-                </View>
-              </View>
+              {/* Google */}
+              <TouchableOpacity
+                style={s.socialBtn}
+                onPress={handleGoogle}
+                disabled={googleLoading}
+                activeOpacity={0.85}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator color="#4285F4" />
+                ) : (
+                  <>
+                    <Ionicons name="logo-google" size={20} color="#4285F4" />
+                    <Text style={s.socialTxt}>{t('auth.continueGoogle')}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
 
               {/* Apple — placeholder */}
               <View>

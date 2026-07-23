@@ -45,6 +45,7 @@ export const ENDPOINTS = {
     deleteAccount:  '/auth/account',
     forgotPassword: '/auth/forgot-password',
     resetPassword:  '/auth/reset-password',
+    social:         '/auth/social',
   },
   subscription: {
     me: '/subscription/me',

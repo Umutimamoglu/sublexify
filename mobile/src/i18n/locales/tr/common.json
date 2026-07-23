@@ -78,7 +78,8 @@
     "termsLink": "Kullanım Koşullarını",
     "termsAnd": " ve ",
     "privacyLink": "Gizlilik Politikasını",
-    "termsSuffix": " kabul etmiş olursun."
+    "termsSuffix": " kabul etmiş olursun.",
+    "googleFailed": "Google ile giriş yapılamadı. Lütfen tekrar deneyin."
   },
   "onboarding": {
     "skip": "Atla",

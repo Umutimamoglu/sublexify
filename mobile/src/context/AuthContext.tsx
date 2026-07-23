@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { useAuthStore, type User } from '@/src/store/authStore';
+import { signOutFromGoogle } from '@/src/auth/googleSignIn';
 
 type AuthContextValue = {
   user: User | null;
@@ -21,7 +22,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         isAuthenticated,
         login: setAuth,
-        logout: clearAuth,
+        // Also drop the cached Google account, otherwise the next sign-in
+        // silently reuses it instead of showing the account picker.
+        logout: () => {
+          void signOutFromGoogle();
+          clearAuth();
+        },
       }}
     >
       {children}
