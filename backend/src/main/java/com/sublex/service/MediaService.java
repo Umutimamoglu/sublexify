@@ -395,8 +395,9 @@ public class MediaService {
         // We calculate a percentage score out of all graded words.
         double weightedScore = ((double) (bTotal + (cTotal * 2)) / counted) * 100.0;
 
-        if (weightedScore < 9.8) return "EASY";
-        if (weightedScore <= 12.5) return "MEDIUM";
+        // Based on DB distribution: Median is ~35.5, P25 is ~31.0, P75 is ~41.0
+        if (weightedScore < 31.0) return "EASY";
+        if (weightedScore <= 41.0) return "MEDIUM";
         return "HARD";
     }
 }
