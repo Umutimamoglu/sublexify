@@ -109,9 +109,14 @@ type Palette = {
   PURPLE: string;
 };
 
+// Card width and gap live here so the browse list can derive its item stride
+// for getItemLayout without re-deriving the numbers from the stylesheet.
+const mediaCardWidth = (isTablet: boolean) => (isTablet ? 340 : 270);
+const MEDIA_CARD_GAP = 16;
+
 function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, sh: number, topInset: number) {
   const pad = isTablet ? 32 : 16;
-  const mediaCardW = isTablet ? 340 : 270;
+  const mediaCardW = mediaCardWidth(isTablet);
   const heroHeight = sh * 0.46;
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: c.BG },
@@ -231,7 +236,7 @@ function makeStyles(c: Palette, isDark: boolean, isTablet: boolean, sw: number, 
     mediaCard: {
       width: mediaCardW,
       height: 140,
-      marginRight: 16,
+      marginRight: MEDIA_CARD_GAP,
       borderRadius: 18,
       overflow: 'hidden',
       flexDirection: 'row',
@@ -626,6 +631,41 @@ export default function DiscoverScreen() {
   const currentStreak = useStreakStore((s) => s.currentStreak);
 
   const browsedMedia = useMemo(() => deduplicateMedia(allMedia, mediaFilter), [allMedia, mediaFilter]);
+
+  // The browse row can hold several hundred cards (every deduplicated series or
+  // film), so it is virtualized. Cards are a fixed width, which lets FlatList
+  // skip measuring and jump straight to any offset.
+  const browseItemStride = mediaCardWidth(isTablet) + MEDIA_CARD_GAP;
+
+  const browseKeyExtractor = useCallback(
+    (item: MediaDTO) => `${item.id}-${item.imdbId}`,
+    [],
+  );
+
+  const getBrowseItemLayout = useCallback(
+    (_: ArrayLike<MediaDTO> | null | undefined, index: number) => ({
+      length: browseItemStride,
+      offset: browseItemStride * index,
+      index,
+    }),
+    [browseItemStride],
+  );
+
+  const renderBrowseCard = useCallback(
+    ({ item }: { item: MediaDTO }) => (
+      <MediaBrowseCard
+        item={item}
+        isDark={isDark}
+        styles={styles}
+        onPress={() =>
+          item.type === 'MOVIE'
+            ? router.push(`/media/${item.id}` as any)
+            : router.push(`/show/${item.imdbId}` as any)
+        }
+      />
+    ),
+    [isDark, styles, router],
+  );
 
   const { data: seriesListsData = [], isFetching: checkingSeriesLists } = useListsBySeries(selectedSeriesImdbId);
 
@@ -1040,21 +1080,18 @@ export default function DiscoverScreen() {
               <Text style={styles.emptyTitle}>{t('noContent')}</Text>
             </View>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hScrollContent}>
-              {browsedMedia.map((item) => (
-                <MediaBrowseCard
-                  key={`${item.id}-${item.imdbId}`}
-                  item={item}
-                  isDark={isDark}
-                  styles={styles}
-                  onPress={() =>
-                    item.type === 'MOVIE'
-                      ? router.push(`/media/${item.id}` as any)
-                      : router.push(`/show/${item.imdbId}` as any)
-                  }
-                />
-              ))}
-            </ScrollView>
+            <FlatList
+              horizontal
+              data={browsedMedia}
+              renderItem={renderBrowseCard}
+              keyExtractor={browseKeyExtractor}
+              getItemLayout={getBrowseItemLayout}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.hScrollContent}
+              initialNumToRender={4}
+              maxToRenderPerBatch={8}
+              windowSize={5}
+            />
           )}
         </View>
 

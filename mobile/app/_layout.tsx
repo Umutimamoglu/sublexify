@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { I18nextProvider } from 'react-i18next';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { defaultShouldDehydrateQuery, type Query } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider } from '@/src/context/ThemeContext';
 import { AuthProvider } from '@/src/context/AuthContext';
@@ -46,6 +47,26 @@ const persister = createAsyncStoragePersister({
   key: 'sublex-query-cache',
   throttleTime: 1000,
 });
+
+/**
+ * The whole cache is written as a single AsyncStorage row, and Android caps
+ * that database at 6 MB by default. The media catalogue alone serialises to
+ * roughly 5 MB, so persisting it pushes the write over the limit and *nothing*
+ * gets stored — the small, genuinely useful entries (lists, stats, known words)
+ * included. Leaving the catalogue out keeps the row well under the cap; it is
+ * re-fetched on launch, which is what already happens today.
+ */
+const isMediaCatalogueQuery = (query: Query) =>
+  query.queryKey.length === 1 && query.queryKey[0] === 'media';
+
+const persistOptions = {
+  persister,
+  maxAge: 1000 * 60 * 60 * 24,
+  dehydrateOptions: {
+    shouldDehydrateQuery: (query: Query) =>
+      defaultShouldDehydrateQuery(query) && !isMediaCatalogueQuery(query),
+  },
+};
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
@@ -131,7 +152,7 @@ export default function RootLayout() {
         <StatusBar style="auto" translucent />
         <PersistQueryClientProvider
           client={queryClient}
-          persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 }}
+          persistOptions={persistOptions}
         >
           <ThemeProvider>
             <AuthProvider>
