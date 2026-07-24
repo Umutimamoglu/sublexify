@@ -36,10 +36,13 @@ const AppInstallBanner = () => {
             detectedOS = 'ios';
         }
 
-        if (detectedOS !== 'other') {
-            setOs(detectedOS);
-            setIsVisible(true);
-        }
+        // TEMPORARY: BETA TESTER ACQUISITION CAMPAIGN
+        // Originally, this banner was restricted to mobile devices only (detectedOS !== 'other').
+        // We are temporarily showing this banner on ALL devices (including Desktop/Web)
+        // because our primary goal right now is to acquire as many beta testers as possible.
+        // Once the apps are live, we should revert this to only show on mobile devices.
+        setOs(detectedOS);
+        setIsVisible(true);
     }, []);
 
     if (!isVisible) return null;
@@ -68,7 +71,7 @@ const AppInstallBanner = () => {
         try {
             await FeedbackService.submitFeedback({
                 category: 'BETA_TESTER',
-                message: `Platform: ${os === 'ios' ? 'iOS' : 'Android'}\nTest Email: ${email}`
+                message: `Platform: ${os === 'ios' ? 'iOS' : os === 'android' ? 'Android' : 'Desktop/Unknown'}\nTest Email: ${email}`
             });
             setSubmitted(true);
             setTimeout(() => {
@@ -109,7 +112,9 @@ const AppInstallBanner = () => {
                     <div className="flex flex-col flex-1 min-w-0">
                         <span className="text-white font-bold text-sm truncate">Uygulamalarımız Test Aşamasında</span>
                         <span className="text-indigo-100 text-[11px] font-medium truncate">
-                            {os === 'ios' ? 'iOS için test kullanıcısı ol' : 'Android için test kullanıcısı ol'}
+                            {os === 'ios' ? 'iOS için test kullanıcısı ol' : 
+                             os === 'android' ? 'Android için test kullanıcısı ol' : 
+                             'Mobil test kullanıcısı ol'}
                         </span>
                     </div>
                 </div>
@@ -141,7 +146,9 @@ const AppInstallBanner = () => {
                             </div>
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Beta Test Kullanıcısı Ol</h2>
                             <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                                {os === 'ios' ? 'Apple ID' : 'Google Play'} hesabınıza bağlı e-posta adresinizi girin. Size uygulamayı test etmeniz için bir davetiye göndereceğiz.
+                                {os === 'ios' ? 'Apple ID' : 
+                                 os === 'android' ? 'Google Play' : 
+                                 'Apple ID veya Google Play'} hesabınıza bağlı e-posta adresinizi girin. Size uygulamayı test etmeniz için bir davetiye göndereceğiz.
                             </p>
                         </div>
 
