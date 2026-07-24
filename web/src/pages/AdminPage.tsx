@@ -101,6 +101,7 @@ function UserInfoSection({ requests, feedbacks, loading, onUpdateStatus }: {
                                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                                             f.category === 'BUG' ? 'bg-red-100 text-red-700' :
                                             f.category === 'SUGGESTION' ? 'bg-blue-100 text-blue-700' :
+                                            f.category === 'BETA_TESTER' ? 'bg-orange-100 text-orange-700' :
                                             'bg-gray-100 text-gray-700'
                                         }`}>
                                             {f.category}
