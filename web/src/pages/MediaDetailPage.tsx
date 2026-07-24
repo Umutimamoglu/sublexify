@@ -10,6 +10,7 @@ import { cn } from '@/utils/cn';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 
 
 const MediaDetailPage = () => {
@@ -190,6 +191,10 @@ const MediaDetailPage = () => {
 
     return (
         <div>
+            <Helmet>
+                <title>{media.title} - İngilizce Kelimeler | Sublexify</title>
+                <meta name="description" content={`${media.title} filminde geçen tüm İngilizce kelimeleri listele, anlamlarını öğren ve kelime defterine ekle. Kelimeleri hemen öğrenmeye başla.`} />
+            </Helmet>
             {/* Back Button */}
             <Link
                 to="/"

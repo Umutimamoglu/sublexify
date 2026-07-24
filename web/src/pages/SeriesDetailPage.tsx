@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/utils/cn';
 import { Play as PlayIcon } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 const SeriesDetailPage = () => {
     const { tmdbId } = useParams<{ tmdbId: string }>();
@@ -130,6 +131,10 @@ const SeriesDetailPage = () => {
 
     return (
         <div className="relative pb-24">
+            <Helmet>
+                <title>{seriesMeta.title} - İngilizce Kelimeler | Sublexify</title>
+                <meta name="description" content={`${seriesMeta.title} dizisinde kullanılan İngilizce kelimeleri, anlamlarını ve örnek kullanımlarını öğrenin. Sezon ve bölümlere göre özel hazırlanmış kelime listeleri.`} />
+            </Helmet>
             {/* Header / Backdrop */}
             <div className="relative w-full h-[400px] rounded-3xl overflow-hidden mb-8">
                 <div className="absolute inset-0 bg-black/40 z-10" />

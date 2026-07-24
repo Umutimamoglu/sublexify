@@ -9,6 +9,7 @@ import WordListService, { type WordListDTO } from '@/services/WordListService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { Helmet } from 'react-helmet-async';
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -252,6 +253,12 @@ const LandingPage = () => {
 
     return (
         <div className="min-h-screen -mx-4 sm:-mx-6 lg:-mx-8 -mt-8">
+            <Helmet>
+                <title>Sublexify | Dizilerle ve Filmlerle İngilizce Öğren</title>
+                <meta name="description" content="İngilizceyi dizilerden ve filmlerden öğrenmek istiyorsan doğru yerdesin. Dizi, sezon ve bölüm seç. Seçtiğin bölümde kullanılan tüm kelimeler ve anlamları karşına gelsin." />
+            </Helmet>
+            <h1 className="sr-only">Dizilerle ve Filmlerle İngilizce Öğren</h1>
+            
             {/* ─── Hero Banner ─────────────────────────────────── */}
             <div className="relative h-[52vh] min-h-[380px] max-h-[580px] overflow-hidden bg-gray-900">
                 {heroItem ? (
