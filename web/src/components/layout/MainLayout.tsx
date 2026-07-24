@@ -6,6 +6,7 @@ import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/store/useAuthStore';
 import NotificationService from '@/services/NotificationService';
 import RequireLoginModal from '@/components/features/RequireLoginModal';
+import AppInstallBanner from '@/components/features/AppInstallBanner';
 
 const MainLayout = () => {
 
@@ -71,8 +72,9 @@ const MainLayout = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50/50 dark:bg-[#0A0C10] text-gray-900 dark:text-gray-100 font-sans selection:bg-indigo-500/30">
+        <div className="min-h-screen bg-gray-50/50 dark:bg-[#0A0C10] text-gray-900 dark:text-gray-100 font-sans selection:bg-indigo-500/30 flex flex-col">
             <RequireLoginModal />
+            <AppInstallBanner />
             {/* Desktop Sidebar */}
             <header className="bg-white/80 dark:bg-[#161822]/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800/60 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
