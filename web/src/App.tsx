@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useListPreferencesStore } from '@/store/useListPreferencesStore';
 import { useEffect, Suspense, lazy } from 'react';
 import { Loader2 } from 'lucide-react';
+import AuthService from '@/services/AuthService';
 
 // The landing page is the entry route for every visitor, so it ships in the
 // main bundle: code-splitting it only adds a round trip before the page can
@@ -43,14 +44,22 @@ const PageLoader = () => (
 
 function App() {
   const { themePreference } = useSettingsStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, setAuth, token, clearAuth } = useAuthStore();
   const { fetchHiddenLists } = useListPreferencesStore();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && token) {
       fetchHiddenLists();
+      // Fetch fresh user data (e.g. to sync premium status if it expired)
+      AuthService.me().then(freshUser => {
+        setAuth(freshUser, token);
+      }).catch(err => {
+        if (err.response?.status === 401) {
+          clearAuth();
+        }
+      });
     }
-  }, [isAuthenticated, fetchHiddenLists]);
+  }, [isAuthenticated, fetchHiddenLists, setAuth, token, clearAuth]);
 
   useEffect(() => {
     const isDark = themePreference === 'dark' || (themePreference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
