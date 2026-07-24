@@ -33,7 +33,7 @@ const MainLayout = () => {
 
     const handleLogout = () => {
         clearAuth();
-        navigate('/login');
+        window.location.href = '/login';
     };
 
     const [isDark, setIsDark] = useState(() => {

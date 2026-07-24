@@ -1,11 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/src/api/client';
+import { apiClient, CATALOGUE_TIMEOUT_MS } from '@/src/api/client';
 import { ENDPOINTS } from '@/src/api/endpoints';
 import { mediaKeys } from '@/src/api/queries/media.queries';
 import { listKeys } from '@/src/api/queries/lists.queries';
 import { userKeys } from '@/src/api/queries/user.queries';
 import { wordKeys } from '@/src/api/queries/words.queries';
 import { useAuthStore } from '@/src/store/authStore';
+import { setAppInitGate } from '@/src/api/appInitGate';
 import type { AppInitDTO } from '@/src/types/api';
 
 // VocabularyScreen'in ilk açılış parametreleriyle birebir aynı olmalı:
@@ -31,14 +32,34 @@ export function prefetchAppInit(queryClient: QueryClient): Promise<void> {
   if (inFlight) return inFlight;
 
   inFlight = (async () => {
+    let seeded = false;
+
+    // Yalnızca /app-init çağrısını kapsayan promise: onu bekleyen sorgular
+    // (örn. useMedia) istek biter bitmez serbest kalmalı, aşağıdaki fallback'i
+    // beklememeli — yoksa fallback'in prefetch'i o sorguya dedupe olup
+    // birbirlerini kilitler.
+    const call = (async () => {
+      try {
+        const res = await apiClient.get<AppInitDTO>(ENDPOINTS.appInit, {
+          // Yavaş ağ + Railway cold start toleransı; arka planda olduğu için UX'i bloklamaz
+          timeout: CATALOGUE_TIMEOUT_MS,
+        });
+        seedCaches(queryClient, res.data);
+        seeded = true;
+      } catch {
+        // Aşağıda fallback'e düşülüyor
+      }
+    })();
+
+    setAppInitGate(call);
     try {
-      const res = await apiClient.get<AppInitDTO>(ENDPOINTS.appInit, {
-        // Yavaş ağ + Railway cold start toleransı; arka planda olduğu için UX'i bloklamaz
-        timeout: 30000,
-      });
-      seedCaches(queryClient, res.data);
-    } catch {
-      await fallbackPrefetch(queryClient);
+      await call;
+    } finally {
+      setAppInitGate(null);
+    }
+
+    try {
+      if (!seeded) await fallbackPrefetch(queryClient);
     } finally {
       inFlight = null;
     }

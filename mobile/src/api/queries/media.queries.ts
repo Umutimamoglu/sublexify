@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/src/api/client';
+import { apiClient, CATALOGUE_TIMEOUT_MS } from '@/src/api/client';
 import { ENDPOINTS } from '@/src/api/endpoints';
+import { appInitGate } from '@/src/api/appInitGate';
 import type { MediaDTO, MediaWordsResponseDTO, WordListDTO } from '@/src/types/api';
 
 export const mediaKeys = {
@@ -12,11 +13,26 @@ export const mediaKeys = {
 };
 
 export function useMedia() {
+  const qc = useQueryClient();
   return useQuery<MediaDTO[]>({
     queryKey: mediaKeys.all,
     staleTime: 1000 * 60 * 30, // 30 dakika (katalog sık değişmez)
+    // Katalog ~1.2 MB: zaman aşımına uğrayan isteği tekrarlamak, aynı yükün
+    // birden çok kopyasını hatta bindirmekten başka bir işe yaramıyor.
+    retry: 0,
     queryFn:  async () => {
-      const res = await apiClient.get<MediaDTO[]>(ENDPOINTS.media.list);
+      // /app-init tam olarak bu listeyi de taşıyor. O istek zaten yoldaysa
+      // yanında ikinci bir kopya indirmek yerine onu bekle — iki eşzamanlı
+      // katalog indirmesi mobil bağlantıda birbirini aç bırakıyordu.
+      const pending = appInitGate();
+      if (pending) {
+        await pending;
+        const seeded = qc.getQueryData<MediaDTO[]>(mediaKeys.all);
+        if (seeded) return seeded;
+      }
+      const res = await apiClient.get<MediaDTO[]>(ENDPOINTS.media.list, {
+        timeout: CATALOGUE_TIMEOUT_MS,
+      });
       return res.data;
     },
   });

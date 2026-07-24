@@ -47,7 +47,7 @@ const ProfilePage = () => {
     const handleLogout = () => {
         if (confirm(t('profile.logout_confirm'))) {
             clearAuth();
-            navigate('/login');
+            window.location.href = '/login';
         }
     };
 

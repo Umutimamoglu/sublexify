@@ -5,6 +5,7 @@ import MediaCard from '@/components/features/MediaCard';
 import { Loader2, Search, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 const BrowsePage = () => {
     const { type } = useParams<{ type: string }>();
@@ -71,6 +72,11 @@ const BrowsePage = () => {
         return () => controller.abort();
     }, [query, type, user?.id]);
 
+    const sentinelRef = useInfiniteScroll(
+        () => setQuery(q => ({ ...q, page: q.page + 1 })),
+        hasMore && !loadingMore && mediaList.length > 0,
+    );
+
     const handleCardClick = (media: Media) => {
         if (type === 'series' && media.tmdbId) {
             navigate(`/series/${media.tmdbId}`);
@@ -133,27 +139,20 @@ const BrowsePage = () => {
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                     {mediaList.map((media) => {
-                        let stats = undefined;
                         const imageUrl = media.posterUrl || media.backdropUrl;
 
-                        if (type === 'series' && media.tmdbId) {
-                            // Backend already handles grouping, so we just display the stats from the object
-                            stats = `${media.difficultyLevel ? t('level.' + media.difficultyLevel.toLowerCase()) : ''}`;
-                            // Fix title format if needed
-                            const sep = media.title.indexOf(' - ');
-                            if (sep > 0) {
-                                media.title = media.title.substring(0, sep);
-                            }
-                        } else {
-                            stats = `${media.difficultyLevel ? t('level.' + media.difficultyLevel.toLowerCase()) : ''}`;
-                        }
+                        // Episode rows arrive titled "Show - S1:E1" but the card
+                        // stands for the whole series. Copied rather than trimmed
+                        // in place so rendering never mutates the fetched list.
+                        const sep = type === 'series' && media.tmdbId ? media.title.indexOf(' - ') : -1;
+                        const card = sep > 0 ? { ...media, title: media.title.slice(0, sep) } : media;
 
                         return (
                             <div key={media.id} onClick={() => handleCardClick(media)} className="cursor-pointer">
-                                <MediaCard 
-                                    media={media} 
-                                    imageUrl={imageUrl || undefined} 
-                                    stats={stats} 
+                                <MediaCard
+                                    media={card}
+                                    imageUrl={imageUrl || undefined}
+                                    stats={`${media.totalWords} ${t('common.words')}`}
                                 />
                             </div>
                         );
@@ -161,15 +160,11 @@ const BrowsePage = () => {
                 </div>
             )}
             
+            {/* Scrolling onto this pulls the next page in; it stays mounted while
+                more remains so the observer has something to watch. */}
             {hasMore && mediaList.length > 0 && (
-                <div className="mt-12 flex justify-center">
-                    <button
-                        onClick={() => setQuery(q => ({ ...q, page: q.page + 1 }))}
-                        disabled={loadingMore}
-                        className="px-8 py-3 bg-white dark:bg-[#161822] border border-gray-200/60 dark:border-gray-800/60 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all shadow-sm disabled:opacity-50"
-                    >
-                        {loadingMore ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('lists.load_more', { defaultValue: 'Load More' })}
-                    </button>
+                <div ref={sentinelRef} className="mt-12 flex justify-center h-10">
+                    {loadingMore && <Loader2 className="w-5 h-5 animate-spin text-gray-400" />}
                 </div>
             )}
         </div>

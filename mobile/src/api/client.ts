@@ -10,7 +10,7 @@ function getDevHost(): string {
   }
 
   // 2. Try Expo hostUri (LAN IP from Bundler)
-  const hostUri = Constants.expoConfig?.hostUri; 
+  const hostUri = Constants.expoConfig?.hostUri;
   if (hostUri) {
     const ip = hostUri.split(':')[0];
     if (ip !== '127.0.0.1' && ip !== 'localhost') {
@@ -32,6 +32,15 @@ export const apiClient = axios.create({
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
+
+/**
+ * Budget for the two requests that carry the whole media catalogue (/app-init
+ * and an unpaginated /media): ~1.2 MB gzipped, and the server has been measured
+ * taking over five seconds just to produce it when cold. The default above is
+ * sized for the small endpoints and cuts these off mid-download on anything
+ * slower than wifi, which surfaces as a "check your connection" error.
+ */
+export const CATALOGUE_TIMEOUT_MS = 30000;
 
 // Her request'e JWT token ekle
 apiClient.interceptors.request.use((config) => {

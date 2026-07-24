@@ -27,7 +27,7 @@ const SettingsPage = () => {
         try {
             await api.delete('/auth/account');
             clearAuth();
-            navigate('/login');
+            window.location.href = '/login';
         } catch (e) {
             console.error("Hesap silinirken hata oluştu:", e);
             alert("Hesap silinirken bir hata oluştu.");

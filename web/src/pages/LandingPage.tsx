@@ -8,6 +8,7 @@ import MediaService, { type Media } from '@/services/MediaService';
 import WordListService, { type WordListDTO } from '@/services/WordListService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTranslation } from 'react-i18next';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -97,6 +98,11 @@ const LandingPage = () => {
     const [browsedMedia, setBrowsedMedia] = useState<Media[]>([]);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+
+    const browseSentinelRef = useInfiniteScroll(
+        () => setBrowse(b => ({ ...b, page: b.page + 1 })),
+        hasMore && !loadingMore && browsedMedia.length > 0,
+    );
 
     // Series Intercept Modal
     const [seriesListsModalOpen, setSeriesListsModalOpen] = useState(false);
@@ -464,15 +470,14 @@ const LandingPage = () => {
                                     }}
                                 />
                             ))}
+                            {/* Scrolling the row onto this pulls the next page in. */}
                             {hasMore && browsedMedia.length > 0 && (
-                                <button
-                                    onClick={() => setBrowse(b => ({ ...b, page: b.page + 1 }))}
-                                    disabled={loadingMore}
-                                    className="w-[280px] h-36 shrink-0 rounded-2xl bg-gray-50 dark:bg-[#1c1e2b] border-2 border-dashed border-gray-200 dark:border-gray-800 flex flex-col items-center justify-center text-gray-500 hover:text-indigo-500 hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/10 transition-all disabled:opacity-50"
+                                <div
+                                    ref={browseSentinelRef}
+                                    className="w-24 h-36 shrink-0 flex items-center justify-center text-gray-400"
                                 >
-                                    {loadingMore ? <Loader2 className="w-6 h-6 animate-spin mb-2" /> : <ChevronRight className="w-8 h-8 mb-2" />}
-                                    <span className="font-semibold">{t('lists.load_more', { defaultValue: 'Load More' })}</span>
-                                </button>
+                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                </div>
                             )}
                         </div>
                     )}

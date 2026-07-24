@@ -131,6 +131,14 @@ export default function RootLayout() {
         // Wait for hydration if not already done
         if (!hasHydrated) return;
 
+        // Tek katalog isteğini ağaç mount olmadan başlat: böylece kataloğa
+        // ihtiyaç duyan ekranlar (Discover) kendi isteklerini atmak yerine bu
+        // isteği bekler. Sıra önemli — sorgular ekran mount'unda, yani root
+        // effect'inden önce tetikleniyor.
+        if (useAuthStore.getState().isAuthenticated) {
+          prefetchAppInit(queryClient);
+        }
+
         // Splash'i ağ isteğiyle BEKLETME: persist edilen cache ile ekran anında
         // açılır, taze veri aşağıdaki effect'te arka planda tek istekle çekilir.
         setReady(true);
