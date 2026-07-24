@@ -6,17 +6,20 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * User-facing membership detail for the profile screen. Derived server-side so
  * both clients just render it. Phase 1 only produces MANUAL memberships; the
  * shape already covers Phase 2 (paid / store / coupon, monthly / yearly).
  */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class MembershipDTO {
+    @JsonProperty("isPremium")
     private boolean isPremium;
     private String plan;                 // "FREE" | "PREMIUM"
 
